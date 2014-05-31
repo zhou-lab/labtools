@@ -112,10 +112,18 @@ function bt {
 MANPATH=$MANPATH:$HOME/share/man
 alias svt="python /home/wzhou1/zchong/set3/svtyper/svtyper.py"
 
-# for git
+
+### git ###
+
 alias gs="git status"
 alias gu="git pull"
 alias gp="git pull"
 alias gc="git commit -a"
 alias ga="git add"
-alias gl="git commit -a -m '...'; git push;" # lazy git
+
+# lazy git
+function gl {
+  if [[ -z "$1" ]]; then $message="$1"; else $message="..."; fi;
+  git commit -a -m $message;
+  git push;
+}
