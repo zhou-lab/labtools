@@ -125,7 +125,7 @@ alias ga="git add"
 # lazy git
 function gl {
 
-  if [ -z "$1" ]; then message="..."; else message="$1"; fi;
+  if [ -z "$1" ]; then message="minor, message omitted"; else message="$1"; fi;
   git commit -a -m "$message";
   git push;
 }
