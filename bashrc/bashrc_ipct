@@ -124,7 +124,8 @@ alias ga="git add"
 
 # lazy git
 function gl {
-  if [[ -z "$1" ]]; then message="$1"; else message="..."; fi;
-  git commit -a -m \"$message\";
+
+  if [ -z "$1" ]; then message="..."; else message="$1"; fi;
+  git commit -a -m "$message";
   git push;
 }
