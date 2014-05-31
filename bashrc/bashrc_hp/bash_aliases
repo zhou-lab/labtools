@@ -1,0 +1,71 @@
+#!/bin/sh
+
+alias rm='rm -i'
+
+start_emacs() {
+(exec emacsclient --alternate-editor="" -c "$@" $1 >/dev/null &)
+}
+alias emacs=start_emacs
+start_emacsclient() {
+(exec emacsclient $1 >/dev/null &)
+}
+alias emacsc=start_emacsclient
+alias e=start_emacsclient
+alias ec=start_emacsclient
+alias ev=evince
+alias lesslast="ls | tail -n1 | xargs less"
+
+alias renamephotos='jhead -n%Y-%m-%d-%H.%M.%S *.jpg'
+
+export HGEDITOR=emacsclient
+export SVN_EDITOR=emacsclient
+#export ALTERNATE_EDITOR=emacs EDITOR=emacsc VISUAL=emacsc
+
+alias m='cd /media/ExternalDrivLarg/slowsync/2012-05-23-NCBI-Pal-56-pro-dataset'
+
+alias l="less"
+
+# alias e='LC_CTYPE="zh_CN.UTF-8" emacsclient'
+alias e1='LC_CTYPE="zh_CN.UTF-8" emacsclient -t'
+alias e2='LC_CTYPE="zh_CN.UTF-8" emacsclient -c'
+## alias f='freeplane >& /dev/null &'
+alias d='cd /home/wanding/Dropbox/'
+alias d2='cd /home/wanding/Downloads/'
+alias p1='cd /home/wanding/Dropbox/version_controled/svn.rice/wanding'
+alias p2='cd /home/wanding/Dropbox/version_controled/svn.rice/wanding/dissertation'
+alias reaa='cd /home/wanding/Dropbox/version_controled/bitbucket.org/reaa'
+# alias b='emacsclient -c ~/.bashrc'
+# alias t='emacsclient -c ~/Dropbox/study/thoughts.org'
+# alias sy='emacsclient -c ~/Dropbox/config/sync_config.sh'
+# alias sc='screen -c screen'
+# alias du='du -sh'
+# alias j='java -jar /home/wanding/Dropbox/Library/JabRef-2.6.jar'
+
+# cd aliases
+alias w1='cd /home/wanding/Dropbox/project_community/src'
+alias w2='cd /home/wanding/sync/project_community/data'
+alias w3='cd /home/wanding/sync/project_community/figs'
+alias w4='cd /home/wanding/sync/project_community/downloads'
+alias wa='ssh wanding@wallace.cs.rice.edu'
+alias sugar='ssh wz4@sugar.rice.edu'
+alias es='/usr/bin/emacs --daemon'
+alias ee='pkill emacs'
+alias n='nautilus .'
+alias m='caja .'
+alias lp='lp -o sides=two-sided-long-edge -d phast '
+alias gtsave='gnome-terminal --save-config=/home/wanding/Dropbox/config/gnometerminalsession'
+alias update-tags="find . -type f -name '*py' | xargs createtags -o TAGS -a -l python"
+alias paup=/home/wanding/Dropbox/softwares/PAUP/paup4b10-x86-linux/paup4b10-x86-linux
+alias hi="festival --tts /home/wanding/Dropbox/study/thoughts/enticement_control.hinting;"
+alias hr1="text2wave /home/wanding/Dropbox/study/thoughts/enticement_control.hinting -o ~/enticement_control.wav; lame enticement_control.wav enticement_control.mp3; rm -f ~/enticement_control.wav;"
+alias hr2="text2wave /home/wanding/Dropbox/study/thoughts/fear_control.hinting -o ~/fear_control.wav; lame fear_control.wav fear_control.mp3; rm -f ~/fear_control.wav;"
+
+alias les="less -S"
+
+alias wz_column="awk -f ~/Dropbox/scripts/awk/wz_column.awk"
+
+
+# gene module project
+alias infomap='/home/wanding/tools/infomap/Infomap-0.12.13/Infomap'
+alias infotree2mod='python /home/wanding/Dropbox/scripts/python/infotree2mod.py'
+alias uptrace='python /home/wanding/Dropbox/project_hgt/src2/2013_11_25_uptrace_match.py'
