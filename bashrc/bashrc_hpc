@@ -127,6 +127,8 @@ alias svt="python /scratch/bcb/wzhou1/1kGP/2014_05_smalldel/svtyper/svtyper.py"
 
 
 # for git
+alias gu="git pull"
+alias gp="git pull"
 alias gs="git status"
 alias gc="git commit -a"
 alias ga="git add"
