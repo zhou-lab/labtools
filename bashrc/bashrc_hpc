@@ -124,3 +124,11 @@ export PERL5LIB=/scratch/bcb/wzhou1/tools/vcftools/vcftools_0.1.11/perl
 
 # alias svt="python /scratch/bcb/wzhou1/1kGP/2014_04_classifier/svtyper/svtyper.py"
 alias svt="python /scratch/bcb/wzhou1/1kGP/2014_05_smalldel/svtyper/svtyper.py"
+
+
+# for git
+alias gs="git status"
+alias gp="git pull"
+alias gu="git push"
+alias gc="git commit -a"
+alias ga="git add"
