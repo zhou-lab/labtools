@@ -1,0 +1,15 @@
+#!/bin/bash
+
+echo "number of non-NA: "
+awk 'NR>1 && $5!="NA"' $1 | wc -l
+echo "number of non-significant: "
+awk 'NR>1 && $5!="NA" && $5>0.5' $1 | wc -l
+echo "number of non-significant (0.05): "
+awk 'NR>1 && $5!="NA" && $5>0.05' $1 | wc -l
+
+echo "number of non-NA (small deletion): "
+awk 'NR>1 && $4-$3 < 1000 && $5!="NA"' $1 | wc -l
+echo "number of non-significant (small deletion): "
+awk 'NR>1 && $4-$3 < 1000 && $5!="NA" && $5>0.5' $1 | wc -l
+echo "number of non-significant (0.05) (small deletion): "
+awk 'NR>1 && $4-$3 < 1000 && $5!="NA" && $5>0.05' $1 | wc -l
