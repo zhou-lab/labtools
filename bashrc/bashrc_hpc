@@ -132,3 +132,4 @@ alias gp="git pull"
 alias gu="git push"
 alias gc="git commit -a"
 alias ga="git add"
+alias gl="git commit -a -m '...'; git push;" # lazy git
