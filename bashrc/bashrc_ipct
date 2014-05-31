@@ -102,11 +102,11 @@ function tv {
     samtools tview $1 /workspace/zchong/clinsek/test_data/hg19.fa
 }
 function sv {
-    samtools view $1 $2
+    samtools view $1 $2 | les
 }
 
 function bt {
-    bcftools view $1
+    bcftools view $1 | les
 }
 
 MANPATH=$MANPATH:$HOME/share/man
