@@ -114,8 +114,6 @@ alias svt="python /home/wzhou1/zchong/set3/svtyper/svtyper.py"
 
 # for git
 alias gs="git status"
-alias gp="git pull"
-alias gu="git push"
 alias gc="git commit -a"
 alias ga="git add"
 alias gl="git commit -a -m '...'; git push;" # lazy git
