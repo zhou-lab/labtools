@@ -1,0 +1,113 @@
+
+# Added by Canopy installer on 2013-09-05
+# VIRTUAL_ENV_DISABLE_PROMPT can be set to '' to make bashprompt show that Canopy is active, otherwise 1
+VIRTUAL_ENV_DISABLE_PROMPT=1 source /home/wzhou1/canopy/bin/activate
+
+alias python='~/canopy/bin/python'
+alias ls='ls --color'
+alias rm='rm -i'
+alias lc="wc -l"
+
+PS1='\u@\h:\w\$ '
+
+alias h='cd project_vaf/src/'
+export PATH=/home/wzhou1/tools/CAP3/CAP3:/home/wzhou1/tools/blatsuite:/home/wzhou1/tools/vcftools/vcftools_0.1.11/bin:$PATH:/projects/tools/samtools-0.1.19/:~/zchong_bin:/home/wzhou1/tools/bedtools/bedtools-2.17.0/bin:~/bin:/apps/x86_64/R-3.0.1/bin/:/usr/local/torque/bin
+# :
+export PYTHONPATH=/home/wzhou1/pythonlib/lib/python2.6/site-packages:/home/wzhou1/pythonlib/libwd
+export PYTHONPATH=/home/wzhou1/pythonlib/pyvcf/PyVCF-master:$PYTHONPATH
+alias scp='rsync -Pravdtze ssh'
+# alias hpc='rsync -Pravdtuze ssh /cygdrive/y/project_vaf/src/ ris:/RIS/home/wzhou1/project_vaf/src/ --exclude=pathsetup.py --exclude=*~ --exclude=*.pyc'
+alias src='cd /home/wzhou1/project_vaf/src/'
+alias data='cd /projects/wzhou1/project_vaf/data/'
+alias les="less -S"
+alias qsuball="find /home/wzhou1/htcpbs/ -type f | sort | xargs -I {} qsub {}"
+alias qdelall="qstat | grep wzhou1 | awk '{print $1}' | xargs -I {} qdel {}"
+
+function prompt {
+  local BLACK="\[\033[0;30m\]"
+  local BLACKBOLD="\[\033[1;30m\]"
+  local GREY="\[\033[00m\]"
+  local RED="\[\033[0;31m\]"
+  local REDBOLD="\[\033[1;31m\]"
+  local GREEN="\[\033[0;32m\]"
+  local GREENBOLD="\[\033[1;32m\]"
+  local YELLOW="\[\033[0;33m\]"
+  local YELLOWBOLD="\[\033[1;33m\]"
+  local BLUE="\[\033[0;34m\]"
+  local BLUEBOLD="\[\033[1;34m\]"
+  local PURPLE="\[\033[0;35m\]"
+  local PURPLEBOLD="\[\033[1;35m\]"
+  local CYAN="\[\033[0;36m\]"
+  local CYANBOLD="\[\033[1;36m\]"
+  local WHITE="\[\033[0;37m\]"
+  local WHITEBOLD="\[\033[1;37m\]"
+  export PS1="$REDBOLD[\t]${SCREENTITLE}$GREY[$GREENBOLD\u@\h $YELLOWBOLD\w$GREY]"'$ '
+
+}
+
+prompt
+
+source ~/.git-completion.bash
+
+alias cli="cd /home/wzhou1/project_clinsek/clone/"
+alias wor="cd /workspace/zchong/clinsek"
+alias e="emacs"
+
+# % cpan
+# cpan> o conf makepl_arg INSTALL_BASE=/mydir/perl
+# cpan> o conf commit
+export PERL5LIB=/home/wzhou1/tools/perltools/lib/perl5:/home/wzhou1/tools/vcftools/vcftools_0.1.11/lib/perl5/site_perl:${PERL5LIB}
+
+function wz_vcffilter {
+    vcffile=$1;
+    if [[ $3 == "-s" ]]; then
+	awk -v threshold=$2 '
+(!/^#/){
+if($6>threshold) print;
+}' $vcffile | sort -k6,6 -nr
+    else
+	awk -v threshold=$2 '
+(!/^#/){
+if($6>threshold) print;
+}' $vcffile
+    fi
+}
+
+function wzsum {
+  awk -v column=$2 '(NR==1){min=$column;max=$column}{sum += $column; if(min>$column) min=$c\
+olumn; if(max < $column) max=$column; }END{print "sum: "sum"\tcount: "NR"\tmean: "sum/NR"\t\
+min: "min"\tmax: "max}' $1
+}
+
+function wzsum_slow {
+  column=$2
+  sort -n $1 -k$column,$column | awk -v column=$column 'BEGIN{c=0;sum=0;} {a[c++]=$column; \
+sum+=$column;} END{ave=sum/c; if((c%2)==1){median=a[int(c/2)];} else{median=(a[c/2]+a[c/2-1\
+])/2;} print "sum: "sum"\tcount: "c"\tmean: "ave"\tmedian: "median"\tmin: "a[0]"\tmax: "a[c\
+-1]"\t25%: "a[c/4]"\t75%: "a[c/4*3]}'
+}
+
+alias qsubi='qsub -I -q medium -l nodes=1:ppn=1'
+
+function dnarev {
+  echo $1 | tr ATGC TACG | rev;
+}
+
+# eval $(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib)
+function getseq {
+    samtools faidx /workspace/zchong/clinsek/test_data/hg19.fa $1
+}
+
+function tv {
+    samtools tview $1 /workspace/zchong/clinsek/test_data/hg19.fa
+}
+function sv {
+    samtools view $1 $2
+}
+
+function bt {
+    bcftools view $1
+}
+
+MANPATH=$MANPATH:$HOME/share/man
+alias svt="python /home/wzhou1/zchong/set3/svtyper/svtyper.py"
