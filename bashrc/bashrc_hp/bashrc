@@ -94,3 +94,20 @@ fi
 alias les="less -S"
 alias svt="python /home/wanding/svtyper/svtyper.py"
 alias lc="wc -l"
+
+### git ###
+
+alias gs="git status"
+alias gu="git pull"
+alias gp="git pull"
+alias gh="git push"
+alias gc="git commit -a"
+alias ga="git add"
+
+# lazy git
+function gl {
+
+  if [ -z "$1" ]; then message="minor, message omitted"; else message="$1"; fi;
+  git commit -a -m "$message";
+  git push;
+}

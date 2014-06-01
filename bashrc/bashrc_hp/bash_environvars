@@ -50,7 +50,7 @@ export ILOG_LICENSE_FILE=/home/wanding/Dropbox/config/access.ilm
 # export R_HOME=/home/wanding/R_home
 
 export PATH=$PATH:/home/wanding/bin
-export SCREENRC=/home/wanding/Dropbox/config/screenrc/201311screenrc
+export SCREENRC=/home/wanding/wzlib/screenrc/screenrc_hp
 
 # for SCREEN
 case $TERM in
