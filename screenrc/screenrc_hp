@@ -1,0 +1,50 @@
+startup_message off
+caption always "%{= kw}%-w%{= BW}%n %t%{-}%+w %-= %c"
+defscrollback 5000
+
+termcapinfo xterm* ti@:te@
+
+shell "/bin/bash"
+altscreen on
+
+bindkey ^[[1;3D prev
+bindkey ^[[1;3C next
+
+bindkey -k kI copy
+
+
+bindkey "\024" mapdefault	# type C-t to escape
+bind j focus down
+bind k focus up
+
+bindkey ^[1 select 1
+bindkey ^[2 select 2
+bindkey ^[3 select 3
+bindkey ^[4 select 4
+bindkey ^[5 select 5
+bindkey ^[6 select 6
+bindkey ^[7 select 7
+bindkey ^[8 select 8
+bindkey ^[9 select 9
+
+# Function keys to switch terminals
+# -k F1 = F11, -k F2 = F12
+bindkey -k F1 prev
+bindkey -k F2 next
+bindkey -k k9 other # F10
+
+# F2 create new
+bindkey ^[OQ screen 1
+# Alt-left
+bindkey ^[[1;3D prev
+# Alt-right
+bindkey ^[[1;3C next
+
+bindkey -k kI copy
+bind j focus down
+bind k focus up
+
+bind c screen 1
+bind 0 select 10                                                            
+screen 1
+
