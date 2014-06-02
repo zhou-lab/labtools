@@ -1,0 +1,19 @@
+# -*- mode: snippet -*-
+# contributor: zhouwanding <zhouwanding@gmail.com>
+# contributor : Mads D. Kristensen <madsdk@gmail.com>
+# key : doc
+# group: environments
+# name : document
+# --
+
+\documentclass{article}
+\usepackage{amsmath, amssymb, amsfonts, hyperref, graphicx}
+\newenvironment{definition}[1][Definition]{\begin{trivlist}
+\item[\hskip \labelsep {\bfseries #1}]}{\end{trivlist}}
+\providecommand{\e}[1]{\ensuremath{\times 10^{#1}}}
+
+\begin{document}
+
+
+
+\end{document}
