@@ -1,9 +1,0 @@
-# -*- mode: snippet -*-
-# contributor: zhouwanding <zhouwanding@gmail.com>
-# contributor : Mads D. Kristensen <madsdk@gmail.com>
-# key : dump
-# group: environments
-# name : dump
-# --
-dump($1, open(pathsetup.datadir+"$2",'w'))
-$0
