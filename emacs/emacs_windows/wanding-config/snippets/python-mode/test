@@ -1,0 +1,19 @@
+# -*- mode: snippet -*-
+# contributor: zhouwanding <zhouwanding@gmail.com>
+# contributor : Mads D. Kristensen <madsdk@gmail.com>
+# key : test
+# group: environments
+# name : test
+# --
+
+import unittest
+class $1Test(unittest.TestCase):
+
+    def test$2(self):
+
+        $0
+
+
+if __name__ == "__main__":
+    
+    unittest.main(verbosity=2)
