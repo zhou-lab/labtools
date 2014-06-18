@@ -266,17 +266,39 @@ def main_pie(args):
 
     __core__(args)
 
-def add_std_options(psr):
+
+def main_venn(args):
+
+    __prelude__(args)
+
+    cnts = eval(args.c)
+    labels = args.l.split(',')
+
+    if args.n == 2:
+        from matplotlib_venn import venn2
+        venn2(subsets=cnts, set_labels=labels)
+    elif args.n == 3:
+        from matplotlib_venn import venn3
+        venn3(subsets=cnts, set_labels=labels)
+
+    __core__(args)
+        
+
+
+def add_std_options_table(psr):
     psr.add_argument('table', help="data table", type = argparse.FileType('r'), default='-')
     psr.add_argument('--delim', default="\t", 
                      help="table delimiter [\\t]")
+    psr.add_argument('--skipheader', action='store_true', help='skip header')
+    psr.add_argument('--skipline', default=0, type=int, help='skip line from table')
+    psr.add_argument('--maxline', default=100000, type=int, help='number of lines to plot [100000]')
+
+
+def add_std_options_out(psr):
     psr.add_argument('-o', dest='outfig', default="tmp.png",
                      help='output figure file name [tmp.png]')
     psr.add_argument('--xlabel', help='x label')
     psr.add_argument('--ylabel', help='y label')
-    psr.add_argument('--skipheader', action='store_true', help='skip header')
-    psr.add_argument('--skipline', default=0, type=int, help='skip line from table')
-    psr.add_argument('--maxline', default=100000, type=int, help='number of lines to plot [100000]')
 
     psr.add_argument('--vline', default=None, type=float, help="draw an extra vertical line at given x position")
     psr.add_argument('--hline', default=None, type=float, help="draw an extra horizontal line at given y position")
@@ -290,6 +312,11 @@ def add_std_options(psr):
     psr.add_argument('--xtlrotat', default='horizontal', help="rotation of x tick label. {horizontal, vertical, angle in degrees} [horizontal]")
     psr.add_argument('--figsize', default=None, help="figure size in tuple. e.g., 10,8 ([width],[height]).")
     psr.add_argument('--legloc', default=2, type=int, help='legend location')
+
+def add_std_options(psr):
+
+    add_std_options_table(psr)
+    add_std_options_out(psr)
     
 if __name__ == '__main__':
     
@@ -347,6 +374,13 @@ if __name__ == '__main__':
     add_std_options(psr_bar)
     psr_bar.set_defaults(func=main_bar)
 
+    # venn diagram
+    psr_venn = subparsers.add_parser("venn", help=""" Venn's diagram (need matplotlib venn) """)
+    psr_venn.add_argument('-n', type=int, default=2, help="number of ways of comparison. n=2 or 3")
+    psr_venn.add_argument('-c', help="counts of each category. For 2-way venn, category Ab, aB, AB. For 3-way venn, category Abc, aBc, ABc, abC, AbC, aBC, ABC")
+    psr_venn.add_argument('-l', default=None, help="labels of each category")
+    add_std_options_out(psr_venn)
+    psr_venn.set_defaults(func=main_venn)
 
     args = parser.parse_args()
     args.func(args)
