@@ -44,12 +44,42 @@ def main_basic(args):
     if args.skipheader:
         args.table.readline()
 
+    rgs = args.c.split(',')
+    indices = []
+    for rg in rgs:
+        if rg.find('-') >= 0:
+            pair = rg.split('-')
+            if not pair[0]:
+                pair[0] = 0
+            if not pair[1]:
+                pair[1] = 99
+            indices.extend(range(int(pair[0])-1, int(pair[1])))
+        else:
+            indices.append(int(rg)-1)
+
     vals = []
     for i, line in enumerate(args.table):
-        pair = line.strip().split(args.delim)
-        vals.append(int(pair[args.c-1]))
+        fields = line.strip().split(args.delim)
+        vals.append([float(fields[_]) for _ in indices])
 
-    print "sum: %d" % sum(vals)
+    data = zip(*vals)
+
+    print "sum:\t%s" % '\t'.join([str(sum(d)) for d in data])
+
+def main_overlap(args):
+    """ find overlap of two list """
+
+    set1 = set()
+    for line in args.t1:
+        fields = line.strip()
+        set1.add(fields[args.c1])
+
+    set2 = set()
+    for line in args.t2:
+        fields = line.strip()
+        set2.add(fields[args.c2])
+    
+    print '\n'.join(set1 & set2)
 
 def add_std_options(psr):
 
@@ -69,7 +99,7 @@ if __name__ == '__main__':
     
     # basic statistics
     psr_basic = subparsers.add_parser("basic", help=""" Basic statistics (mean, median, std, max, min) """)
-    psr_basic.add_argument('-c', type=int, required=True, help="column to study")
+    psr_basic.add_argument('-c', default=None, help="columns to study, 1-based. E.g., -c 1,3-4 [None]")
     psr_basic.add_argument('-r', action="store_true", help="row mode, apply to each row in the input table")
     psr_basic.add_argument('--eldelim', default=",", help="delimiter between elements, only effective under row mode [,]")
     add_std_options(psr_basic)

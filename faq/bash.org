@@ -1,0 +1,35 @@
+* how to use basic calculator (bc) in unix
+-l load standard math library
+bc -l <<< "5*7/3"
+11.6666
+$ result=$(echo "scale=2; 5 * 7 /3;" | bc)
+$ echo $result
+11.66
+
+* multiple sed replacement in one command
+use -e
+find . -type f -exec sed -i '' -e s/Red/$color1/g -e s/Blue/$color2/g {} \;
+
+
+* how to reverse grep?
+tac file | grep
+
+* convert rows to columns
+
+A1
+B1
+C1
+
+A2
+B2
+C2
+
+=>
+A1 B1 C1
+A2 B2 C2
+
+awk 'ORS=(NR%8==0)?"\n":"\t"{print $1}'
+
+* delete character in line using tr
+tr -d "\n"
+remove all newline characters.

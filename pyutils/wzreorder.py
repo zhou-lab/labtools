@@ -1,4 +1,6 @@
-#!/RIS/HPC_apps/AMD/python/python-2.7.2/bin/python
+#!/usr/bin/env python
+
+# /RIS/HPC_apps/AMD/python/python-2.7.2/bin/python
 
 import sys
 import argparse
@@ -32,7 +34,7 @@ if __name__ == '__main__':
     psr.add_argument('table', help="data table", type = argparse.FileType('r'), default='-')
     psr.add_argument('--delim', default="\t", 
                      help="table delimiter [\\t]")
-    psr.add_argument('-c', default=None, help="columns to be printed in the output, 1-based. E.g., -p 1,3-4 [None]")
+    psr.add_argument('-c', default=None, help="columns to be printed in the output, 1-based. E.g., -c 1,3-4 [None]")
 
     args = psr.parse_args()
     main(args)
