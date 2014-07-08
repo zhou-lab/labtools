@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import sys, re
 import pysam
 import argparse
 import sys, __builtin__
@@ -80,6 +81,37 @@ class Read():
 
         return
 
+
+    def getbase(self, tpos):
+
+        rpos = self.pos
+        qpos = 0
+        for op, clen in self.cigar:
+            if op == 0:         # match
+                if rpos + clen > tpos:
+                    qpos += tpos - rpos
+                    return ((0, self.seq[qpos], self.qual[qpos]))
+                else:
+                    qpos += clen
+                    rpos += clen
+            elif op == 1:       # insertion
+                if rpos == tpos:
+                    return ((1, None, self.qual[qpos]))
+                else:
+                    qpos += clen
+            elif op == 2:       # deletion, quality is the base before
+                if rpos + clen > tpos:
+                    return ((2, None, self.qual[qpos]))
+                else:
+                    rpos == clen
+            elif op == 4:
+                qpos += clen
+            else:
+                raise Exception("unknown cigar: %d" % op)
+
+        return (4, None, None)
+
+
 def parse_readfile(fh):
 
     read = None
@@ -108,9 +140,9 @@ def main_tabulate(args):
 
 def main_filter(args):
 
-    for read in parse_readfile(args.read_file):
+    for r in parse_readfile(args.read_file):
         if eval(args.s):
-            print read.format()
+            print r.format()
 
 def main_bam_region(args):
 
@@ -156,17 +188,39 @@ def main_compare(args):
 
     return
 
+def main_pileupone(args):
+
+    """ pileup and investigate base qualities at one position """
+    m = re.match(r'(\S+):(\d+)', args.t)
+    chrm = m.group(1)
+    pos = int(m.group(2))
+    bam = pysam.Samfile(args.bam_fn)
+    for x in bam.fetch(reference=chrm, start=pos, end=pos+1):
+        read = Read(x=x, xob=bam)
+        op, base, qual = read.getbase(pos)
+        if op == 0:
+            print "%s\t%s\t%d" % (read.qname, base, ord(qual)-33)
+
+    return
+
 if __name__ == '__main__':
    parser = argparse.ArgumentParser(description="bam utilities")
 
    subparsers = parser.add_subparsers()
 
-   # bam
+   # bam_region
    parser_bam_region = subparsers.add_parser("bam_region", help=""" parse bam file for read file """)
    parser_bam_region.add_argument('-reg', help="region, e.g., chr12:34567-45678")
    parser_bam_region.add_argument("bam_fn", help="bam file name")
    parser_bam_region.set_defaults(func=main_bam_region)
 
+   # pileup one position in a bam file
+   parser_pileupone = subparsers.add_parser("pileupone", help=""" pileup one position in a bam file """)
+   parser_pileupone.add_argument('-t', help="target position. e.g. chr1:1235342")
+   parser_pileupone.add_argument('bam_fn', help="bam file name")
+   parser_pileupone.set_defaults(func=main_pileupone)
+
+   # bam_reads
    parser_bam_reads = subparsers.add_parser("bam_reads", help=""" parse bam file with given read names """)
    parser_bam_reads.add_argument('-reads', type = argparse.FileType('r'), default='-', help='read file name')
    parser_bam_reads.add_argument('bam_fn', help="bam file name")

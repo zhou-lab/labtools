@@ -112,6 +112,10 @@ function bt {
 MANPATH=$MANPATH:$HOME/share/man
 alias svt="python /home/wzhou1/zchong/set3/svtyper/svtyper.py"
 
+function wzqsub {
+    find ~/pbs/ -type f | sort | sed -n "${1},${2}"p | xargs -I {} qsub {}
+}
+
 
 ### git ###
 

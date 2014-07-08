@@ -33,3 +33,17 @@ awk 'ORS=(NR%8==0)?"\n":"\t"{print $1}'
 * delete character in line using tr
 tr -d "\n"
 remove all newline characters.
+* how to sort with header
+(head -n 2 <file> && tail -n +3 <file> | sort) > newfile
+* how to extract from string
+** use expr
+http://tldp.org/LDP/abs/html/string-manipulation.html
+expr $a : '.*\(Tumor-[0-9]*\).*'
+and
+http://stackoverflow.com/questions/9597751/using-match-to-find-substrings-in-strings-with-only-bash
+** use BASH_REMATCH (better, no need to put .* in front and after the regular expression)
+[[ $a =~ Tumor-([0-9]*) ]] && echo $BASH_REMATCH
+
+* convert blank, space to tab
+tr -s [:blank:] \\t
+
