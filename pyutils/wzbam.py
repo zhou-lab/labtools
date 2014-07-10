@@ -24,6 +24,9 @@ class Read():
             self.pos = x.pos+1
             self.keys.append('pos')
 
+            self.mpos = x.mpos + 1
+            self.keys.append('mpos')
+
             if x.cigar:
                 self.cigar = x.cigar
                 self.keys.append('cigar')
