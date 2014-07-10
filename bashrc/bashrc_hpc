@@ -100,7 +100,7 @@ LS_COLORS='di=0;35' ; export LS_COLORS
 export HISTCONTROL=erasedups
 
 # module load R/default
-module load R/R-2.11.0
+# module load R/R-2.11.0
 module load jdk/jdk1.7.0/default
 module load git/default
 

@@ -34,8 +34,16 @@ class Job():
         self.queue       = "medium"
         self.hours       = 24
 
+    def set_batch_cnt(self):
+        self.batch_cnt = 0
+        while (True):
+            if not os.path.exists('%s/%s_batch_%d.pbs' % (Job.pbsdir, self.jobroot, self.batch_cnt)):
+                break
+            self.batch_cnt += 1
+
     def gen(self):
-        
+
+        self.set_batch_cnt()
         self.jobname = self.jobroot+"_batch_%d" % self.batch_cnt
         self.stdout  = "%s/%s.stdout" % (Job.stdoutdir, self.jobname)
         self.stderr  = "%s/%s.stderr" % (Job.stderrdir, self.jobname)
@@ -44,7 +52,6 @@ class Job():
             self.queue = "short"
         with open('%s/%s.pbs' % (Job.pbsdir, self.jobname), 'w') as fout:
             fout.write(template.format(self=self))
-        self.batch_cnt += 1
 
     def clean(self):
         import os
@@ -64,7 +71,8 @@ class Job():
 
 def main(opts, args):
     job = Job()
-    job.clean()
+    if not opts.nc:
+        job.clean()
     
     if opts.arg_fns:
         command_args = zip(*[[line.strip() for line in open(_)] for _ in opts.arg_fns])
@@ -72,9 +80,10 @@ def main(opts, args):
             return
         n_batches = (len(command_args)-1) / opts.bsize + 1
         for i in xrange(n_batches):
-            command = ""
+            command = "echo `date`\n\n"
             for command_arg in command_args[i*opts.bsize:(i+1)*opts.bsize]:
                 command += (args[0] % command_arg)+"\n"
+            command += "\n\necho `date` Done.\n"
             job.commands = command
             job.set_memory(opts.memory)
             job.set_hour(opts.wtime)
@@ -90,6 +99,8 @@ def main(opts, args):
 if __name__ == "__main__":
 
     parser = OptionParser("Usage: %prog [options] command")
+    parser.add_option("-n", "--noclean",
+                      dest="nc", action="store_true", help="no cleaning of pbs directory")
     parser.add_option("-m", "--memory",
                       dest="memory",
                       type="int",

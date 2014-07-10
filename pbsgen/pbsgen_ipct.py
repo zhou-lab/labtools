@@ -55,7 +55,6 @@ class Job():
             self.queue = "short"
         with open('%s/%s.pbs' % (Job.pbsdir, self.jobname), 'w') as fout:
             fout.write(template.format(self=self))
-        self.batch_cnt += 1
 
     def clean(self):
         import os
