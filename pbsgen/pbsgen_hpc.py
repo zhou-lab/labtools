@@ -1,7 +1,7 @@
 #!/RIS/HPC_apps/AMD/python/python-2.7.2/bin/python
 
 import subprocess
-import sys
+import sys, os
 from optparse import OptionParser
 
 template="""
