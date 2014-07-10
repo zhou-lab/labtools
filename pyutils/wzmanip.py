@@ -107,7 +107,7 @@ def main_compare3(args):
 
     if args.p == '123':
         for e in set1 & set2 & set3:
-            print e
+            print e, map1[e], map2[e], map3[e]
     if args.p == '12not3':
         for e in (set1 & set2) - set3:
             print e, map1[e], map2[e]
