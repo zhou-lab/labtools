@@ -2,7 +2,7 @@
 
 # Source global definitions
 if [ -f /etc/bashrc ]; then
-	. /etc/bashrc
+    . /etc/bashrc
 fi
 
 # User specific aliases and functions
@@ -101,9 +101,9 @@ export HISTCONTROL=erasedups
 
 # module load R/default
 # module load R/R-2.11.0
-module load jdk/jdk1.7.0/default
+# module load jdk/jdk1.7.0/default
 module load git/default
-
+module load jdk/jdk1.6.0_23/default
 
 function wzsum {
   awk -v column=$2 '(NR==1){min=$column;max=$column}{sum += $column; if(min>$column) min=$column; if(max < $column) max=$column; }END{print "sum: "sum"\tcount: "NR"\tmean: "sum/NR"\tmin: "min"\tmax: "max}' $1
