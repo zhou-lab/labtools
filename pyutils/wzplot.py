@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-# /RIS/HPC_apps/AMD/python/python-2.7.2/bin/python
-
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import sys
