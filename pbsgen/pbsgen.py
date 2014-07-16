@@ -62,8 +62,43 @@ class Job():
     def clean(self):
         import os
         map(os.unlink, [os.path.join(self.pbs, _) for _ in os.listdir(self.pbs) if _.endswith(".pbs")])
-        map(os.unlink, [os.path.join(self.stdout, _) for _ in os.listdir(self.stdoutdir) if _.endswith(".stdout")])
-        map(os.unlink, [os.path.join(self.stderr, _) for _ in os.listdir(self.stderrdir) if _.endswith(".stderr")])
+        map(os.unlink, [os.path.join(self.stdoutdir, _) for _ in os.listdir(self.stdoutdir) if _.endswith(".stdout")])
+        map(os.unlink, [os.path.join(self.stderrdir, _) for _ in os.listdir(self.stderrdir) if _.endswith(".stderr")])
+
+
+class Indices:
+
+    def __init__(self):
+        self.spans = []
+
+    def extend(self, start, end):
+        self.spans.append((start, end))
+
+    def extract(self, lst):
+        result = []
+        for start, end in self.spans:
+            if not end:
+                end = len(lst)
+            result.extend([lst[_] for _ in xrange(start, end)])
+
+        return result
+
+def parse_indices(indstr):
+    rgs = indstr.split(',')
+    indices = Indices()
+    for rg in rgs:
+        if rg.find('-') >= 0:
+            pair = rg.split('-')
+            if not pair[0]:
+                pair[0] = 0
+            if not pair[1]:
+                pair[1] = None
+            indices.extend(int(pair[0])-1 if pair[0] else 0,
+                           int(pair[1]) if pair[1] else None)
+        else:
+            indices.extend(int(rg)-1, int(rg))
+
+    return indices
 
 def main_clean(args):
 
@@ -84,15 +119,16 @@ def main_batch(args):
     job.clean()
 
     command_args_t = []
-    for argfn in args.argfns:
-        argfn, argcols = argfn.split(":")
+    for argpair in args.args.split(','):
+        argfn, argcols = argpair.split(":")
         argindices = parse_indices(argcols)
         file_args = []
         for line in open(argfn):
             fields = line.strip().split(args.delim)
-            file_args.append([fields[ind-1] for ind in argindices])
-        command_args_t.append(zip(*file_args))
-    command_args = zip(*command_args)
+            file_args.append(argindices.extract(fields))
+        print zip(*file_args)
+        command_args_t.extend(zip(*file_args))
+    command_args = zip(*command_args_t)
 
     n_batches = (len(command_args)-1) / args.bsize + 1
     for i in xrange(n_batches):
@@ -154,7 +190,7 @@ def pbsgen_main(setting, set_queue):
     ###### batch #####
     parser_batch = subparsers.add_parser("batch", help="batch generate pbs scripts")
     parser_batch.add_argument('command', help='command to run')
-    parser_batch.add_argument('-args', action="append", help="argument list file names, will be used to substitute %s in command following the order of appearance. (Note that multiple argument must be specified by \"-a arg1:col1 -a arg2:col2\")")
+    parser_batch.add_argument('-args', help="argument list file names, will be used to substitute %s in command following the order of appearance. (Note that multiple argument must be specified by -args argfile1:col1,argfile2:col2)")
     parser_batch.add_argument('-delim', default='\t', help='delimiter in the argument table')
     parser_batch.add_argument('-bsize', type=int, default=1, help="batch size")
     add_default_settings(parser_batch, setting)
