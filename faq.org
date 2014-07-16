@@ -1,5 +1,15 @@
 #+STARTUP: overview
-** recent 
+** recent
+*** to increment a variable in bash
+((++var)) or ((var=var+1)) or ((var+=1))
+((var++))
+$((var+1))
+let "var+=1"
+let "var+=10"
+see
+http://tldp.org/LDP/abs/html/dblparens.html
+*** how to grep from the end of the file?
+tac file | grep
 *** how to use basic calculator (bc) in unix
 -l load standard math library
 bc -l <<< "5*7/3"
@@ -7,9 +17,6 @@ bc -l <<< "5*7/3"
 $ result=$(echo "scale=2; 5 * 7 /3;" | bc)
 $ echo $result
 11.66
-
-*** how to grep from the end of the file?
-tac file | grep
 
 *** convert rows to columns
 
@@ -126,6 +133,627 @@ for ((i=1;i<=END;++i)); do echo $i; done
 ** git
 *** to reduce repo size
 git gc --aggressive --prune=now
+*** view the change between two arbitrary commits
+git diff <commit1>..<commit2>
+git diff 8751261..9d3a192 | git apply -
+*** to view operation log (reflog)
+git reflog -2
+view last two operations
+*** to automatically stage files that are modified or deleted while committing
+git commit -a (for --all)
+*** what is tilde (~ and ^)?
+^1 means first parent
+^2 means second parent where a commit has more than one parent
+~1 means first ancestor (by first parent) equivalent to ^1 or simply ^
+~2 means up two levels in the hierarchy, via the first parent if a commit has more than one parent, equivalent to ^1^1 or ^^
+e.g.,
+HEAD^^^ == HEAD~3
+see
+http://schacon.github.io/git/git-rev-parse
+
+*** how to reuse username and message while committing
+# reuse username and message
+git commit -C
+# just reuse username
+git commit -c 
+*** what's ORIG_HEAD?
+$ git commit ...
+$ git reset --soft HEAD^      <1>
+$ edit                        <2>
+$ git commit -a -c ORIG_HEAD  <3>
+"reset" copies the old head to .git/ORIG_HEAD
+*** what does reset (--soft, --mixed, --hard) do?
+git reset --soft <target-commit>
+change the branch pointer that HEAD points to to <target-commit>
+index and working directory still look like the current commit
+
+git reset --mixed <target-commit>
+this is the default
+make Index look like <target-commit>
+
+git reset --hard <target-commit>
+update the working directory by applying the index. (this is dangerous because it overwrite all the uncommited changes)
+
+In other words,
+http://git-scm.com/blog
+#1) Move whatever branch HEAD points to (stop if --soft)
+#2) THEN, make the Index look like that (stop here unless --hard)
+#3) THEN, make the Working Directory look like tha
+*** what is reset with a filename?
+there is no "reset --soft" or "reset --hard" with a filename.
+There is only reset (--mix) with a filename
+*** to revert only a file (or a path) to previous commit
+git reset <target-commit> <path>
+This is slightly different from "git reset" without the <path>
+git reset file.txt
+is a shorthand for
+git reset --mixed HEAD file.txt
+This is equivalently, unstaging that file.
+
+if <target-commit> is not HEAD, then
+git reset eb43bf file.txt
+revert the file.txt to eb43bf in the index (not working directory)
+run
+git add file.txt revert the index to the working version again.
+*** to stage partially a file
+git add --patch
+*** to unstage partially a file
+git reset -p (-p is short for --patch)
+*** to squash commits
+git reset --soft HEAD~2
+git commit
+The other intermediate commits are now detached. They are still in reflog and may be cleaned at some point.
+*** git checkout vs git reset
+with filename:
+git checkout -- filename
+is equivalen to
+git checkout filename
+The "--" is for preventing a branch with the same name as filename
+*** to show branches
+git branch
+or to show branch with its last commit
+git branch -v
+*** to rebase
+git rebase [basebranch]
+it will use the branch you are currently on as the topic branch and rebase onto the base branch. Or you can specify the topic branch (you don't have to checkout then) by
+git rebase [basebranch] [topicbranch]
+
+$ git checkout experiment
+$ git rebase master (on experiment)
+This takes the patch of experiment and reapply at master. In other words, you take all the changes that were committed on one branch (experiment) and replay them on another one (master).
+It works by going to the common ancestor of the two branches (the one you’re on and the one you’re rebasing onto), getting the diff introduced by each commit of the branch you’re on, saving those diffs to temporary files, resetting the current branch to the same commit as the branch you are rebasing onto, and finally applying each change in turn.
+Then you can do a fastforward merge:
+$ git checkout master
+$ git merge experiment (on master)
+*** to show branches that have (not) been merged into the current branch
+git branch --merged
+you can delete branches that have been merged by "git branch -d"
+git branch --no-merged
+you cannot delete these branches unless by "git branch -D" to force it.
+*** why you shouldn't rebase commits that you've pushed to public repository
+When you rebase stuff, you’re abandoning existing commits and creating new ones that are similar but different. If you push commits somewhere and others pull them down and base work on them, and then you rewrite those commits with git rebase and push them up again, your collaborators will have to re-merge their work and things will get messy when you try to pull their work back into yours.
+*** why rebase
+There is no difference between merge and rebase in the end product of the integration, but rebasing makes for a cleaner history. If you examine the log of a rebased branch, it looks like a linear history: it appears that all the work happened in series, even when it originally happened in parallel.
+
+Often, you’ll do this to make sure your commits apply cleanly on a remote branch — perhaps in a project to which you’re trying to contribute but that you don’t maintain. In this case, you’d do your work in a branch and then rebase your work onto origin/master when you were ready to submit your patches to the main project. That way, the maintainer doesn’t have to do any integration work — just a fast-forward or a clean apply.
+
+Note that the snapshot pointed to by the final commit you end up with, whether it’s the last of the rebased commits for a rebase or the final merge commit after a merge, is the same snapshot — it’s only the history that is different. Rebasing replays changes from one line of work onto another in the order they were introduced, whereas merging takes the endpoints and merges them together.
+*** how to delete a branch
+git branch -d hotfix
+*** what's fast-forward merging?
+Because the commit pointed to by the branch you merged in was directly upstream of the commit you’re on, Git moves the pointer forward. To phrase that another way, when you try to merge one commit with a commit that can be reached by following the first commit’s history, Git simplifies things by moving the pointer forward because there is no divergent work to merge together — this is called a "fast forward".
+*** to resolve merge file conflict
+In short: git merge, edit, git add, git commit
+also see
+https://help.github.com/articles/resolving-a-merge-conflict-from-the-command-line
+# initial merge
+$ git merge iss53
+Auto-merging index.html
+CONFLICT (content): Merge conflict in index.html
+Automatic merge failed; fix conflicts and then commit the result.
+# see files that are unmerged after a merge conflict
+$ git status
+# now change manually change the unmerged file
+emacs index.html
+The conflicting portion are in blocks like
+>>>>> branch1
+content1
+========
+content2
+<<<<<< branch2
+# or use a visualization tool
+git mergetool
+# mark the file as resolved by "git add"
+git add index.html
+# verify all the conflicts are resolved
+$ git status
+# finalize the "merge commit"
+$ git commit
+
+*** to resolve removed file conflict
+# resolve by keeping the file
+git status
+git add <conflict-file>
+git commit
+git show | head
+# resolve by removing the file
+git status
+git rm <conflict-file>
+git commit
+git show | head
+*** revert a commit by introducing a new commit
+git revert 
+"git revert" means creating a commit with the reverse patch to cancel it out
+
+# revert 3 separate commits
+git revert 0766c053 25eee4ca a867b4af
+
+# It also takes ranges. This will revert the last two commits:
+git revert HEAD~2..HEAD
+
+*** extract file as if they were in other commit (i.e., revert one file to older version)
+git checkout <commit> -- <filename>
+Caution! this discards uncommitted changes in your working directory
+*** how to branch
+git checkout -b <new-branch-name>
+this is equivalent to
+git branch <new-branch-name>
+git checkout <new-branch-name>
+*** what is branch and what is HEAD
+Each branch is a file containing the pointer to a commit.
+HEAD is also a file which has a pointer to the current branch.
+When one does "git checkout <abranch-name>", HEAD is updated and the pointer it has now points to <branch-name>.
+The branch that HEAD points to moves forward with each commit.
+*** how to view HEAD, its checksum, the file tree and the log file?
+$ cat .git/HEAD 
+ref: refs/heads/master
+
+$ cat .git/refs/heads/master 
+e9a570524b63d2a2b3a7c3325acf5b89bbeb131e
+
+$ git cat-file -p e9a570524b63d2a2b3a7c3325acf5b89bbeb131e
+tree cfda3bf379e4f8dba8717dee55aab78aef7f4daf
+author Scott Chacon  1301511835 -0700
+committer Scott Chacon  1301511835 -0700
+
+initial commit
+
+$ git ls-tree -r cfda3bf379e4f8dba8717dee55aab78aef7f4daf
+100644 blob a906cb2a4a904a152...   README
+100644 blob 8f94139338f9404f2...   Rakefile
+040000 tree 99f1a6d12cb4b6f19...   lib
+*** how to stash a state
+**** to list all stashes
+git stash list
+stash@{0}: WIP on master: 049d078 added the index file
+stash@{1}: WIP on master: c264051 Revert "added file_size"
+stash@{2}: WIP on master: 21d80a5 added number to log
+**** to apply stash
+$ git stash apply
+# On branch master
+# Changes not staged for commit:
+#   (use "git add <file>..." to update what will be committed)
+#
+#      modified:   index.html
+#      modified:   lib/simplegit.rb
+
+You can also have modified and uncommitted files in your working directory when you apply a stash — Git gives you merge conflicts if anything no longer applies cleanly.
+**** to apply older stash
+git stash apply stash@{2}
+**** to reapply staging while applying stash
+git stash apply --index
+**** to drop stash
+git stash drop stash@{0}
+**** to apply stash and drop
+git stash pop
+**** to unapply a stash
+simply retrieving the patch associated with a stash and applying it in reverse
+git stash show -p stash@{0} | git apply -R
+
+Again, if you don’t specify a stash, Git assumes the most recent stash:
+git stash show -p | git apply -R
+
+or setup an alias
+git config --global alias.stash-unapply '!git stash show -p | git apply -R'
+**** to create a new branch from stash
+git stash branch <branchname>
+
+E.g.,
+$ git stash branch testchanges
+Switched to a new branch "testchanges"
+# On branch testchanges
+# Changes to be committed:
+#   (use "git reset HEAD <file>..." to unstage)
+#
+#      modified:   index.html
+#
+# Changes not staged for commit:
+#   (use "git add <file>..." to update what will be committed)
+#
+#      modified:   lib/simplegit.rb
+#
+Dropped refs/stash@{0} (f0dfc4d5dc332d1cee34a634182e168c4efc3359)
+
+*** what's a git "index"
+It's the proposed next commit.
+The staging area is a simple file, generally contained in your Git directory, that stores information about what will go into your next commit. It’s sometimes referred to as the index, but it’s becoming standard to refer to it as the staging area.
+git ls-files -s
+100644 a906cb2a4a904a152e80877d4088654daad0c859 0	README
+100644 8f94139338f9404f26296befa88755fc2598c289 0	Rakefile
+100644 47c6340d6459e05787f644c2447d2595f5d3a54b 0	lib/simplegit.rb
+*** setup autocompletion in git
+download git-completion.bash from
+https://github.com/git/git/blob/master/contrib/completion
+source ~/git-completion.bash in your .bashrc or 
+/opt/local/etc/bash_completion.d (mac) /etc/bash_completion.d/(linux)
+*** setup username and email
+git config --global user.name "John Doe"
+git config --global user.email johndoe@example.com
+*** setup git alias
+git config --global alias.co heckout
+git config --global alias.br branch
+git config --global alias.ci commit
+git config --global alias.st status
+git config --global alias.unstage 'reset HEAD --'
+git config --global alias.last 'log -1 HEAD'
+
+# alias external command (no git preceeding that command)
+git config --global alias.visual '!gitk'
+*** how to tag release points (e.g., v1.0 and so on)
+**** list available tags
+git tag
+
+**** search tags
+$ git tag -l 'v1.4.2.*'
+v1.4.2.1
+v1.4.2.2
+v1.4.2.3
+v1.4.2.4
+
+**** add an annotated tag
+git tag -a v1.4 -m 'my version 1.4'
+git tag
+v0.1
+v1.3
+v1.4
+
+**** show tag annotation
+$ git show v1.4
+tag v1.4
+Tagger: Scott Chacon <schacon@gee-mail.com>
+Date:   Mon Feb 9 14:45:11 2009 -0800
+
+my version 1.4
+
+commit 15027957951b64cf874c3557a0f3547bd83b3ff6
+Merge: 4a447f7... a6b4c97...
+Author: Scott Chacon <schacon@gee-mail.com>
+Date:   Sun Feb 8 19:02:46 2009 -0800
+
+    Merge branch 'experiment'
+
+**** create a signed tag (need private key)
+$ git tag -s v1.5 -m 'my signed 1.5 tag'
+You need a passphrase to unlock the secret key for
+user: "Scott Chacon <schacon@gee-mail.com>"
+1024-bit DSA key, ID F721C45A, created 2009-02-09
+
+$ git show v1.5
+tag v1.5
+Tagger: Scott Chacon <schacon@gee-mail.com>
+Date:   Mon Feb 9 15:22:20 2009 -0800
+
+my signed 1.5 tag
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.8 (Darwin)
+
+iEYEABECAAYFAkmQurIACgkQON3DxfchxFr5cACeIMN+ZxLKggJQf0QYiQBwgySN
+Ki0An2JeAVUCAiJ7Ox6ZEtK+NvZAj82/
+=WryJ
+-----END PGP SIGNATURE-----
+commit 15027957951b64cf874c3557a0f3547bd83b3ff6
+Merge: 4a447f7... a6b4c97...
+Author: Scott Chacon <schacon@gee-mail.com>
+Date:   Sun Feb 8 19:02:46 2009 -0800
+
+    Merge branch 'experiment'
+
+**** create a lightweight tag
+$ git tag v1.4-lw
+$ git tag
+v0.1
+v1.3
+v1.4
+v1.4-lw
+v1.5
+
+$ git show v1.4-lw
+commit 15027957951b64cf874c3557a0f3547bd83b3ff6
+Merge: 4a447f7... a6b4c97...
+Author: Scott Chacon <schacon@gee-mail.com>
+Date:   Sun Feb 8 19:02:46 2009 -0800
+
+    Merge branch 'experiment'
+
+**** verify tags
+$ git tag -v v1.4.2.1
+object 883653babd8ee7ea23e6a5c392bb739348b1eb61
+type commit
+tag v1.4.2.1
+tagger Junio C Hamano <junkio@cox.net> 1158138501 -0700
+
+GIT 1.4.2.1
+
+Minor fixes since 1.4.2, including git-mv and git-http with alternates.
+gpg: Signature made Wed Sep 13 02:08:25 2006 PDT using DSA key ID F3119B9A
+gpg: Good signature from "Junio C Hamano <junkio@cox.net>"
+gpg:                 aka "[jpeg image of size 1513]"
+Primary key fingerprint: 3565 2A26 2040 E066 C9A7  4A7D C0C6 D9A4 F311 9B9A
+
+**** tag previous commit
+git tag -a v1.2 -m 'version 1.2' 9fceb02
+
+**** push tag(s)
+# push one tag
+git push origin v1.5
+# push all tags
+git push origin --tags
+
+*** to inspect a remote
+git remote show [remote-name]
+git remote show origin
+*** to see the difference between local and remote
+git diff <local branch> <remote-tracking branch>
+*** to push to remote
+git push origin master
+*** to unstage a file
+git reset HEAD <file>
+e.g.,
+git reset HEAD benchmarks.rb
+There's hint in "git status"
+*** to unmodify a modified file
+git checkout -- <file>
+e.g.,
+git checkout -- benchmarks.rb
+There's hint in "git status".
+
+This is a dangerous command: any changes you made to that file are gone — you just copied another file over it. Don’t ever use this command unless you absolutely know that you don’t want the file.
+Otherwise, use "git stash"
+*** to change last commit
+git commit --amend
+
+Example,
+git commit -m "initial commit"
+git add forgotten_file
+git commit --amend
+The previous, erroneous commit will be edited to reflect the new index state - in other words, it'll be like you never made the mistake in the first place :)
+
+Note that you should only do this if you haven't pushed yet. If you have pushed, then you'll just have to commit a fix normally.
+
+One can imagine "commit --amend" is short for 
+git reset --soft HEAD^
+git commit
+Only that the above commit with a new username, email and message
+
+*** how to view remote-tracking branches
+git branch -a
+*** how to show diff with color
+git diff --color
+*** how to show only summary in diff
+git diff --stat
+*** how to compare one branch with another (maybe remote)
+git diff <local branch> <remote-name>/<remote-tracking branch>
+git diff master origin/master
+
+An interesting experiment,
+========
+/home/meder/foo #in the "local" directory
+git init #initialize a repo and add stuff
+git add .
+git commit
+
+/home/meder/bar #in the "remote" directory. can be any remote. 
+git init #initialize a repo and add stuff. U
+git add .
+git commit
+
+/home/meder/foo #back in the "local" directory
+git remote add bar ../bar #add (register) "bar" as a remote
+git fetch bar #fetch "bar"
+git branch -a #lists all the branches. may be ommited
+git diff master bar/master #diff
+========
+
+*** how to remove file from staging area but keep on hard disk
+This is particularly useful if you forgot to add something to your .gitignore file and accidentally staged it, like a large log file or a bunch of .a compiled files. To do this, use the --cached option:
+git rm --cached readme.txt
+*** how to remove a modified file without commiting change?
+git rm -f 
+*** to limit git log by 2 entries
+git log -2
+*** to print diff in git log
+git log -p
+*** to show word difference in git log
+git log -U1 --word-diff
+*** to show summary of changes in git log
+git log --stat
+*** oneline output of git log
+git log --oneline
+*** how to put detailed diff into commit message
+git commit -v
+*** how to set default editor for git
+git config --global core.editor emacs
+*** setup diff tool
+git config --global merge.tool vimdiff
+*** check your setting
+# list all settings
+git config --list
+# view just one setting
+git config user.name
+*** how to stage a modified file for commit
+use "git add"
+if you modified the file after you stage, the subsequent modification will NOT be commited. Only the modification at the moment when you stage (run "git add") will be commited. That's why it's called "stage"
+
+# before
+$ git status
+On branch master
+Changes to be committed:
+  (use "git reset HEAD <file>..." to unstage)
+
+        new file:   README
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git checkout -- <file>..." to discard changes in working directory)
+
+        modified:   benchmarks.rb
+
+$ git add benchmarks.rb
+# after
+$ git status
+On branch master
+Changes to be committed:
+  (use "git reset HEAD <file>..." to unstage)
+
+        new file:   README
+        modified:   benchmarks.rb
+*** how to glob file names in git
+git rm log/\*.log
+git rm \*~
+Note the backslash (\) in front of the \*. This is necessary because Git does its own filename expansion in addition to your shell’s filename expansion
+
+*** to see what you've changed but not staged
+git diff
+It’s important to note that git diff by itself doesn’t show all changes made since your last commit — only changes that are still unstaged. This can be confusing, because if you’ve staged all of your changes, git diff will give you no output.
+*** to see what you've staged but not commited
+git diff --cached
+or equivalently (after git 1.6.1)
+git diff --staged
+*** how to resolve "non-fast-forward errors" while pushing
+If another person (or yourself) has pushed to the same branch as you, Git won't be able to push you commits.
+
+For example,
+git push origin master
+# To https://github.com/user/repo.git
+#  ! [rejected]        master -> master (non-fast-forward)
+# error: failed to push some refs to 'https://github.com/user/repo.git'
+# To prevent you from losing history, non-fast-forward updates were rejected
+# Merge the remote changes (e.g. 'git pull') before pushing again.  See the
+# 'Note about fast-forwards' section of 'git push --help' for details.
+
+git fetch origin
+# Fetches updates made to an online repository
+git merge origin branch
+# Merges updates made online with your local work
+Note that this is a merge with a "remote branch"
+
+or equivalently,
+git pull origin branch
+# Grabs online updates and merges them with your local work
+*** how to abort a merge
+If you run into a merge conflict you cannot resolve, or if you decide to quit the merge, you can use git merge --abort to take the branch back to where it was in before you pulled.
+*** what is equivalent to git pull
+git pull is a shortcut for git fetch and git merge
+e.g., 
+
+*** to show remote
+git remote
+origin
+*** to find out remote url
+$ git remote -v
+origin  git@bitbucket.org:wanding/ioan.git (fetch)
+origin  git@bitbucket.org:wanding/ioan.git (push)
+*** to fetch all remote branches without merging
+git fetch remotename
+*** to merge local with remote
+git merge remotename/branchname
+this is equivalent to
+git merge remotename branchname
+that's why sometimes we see
+git merge origin master
+
+Same to
+git pull remotename/branchname
+
+*** what's "origin" in git
+It's the usual name for the default remote
+If you clone a repository, the command automatically adds that remote repository under the name origin.
+*** what happened in a git clone
+
+    A new folder called repo is made
+    It is initialized as a Git repository
+    A remote named origin is created, pointing to the URL you cloned from
+    All of the repository's files and commits are downloaded there
+    The default branch (usually called master) is checked out
+
+*** to set the new url for a remote in git
+$ git remote set-url origin git@github.com:someuser/newprojectname.git
+This associates the name origin with the url git@github.com:someuser/newprojectname.git
+"git remote set-url" is used to match a remote URL with a name.
+
+in the old version
+$ git remote rm origin
+$ git remote add origin git@github.com:someuser/newprojectname.git
+*** what's the format for git remotes
+ssh: git@github.com:user/repo.git
+HTTTPS: https://github.com/user/repo.git
+*** to add a (new) remote
+git remote add origin https://github.com/user/repo.git
+then verify
+git remote -v
+# Verify new remote
+origin  https://github.com/user/repo.git (fetch)
+origin  https://github.com/user/repo.git (push)
+
+*** to switch remote from SSH to HTTPS
+simply use "remote set-url"
+
+# Before
+git remote -v
+# origin  git@github.com:USERNAME/REPOSITORY.git (fetch)
+# origin  git@github.com:USERNAME/REPOSITORY.git (push)
+
+git remote set-url origin https://github.com/USERNAME/REPOSITORY2.git
+
+# After
+git remote -v
+# Verify new remote URL
+# origin  https://github.com/USERNAME/REPOSITORY2.git (fetch)
+# origin  https://github.com/USERNAME/REPOSITORY2.git (push)
+
+*** to rename a remote
+# Before
+git remote -v
+# View existing remotes
+# origin  git@github.com:user/repo.git (fetch)
+# origin  git@github.com:user/repo.git (push)
+
+git remote rename origin destination
+# Change remote name from 'origin' to 'destination'
+
+# After
+git remote -v
+# Verify remote's new name
+# destination  git@github.com:user/repo.git (fetch)
+# destination  git@github.com:user/repo.git (push)
+*** to remove a remote
+git remote rm does not delete the remote repository from the server. It simply removes the remote and its references from your local repository.
+# Before
+git remote -v
+# View current remotes
+# origin  git@github.com:user/repo.git (fetch)
+# origin  git@github.com:user/repo.git (push)
+# destination  git@github.com:forker/repo.git (fetch)
+# destination  git@github.com:forker/repo.git (push)
+
+git remote rm destination
+
+# After
+git remote -v
+# Verify it's gone
+# origin  git@github.com:user/repo.git (fetch)
+# origin  git@github.com:user/repo.git (push)
+
 ** bash
 *** to grep pattern1 or pattern2
 grep 'pattern1\|pattern2' filename
