@@ -126,7 +126,7 @@ def main_batch(args):
         for line in open(argfn):
             fields = line.strip().split(args.delim)
             file_args.append(argindices.extract(fields))
-        print zip(*file_args)
+        # print zip(*file_args)
         command_args_t.extend(zip(*file_args))
     command_args = zip(*command_args_t)
 
@@ -190,7 +190,7 @@ def pbsgen_main(setting, set_queue):
     ###### batch #####
     parser_batch = subparsers.add_parser("batch", help="batch generate pbs scripts")
     parser_batch.add_argument('command', help='command to run')
-    parser_batch.add_argument('-args', help="argument list file names, will be used to substitute %s in command following the order of appearance. (Note that multiple argument must be specified by -args argfile1:col1,argfile2:col2)")
+    parser_batch.add_argument('-args', help="argument list file names, will be used to substitute %%s in command following the order of appearance. (Note that multiple argument must be specified by -args argfile1:col1,argfile2:col2)")
     parser_batch.add_argument('-delim', default='\t', help='delimiter in the argument table')
     parser_batch.add_argument('-bsize', type=int, default=1, help="batch size")
     add_default_settings(parser_batch, setting)
