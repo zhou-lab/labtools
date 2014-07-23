@@ -120,21 +120,20 @@ def main_batch(args):
 
     command_args_t = []
     for argpair in args.args.split(','):
-        argfn, argcols = argpair.split(":")
-        argindices = parse_indices(argcols)
+        argkey, argfn, argcol = argpair.split(":")
+        argcol = int(argcol) - 1
         file_args = []
         for line in open(argfn):
             fields = line.strip().split(args.delim)
-            file_args.append(argindices.extract(fields))
-        # print zip(*file_args)
-        command_args_t.extend(zip(*file_args))
+            file_args.append((argkey, fields[argcol]))
+        command_args_t.append(file_args)
     command_args = zip(*command_args_t)
 
     n_batches = (len(command_args)-1) / args.bsize + 1
     for i in xrange(n_batches):
         command = "echo `date`\n\n"
         for command_arg in command_args[i*args.bsize:(i+1)*args.bsize]:
-            command += (args.command % command_arg)+"\n"
+            command += args.command.format(**dict(command_arg))+"\n"
         command += "\n\necho `date` Done.\n"
         job.commands = command
         job.gen(i)
@@ -190,7 +189,7 @@ def pbsgen_main(setting, set_queue):
     ###### batch #####
     parser_batch = subparsers.add_parser("batch", help="batch generate pbs scripts")
     parser_batch.add_argument('command', help='command to run')
-    parser_batch.add_argument('-args', help="argument list file names, will be used to substitute %%s in command following the order of appearance. (Note that multiple argument must be specified by -args argfile1:col1,argfile2:col2)")
+    parser_batch.add_argument('-args', help="mappable argument, will be used to substitute {symbol} structure in command. (e.g., -args symbol1:argfile1:col1,symbol2:argfile2:col2)")
     parser_batch.add_argument('-delim', default='\t', help='delimiter in the argument table')
     parser_batch.add_argument('-bsize', type=int, default=1, help="batch size")
     add_default_settings(parser_batch, setting)

@@ -30,12 +30,11 @@ module load python/Python-2.7.2
 module load samtools/0.1.19
 module load gcc/4.7.0
 
-alias PYTHONPATH='~/tools/pythonlib/pysam-0.7.5-py2.7-linux-x86_64.egg/'
 alias qsubi='qsub -I -q long -l nodes=1:ppn=24 -l walltime=24:00:00'
 alias qsubim='qsub -I -q medium -l nodes=1:ppn=24 -l walltime=24:00:00'
 alias qsubis='qsub -I -q short -l nodes=1:ppn=2'
 alias qsuball='find ~/pbs/ -type f | sort | xargs -I {} qsub {}'
-alias qdelall='qstat | grep wzhou1 | awk -F'"'"'[ .]+'"'"' '"'"'($6=="R"){print $1}'"'"' | xargs -I {} qdel {}'
+alias qdelall='qstat | grep wzhou1 | awk -F'"'"'[ .]+'"'"' '"'"'($6=="R" || $6=="Q"){print $1}'"'"' | xargs -I {} qdel {}'
 
 function wzqsub {
     find ~/pbs/ -type f | sort | sed -n "${1},${2}"p | xargs -I {} qsub {}
@@ -49,11 +48,15 @@ alias qstatdead='qstat | awk '"'"'$5=="R" && ($4=="00:00:00" || $4==0)'"'"
 # export PATH=$PATH:/RIS/home/wzhou1/tools/bwa-0.6.2
 # export PATH=$PATH:/RIS/home/wzhou1/bin
 
+# export SAMTOOLS='/scratch/rists/hpcapps/x86_64/samtools/0.1.19/bin/samtools'
+# export BWA='/scratch/bcb/wzhou1/tools/bwa/bwa-0.6.2/bwa'
+# export JAVA='java'
+# export PICARD='/scratch/bcb/wzhou1/tools/picard/picard-tools-1.117'
 
 alias ls='ls --color'
 alias showq='showq | tail'
 
-export PYTHONPATH=/scratch/bcb/wzhou1/tools/pythonlib:/scratch/bcb/wzhou1/tools/pythonlib/lib/python2.7/site-packages
+export PYTHONPATH=~/tools/pythonlib/pysam-0.7.5-py2.7-linux-x86_64.egg/:/scratch/bcb/wzhou1/tools/pythonlib:/scratch/bcb/wzhou1/tools/pythonlib/lib/python2.7/site-packages:/scratch/bcb/ipct_project/tools
 
 case $TERM in
   screen*)
@@ -118,8 +121,11 @@ function tv {
     samtools tview $1 /scratch/bcb/wzhou1/reference/human_g1k_v37.fasta
 }
 
-export PATH=~/bin:$PATH:/scratch/bcb/wzhou1/tools/bedtools/bedtools-2.17.0/bin:/scratch/bcb/wzhou1/tools/vcftools/vcftools_0.1.11/bin
+function sv {
+    samtools view $1 $2 | les
+}
 
+export PATH=~/bin:$PATH:/scratch/bcb/wzhou1/tools/bedtools/bedtools-2.17.0/bin:/scratch/bcb/wzhou1/tools/vcftools/vcftools_0.1.11/bin
 export PERL5LIB=/scratch/bcb/wzhou1/tools/vcftools/vcftools_0.1.11/perl
 
 # alias svt="python /scratch/bcb/wzhou1/1kGP/2014_04_classifier/svtyper/svtyper.py"
@@ -133,3 +139,4 @@ alias gs="git status"
 alias gc="git commit -a"
 alias ga="git add"
 alias gl="git commit -a -m '...'; git push;" # lazy git
+
