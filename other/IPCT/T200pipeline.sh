@@ -18,7 +18,7 @@ function T200pipeline {
     fq2sai=$bam_dir/$(basename $fq2).sai
     bwa aln -t 4 $reference $fq1 > $fq1sai
     bwa aln -t 4 $reference $fq2 > $fq2sai
-    rgprefix=${sample}_(($i+1))
+    rgprefix=${sample}_$(($i+1))
     bamprefix=$bam_dir/rgprefix
     bwa sampe $reference $fq1sai $fq2sai $fq1 $fq2 | samtools view -b -S - | samtools sort - $bamprefix
     if [[ i -eq 0 ]]; then samtools view -H $bamprefix.bam > $bam_dir/header.txt; fi
