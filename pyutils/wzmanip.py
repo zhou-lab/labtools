@@ -148,7 +148,7 @@ def main_compare(args):
 
     if args.p == '1and2':
         for e in set1 & set2:
-            print e
+            print map1[e]+'\t'+map2[e]
     if args.p == '1or2':
         for e in set1 | set2:
             print e
@@ -160,10 +160,10 @@ def main_compare(args):
             print map2[e]
     if args.p == '1':
         for e in set1:
-            print e
+            print map1[e]
     if args.p == '2':
         for e in set2:
-            print e
+            print map2[e]
 
 def main_tabulate(args):
 
@@ -268,6 +268,20 @@ def main_match(args):
 
             print prnstr
 
+        elif args.pu:
+
+            if p2:
+                val = '\t'.join(p2.extract(f))
+            elif args.fp2:
+                val = args.fp2.format(f=f)
+            else:
+                val = None
+
+            prnstr = key+'\tUNMATCHED'
+            if val:
+                prnstr += '\t'+val
+            print prnstr
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Manipulate tables')
@@ -324,8 +338,8 @@ if __name__ == '__main__':
 
     # this function is similar to compare, but not exactly
     parser_match = subparsers.add_parser("match", help="help match two table by common column")
-    parser_match.add_argument("-t1", type=argparse.FileType('r'), required=True)
-    parser_match.add_argument("-t2", type=argparse.FileType('r'), required=True)
+    parser_match.add_argument("-t1", type=argparse.FileType('r'), required=True, help='table 1 (used as key-value map)')
+    parser_match.add_argument("-t2", type=argparse.FileType('r'), required=True, help='table 2 (one to be translated)')
     parser_match.add_argument('-c1', default=None, help="column(s) to match, e.g., 1,3,5 (1-based)")
     parser_match.add_argument('-c2', default=None, help="column(s) to match, e.g., 1,3,5 (1-based)")
     parser_match.add_argument('-p1', default=None, help="column(s) to print in table 1, e.g., 4,5,6")
@@ -335,6 +349,7 @@ if __name__ == '__main__':
     parser_match.add_argument('-fp1', default=None, help="format print in table 1, e.g., {f[0]},{f[2]}:{f[4]}")
     parser_match.add_argument('-fp2', default=None, help="format print in table 2, e.g., {f[0]},{f[2]}")
     parser_match.add_argument('--delim', default="\t", help="table delimiter [\\t]")
+    parser_match.add_argument('-pu', action='store_true', help='print unmatched entry in table 2')
     parser_match.set_defaults(func=main_match)
     
     args = parser.parse_args()

@@ -87,6 +87,9 @@ class Read():
 
     def getbase(self, tpos):
 
+        if self.pos > tpos:
+            return (4, None, None)
+            
         rpos = self.pos
         qpos = 0
         for op, clen in self.cigar:
@@ -202,7 +205,12 @@ def main_pileupone(args):
         read = Read(x=x, xob=bam)
         op, base, qual = read.getbase(pos)
         if op == 0:
-            print "%s\t%s\t%d" % (read.qname, base, ord(qual)-33)
+            read.tbase = base
+            read.tqual = ord(qual) - 33
+            read.keys.append('tbase')
+            read.keys.append('tqual')
+            print read.format()
+            # print "%s\t%s\t%d" % (read.qname, base, ord(qual)-33)
 
     return
 

@@ -14,7 +14,8 @@ alias h='cd project_vaf/src/'
 export PATH=/home/wzhou1/tools/CAP3/CAP3:/home/wzhou1/tools/blatsuite:/home/wzhou1/tools/vcftools/vcftools_0.1.11/bin:$PATH:/projects/tools/samtools-0.1.19/:~/zchong_bin:/home/wzhou1/tools/bedtools/bedtools-2.17.0/bin:~/bin:/apps/x86_64/R-3.0.1/bin/:/usr/local/torque/bin
 # :
 export PYTHONPATH=/home/wzhou1/pythonlib/lib/python2.6/site-packages:/home/wzhou1/pythonlib/libwd
-export PYTHONPATH=/home/wzhou1/pythonlib/pyvcf/PyVCF-master:$PYTHONPATH
+export PYTHONPATH=/home/wzhou1/tools/scikit-learn-0.15.0/build/lib.linux-x86_64-2.7:/home/wzhou1/pythonlib/pyvcf/PyVCF-master:$PYTHONPATH
+
 alias scp='rsync -Pravdtze ssh'
 # alias hpc='rsync -Pravdtuze ssh /cygdrive/y/project_vaf/src/ ris:/RIS/home/wzhou1/project_vaf/src/ --exclude=pathsetup.py --exclude=*~ --exclude=*.pyc'
 alias src='cd /home/wzhou1/project_vaf/src/'
@@ -116,6 +117,7 @@ function wzqsub {
     find ~/pbs/ -type f | sort | sed -n "${1},${2}"p | xargs -I {} qsub {}
 }
 
+alias awk='awk -v OFS="\t"'
 
 ### git ###
 

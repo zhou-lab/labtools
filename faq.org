@@ -1,5 +1,31 @@
 #+STARTUP: overview
 ** recent
+*** to change previous git commit message (not necessarily the most recent one)
+If the commit you want to fix isn’t the most recent one:
+
+git rebase --interactive $parent_of_flawed_commit
+
+If you want to fix several flawed commits, pass the parent of the oldest one of them.
+
+An editor will come up, with a list of all commits since the one you gave.
+Change pick to reword (or on old versions of Git, to edit) in front of any commits you want to fix.
+Once you save, Git will replay the listed commits.
+
+For each commit you want to reword, Git will drop you back into your editor. For each commit you want to edit, Git drops you into the shell. If you’re in the shell:
+Change the commit in any way you like.
+git commit --amend
+git rebase --continue
+
+Most of this sequence will be explained to you by the output of the various commands as you go. It’s very easy, you don’t need to memorise it – just remember that git rebase --interactive lets you correct commits no matter how long ago they were.
+*** to run things in parallel
+parallel --colsep '\t' -j4 --results
+run 4 jobs
+parallel --colsep '\t' -j4 --results uploadlog06 upload_sample {2} :::: samples_dqs06_match_upload
+*** to interpret dos file with ^M
+The ^M that you are seeing is actually a CR or \r. If you want to test for carraige returns in a file, you want to look for \r. Try this on the file
+dos2unix
+or
+tr '\r' '\n' < [file] > [output]
 *** to increment a variable in bash
 ((++var)) or ((var=var+1)) or ((var+=1))
 ((var++))
