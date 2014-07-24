@@ -1,8 +1,14 @@
 function T200pipeline {
-  if [[ $# -ne 3 ]]; then echo "T200pipeline fastq_dir bam_dir samplename"; fi
-  fastq_dir=$1;
-  bam_dir=$2;
-  sample=$3;
+
+  if [[ $# -ne 4 ]]; then
+      echo "T200pipeline <samplename> <fastq_dir> <bam_dir> <reference>"
+      echo "need PICARD_MARKDUP set up"
+      return;
+  fi
+  sample=$1
+  fastq_dir=$2
+  bam_dir=$3
+  reference=$4
 
   fastq1_fns=($(/bin/ls $fastq_dir/*R1*));
   fastq2_fns=($(/bin/ls $fastq_dir/*R2*));
@@ -11,7 +17,7 @@ function T200pipeline {
     exit;
   fi
   smallbams=()
-  for ((i=0; i<${#fastq1_fns[@]; ++i})); do
+  for ((i=0; i<${#fastq1_fns[@]}; ++i)); do
     fq1=${fastq1_fns[$i]}
     fq2=${fastq2_fns[$i]}
     fq1sai=$bam_dir/$(basename $fq1).sai

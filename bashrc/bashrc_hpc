@@ -40,9 +40,10 @@ function wzqsub {
     find ~/pbs/ -type f | sort | sed -n "${1},${2}"p | xargs -I {} qsub {}
 }
 
-alias qstat='qstat | less'
-alias qstatq='qstat | awk '"'"'$5=="Q"'"'"' | wc -l'
-alias qstatr='qstat | awk '"'"'$5=="R"'"'"' | wc -l'
+alias qstat='/usr/local/bin/qstat | less'
+alias qstatq='/usr/local/bin/qstat | awk '"'"'$5=="Q"'"'"' | wc -l'
+alias qstatr='/usr/local/bin/qstat | awk '"'"'$5=="R"'"'"' | wc -l'
+alias qstatn='/usr/local/bin/qstat -n | less'
 alias qstatdead='qstat | awk '"'"'$5=="R" && ($4=="00:00:00" || $4==0)'"'"
 
 # export PATH=$PATH:/RIS/home/wzhou1/tools/bwa-0.6.2
@@ -140,3 +141,4 @@ alias gc="git commit -a"
 alias ga="git add"
 alias gl="git commit -a -m '...'; git push;" # lazy git
 
+export PICARD_MARKDUP="/scratch/bcb/wzhou1/tools/picard/picard-tools-1.117/MarkDuplicates.jar"
