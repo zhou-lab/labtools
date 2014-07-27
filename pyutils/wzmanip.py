@@ -107,16 +107,16 @@ def main_compare3(args):
 
     if args.p == '123':
         for e in set1 & set2 & set3:
-            print e, map1[e], map2[e], map3[e]
+            print '\t'.join([e, map1[e], map2[e], map3[e]])
     if args.p == '12not3':
         for e in (set1 & set2) - set3:
-            print e, map1[e], map2[e]
+            print '\t'.join([e, map1[e], map2[e]])
     if args.p == '13not2':
         for e in (set1 & set3) - set2:
-            print e, map1[e], map3[e]
+            print '\t'.join([e, map1[e], map3[e]])
     if args.p == '23not1':
         for e in (set2 & set3) - set1:
-            print e, map2[e], map3[e]
+            print '\t'.join([e, map2[e], map3[e]])
     if args.p == '1not23':
         for e in set1 - set2 - set3:
             print map1[e]
