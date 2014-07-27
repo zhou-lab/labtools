@@ -260,13 +260,15 @@ def main_match(args):
             else:
                 val = None
 
-            prnstr = key
+            prncols = []
+            if not args.rk:
+                prncols.append(key)
             if key2prints[key]:
-                prnstr += '\t'+key2prints[key]
+                prncols.append(key2prints[key])
             if val:
-                prnstr += '\t'+val
+                prncols.append(val)
 
-            print prnstr
+            print '\t'.join(prncols)
 
         elif args.pu:
 
@@ -277,10 +279,14 @@ def main_match(args):
             else:
                 val = None
 
-            prnstr = key+'\tUNMATCHED'
+            prncols = []
+            if not args.rk:
+                prncols.append(key)
+            prncols.append('UNMATCHED')
             if val:
-                prnstr += '\t'+val
-            print prnstr
+                prncols.append(val)
+                
+            print '\t'.join(prncols)
 
 if __name__ == '__main__':
 
@@ -350,6 +356,7 @@ if __name__ == '__main__':
     parser_match.add_argument('-fp2', default=None, help="format print in table 2, e.g., {f[0]},{f[2]}")
     parser_match.add_argument('--delim', default="\t", help="table delimiter [\\t]")
     parser_match.add_argument('-pu', action='store_true', help='print unmatched entry in table 2')
+    parser_match.add_argument('-rk', action='store_true', help='repress key output')
     parser_match.set_defaults(func=main_match)
     
     args = parser.parse_args()

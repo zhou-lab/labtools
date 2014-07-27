@@ -1,5 +1,228 @@
 #+STARTUP: overview
 ** recent
+*** tertiary operator in bash
+#+BEGIN_SRC sh
+[ $b = 5] && a="$c" || a="$d"
+#+END_SRC
+
+*** to replace a pattern of a string :bash:string:
+${string/substring/replacement} replace first match
+${string//substring/replacement} replace all matches
+E.g.,
+stringZ=abcABC123ABCabc
+echo ${stringZ/abc/xyz}       # xyzABC123ABCabc
+echo ${stringZ//abc/xyz}      # xyzABC123ABCxyz
+# parameterize
+match=abc
+repl=000
+echo ${stringZ/$match/$repl}  # 000ABC123ABCabc
+echo ${stringZ//$match/$repl} # 000ABC123ABC000
+# What happens if no $replacement string is supplied? A simple deletion occurs
+echo ${stringZ/abc}           # ABC123ABCabc
+echo ${stringZ//abc}          # ABC123ABC
+*** to delete a pattern of a string
+stringZ=IPCT-CH-5031-Tumor-1161
+echo ${stringZ//Tu*r} # IPCT-CH-5031--1161
+echo ${stringZ/1} # delete first 1, IPCT-CH-503-Tumor-1161
+echo ${stringZ//1} # delete all 1, IPCT-CH-503-Tumor-6
+*** to strip longest/shortest match from the front of a string :bash:string:
+${string#substring}
+Deletes shortest match of $substring from front of $string.
+${string##substring}
+Deletes longest match of $substring from front of $string.
+
+stringZ=abcABC123ABCabc
+echo ${stringZ#a*C}      # 123ABCabc
+echo ${stringZ##a*C}     # abc
+
+*** to strip longest/shortest match from the back of a string :bash:string:
+${string%substring}
+Delete shortest match of $substring from back of $string.
+stringZ=abcABC123ABCabc
+echo ${stringZ%b*c}      # abcABC123ABCa
+echo ${stringZ%%b*c}     # a
+
+*** to iterate over bash array
+#+BEGIN_SRC sh
+source=("1" "2" "3" "4" "5")
+for ((i=0; i < ${#source[@]}; i++))
+do
+  echo ${source[$i]}
+done
+#+END_SRC
+
+*** to append to bash array
+ARRAY=()
+ARRAY+=('foo')
+ARRAY+=('bar')
+
+or
+$ declare -a arr
+$ arr=("a")
+$ arr=("${arr[@]}" "new")
+$ echo ${arr[@]}
+a new
+$ arr=("${arr[@]}" "newest")
+$ echo ${arr[@]}
+a new newest
+*** to use bash getopt
+example 1
+#+BEGIN_SRC sh
+
+usage() { echo "Usage: $0 [-s <45|90>] [-p <string>]" 1>&2; exit 1; }
+
+while getopts ":s:p:" o; do
+    case "${o}" in
+        s)
+            s=${OPTARG}
+            ((s == 45 || s == 90)) || usage
+            ;;
+        p)
+            p=${OPTARG}
+            ;;
+        *)
+            usage
+            ;;
+    esac
+done
+shift $((OPTIND-1))
+
+if [ -z "${s}" ] || [ -z "${p}" ]; then
+    usage
+fi
+
+echo "s = ${s}"
+echo "p = ${p}"
+
+Example runs:
+
+$ ./myscript.sh
+Usage: ./myscript.sh [-s <45|90>] [-p <string>]
+
+$ ./myscript.sh -h
+Usage: ./myscript.sh [-s <45|90>] [-p <string>]
+
+$ ./myscript.sh -s "" -p ""
+Usage: ./myscript.sh [-s <45|90>] [-p <string>]
+
+$ ./myscript.sh -s 10 -p foo
+Usage: ./myscript.sh [-s <45|90>] [-p <string>]
+
+$ ./myscript.sh -s 45 -p foo
+s = 45
+p = foo
+
+$ ./myscript.sh -s 90 -p bar
+s = 90
+p = bar
+#+END_SRC
+
+example 2
+#+BEGIN_SRC sh
+OPTIND=1         # Reset in case getopts has been used previously in the shell.
+
+# Initialize our own variables:
+output_file=""
+verbose=0
+
+while getopts "h?vf:" opt; do
+    case "$opt" in
+    h|\?)
+        show_help
+        exit 0
+        ;;
+    v)  verbose=1
+        ;;
+    f)  output_file=$OPTARG
+        ;;
+    esac
+done
+
+shift $((OPTIND-1))
+
+[ "$1" = "--" ] && shift
+
+echo "verbose=$verbose, output_file='$output_file', Leftovers: $@"
+
+#+END_SRC
+
+example 3 space separated
+#+BEGIN_SRC sh
+while [[ $# > 1 ]]
+do
+key="$1"
+shift
+
+case $key in
+    -e|--extension)
+    EXTENSION="$1"
+    shift
+    ;;
+    -s|--searchpath)
+    SEARCHPATH="$1"
+    shift
+    ;;
+    -l|--lib)
+    LIBPATH="$1"
+    shift
+    ;;
+    --default)
+    DEFAULT=YES
+    shift
+    ;;
+    *)
+            # unknown option
+    ;;
+esac
+done
+echo FILE EXTENSION  = "${EXTENSION}"
+echo SEARCH PATH     = "${SEARCHPATH}"
+echo LIBRARY PATH    = "${LIBPATH}"
+echo "Number files in SEARCH PATH with EXTENSION:" $(ls -1 "${SEARCHPATH}"/*."${EXTENSION}" | wc -l)
+if [[ -n $1 ]]; then
+    echo "Last line of file specified as non-opt/last argument:"
+    tail -1 $1
+fi
+#+END_SRC
+
+example 4 equal separated
+#+BEGIN_SRC sh
+#!/bin/bash
+
+for i in "$@"
+do
+case $i in
+    -e=*|--extension=*)
+    EXTENSION="${i#*=}"
+    shift
+    ;;
+    -s=*|--searchpath=*)
+    SEARCHPATH="${i#*=}"
+    shift
+    ;;
+    -l=*|--lib=*)
+    LIBPATH="${i#*=}"
+    shift
+    ;;
+    --default)
+    DEFAULT=YES
+    shift
+    ;;
+    *)
+            # unknown option
+    ;;
+esac
+done
+echo "FILE EXTENSION  = ${EXTENSION}"
+echo "SEARCH PATH     = ${SEARCHPATH}"
+echo "LIBRARY PATH    = ${LIBPATH}"
+echo "Number files in SEARCH PATH with EXTENSION:" $(ls -1 "${SEARCHPATH}"/*."${EXTENSION}" | wc -l)
+if [[ -n $1 ]]; then
+    echo "Last line of file specified as non-opt/last argument:"
+    tail -1 $1
+fi
+#+END_SRC
+
 *** to change previous git commit message (not necessarily the most recent one)
 If the commit you want to fix isn’t the most recent one:
 

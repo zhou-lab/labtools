@@ -2,11 +2,9 @@
 
 import argparse
 import os, sys
-from collections import deque
 import gzip
 from subprocess import Popen, PIPE, check_call
 import re
-from pbsgen import Job
 from glob import glob
 
 class VRecord:
