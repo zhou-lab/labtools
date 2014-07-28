@@ -1,5 +1,17 @@
 #+STARTUP: overview
 ** recent
+*** python oneline if
+if condition:
+    do_something()
+
+
+if condition: do_something()
+
+if condition:
+    do_something()
+    do_something_else()
+
+if condition: do_something(); do_something_else()
 *** tertiary operator in bash
 #+BEGIN_SRC sh
 [ $b = 5] && a="$c" || a="$d"

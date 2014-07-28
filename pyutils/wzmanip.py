@@ -111,62 +111,55 @@ def main_compare3(args):
     if args.p == '123':
         for e in set1 & set2 & set3:
             prncol = []
-            if not args.rk:
-                prncol.append(e)
-            prncol.append(map1[e]) if map1[e]
-            prncol.append(map2[e]) if map2[e]
-            prncol.append(map3[e]) if map3[e]
+            if not args.rk: prncol.append(e)
+            if map1[e]: prncol.append(map1[e])
+            if map2[e]: prncol.append(map2[e])
+            if map3[e]: prncol.append(map3[e])
             print '\t'.join(prncol)
 
     if args.p == '12not3':
         for e in (set1 & set2) - set3:
             prncol = []
-            if not args.rk:
-                prncol.append(e)
-            prncol.append(map1[e]) if map1[e]
-            prncol.append(map2[e]) if map2[e]
+            if not args.rk: prncol.append(e)
+            if map1[e]: prncol.append(map1[e])
+            if map2[e]: prncol.append(map2[e])
             print '\t'.join(prncol)
 
     if args.p == '13not2':
         for e in (set1 & set3) - set2:
             prncol = []
-            if not args.rk:
-                prncol.append(e)
-            prncol.append(map1[e]) if map1[e]
-            prncol.append(map3[e]) if map3[e]
+            if not args.rk: prncol.append(e)
+            if map1[e]: prncol.append(map1[e])
+            if map3[e]: prncol.append(map3[e])
             print '\t'.join(prncol)
 
     if args.p == '23not1':
         for e in (set2 & set3) - set1:
             prncol = []
-            if not args.rk:
-                prncol.append(e)
-            prncol.append(map2[e]) if map2[e]
-            prncol.append(map3[e]) if map3[e]
+            if not args.rk: prncol.append(e)
+            if map2[e]: prncol.append(map2[e])
+            if map3[e]: prncol.append(map3[e])
             print '\t'.join(prncol)
 
     if args.p == '1not23':
         for e in set1 - set2 - set3:
             prncol = []
-            if not args.rk:
-                prncol.append(e)
-            prncol.append(map1[e]) if map1[e]
+            if not args.rk: prncol.append(e)
+            if map1[e]: prncol.append(map1[e])
             print '\t'.join(prncol)
 
     if args.p == '2not13':
         for e in set2 - set1 - set3:
             prncol = []
-            if not args.rk:
-                prncol.append(e)
-            prncol.append(map2[e]) if map2[e]
+            if not args.rk: prncol.append(e)
+            if map2[e]: prncol.append(map2[e])
             print '\t'.join(prncol)
 
     if args.p == '3not12':
         for e in set3 - set1 - set2:
             prncol = []
-            if not args.rk:
-                prncol.append(e)
-            prncol.append(map3[e]) if map3[e]
+            if not args.rk: prncol.append(e)
+            if map3[e]: prncol.append(map3[e])
             print '\t'.join(prncol)
 
     return
@@ -191,35 +184,32 @@ def main_compare(args):
     if args.p == '1and2':
         for e in set1 & set2:
             prncol = []
-            if not args.rk:
-                prncol.append(e)
-            prncol.append(map1[e]) if map1[e]
-            prncol.append(map2[e]) if map2[e]
+            if not args.rk: prncol.append(e)
+            if map1[e]: prncol.append(map1[e])
+            if map2[e]: prncol.append(map2[e])
+            prncol.append(map2[e]) if map2[e] != ''
             print '\t'.join(prncol)
 
     if args.p == '1or2':
         for e in set1 | set2:
             prncol = []
-            if not args.rk:
-                prncol.append(e)
-            prncol.append(map1[e]) if e in map1 and map1[e]
-            prncol.append(map2[e]) if e in map2 and map2[e]
+            if not args.rk: prncol.append(e)
+            if e in map1 and map1[e]: prncol.append(map1[e])
+            if e in map2 and map2[e]: prncol.append(map2[e])
             print '\t'.join(prncol)
 
     if args.p == '1not2':
         for e in set1 - set2:
             prncol = []
-            if not args.rk:
-                prncol.append(e)
-            prncol.append(map1[e]) if map1[e]
+            if not args.rk: prncol.append(e)
+            if map1[e]: prncol.append(map1[e])
             print '\t'.join(prncol)
 
     if args.p == '2not1':
         for e in set2 - set1:
             prncol = []
-            if not args.rk:
-                prncol.append(e)
-            prncol.append(map2[e]) if map2[e]
+            if not args.rk: prncol.append(e)
+            if map2[e]: prncol.append(map2[e])
             print '\t'.join(prncol)
 
 def main_tabulate(args):
