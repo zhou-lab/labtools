@@ -187,7 +187,6 @@ def main_compare(args):
             if not args.rk: prncol.append(e)
             if map1[e]: prncol.append(map1[e])
             if map2[e]: prncol.append(map2[e])
-            prncol.append(map2[e]) if map2[e] != ''
             print '\t'.join(prncol)
 
     if args.p == '1or2':
