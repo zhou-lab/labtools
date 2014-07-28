@@ -108,24 +108,64 @@ def main_compare3(args):
     if args.p == '123':
         for e in set1 & set2 & set3:
             print '\t'.join([e, map1[e], map2[e], map3[e]])
+            prncol = []
+            if not args.rk:
+                prncol.append(e)
+            prncol.append(map1[e])
+            prncol.append(map2[e])
+            prncol.append(map3[e])
+            print '\t'.join(prncol)
+
     if args.p == '12not3':
         for e in (set1 & set2) - set3:
-            print '\t'.join([e, map1[e], map2[e]])
+            prncol = []
+            if not args.rk:
+                prncol.append(e)
+            prncol.append(map1[e])
+            prncol.append(map2[e])
+            print '\t'.join(prncol)
+
     if args.p == '13not2':
         for e in (set1 & set3) - set2:
-            print '\t'.join([e, map1[e], map3[e]])
+            prncol = []
+            if not args.rk:
+                prncol.append(e)
+            prncol.append(map1[e])
+            prncol.append(map3[e])
+            print '\t'.join(prncol)
+
     if args.p == '23not1':
         for e in (set2 & set3) - set1:
-            print '\t'.join([e, map2[e], map3[e]])
+            prncol = []
+            if not args.rk:
+                prncol.append(e)
+            prncol.append(map2[e])
+            prncol.append(map3[e])
+            print '\t'.join(prncol)
+
     if args.p == '1not23':
         for e in set1 - set2 - set3:
-            print map1[e]
+            prncol = []
+            if not args.rk:
+                prncol.append(e)
+            prncol.append(map1[e])
+            print '\t'.join(prncol)
+
     if args.p == '2not13':
         for e in set2 - set1 - set3:
-            print map2[e]
+            prncol = []
+            if not args.rk:
+                prncol.append(e)
+            prncol.append(map2[e])
+            print '\t'.join(prncol)
+
     if args.p == '3not12':
         for e in set3 - set1 - set2:
-            print map3[e]
+            prncol = []
+            if not args.rk:
+                prncol.append(e)
+            prncol.append(map3[e])
+            print '\t'.join(prncol)
 
     return
     
@@ -322,6 +362,7 @@ if __name__ == '__main__':
     parser_compare.add_argument("-fp1", default=None, help="format output in table 1, e.g., {f[0]}:{f[1]}")
     parser_compare.add_argument("-fp2", default=None, help="format output in table 2, e.g., {f[0]}:{f[1]}")
     parser_compare.add_argument("-fp3", default=None, help="format output in table 3, e.g., {f[0]}:{f[1]}")
+    parser_compare.add_argument('-rk', default=None, help='suppress key output')
     parser_compare.set_defaults(func=main_compare)
 
 
