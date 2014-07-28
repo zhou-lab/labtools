@@ -66,6 +66,7 @@ def _build_map(args, index):
     args_p = getattr(args, "p%d" % index)
     args_fc = getattr(args, "fc%d" % index)
     args_fp = getattr(args, "fp%d" % index)
+    args_np = getattr(args, "np%d" % index)
 
     c = parse_indices(args_c) if args_c else None
     p = parse_indices(args_p) if args_p else None
@@ -77,9 +78,11 @@ def _build_map(args, index):
             val = '\t'.join(p.extract(f))
         elif args_fp:
             val = args_fp.format(f=f)
+        elif args_np:
+            val = ''
         else:
             val = line.strip()
-            
+
         lmap[key] = val
 
     return lmap
@@ -107,13 +110,12 @@ def main_compare3(args):
 
     if args.p == '123':
         for e in set1 & set2 & set3:
-            print '\t'.join([e, map1[e], map2[e], map3[e]])
             prncol = []
             if not args.rk:
                 prncol.append(e)
-            prncol.append(map1[e])
-            prncol.append(map2[e])
-            prncol.append(map3[e])
+            prncol.append(map1[e]) if map1[e]
+            prncol.append(map2[e]) if map2[e]
+            prncol.append(map3[e]) if map3[e]
             print '\t'.join(prncol)
 
     if args.p == '12not3':
@@ -121,8 +123,8 @@ def main_compare3(args):
             prncol = []
             if not args.rk:
                 prncol.append(e)
-            prncol.append(map1[e])
-            prncol.append(map2[e])
+            prncol.append(map1[e]) if map1[e]
+            prncol.append(map2[e]) if map2[e]
             print '\t'.join(prncol)
 
     if args.p == '13not2':
@@ -130,8 +132,8 @@ def main_compare3(args):
             prncol = []
             if not args.rk:
                 prncol.append(e)
-            prncol.append(map1[e])
-            prncol.append(map3[e])
+            prncol.append(map1[e]) if map1[e]
+            prncol.append(map3[e]) if map3[e]
             print '\t'.join(prncol)
 
     if args.p == '23not1':
@@ -139,8 +141,8 @@ def main_compare3(args):
             prncol = []
             if not args.rk:
                 prncol.append(e)
-            prncol.append(map2[e])
-            prncol.append(map3[e])
+            prncol.append(map2[e]) if map2[e]
+            prncol.append(map3[e]) if map3[e]
             print '\t'.join(prncol)
 
     if args.p == '1not23':
@@ -148,7 +150,7 @@ def main_compare3(args):
             prncol = []
             if not args.rk:
                 prncol.append(e)
-            prncol.append(map1[e])
+            prncol.append(map1[e]) if map1[e]
             print '\t'.join(prncol)
 
     if args.p == '2not13':
@@ -156,7 +158,7 @@ def main_compare3(args):
             prncol = []
             if not args.rk:
                 prncol.append(e)
-            prncol.append(map2[e])
+            prncol.append(map2[e]) if map2[e]
             print '\t'.join(prncol)
 
     if args.p == '3not12':
@@ -164,7 +166,7 @@ def main_compare3(args):
             prncol = []
             if not args.rk:
                 prncol.append(e)
-            prncol.append(map3[e])
+            prncol.append(map3[e]) if map3[e]
             print '\t'.join(prncol)
 
     return
@@ -188,22 +190,37 @@ def main_compare(args):
 
     if args.p == '1and2':
         for e in set1 & set2:
-            print map1[e]+'\t'+map2[e]
+            prncol = []
+            if not args.rk:
+                prncol.append(e)
+            prncol.append(map1[e]) if map1[e]
+            prncol.append(map2[e]) if map2[e]
+            print '\t'.join(prncol)
+
     if args.p == '1or2':
         for e in set1 | set2:
-            print e
+            prncol = []
+            if not args.rk:
+                prncol.append(e)
+            prncol.append(map1[e]) if e in map1 and map1[e]
+            prncol.append(map2[e]) if e in map2 and map2[e]
+            print '\t'.join(prncol)
+
     if args.p == '1not2':
         for e in set1 - set2:
-            print map1[e]
+            prncol = []
+            if not args.rk:
+                prncol.append(e)
+            prncol.append(map1[e]) if map1[e]
+            print '\t'.join(prncol)
+
     if args.p == '2not1':
         for e in set2 - set1:
-            print map2[e]
-    if args.p == '1':
-        for e in set1:
-            print map1[e]
-    if args.p == '2':
-        for e in set2:
-            print map2[e]
+            prncol = []
+            if not args.rk:
+                prncol.append(e)
+            prncol.append(map2[e]) if map2[e]
+            print '\t'.join(prncol)
 
 def main_tabulate(args):
 
@@ -354,7 +371,7 @@ if __name__ == '__main__':
     parser_compare.add_argument("-fc1", default=None, help="format key in table 1, e.g., {f[0]}:{f[1]}")
     parser_compare.add_argument("-fc2", default=None, help="format key in table 2, e.g., {f[0]}:{f[1]}")
     parser_compare.add_argument("-fc3", default=None, help="format key in table 3, e.g., {f[0]}:{f[1]}")
-    parser_compare.add_argument("-p", choices=[None, '1not2', '2not1', '1and2', '1or2', '1', '2', '3', '12not3', '13not2', '23not1', '1not23', '2not13', '3not12', '123'], default=None, help="optional print")
+    parser_compare.add_argument("-p", choices=[None, '1not2', '2not1', '1and2', '1or2', '12not3', '13not2', '23not1', '1not23', '2not13', '3not12', '123'], default=None, help="optional print")
     parser_compare.add_argument('-n', action="store_true", help="suppress the statistics output")
     parser_compare.add_argument("-p1", default=None, help="column(s) to be compared in table 1, e.g., '1,2-5' (1-based)")
     parser_compare.add_argument("-p2", default=None, help="column(s) to be compared in table 2, e.g., '1,2-5' (1-based)")
@@ -363,6 +380,9 @@ if __name__ == '__main__':
     parser_compare.add_argument("-fp2", default=None, help="format output in table 2, e.g., {f[0]}:{f[1]}")
     parser_compare.add_argument("-fp3", default=None, help="format output in table 3, e.g., {f[0]}:{f[1]}")
     parser_compare.add_argument('-rk', action='store_true', help='suppress key output')
+    parser_compare.add_argument('-np1', action='store_true', help='no print of table 1')
+    parser_compare.add_argument('-np2', action='store_true', help='no print of table 2')
+    parser_compare.add_argument('-np3', action='store_true', help='no print of table 3')
     parser_compare.set_defaults(func=main_compare)
 
 
