@@ -362,7 +362,7 @@ if __name__ == '__main__':
     parser_compare.add_argument("-fp1", default=None, help="format output in table 1, e.g., {f[0]}:{f[1]}")
     parser_compare.add_argument("-fp2", default=None, help="format output in table 2, e.g., {f[0]}:{f[1]}")
     parser_compare.add_argument("-fp3", default=None, help="format output in table 3, e.g., {f[0]}:{f[1]}")
-    parser_compare.add_argument('-rk', default=None, help='suppress key output')
+    parser_compare.add_argument('-rk', action='store_true', help='suppress key output')
     parser_compare.set_defaults(func=main_compare)
 
 
