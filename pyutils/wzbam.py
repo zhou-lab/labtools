@@ -109,7 +109,7 @@ class Read():
                 if rpos + clen > tpos:
                     return ((2, None, self.qual[qpos]))
                 else:
-                    rpos == clen
+                    rpos += clen
             elif op == 4:
                 qpos += clen
             else:

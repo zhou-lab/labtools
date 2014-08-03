@@ -12,6 +12,20 @@ if condition:
     do_something_else()
 
 if condition: do_something(); do_something_else()
+*** to set python default install location
+edit
+~/.pydistutils.cfg
+====
+[easy_install]
+
+# set the default location to install packages
+install_dir = /scratch/bcb/wzhou1/tools/pythonlib
+====
+*** install python package to local location
+python setup.py install --user
+*** gensub awk usage
+gensub(regexp, replacement, how [, target])
+awk -v OFS="\t" '{$7=gensub(/([[:digit:].]*)%/, "\\1", 1, $7) / 100.0; print $0}' varscan_snp_cms46.overlap
 *** tertiary operator in bash
 #+BEGIN_SRC sh
 [ $b = 5] && a="$c" || a="$d"
@@ -301,7 +315,7 @@ tr -d "\n"
 remove all newline characters.
 *** how to sort with header
 (head -n 2 <file> && tail -n +3 <file> | sort) > newfile
-*** how to extract from string
+*** how to extract pattern from string
 use expr
 http://tldp.org/LDP/abs/html/string-manipulation.html
 expr $a : '.*\(Tumor-[0-9]*\).*'

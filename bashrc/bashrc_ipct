@@ -11,7 +11,7 @@ alias lc="wc -l"
 PS1='\u@\h:\w\$ '
 
 alias h='cd project_vaf/src/'
-export PATH=/home/wzhou1/tools/CAP3/CAP3:/home/wzhou1/tools/blatsuite:/home/wzhou1/tools/vcftools/vcftools_0.1.11/bin:$PATH:/projects/tools/samtools-0.1.19/:~/zchong_bin:/home/wzhou1/tools/bedtools/bedtools-2.17.0/bin:~/bin:/apps/x86_64/R-3.0.1/bin/:/usr/local/torque/bin
+export PATH=~/bin:/home/wzhou1/tools/CAP3/CAP3:/home/wzhou1/tools/blatsuite:/home/wzhou1/tools/vcftools/vcftools_0.1.11/bin:$PATH:/projects/tools/samtools-0.1.19/:~/zchong_bin:/home/wzhou1/tools/bedtools/bedtools-2.17.0/bin:~/bin:/apps/x86_64/R-3.0.1/bin/:/usr/local/torque/bin
 # :
 export PYTHONPATH=/home/wzhou1/pythonlib/lib/python2.6/site-packages:/home/wzhou1/pythonlib/libwd
 export PYTHONPATH=/home/wzhou1/tools/scikit-learn-0.15.0/build/lib.linux-x86_64-2.7:/home/wzhou1/pythonlib/pyvcf/PyVCF-master:$PYTHONPATH
@@ -115,6 +115,12 @@ alias svt="python /home/wzhou1/zchong/set3/svtyper/svtyper.py"
 
 function wzqsub {
     find ~/pbs/ -type f | sort | sed -n "${1},${2}"p | xargs -I {} qsub {}
+}
+
+function run_clinsek_tcall {
+  command="/home/wzhou1/project_clinsek/clinsek2/clinsek tcall -r /projects/database/reference/hs37d5.fa -s /home/wzhou1/project_clinsek/clinsek2/cms46.hscan -1 $1/*R1*.gz -2 $1/*R2*.gz -o $2"
+  echo $command
+  eval $command
 }
 
 alias awk='awk -v OFS="\t"'

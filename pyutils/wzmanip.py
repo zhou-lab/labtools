@@ -21,8 +21,9 @@ class Indices:
         return result
 
 def parse_indices(indstr):
-    rgs = indstr.split(',')
     indices = Indices()
+    if not indstr: return indices
+    rgs = indstr.split(',')
     for rg in rgs:
         if rg.find('-') >= 0:
             pair = rg.split('-')
