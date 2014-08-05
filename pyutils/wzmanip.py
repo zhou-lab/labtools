@@ -40,11 +40,20 @@ def parse_indices(indstr):
 
 def main_reorder(args):
 
-    indices = parse_indices(args.c)
+    if args.n:
+        header = args.table.readline().strip()
+        names = args.n.split(',')
+        indices = [i for i, name in enumerate(header.split(args.delim)) if _ in names]
+        for line in args.table:
+            fields = line.strip().split(args.delim)
+            print '\t'.join([fields[i] for i in indices])
+    else:
+        indices = parse_indices(args.c)
 
-    for i, line in enumerate(args.table):
-        fields = line.strip().split(args.delim)
-        print '\t'.join(indices.extract(fields))
+        for i, line in enumerate(args.table):
+            fields = line.strip().split(args.delim)
+            print '\t'.join(indices.extract(fields))
+
 
     return
 
@@ -352,6 +361,7 @@ if __name__ == '__main__':
     parser_reorder.add_argument('table', help="data table", type = argparse.FileType('r'), default='-')
     parser_reorder.add_argument('--delim', default="\t", help="table delimiter [\\t]")
     parser_reorder.add_argument('-c', default=None, help="columns to be printed in the output, 1-based. E.g., -c 1,3-4 [None]")
+    parser_reorder.add_argument('-n', default=None, help='header names, e.g., col1,col2 ...')
     parser_reorder.set_defaults(func=main_reorder)
 
     parser_colindex = subparsers.add_parser("colindex", help="find the index of a particular column")
