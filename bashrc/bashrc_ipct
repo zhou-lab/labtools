@@ -7,11 +7,12 @@ alias python='~/canopy/bin/python'
 alias ls='ls --color'
 alias rm='rm -i'
 alias lc="wc -l"
+alias ll="ls -l"
 
 PS1='\u@\h:\w\$ '
 
-alias h='cd project_vaf/src/'
-export PATH=~/bin:/home/wzhou1/tools/CAP3/CAP3:/home/wzhou1/tools/blatsuite:/home/wzhou1/tools/vcftools/vcftools_0.1.11/bin:$PATH:/projects/tools/samtools-0.1.19/:~/zchong_bin:/home/wzhou1/tools/bedtools/bedtools-2.17.0/bin:~/bin:/apps/x86_64/R-3.0.1/bin/:/usr/local/torque/bin
+alias rsrch1="cd /rsrch1/bcb/wzhou1/"
+export PATH=~/bin:/home/wzhou1/tools/CAP3/CAP3:/home/wzhou1/tools/blatsuite:/home/wzhou1/tools/vcftools/vcftools_0.1.11/bin:/projects/tools/samtools-0.1.19/:/home/wzhou1/tools/bedtools/bedtools-2.17.0/bin:~/bin:/apps/x86_64/R-3.0.1/bin/:/usr/local/torque/bin:~/tools/bedops/bin:~/zchong_bin:$PATH
 # :
 export PYTHONPATH=/home/wzhou1/pythonlib/lib/python2.6/site-packages:/home/wzhou1/pythonlib/libwd
 export PYTHONPATH=/home/wzhou1/tools/scikit-learn-0.15.0/build/lib.linux-x86_64-2.7:/home/wzhou1/pythonlib/pyvcf/PyVCF-master:$PYTHONPATH

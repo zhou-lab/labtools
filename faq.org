@@ -1,5 +1,13 @@
 #+STARTUP: overview
 ** recent
+*** to redirect stderr to file and screen
+command 2>(tee <log file> >&2)
+*** to output tab in grep
+Control-v i
+*** to use BioPerl to change 1-letter amino acid code to 3-letter amino acid code
+perl -MBio::SeqUtils -alne 'print "p.".$Bio::SeqUtils::THREECODE{$F[6]}.$F[2].$Bio::SeqUtils::THREECODE{$F[7]};' <input file>
+*** to see/print the definition of a bash function
+type <your function>
 *** python oneline if
 if condition:
     do_something()
@@ -12,6 +20,8 @@ if condition:
     do_something_else()
 
 if condition: do_something(); do_something_else()
+*** no check file mode while git pull
+git config core.filemode false
 *** to set python default install location
 edit
 ~/.pydistutils.cfg
@@ -406,6 +416,17 @@ equivalent to
 for ((i=1;i<=END;++i)); do echo $i; done
 * archive
 ** git
+*** to exclude/hide file from git status
+put this to ~/.gitconfig
+=======
+[core]
+	excludesfile = ~/.gitignore
+=======
+and this to ~/.gitignore
+=======
+*~
+*.pyc
+=======
 *** to reduce repo size
 git gc --aggressive --prune=now
 *** view the change between two arbitrary commits
