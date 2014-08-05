@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys
+import sys, re
 import argparse
 
 class Indices:
@@ -340,7 +340,7 @@ def main_colindex(args):
 
     p = re.compile(args.r)
     for line in args.table:
-        fields = line.split(args.delim)
+        fields = line.strip().split(args.delim)
         print [(i+1, _) for i, _ in enumerate(fields) if p.search(_)]
 
 if __name__ == '__main__':
@@ -356,8 +356,9 @@ if __name__ == '__main__':
 
     parser_colindex = subparsers.add_parser("colindex", help="find the index of a particular column")
     parser_colindex.add_argument('table', help="data table", type = argparse.FileType('r'), default='-')
+    parser_colindex.add_argument('--delim', default="\t", help="table delimiter [\\t]")
     parser_colindex.add_argument('-r', default=None, help='regular expression')
-    parser_colindex.add_argument(func=main_colindex)
+    parser_colindex.set_defaults(func=main_colindex)
 
     parser_transpose = subparsers.add_parser("transpose", help="transpose table")
     parser_transpose.add_argument('table', help="data table", type = argparse.FileType('r'), default='-')

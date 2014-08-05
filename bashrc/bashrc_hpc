@@ -57,7 +57,7 @@ alias qstatdead='qstat | awk '"'"'$5=="R" && ($4=="00:00:00" || $4==0)'"'"
 alias ls='ls --color'
 alias showq='showq | tail'
 
-export PYTHONPATH=~/tools/pythonlib/pysam-0.7.5-py2.7-linux-x86_64.egg/:/scratch/bcb/wzhou1/tools/pythonlib:/scratch/bcb/wzhou1/tools/pythonlib/lib/python2.7/site-packages:/scratch/bcb/ipct_project/tools
+export PYTHONPATH=/scratch/bcb/wzhou1/tools/pythonlib/pysam-0.8.0-py2.7-linux-x86_64.egg/pysam/:/scratch/bcb/wzhou1/tools/pythonlib:/scratch/bcb/wzhou1/tools/pythonlib/lib/python2.7/site-packages:/scratch/bcb/ipct_project/tools
 
 case $TERM in
   screen*)
@@ -120,6 +120,10 @@ function wzsum_slow {
 
 function tv {
     samtools tview $1 /scratch/bcb/wzhou1/reference/human_g1k_v37.fasta
+}
+
+function tv19 {
+    samtools tview $1 /scratch/bcb/wzhou1/reference/hg19/hg19.fa
 }
 
 function sv {
