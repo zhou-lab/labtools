@@ -88,7 +88,6 @@ def main_scatter(args):
         _minsize = min(sizes); _maxsize = max(sizes);
         _sizerange = _maxsize - _minsize
         sizes = [minsize + float(_ - _minsize) / _sizerange * sizerange for _ in sizes]
-        print max(sizes)
 
     if args.s:
         __ms = sizes
