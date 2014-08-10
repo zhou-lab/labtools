@@ -85,7 +85,12 @@ def main_scatter(args):
         __ms = args.ms
 
     if args.beta != 0:
-        plt.plot([min(x), max(x)], [args.gamma+min(x), args.gamma+args.beta*max(x)], linestyle='dashed', color='k')
+        minx = min(x)
+        maxx = max(x)
+        plt.plot([minx, maxx],
+                 [args.gamma+minx,
+                  args.gamma+minx+args.beta*(maxx-minx)],
+                 linestyle='dashed', color='k')
 
     if args.color>=0:
         cats = set(colors)
@@ -628,8 +633,8 @@ if __name__ == '__main__':
     psr_scatter.add_argument('--ms', type=float, default=10, help="fixed marker size [10]")
     psr_scatter.add_argument('--xlog', action="store_true", help="x axis log-scaled")
     psr_scatter.add_argument('--ylog', action="store_true", help="y axis log-scaled")
-    psr_scatter.add_argument('--beta', type=float, default=0, help='tilt angle of a dashed straight line (gamma + beta * x)')
-    psr_scatter.add_argument('--gamma', type=float, default=0.0, help='intercept of the dashed straight line (gamma + beta * x)')
+    psr_scatter.add_argument('--beta', type=float, default=0, help='tilt angle of a dashed straight line (gamma + beta*(maxx-minx))')
+    psr_scatter.add_argument('--gamma', type=float, default=0.0, help='intercept of the dashed straight line (gamma + beta*(maxx-minx))')
     add_std_options(psr_scatter)
     psr_scatter.set_defaults(func=main_scatter)
 
