@@ -88,8 +88,8 @@ def main_scatter(args):
         minx = min(x)
         maxx = max(x)
         plt.plot([minx, maxx],
-                 [args.gamma+minx,
-                  args.gamma+minx+args.beta*(maxx-minx)],
+                 [args.gamma,
+                  args.gamma+args.beta*(maxx-minx)],
                  linestyle='dashed', color='k')
 
     if args.color>=0:
