@@ -80,7 +80,7 @@ def main_scatter(args):
         if args.color>=0:
             colors.append(field[args.color-1])
         if args.s:
-            sizes.append(field[args.s-1])
+            sizes.append(float(field[args.s-1]))
 
     if sizes:                   # scale size
         maxsize = 10; minsize = 3
