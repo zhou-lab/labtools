@@ -83,12 +83,11 @@ def main_scatter(args):
             sizes.append(float(field[args.s-1]))
 
     if sizes:                   # scale size
-        maxsize = 10; minsize = 3
+        maxsize = args.maxsize; minsize = args.minsize
         sizerange = maxsize - minsize
         _minsize = min(sizes); _maxsize = max(sizes);
         _sizerange = _maxsize - _minsize
-        sizes = [minsize + float(_ - _minsize) / _sizerange * sizerange
-                 for _ in sizes]
+        sizes = [minsize + float(_ - _minsize) / _sizerange * sizerange for _ in sizes]
 
     if args.s:
         __ms = sizes
@@ -641,6 +640,8 @@ if __name__ == '__main__':
     psr_scatter.add_argument('-y', type=int, help="column of y (1-based)")
     psr_scatter.add_argument('--color', type=int, default=-1, help="column of color (1-based)")
     psr_scatter.add_argument('-s', type=int, default=None, help="column to plot s (1-based, size of the markers)")
+    psr_scatter.add_argument('--minsize', type=float, default=3.0, help='minimum size')
+    psr_scatter.add_argument('--maxsize', type=float, default=20.0, help='maximum size')
     psr_scatter.add_argument('--ms', type=float, default=10, help="fixed marker size [10]")
     psr_scatter.add_argument('--xlog', action="store_true", help="x axis log-scaled")
     psr_scatter.add_argument('--ylog', action="store_true", help="y axis log-scaled")
