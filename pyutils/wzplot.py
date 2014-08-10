@@ -97,6 +97,9 @@ def main_scatter(args):
         ax = plt.gca()
         ax.set_yscale("log")
 
+    if args.beta:
+        plt.plot([min(x), max(x)], [min(x), args.beta*max(x)], linestype='dashed')
+
     if args.color >= 0:
         plt.legend(cats, loc=args.legloc)
 
@@ -625,6 +628,7 @@ if __name__ == '__main__':
     psr_scatter.add_argument('--ms', type=float, default=10, help="fixed marker size [10]")
     psr_scatter.add_argument('--xlog', action="store_true", help="x axis log-scaled")
     psr_scatter.add_argument('--ylog', action="store_true", help="y axis log-scaled")
+    psr_scatter.add_argument('--beta', type=float, default=1.0, help='tilt angle of a dashed straight line')
     add_std_options(psr_scatter)
     psr_scatter.set_defaults(func=main_scatter)
 

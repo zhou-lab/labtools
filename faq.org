@@ -4,6 +4,11 @@
 command 2>(tee <log file> >&2)
 *** to output tab in grep
 Control-v i
+or use perl style regular expression by 
+grep -P '\t' *
+
+just use grep "<Ctrl+V><TAB>", it works (if first time: type grep " then press Ctrl+V key combo, then press TAB key, then type " and hit enter, voilà!)
+ctrl+v is a REALLY BAD IDEA ! ... yes it may work from console command, but it may NOT WORK TO TYPE IT IN A SCRIPT (you are at the mercy of the editor, for example i use mcedit and ctrl+v DON'T work there)
 *** to use BioPerl to change 1-letter amino acid code to 3-letter amino acid code
 perl -MBio::SeqUtils -alne 'print "p.".$Bio::SeqUtils::THREECODE{$F[6]}.$F[2].$Bio::SeqUtils::THREECODE{$F[7]};' <input file>
 *** to see/print the definition of a bash function

@@ -36,6 +36,9 @@ class Read():
             self.mapq = x.mapq
             self.keys.append('mapq')
 
+            # self.reverse = x.is_reverse
+            # self.keys.append('is_reverse')
+
             self.seq = x.seq
             self.keys.append('seq')
 
