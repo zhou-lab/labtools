@@ -70,17 +70,28 @@ def main_scatter(args):
     x = []
     y = []
     colors = []
+    sizes = []
     for i, line in enumerate(args.table):
         if i > args.maxline:
             break
-        pair = line.strip().split(args.delim)
-        x.append(float(pair[args.x-1]))
-        y.append(float(pair[args.y-1]))
+        field = line.strip().split(args.delim)
+        x.append(float(field[args.x-1]))
+        y.append(float(field[args.y-1]))
         if args.color>=0:
-            colors.append(pair[args.color-1])
+            colors.append(field[args.color-1])
+        if args.s:
+            sizes.append(field[args.s-1])
+
+    if sizes:                   # scale size
+        maxsize = 10; minsize = 3
+        sizerange = maxsize - minsize
+        _minsize = min(sizes); _maxsize = max(sizes);
+        _sizerange = _maxsize - _minsize
+        sizes = [minsize + float(_ - _minsize) / _sizerange * sizerange
+                 for _ in sizes]
 
     if args.s:
-        __ms = args.s
+        __ms = sizes
     else:
         __ms = args.ms
 
