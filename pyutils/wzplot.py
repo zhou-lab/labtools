@@ -83,11 +83,12 @@ def main_scatter(args):
             sizes.append(float(field[args.s-1]))
 
     if sizes:                   # scale size
-        maxsize = args.maxsize; minsize = args.minsize
+        minsize = args.minsize; maxsize = args.maxsize
         sizerange = maxsize - minsize
         _minsize = min(sizes); _maxsize = max(sizes);
         _sizerange = _maxsize - _minsize
         sizes = [minsize + float(_ - _minsize) / _sizerange * sizerange for _ in sizes]
+        print sizes
 
     if args.s:
         __ms = sizes
