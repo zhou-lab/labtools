@@ -98,7 +98,7 @@ def main_scatter(args):
         ax.set_yscale("log")
 
     if args.beta != 0:
-        plt.plot([min(x), max(x)], [min(x), args.gamma+args.beta*max(x)], linestyle='dashed')
+        plt.plot([min(x), max(x)], [args.gamma+min(x), args.gamma+args.beta*max(x)], linestyle='dashed')
 
     if args.color >= 0:
         plt.legend(cats, loc=args.legloc)
