@@ -84,6 +84,9 @@ def main_scatter(args):
     else:
         __ms = args.ms
 
+    if args.beta != 0:
+        plt.plot([min(x), max(x)], [args.gamma+min(x), args.gamma+args.beta*max(x)], linestyle='dashed', color='k')
+
     if args.color>=0:
         cats = set(colors)
         for catind, cat in enumerate(cats):
@@ -96,9 +99,6 @@ def main_scatter(args):
     if args.ylog:
         ax = plt.gca()
         ax.set_yscale("log")
-
-    if args.beta != 0:
-        plt.plot([min(x), max(x)], [args.gamma+min(x), args.gamma+args.beta*max(x)], linestyle='dashed', color='k')
 
     if args.color >= 0:
         plt.legend(cats, loc=args.legloc)
