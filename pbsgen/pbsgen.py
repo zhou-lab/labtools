@@ -111,7 +111,7 @@ def main_one(args):
     job.commands = "echo `date`\n\n"
     job.commands += args.command
     job.commands += "\n\necho `date` Done.\n"
-    job.gen(args.index)
+    job.gen(int(args.index))
 
 def main_batch(args):
 
