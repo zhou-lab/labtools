@@ -354,6 +354,27 @@ def main_colindex(args):
         fields = line.strip().split(args.delim)
         print [(i+1, _) for i, _ in enumerate(fields) if p.search(_)]
 
+def main_classify(args):
+
+    k2v = {}
+    for line in args.t:
+        fields = line.strip().split(args.delim)
+        k = fields[args.k-1]
+        v = fields[args.v-1]
+        if k in k2v:
+            k2v[k].append(v)
+        else:
+            k2v[k] = [v]
+
+    for k, vs in k2v.iteritems():
+        prncol = []
+        if not args.rk:
+            prncol.append(k)
+        if args.nv:
+            prncol.append(str(len(vs)))
+        prncol.append('\t'.join(vs))
+        print '\t'.join(prncol)
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Manipulate tables')
@@ -436,6 +457,15 @@ if __name__ == '__main__':
     parser_match.add_argument('-pu', action='store_true', help='print unmatched entry in table 2')
     parser_match.add_argument('-rk', action='store_true', help='repress key output')
     parser_match.set_defaults(func=main_match)
-    
+
+    parser_classify = subparsers.add_parser("classify", help="classify a column by another column")
+    parser_classify.add_argument('-t',type=argparse.FileType('r'), default='-')
+    parser_classify.add_argument('-k', type=int, required=True, help="column for classification key (1-based)")
+    parser_classify.add_argument('-v', type=int, required=True, help="column for classification value (1-based)")
+    parser_classify.add_argument('-nv', action='store_true', help="output number of classification values")
+    parser_classify.add_argument('-rk', action='store_true', help="no output of key")
+    parser_classify.add_argument('--delim', default="\t", help="table delimiter [\\t]")
+    parser_classify.set_defaults(func=main_classify)
+
     args = parser.parse_args()
     args.func(args)
