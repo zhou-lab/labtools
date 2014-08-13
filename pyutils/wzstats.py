@@ -65,10 +65,13 @@ def main_basic(args):
     data = zip(*vals)
 
     print "sum:\t%s" % '\t'.join([str(sum(d)) for d in data])
-    print "sum: %.2f" % sum(vals)
-    print "median: %.2f" % np.median(vals)
-    print "max: %.2f" % max(vals)
-    print "min: %.2f" % min(vals)
+    # print "sum: %.2f" % sum(vals) '\t'.join([str(sum(d)) for d in data])
+    print "median:\t%s" % '\t'.join([str(np.median(d)) for d in data])
+    print "max:\t%s" % '\t'.join([str(max(d)) for d in data])
+    print "min:\t%s" % '\t'.join([str(min(d)) for d in data])
+#     print "median: %.2f" % np.median(vals)
+#     print "max: %.2f" % max(vals)
+#     print "min: %.2f" % min(vals)
 
 def main_overlap(args):
     """ find overlap of two list """
