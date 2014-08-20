@@ -32,7 +32,7 @@ function wz_ipct_sample_match {
   while read flowcell sample server loc; do
     if [[ $sample =~ Tumor-([0-9]*) ]]; then
       sample_id=${BASH_REMATCH[1]};
-      grep -w Normal-$sample_id $1 | while read normal; do
+      grep Normal-$sample_id[^0-9] $1 | while read normal; do
 	if [[ -n $normal ]]; then
 	  echo -e $sample_id"\t"$sample"\t"$loc"\t$normal" | tr -s [:blank:] \\t;
 	fi

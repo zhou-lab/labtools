@@ -131,7 +131,8 @@ def main_batch(args):
 
     n_batches = (len(command_args)-1) / args.bsize + 1
     for i in xrange(n_batches):
-        command = "echo `date`\n\n"
+        command = args.prefix
+        command += "\necho `date`\n\n"
         for command_arg in command_args[i*args.bsize:(i+1)*args.bsize]:
             command += args.command.format(**dict(command_arg))+"\n"
         command += "\n\necho `date` Done.\n"
@@ -189,6 +190,7 @@ def pbsgen_main(setting, set_queue):
     ###### batch #####
     parser_batch = subparsers.add_parser("batch", help="batch generate pbs scripts")
     parser_batch.add_argument('command', help='command to run')
+    parser_batch.add_argument('-prefix', default='', help='prefix')
     parser_batch.add_argument('-args', help="mappable argument, will be used to substitute {symbol} structure in command. (e.g., -args symbol1:argfile1:col1,symbol2:argfile2:col2)")
     parser_batch.add_argument('-delim', default='\t', help='delimiter in the argument table')
     parser_batch.add_argument('-bsize', type=int, default=1, help="batch size")
