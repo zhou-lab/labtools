@@ -348,7 +348,6 @@ def main_match(args):
             prncols = []
             if not args.rk:
                 prncols.append(key)
-            prncols.append('UNMATCHED2')
             if val:
                 prncols.append(val)
                 
@@ -361,7 +360,6 @@ def main_match(args):
                     prncols = []
                     if not args.rk:
                         prncols.append(key)
-                    prncols.append('UNMATCHED1')
                     if val:
                         prncols.append(val)
                     print '\t'.join(prncols)
