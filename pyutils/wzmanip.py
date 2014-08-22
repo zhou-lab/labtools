@@ -315,7 +315,7 @@ def main_match(args):
 
         if (key in key2prints):
 
-            if not args.rm:
+            if not args.sm:
                 for val1 in key2prints[key]:
                     if p2:
                         val2 = '\t'.join(p2.extract(f))
@@ -469,7 +469,7 @@ if __name__ == '__main__':
     parser_match.add_argument('--delim', default="\t", help="table delimiter [\\t]")
     parser_match.add_argument('-um1', action='store_true', help='print unmatched entry in table 1')
     parser_match.add_argument('-um2', action='store_true', help='print unmatched entry in table 2')
-    parser_match.add_argument('-um', action='store_true', help='suppress match print')
+    parser_match.add_argument('-sm', action='store_true', help='suppress match print')
     parser_match.add_argument('-rk', action='store_true', help='repress key output')
     parser_match.set_defaults(func=main_match)
 
