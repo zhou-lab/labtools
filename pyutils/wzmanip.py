@@ -301,10 +301,8 @@ def main_match(args):
             val = '\t'.join(p1.extract(f))
         elif args.fp1:
             val = args.fp1.format(f=f)
-        elif args.np1:
-            val = None
         else:
-            val = '\t'.join(f)
+            val = None
         if key in key2prints:
             key2prints[key].append(val)
         else:
@@ -319,10 +317,8 @@ def main_match(args):
             val2 = '\t'.join(p2.extract(f))
         elif args.fp2:
             val2 = args.fp2.format(f=f)
-        elif args.np2:
-            val2 = None
         else:
-            val2 = '\t'.join(f)
+            val2 = None
 
         if (key in key2prints):
 
@@ -472,8 +468,6 @@ if __name__ == '__main__':
     parser_match.add_argument('--delim', default="\t", help="table delimiter [\\t]")
     parser_match.add_argument('-um1', action='store_true', help='print unmatched entry in table 1')
     parser_match.add_argument('-um2', action='store_true', help='print unmatched entry in table 2')
-    parser_match.add_argument('-np1', action='store_true', help='no print of table 1')
-    parser_match.add_argument('-np2', action='store_true', help='no print of table 2')
     parser_match.add_argument('-sm', action='store_true', help='suppress match print')
     parser_match.add_argument('-rk', action='store_true', help='repress key output')
     parser_match.set_defaults(func=main_match)
