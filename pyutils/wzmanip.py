@@ -336,7 +336,7 @@ def main_match(args):
 
             keyprinted.add(key)
 
-        if args.um2:
+        elif args.um2:
 
             if p2:
                 val = '\t'.join(p2.extract(f))
