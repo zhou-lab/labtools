@@ -303,14 +303,41 @@ def main_match(args):
             val = args.fp1.format(f=f)
         else:
             val = None
-        key2prints[key] = val
+        if key in key2prints:
+            key2prints[key].append(val)
+        else:
+            key2prints[key] = [val]
 
+    keyprinted = set()
     for line in args.t2:
         f = line.strip().split(args.delim)
         key = '\t'.join(c2.extract(f)) if c2 else args.fc2.format(f=f)
 
         if (key in key2prints):
 
+            if not args.rm:
+                for val1 in key2prints[key]:
+                    if p2:
+                        val2 = '\t'.join(p2.extract(f))
+                    elif args.fp2:
+                        val2 = args.fp2.format(f=f)
+                    else:
+                        val2 = None
+
+                    prncols = []
+                    if not args.rk:
+                        prncols.append(key)
+                    if val1:
+                        prncols.append(val1)
+                    if val2:
+                        prncols.append(val2)
+
+                    print '\t'.join(prncols)
+
+            keyprinted.add(key)
+
+        if args.um2:
+
             if p2:
                 val = '\t'.join(p2.extract(f))
             elif args.fp2:
@@ -321,30 +348,16 @@ def main_match(args):
             prncols = []
             if not args.rk:
                 prncols.append(key)
-            if key2prints[key]:
-                prncols.append(key2prints[key])
-            if val:
-                prncols.append(val)
-
-            print '\t'.join(prncols)
-
-        elif args.pu:
-
-            if p2:
-                val = '\t'.join(p2.extract(f))
-            elif args.fp2:
-                val = args.fp2.format(f=f)
-            else:
-                val = None
-
-            prncols = []
-            if not args.rk:
-                prncols.append(key)
-            prncols.append('UNMATCHED')
+            prncols.append('UNMATCHED2')
             if val:
                 prncols.append(val)
                 
             print '\t'.join(prncols)
+
+    if args.um1:
+        for key in key2prints:
+            if key not in keyprinted:
+                print key+'\t'+key2prints[key]+'UNMATCHED1'
 
 
 def main_colindex(args):
@@ -454,7 +467,9 @@ if __name__ == '__main__':
     parser_match.add_argument('-fp1', default=None, help="format print in table 1, e.g., {f[0]},{f[2]}:{f[4]}")
     parser_match.add_argument('-fp2', default=None, help="format print in table 2, e.g., {f[0]},{f[2]}")
     parser_match.add_argument('--delim', default="\t", help="table delimiter [\\t]")
-    parser_match.add_argument('-pu', action='store_true', help='print unmatched entry in table 2')
+    parser_match.add_argument('-um1', action='store_true', help='print unmatched entry in table 1')
+    parser_match.add_argument('-um2', action='store_true', help='print unmatched entry in table 2')
+    parser_match.add_argument('-um', action='store_true', help='suppress match print')
     parser_match.add_argument('-rk', action='store_true', help='repress key output')
     parser_match.set_defaults(func=main_match)
 

@@ -1,5 +1,9 @@
 #+STARTUP: overview
 ** recent
+*** to create a file and input content
+cat >newfile
+then type stuff
+<Ctrl-D> to end
 *** to redirect stderr to file and screen
 command 2>(tee <log file> >&2)
 *** to output tab in grep
