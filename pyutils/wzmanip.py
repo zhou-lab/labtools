@@ -357,7 +357,8 @@ def main_match(args):
     if args.um1:
         for key in key2prints:
             if key not in keyprinted:
-                print key+'\t'+key2prints[key]+'UNMATCHED1'
+                for val in key2prints[key]:
+                    print key+'\t'+val+'\tUNMATCHED1'
 
 
 def main_colindex(args):
