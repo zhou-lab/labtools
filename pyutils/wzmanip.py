@@ -302,7 +302,7 @@ def main_match(args):
         elif args.fp1:
             val = args.fp1.format(f=f)
         else:
-            val = None
+            val = '\t'.join(f)
         if key in key2prints:
             key2prints[key].append(val)
         else:
@@ -322,7 +322,7 @@ def main_match(args):
                     elif args.fp2:
                         val2 = args.fp2.format(f=f)
                     else:
-                        val2 = None
+                        val2 = '\t'.join(f)
 
                     prncols = []
                     if not args.rk:
@@ -343,7 +343,7 @@ def main_match(args):
             elif args.fp2:
                 val = args.fp2.format(f=f)
             else:
-                val = None
+                val = '\t'.join(f)
 
             prncols = []
             if not args.rk:
@@ -358,7 +358,13 @@ def main_match(args):
         for key in key2prints:
             if key not in keyprinted:
                 for val in key2prints[key]:
-                    print key+'\t'+val+'\tUNMATCHED1'
+                    prncols = []
+                    if not args.rk:
+                        prncols.append(key)
+                    prncols.append('UNMATCHED1')
+                    if val:
+                        prncols.append(val)
+                    print '\t'.join(prncols)
 
 
 def main_colindex(args):
