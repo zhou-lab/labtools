@@ -387,6 +387,22 @@ def main_classify(args):
         prncol.append('\t'.join(vs))
         print '\t'.join(prncol)
 
+def main_dedupmax(args):
+
+    k2v = {}
+    for line in args.t:
+        fields = line.strip().split(args.delim)
+        k = fields[args.k-1]
+        v = (fields[args.v-1], fields)
+        if k in k2v:
+            if k2v[k][0] < v[0]:
+                k2v[k] = v
+        else:
+            k2v[k] = v
+
+    for k, v in k2v.iteritems():
+        print '\t'.join(v[1])
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Manipulate tables')
@@ -480,6 +496,15 @@ if __name__ == '__main__':
     parser_classify.add_argument('-rk', action='store_true', help="no output of key")
     parser_classify.add_argument('--delim', default="\t", help="table delimiter [\\t]")
     parser_classify.set_defaults(func=main_classify)
+
+
+    parser_dupmax = subparsers.add_parser("dedupmax", help="remove dup in one column by maxing a column")
+    parser_dupmax.add_argument('-t',type=argparse.FileType('r'), default='-')
+    parser_dupmax.add_argument('-k', type=int, required=True, help="column to dedup (1-based)")
+    parser_dupmax.add_argument('-v', type=int, required=True, help="column to maximize (1-based)")
+    parser_dupmax.add_argument('-rk', action='store_true', help="no output of key")
+    parser_dupmax.add_argument('--delim', default="\t", help="table delimiter [\\t]")
+    parser_dupmax.set_defaults(func=main_dedupmax)
 
     args = parser.parse_args()
     args.func(args)

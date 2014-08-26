@@ -1,5 +1,27 @@
 #+STARTUP: overview
 ** recent
+*** bash arithmetics
+i=$((j+1))
+note that there's no need to put $ before j
+echo $(((_va - 1)*10))
+
+(( uid > 1000 ))
+(( percent >= 0 && percent <= 100 ))
+
+i=$(( i + 1 ))
+let i+=1
+
+i=$((i++))
+let i++
+
+Another idiosyncrasy is that so called  R-value rule ($ should be prefixed to the shell variable on the right side of assignment statement to get its value) is optional and generally you should never use $ prefix for variables in ((..)) construct
+i=$(( i + $2 ))
+let i=i+1
+
+let i+=5
+
+old way
+z=`expr $z + 3`
 *** to create a file and input content
 cat >newfile
 then type stuff
