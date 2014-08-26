@@ -393,7 +393,7 @@ def main_dedupmax(args):
     for line in args.t:
         fields = line.strip().split(args.delim)
         k = fields[args.k-1]
-        v = (fields[args.v-1], fields)
+        v = (float(fields[args.v-1]), fields)
         if k in k2v:
             if k2v[k][0] < v[0]:
                 k2v[k] = v
