@@ -311,7 +311,7 @@ Most of this sequence will be explained to you by the output of the various comm
 parallel --colsep '\t' -j4 --results
 run 4 jobs
 parallel --colsep '\t' -j4 --results uploadlog06 upload_sample {2} :::: samples_dqs06_match_upload
-*** to interpret dos file with ^M
+*** to interpret MS dos (Windows) file with ^M
 The ^M that you are seeing is actually a CR or \r. If you want to test for carraige returns in a file, you want to look for \r. Try this on the file
 dos2unix
 or
