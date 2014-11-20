@@ -12,6 +12,7 @@
 			    (scroll-up 1)))
 (global-set-key (kbd "<f10>") 'save-buffer)
 
+(global-visual-line-mode t)
 
 ;; Wanding functions
 (defun my-switch-to-other-buffer ()

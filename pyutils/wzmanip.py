@@ -403,6 +403,23 @@ def main_dedupmax(args):
     for k, v in k2v.iteritems():
         print '\t'.join(v[1])
 
+def main_dupcompress(args):
+
+    ind = parse_indices(args.k)
+    k2v = {}
+    for line in args.t:
+        fields = line.strip().split(args.delim)
+        k = tuple(ind.extract(fields))
+        if args.v <= len(fields):
+            v = fields[args.v-1]
+            if k in k2v:
+                if v not in k2v[k]: k2v[k].append(v)
+            else:
+                k2v[k] = [v]
+
+    for k, v in k2v.iteritems():
+        print '%s\t%d\t%s' % ('\t'.join(k), len(v), '\t'.join(v))
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Manipulate tables')
@@ -497,7 +514,6 @@ if __name__ == '__main__':
     parser_classify.add_argument('--delim', default="\t", help="table delimiter [\\t]")
     parser_classify.set_defaults(func=main_classify)
 
-
     parser_dupmax = subparsers.add_parser("dedupmax", help="remove dup in one column by maxing a column")
     parser_dupmax.add_argument('-t',type=argparse.FileType('r'), default='-')
     parser_dupmax.add_argument('-k', type=int, required=True, help="column to dedup (1-based)")
@@ -505,6 +521,13 @@ if __name__ == '__main__':
     parser_dupmax.add_argument('-rk', action='store_true', help="no output of key")
     parser_dupmax.add_argument('--delim', default="\t", help="table delimiter [\\t]")
     parser_dupmax.set_defaults(func=main_dedupmax)
+
+    parser_dupcompress = subparsers.add_parser('dupcompress', help='remove dup in one column and list all value in another')
+    parser_dupcompress.add_argument('-t',type=argparse.FileType('r'), default='-')
+    parser_dupcompress.add_argument('-k', required=True, help="column to dedup (1-based)")
+    parser_dupcompress.add_argument('-v', type=int, required=True, help="column to list (1-based)")
+    parser_dupcompress.add_argument('--delim', default="\t", help="table delimiter [\\t]")
+    parser_dupcompress.set_defaults(func=main_dupcompress)
 
     args = parser.parse_args()
     args.func(args)
