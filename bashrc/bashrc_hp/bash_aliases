@@ -34,18 +34,8 @@ alias d2='cd /home/wanding/Downloads/'
 alias p1='cd /home/wanding/Dropbox/version_controled/svn.rice/wanding'
 alias p2='cd /home/wanding/Dropbox/version_controled/svn.rice/wanding/dissertation'
 alias reaa='cd /home/wanding/Dropbox/version_controled/bitbucket.org/reaa'
-# alias b='emacsclient -c ~/.bashrc'
-# alias t='emacsclient -c ~/Dropbox/study/thoughts.org'
-# alias sy='emacsclient -c ~/Dropbox/config/sync_config.sh'
-# alias sc='screen -c screen'
-# alias du='du -sh'
-# alias j='java -jar /home/wanding/Dropbox/Library/JabRef-2.6.jar'
 
 # cd aliases
-alias w1='cd /home/wanding/Dropbox/project_community/src'
-alias w2='cd /home/wanding/sync/project_community/data'
-alias w3='cd /home/wanding/sync/project_community/figs'
-alias w4='cd /home/wanding/sync/project_community/downloads'
 alias wa='ssh wanding@wallace.cs.rice.edu'
 alias sugar='ssh wz4@sugar.rice.edu'
 alias es='/usr/bin/emacs --daemon'
@@ -62,10 +52,10 @@ alias hr2="text2wave /home/wanding/Dropbox/study/thoughts/fear_control.hinting -
 
 alias les="less -S"
 
-alias wz_column="awk -f ~/Dropbox/scripts/awk/wz_column.awk"
-
-
 # gene module project
 alias infomap='/home/wanding/tools/infomap/Infomap-0.12.13/Infomap'
 alias infotree2mod='python /home/wanding/Dropbox/scripts/python/infotree2mod.py'
 alias uptrace='python /home/wanding/Dropbox/project_hgt/src2/2013_11_25_uptrace_match.py'
+alias ll="ls -l"
+
+

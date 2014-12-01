@@ -1,0 +1,9 @@
+# -*- mode: snippet -*-
+# contributor: zhouwanding <zhouwanding@gmail.com>
+# contributor : Mads D. Kristensen <madsdk@gmail.com>
+# key : timestart
+# group: environments
+# name : start time
+# --
+import time
+start_time = time.time()
