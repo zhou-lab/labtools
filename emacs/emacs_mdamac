@@ -1,8 +1,20 @@
+(when (>= emacs-major-version 24)
+  (require 'package)
+  (add-to-list 'package-archives '("melpa" . "http://melpa.milkbox.net/packages/") t)
+  (add-to-list 'package-archives '("marmalade" . "http://marmalade-repo.org/packages/"))
+  (package-initialize)
+  )
+
+(setq mouse-wheel-scroll-amount '(2))
+(setq mouse-wheel-progressive-speed nil)
+(global-visual-line-mode t)
+
 (show-paren-mode 1)
 (require 'mouse)
 (xterm-mouse-mode t)
 (defun track-mouse (e)) 
 (setq mouse-sel-mode t)
+(delete-selection-mode 1)
 
 (global-set-key [mouse-4] (lambda ()
 			    (interactive)
@@ -10,8 +22,11 @@
 (global-set-key [mouse-5] (lambda ()
 			    (interactive)
 			    (scroll-up 1)))
-(global-set-key (kbd "<f10>") 'save-buffer)
+(global-set-key (kbd "<f12>") 'save-buffer)
 
+(global-set-key (kbd "<f11>") 'dabbrev-expand)
+(global-set-key (kbd "<f9>") 'my-switch-to-other-buffer)
+(global-set-key (kbd "<f10>") 'list-buffers)
 
 ;; Wanding functions
 (defun my-switch-to-other-buffer ()
@@ -269,8 +284,7 @@ Then move to that line and indent according to mode"
 
 (global-set-key (kbd "M-i") 'kill-whole-line)
 (global-set-key (kbd "<f8>") 'other-window)
-(global-set-key (kbd "<f7>") 'previous-buffer)
-(global-set-key (kbd "<f6>") 'goto-line)
+(global-set-key (kbd "<f7>") 'goto-line)
 (global-set-key (kbd "M-<up>") 'move-line-upward)
 (global-set-key (kbd "M-<down>") 'move-line-downward)
 

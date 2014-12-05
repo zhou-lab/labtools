@@ -488,6 +488,546 @@ require "bootstrap"
     </div>
   </div>
 </div>
+*** pseudo-class selector
+a:link
+a:visited
+a:hover
+*** remove text-decoration
+text-decoration: none
+*** first-child
+p:first-child {
+  color: red;
+}
+*** circles
+div {
+display: inline-block;
+margin-left: 5px;
+height: 100px;
+width: 100px;
+border-radius: 100%;
+border: 2px solid black;
+}
+*** rounded triangle
+div {
+height: 50px;
+width: 100px;
+border: 2px solid black;
+border-radius: 5px;
+display: inline-block
+}
+*** margin, border and padding
+margin: auto
+put equal left and right margins on the element
+margin: 1px 2px 3px 4px
+# the order is: top, right, bottom, left
+*** use float to divide the screen into two
+float:left 
+float:right
+*** use clear to set footer
+clear: both
+you can also
+clear: left
+clear: right
+*** position
+static (default)
+absolute
+relative
+fixed
+*** rounded corner look for div
+border-radius: 5px
+** jquery
+fadeIn, fadeOut, fadeTo, mouseenter,
+*** $(this)
+$('div').click(function() {
+  $(this).fadeOut('slow');
+});
+*** slideToggle
+$(document).ready(function(){
+    
+  $('.pull-me').click(function(){
+      $('.panel').slideToggle('slow');
+      });
+});
+*** after
+$('#one').after('<p>Somethinga</p>');   
+$('#one').after($('p'));
+$('#two').after($('p'));
+$('p').remove();
+*** add, remove and toggle classes
+    $(this).toggleClass('highlighted');
+*** box shadow
+.highlighted {
+    -webkit-box-shadow: 0 0 8px #FFD700;
+    -moz-box-shadow: 0 0 8px #FFD700;
+    box-shadow: 0 0 8px #FFD700;
+    cursor:pointer;
+}
+*** customize css in jquery
+$('div').height("200px");
+$('div').width("200px");
+$('div').css('border-radius', '10px');
+*** get value(s) of a form
+$('input:checkbox:checked').val();
+var input = $('input[name=checkListItem]').val();
+*** get/set html of a element
+$('div').html("I love jQuery!");
+*** select input form field
+    var toAdd=$('input[name=checkListItem]').val();
+    selects
+    <input type="text" name="checkListItem"/>
+*** append to list
+    $('.list').append('<div class="item">'+toAdd+'</div>');
+*** remove on click
+    $(document).on('click', '.item', function(){
+        $(this).remove();
+    });
+*** turn red
+    $('div').hover(function(){
+        $(this).addClass('red');
+    });
+*** double click
+$(document).ready(function(){
+    $('div').dblclick(function(){
+        $(this).fadeOut('fast');
+    })
+})
+*** round-cornered rectangle
+div {
+    height: 100px;
+    width: 100px;
+    border-radius: 5px;
+    background-color: #ABCDEF;
+}
+*** hover effect
+div {
+    border-radius: 5px;
+    background-color: #ABCDEF;
+    transition: background-color 0.5s ease;
+    display:inline;
+    font-size:25px;
+    padding:20px;
+    border:1px solid #ccc;
+    margin-top:10px;
+}
+
+.active {
+    background-color:#556677;
+}
+
+$(document).ready(function(){
+
+  $('div').hover(
+    function(){
+        $(this).addClass('active');
+    },
+    function(){
+        $(this).removeClass('active');
+    }
+  );
+
+});
+*** focus on textarea/input
+$(document).ready(function(){
+    $('input').focus(function(){
+        $(this).css('outline-style','solid');
+        $(this).css('outline-color','#FF0000');
+    });
+});
+*** animate on keydown
+$(document).ready(function(){
+    $(document).keydown(function(){
+        $('div').animate({left:'+=10px'}, 500);
+    });
+});
+*** animate with a keydown
+    $(document).ready(function() {
+    $(document).keydown(function(key) {
+    switch(parseInt(key.which,10)) {
+    // Left arrow key pressed
+    case 37:
+    $('img').animate({left: "-=10px"}, 'fast');
+    break;
+    // Up Arrow Pressed
+    case 38:
+    // Put our code here
+    $('img').animate({top: "-=10px"}, 'fast');
+    break;
+    // Right Arrow Pressed
+    case 39:
+    // Put our code here
+    $('img').animate({left: "+=10px"}, 'fast');
+    break;
+    // Down Arrow Pressed
+    case 40:
+    // Put our code here
+    $('img').animate({top: "+=10px"}, 'fast');
+    break;
+    }
+    });
+});
+*** jquery UI
+    <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.9.1/jquery-ui.min.js"></script>
+*** effect('explode')
+$(document).ready(function(){
+    $('div').effect('explode');
+})
+*** effect('bounce')
+$('div').click(function(){
+$(this).effect('bounce', {times:3}, 500);
+})
+*** effect('slide')
+    $(this).effect('slide');
+*** accordion
+<!DOCTYPE html>
+<html>
+    <head>
+    	<title>Behold!</title>
+        <link rel='stylesheet' type='text/css' href='http://code.jquery.com/ui/1.9.1/themes/base/jquery-ui.css'/>
+        <script type='text/javascript' src='script.js'></script>
+        <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.9.1/jquery-ui.min.js"></script>
+	</head>
+	<body>
+        <div id="menu">
+            <h3>jQuery</h3>
+            <div>
+                <p>jQuery is a JavaScript library that makes your websites look absolutely stunning.</p>
+            </div>
+            <h3>jQuery UI</h3>
+            <div>
+                <p>jQuery UI includes even more jQuery goodness!</p>
+            </div>
+            <h3>JavaScript</h3>
+            <div>
+                <p>JavaScript is a programming language used in web browsers, and it's what powers jQuery and jQuery UI. You can learn about JavaScript in the <a href="http://www.codecademy.com/tracks/javascript" target="blank" style="text-decoration:none; color:#F39814">JavaScript track</a> here on Codecademy.</p>
+            </div>
+        </div>
+	</body>
+</html>
+**** javascript
+$(document).ready(function() {
+    $("#menu").accordion({collapsible: true, active: false});
+});
+*** draggable
+$(document).ready(function(){
+    $('#car').draggable();
+})
+*** resizable
+    $('div').resizable();
+*** make list selectable
+    $('ol').selectable()
+**** notice their css
+ol {
+    list-style-type: none;
+	position: relative;
+	left: -20px;
+}
+
+ol li {
+	background: #eeeeee;
+	border-radius: 5px;
+	border: 1px solid black;
+	margin: 3px;
+	padding: 0.4em;
+	font-size: 1em;
+	height: 16px;
+	font-family: Verdana, Arial, Sans-Serif;
+}
+
+ol .ui-selected {
+	background: #F39814; color: white;
+}
+*** list sortable
+    $('ol').sortable()
+*** hide/show accordion
+var main=function() {
+    $('.article').click(function(){
+        $('.article').removeClass('current');
+        $('.description').hide();
+        $(this).addClass('current');
+        $(this).children('.description').show();
+    });  
+};
+
+$(document).ready(main);
+$(document).keypress(function(event){
+    if(event.which === 111){
+        $('.current').children('.description').toggle()
+    }else if(event.which === 110){
+        var currentArticle = $('.current');
+        var nextArticle = currentArticle.next();
+        currentArticle.removeClass('current');
+        nextArticle.addClass('current');
+        
+    }
+})
+**** html
+<!doctype html>
+<html>
+  <head>
+    <link href="http://s3.amazonaws.com/codecademy-content/courses/ltp2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <div class="articles container">
+      
+      <div class="article current">
+        <div class="item row">
+          <div class="col-xs-3">
+            <p class="source">FLIGHT</p>
+          </div>
+          <div class="col-xs-6">
+            <p class="title">Embraer adds third Legacy 500 prototype to flight test campaign</p>
+          </div>
+          <div class="col-xs-3">
+            <p class="pubdate">Mar 23</p>
+          </div>
+        </div>
+        <div class="description row">
+          <div class="col-xs-3">&nbsp;</div>
+          <div class="col-xs-6">
+            <h1>Embraer adds third Legacy 500 prototype to flight test campaign</h1>
+            <p>The third Legacy 500 has joined Embraer's flight test programme aimed at delivering the midsize business jet in 2014. The airtcraft, serial number 003...</p>
+          </div>
+          <div class="col-xs-3">&nbsp;</div>
+        </div>
+      </div>
+
+      <div class="article">
+        <div class="item row">
+          <div class="col-xs-3">
+            <p class="source">AW Commercial Aviation</p>
+          </div>
+          <div class="col-xs-6">
+            <p class="title">CSeries Supplier Scramble</p>
+          </div>
+          <div class="col-xs-3">
+            <p class="pubdate">Mar 22</p>
+          </div>
+        </div>
+        <div class="description row">
+          <div class="col-xs-3">&nbsp;</div>
+          <div class="col-xs-6">
+            <h1>CSeries Supplier Scramble</h1>
+            <p>Three months before the planned first flight of its CSeries, Bombardier is grappling with supplier issues crucial to meeting its production cost...</p>
+          </div>
+          <div class="col-xs-3">&nbsp;</div>
+        </div>
+      </div>
+
+      <div class="article">
+        <div class="item row">
+          <div class="col-xs-3">
+            <p class="source">AW business aviation</p>
+          </div>
+          <div class="col-xs-6">
+            <p class="title">Flying the Gulfstream G650</p>
+          </div>
+          <div class="col-xs-3">
+            <p class="pubdate">Mar 22</p>
+          </div>
+        </div>
+        <div class="description row">
+          <div class="col-xs-3">&nbsp;</div>
+          <div class="col-xs-6">
+            <h1>Flying the Gulfstream G650</h1>
+            <p>Gulfstream is turning up the heat in the large-cabin business aircraft competition with its new G650 flagship, the largest, fastest, farthest-ranging...</p>
+          </div>
+          <div class="col-xs-3">&nbsp;</div>
+        </div>
+      </div>
+
+      <div class="article">
+        <div class="item row">
+          <div class="col-xs-3">
+            <p class="source">FLIGHT</p>
+          </div>
+          <div class="col-xs-6">
+            <p class="title">New retirements cut RAF VC10 fleet to four</p>
+          </div>
+          <div class="col-xs-3">
+            <p class="pubdate">Mar 22</p>
+          </div>
+        </div>
+        <div class="description row">
+          <div class="col-xs-3">&nbsp;</div>
+          <div class="col-xs-6">
+            <h1>New retirements cut RAF VC10 fleet to four</h1>
+            <p>The UK Royal Air Force has retired another two of its Vickers VC10 tankers, with the pair's departure reducing its inventory of the Rolls-Royce...</p>
+          </div>
+          <div class="col-xs-3">&nbsp;</div>
+        </div>
+      </div>
+
+      <div class="article">
+        <div class="item row">
+          <div class="col-xs-3">
+            <p class="source">FLIGHT</p>
+          </div>
+          <div class="col-xs-6">
+            <p class="title">Virgin can deliver more value for Delta than for SIA: Bastian</p>
+          </div>
+          <div class="col-xs-3">
+            <p class="pubdate">Jul 17</p>
+          </div>
+        </div>
+        <div class="description row">
+          <div class="col-xs-3">&nbsp;</div>
+          <div class="col-xs-6">
+            <h1>Virgin can deliver more value for Delta than for SIA: Bastian</h1>
+            <p>Delta Air Lines president Ed Bastian is confident that the carrier can extract far more value from its shareholding in Virgin Atlantic compared with...</p>
+          </div>
+          <div class="col-xs-3">&nbsp;</div>
+        </div>
+      </div>
+
+      <div class="article">
+        <div class="item row">
+          <div class="col-xs-3">
+            <p class="source">AW Defense</p>
+          </div>
+          <div class="col-xs-6">
+            <p class="title">Freedom Experiences Two More Power Outages</p>
+          </div>
+          <div class="col-xs-3">
+            <p class="pubdate">Mar 22</p>
+          </div>
+        </div>
+        <div class="description row">
+          <div class="col-xs-3">&nbsp;</div>
+          <div class="col-xs-6">
+            <h1>Freedom Experiences Two More Power Outages</h1>
+            <p>The Littoral Combat Ship (LCS-1) USS Freedom’s first overseas deployment to Southeast Asia has been marred by two more power outages...</p>
+          </div>
+          <div class="col-xs-3">&nbsp;</div>
+        </div>
+      </div>
+
+      <div class="article">
+        <div class="item row">
+          <div class="col-xs-3">
+            <p class="source">FLIGHT</p>
+          </div>
+          <div class="col-xs-6">
+            <p class="title">FedEx to acquire up to 30 United 757s</p>
+          </div>
+          <div class="col-xs-3">
+            <p class="pubdate">Mar 22</p>
+          </div>
+        </div>
+        <div class="description row">
+          <div class="col-xs-3">&nbsp;</div>
+          <div class="col-xs-6">
+            <h1>FedEx to acquire up to 30 United 757s</h1>
+            <p>United Airlines is to sell up to 30 Boeing 757s to freight operator FedEx Express, with deliveries of the twinjets set to start this year.</p>
+          </div>
+          <div class="col-xs-3">&nbsp;</div>
+        </div>
+      </div>
+
+    </div>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
+**** css
+body {
+  background-image: url('http://s3.amazonaws.com/codecademy-content/courses/ltp2/img/reader/bg.png');
+  -webkit-background-size: cover;
+     -moz-background-size: cover;
+       -o-background-size: cover;
+          background-size: cover;
+}
+
+p {
+  margin: 0;
+}
+
+.row {
+  margin: 0;
+}
+
+.articles {
+  margin-top: 30px;
+  margin-bottom: 30px;
+}
+
+.article {
+  color: #222;
+  background: rgba(255,255,255,.9);
+  border-spacing: 2px;
+  border-color: gray;
+  font-family: arial,sans-serif;
+  border-bottom: 1px #e5e5e5 solid;
+}
+
+.current .item {
+  background: rgba(206,220,206,.9);
+}
+
+.item {
+  cursor: pointer;
+  padding-top: 7px;
+  padding-bottom: 7px;
+  
+}
+
+.item .source {
+  margin-left: 20px;
+}
+
+.item .title {
+  font-weight: bold;
+}
+
+.item .pubdate {
+  margin-right: 20px;
+}
+
+.item .pubdate {
+  text-align: right;  
+}
+
+.description {
+  display: none;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.description h1 {
+  margin-top: 0px;
+  font-size: 23px;
+}
+*** modify DOM
+**** add tag
+$('tag').text('SomeText') results in <tag>SomeText</tag>
+*** append to items
+$('.btn').click(function() {
+  $('<li>').text('New item').appendTo('.items');
+});
+*** prepend to items
+$('.btn').click(function() {
+  $('<li>').text('New item').prependTo('.items');
+});
+*** $('li') vs $('<li>')
+first selects a <li>, second creates an <li>.
+*** remove an element
+  $('.selected').remove();
+*** hide/show/toggle/addClass/removeClass/toggleClass
+var main = function () {
+  $(".btn").click(function () {
+    $(".read").hide();
+  });
+};
+
+  $('li').click(function() {
+  $(this).addClass('read');
+})
+*** traverse DOM
+**** .next next sibling
+**** .prev previous sibling
+**** .children() get all children
+to select a particular child, one can use
+$('ul').children('.pubdate')
 ** git
 *** to exclude/hide file from git status
 put this to ~/.gitconfig
