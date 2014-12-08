@@ -28,7 +28,7 @@ class Job():
 
         self.pbs        = args.pbs
         self.jobroot    = "WandingJob"
-        self.ppn        = "1"
+        self.ppn        = args.ppn
         self.hour       = args.hour
         self.stderrdir  = args.stderr
         self.stdoutdir  = args.stdout
@@ -61,7 +61,8 @@ class Job():
 
     def clean(self):
         import os
-        map(os.unlink, [os.path.join(self.pbs, _) for _ in os.listdir(self.pbs) if _.endswith(".pbs")])
+        # map(os.unlink, [os.path.join(self.pbs, _) for _ in os.listdir(self.pbs) if _.endswith(".pbs")])
+        map(os.unlink, [os.path.join(self.pbs, _) for _ in os.listdir(self.pbs)])
         map(os.unlink, [os.path.join(self.stdoutdir, _) for _ in os.listdir(self.stdoutdir) if _.endswith(".stdout")])
         map(os.unlink, [os.path.join(self.stderrdir, _) for _ in os.listdir(self.stderrdir) if _.endswith(".stderr")])
 
@@ -157,7 +158,7 @@ def add_default_settings(parser, d):
 
     parser.add_argument("-pbs", default=d.scriptdir, 
                         help="pbs directory [%s]" % d.scriptdir)
-    parser.add_argument("-hour", default=d.hour, 
+    parser.add_argument("-hour", default=d.hour, type=int,
                         help="wall time in hour [%d]" % d.hour)
     parser.add_argument("-stdout", default=d.stdoutdir,
                         help="stdout [%s]" % d.stdoutdir)
@@ -234,6 +235,8 @@ if __name__ == "__main__":
     def set_queue_hpc(job):
         if job.hour <= 1:
             job.queue = "short"
+        elif job.hour > 24:
+            job.queue = 'long'
         else:
             job.queue = "medium"
 

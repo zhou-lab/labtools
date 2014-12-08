@@ -1,4 +1,17 @@
 ;; .emacs
+(show-paren-mode 1)
+(require 'mouse)
+(xterm-mouse-mode t)
+(defun track-mouse (e))
+(setq mouse-sel-mode t)
+
+(global-set-key [mouse-4] (lambda ()
+                            (interactive)
+                            (scroll-down 1)))
+(global-set-key [mouse-5] (lambda ()
+                            (interactive)
+                            (scroll-up 1)))
+(global-set-key (kbd "<f10>") 'save-buffer)
 
 ;;; uncomment this line to disable loading of "default.el" at startup
 ;; (setq inhibit-default-init t)

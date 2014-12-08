@@ -147,6 +147,11 @@ function sv {
     samtools view $1 $2 | les
 }
 
+function bt {
+    bcftools view $1 | les
+}
+
+
 export PATH=~/bin:$PATH:/scratch/bcb/wzhou1/tools/bedtools/bedtools-2.17.0/bin:/scratch/bcb/wzhou1/tools/vcftools/vcftools_0.1.11/bin
 export PERL5LIB=/scratch/bcb/wzhou1/tools/vcftools/vcftools_0.1.11/perl
 

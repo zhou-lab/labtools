@@ -5,9 +5,10 @@ from pbsgen import pbsgen_main, Default
 def set_queue(job):
     if job.hour <= 1:
         job.queue = "short"
+    elif job.hour > 24:
+        job.queue = "long"
     else:
         job.queue = "medium"
-
 
 default = Default()
 default.pbsdir = "/scratch/bcb/wzhou1/pbs"
