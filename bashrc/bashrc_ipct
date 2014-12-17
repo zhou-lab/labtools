@@ -142,3 +142,7 @@ function gl {
   git commit -a -m "$message";
   git push;
 }
+
+function bcl {
+bc -l <<< "$1";
+}

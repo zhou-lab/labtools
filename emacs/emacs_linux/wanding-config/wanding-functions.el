@@ -1,3 +1,12 @@
+;; Wanding functions
+(defun my-switch-to-other-buffer ()
+  "Switch to other buffer"
+  (interactive)
+  (switch-to-buffer (other-buffer)))
+
+(defun my-switch-to-previous-buffer ()
+  (interactive)
+  (switch-to-buffer (other-buffer (current-buffer) 1)))
 
 (defun select-current-line ()
   "Select the current line"

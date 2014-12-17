@@ -3,13 +3,15 @@
 ;; f3-f4 is macro
 (global-set-key (kbd "<f5>") 'beginning-of-buffer)
 (global-set-key (kbd "<f6>") 'end-of-buffer)
-(global-set-key (kbd "<f7>") 'kill-buffer)
+(global-set-key (kbd "<f7>") 'goto-line)
 (global-set-key (kbd "<f8>") 'other-window)
 ;; (global-set-key (kbd "<f9>") 'find-file)
-(global-set-key (kbd "<f9>") 'delete-other-windows)
+;; (global-set-key (kbd "<f9>") 'delete-other-windows)
+(global-set-key (kbd "<f9>") 'my-switch-to-other-buffer)
 (global-set-key (kbd "<f10>") 'helm-recentf)
 ;; (global-set-key (kbd "<f11>") 'toggle-fullscreen)
-(global-set-key (kbd "<f11>") 'switch-to-buffer)
+;; (global-set-key (kbd "<f11>") 'switch-to-buffer)
+(global-set-key (kbd "<f11>") 'dabbrev-expand)
 (global-set-key (kbd "<f12>") 'save-buffer)
 
 (global-set-key (kbd "M-a") 'unfill-paragraph)

@@ -81,7 +81,8 @@
 
 ;; (add-to-list 'default-frame-alist '(font . "WenQuanYi Micro Hei Mono 9"))
 ;; (add-to-list 'default-frame-alist '(font . "Monospace 13"))
-(add-to-list 'default-frame-alist '(font . "Droid Sans Mono 13"))
+;; (add-to-list 'default-frame-alist '(font . "Droid Sans Mono 10"))
+(add-to-list 'default-frame-alist '(font . "Source Code Pro 10"))
 ;; (add-to-list 'default-frame-alist '(font . "WenQuanYi Micro Hei 9"))
 
 

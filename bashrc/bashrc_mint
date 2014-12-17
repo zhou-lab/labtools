@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# make less handle gzipped files.
+[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
+
 alias rm='rm -i'
 
 start_emacs() {
@@ -40,6 +43,7 @@ alias wa='ssh wanding@wallace.cs.rice.edu'
 alias sugar='ssh wz4@sugar.rice.edu'
 alias es='/usr/bin/emacs --daemon'
 alias m='caja .'
+alias n="nautilus ."
 alias lp='lp -o sides=two-sided-long-edge -d phast '
 alias gtsave='gnome-terminal --save-config=/home/wanding/Dropbox/config/gnometerminalsession'
 alias update-tags="find . -type f -name '*py' | xargs createtags -o TAGS -a -l python"
@@ -53,6 +57,9 @@ alias infotree2mod='python /home/wanding/Dropbox/scripts/python/infotree2mod.py'
 alias uptrace='python /home/wanding/Dropbox/project_hgt/src2/2013_11_25_uptrace_match.py'
 alias ll="ls -l"
 
+function dnarev {
+  echo $1 | tr ATGC TACG | rev;
+}
 
 export PATH=$PATH:/home/wanding/bin
 export SCREENRC=/home/wanding/wzlib/screenrc/screenrc_hp
