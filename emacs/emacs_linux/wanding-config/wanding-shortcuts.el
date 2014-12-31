@@ -2,7 +2,7 @@
 ;; f2 is menu
 ;; f3-f4 is macro
 (global-set-key (kbd "<f5>") 'beginning-of-buffer)
-(global-set-key (kbd "<f6>") 'end-of-buffer)
+(global-set-key (kbd "<f6>") 'cua-paste)
 (global-set-key (kbd "<f7>") 'goto-line)
 (global-set-key (kbd "<f8>") 'other-window)
 ;; (global-set-key (kbd "<f9>") 'find-file)
