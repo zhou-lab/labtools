@@ -176,7 +176,7 @@
  '(ansi-term-color-vector ["#3f3f3f" "#cc9393" "#7f9f7f" "#f0dfaf" "#8cd0d3" "#dc8cc3" "#93e0e3" "#dcdccc"])
  '(custom-safe-themes (quote ("ed81411169b1b3e3d4cfc39b09d68ea13e0ff7708dc5b9d0bedb319e071968ad" "2b5aa66b7d5be41b18cc67f3286ae664134b95ccc4a86c9339c886dfd736132d" "329719e6eb36a4e60bd8d5978d3c4610cf7e31e174df5c04cf425f0282052689" "04dd0236a367865e591927a3810f178e8d33c372ad5bfef48b5ce90d4b476481" "7fa9dc3948765d7cf3d7a289e40039c2c64abf0fad5c616453b263b601532493" "2fd1c7f994649d9f879521c4634bd8eddae866db9ff50269a9127b9f93b4e582" "628278136f88aa1a151bb2d6c8a86bf2b7631fbea5f0f76cba2a0079cd910f7d" "4cf3221feff536e2b3385209e9b9dc4c2e0818a69a1cdb4b522756bcdf4e00a4" "27470eddcaeb3507eca2760710cc7c43f1b53854372592a3afa008268bcf7a75" default)))
  '(fci-rule-color "#383838")
- '(org-agenda-files (quote ("~/Dropbox/study/Today.org" "~/Dropbox/project_hgt/log/9.reconciliation.org" "~/Dropbox/project_hgt/log/6.136_E.coli_growth_conditions_FBA_and_MOMA.org" "~/Dropbox/project_hgt/log/5.gene_mutation.org" "~/Dropbox/project_hgt/log/18.module_mutation_56_taxa.org" "~/Dropbox/project_hgt/log/20.module_mutation_62_taxa.org" "~/Dropbox/project_hgt/log/19.e.coli_gene_mosaicity.org" "~/Dropbox/project_hgt/log/16.module_detection_62_taxa.org" "~/Dropbox/study/linux/awk.org" "~/Dropbox/study/linux/emacs.org" "~/Dropbox/study/English/sentences.org" "~/Dropbox/study/English/words.org" "~/Dropbox/project_regulation/log/evernote_import.org" "~/Dropbox/study/Today.org_archive"))))
+ '(org-agenda-files nil))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.

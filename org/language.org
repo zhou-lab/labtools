@@ -1,0 +1,27 @@
+I meant the discordance.  
+
+* how ... operate in cell
+* quite an undertaking
+* totaling ...
+The numbers assigned to nodes are the allelic copy numbers (totaling
+20, the number of segments)
+* a perspective of ... as ...
+In 1976, Peter Nowell3 published a landmark perspective on cancer as an evolutionary process that is driven by stepwise, somatic-cell mutations with sequential, subclonal selection.
+* paradigm, stemming from, hematopoietic malignancy
+The paradigm stemming from the study of hematopoietic malignancies and sarcomas is that cancers are of monoclonal origin
+
+* Of special importance is ...
+Of special importance are changes that occur early during malignant transformation because they may result in oncogene addiction and thus represent promising targets for therapeutic intervention.
+
+* inadvertently
+Therapeutic intervention may destroy cancer clones and erode their habitats, but it can also inadvertently provide a potent selective pressure for the expansion of resistant variants.
+* harbor acquired aberrations, neoplasia, cytogenetic
+All or almost all neoplasias subjected to systematic cytogenetic scrutiny have been found to harbor acquired chromosomal aberrations.
+* a phase-informative site
+* set the stage for
+Early mathematical modeling of cancer, by Armitage and Doll, set the stage for the future development of the somatic evolutionary theory of cancer.
+* neoplastic cell
+* determined solely by, but also by
+Successful outgrowth of tumours and eventual metastasis is not determined solely by genetic alterations in tumour cells, but also by the fitness advantage such mutations confer in a given environment.
+* a population of mutant cells, called a clone
+In this way, a population of mutant cells, called a clone, can expand in the neoplasm. Clonal expansion is the signature of natural selection in cancer.

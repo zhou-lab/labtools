@@ -1,7 +1,7 @@
 #+STARTUP: overview
 #+STARTUP: indent
 ** recent
-*** insert time stamp in emacs           :emacs:
+*** insert time stamp in emacs             :emacs:
 C-u M-! date
 *** awk match remember use // instead of ""  :awk:
 // is regular expression
@@ -3671,16 +3671,21 @@ use -e
 find . -type f -exec sed -i '' -e s/Red/$color1/g -e s/Blue/$color2/g {} \;
 ** R
 *** Data IO
-****** read.csv
+see R wiki for more options
+http://en.wikibooks.org/wiki/R_Programming/Importing_and_exporting_data
+**** read ods file
+library("gnumeric")
+df <- read.gnumeric.sheet(file = "df.ods", head = TRUE, sheet.name = "Feuille1")
+**** read.csv
 read.csv is identical to read.table except that the default separator is “,” and header=TRUE
 t<-read.csv('2012_04_16_endosymbiosis_in_gamma_proteobacteria.csv', header=TRUE)
 
-****** handle large dataset by doing a pilot study of the type of each column
+**** handle large dataset by doing a pilot study of the type of each column
 initial <- read.table(“datatable.txt”, nrows=100) # try the first 100 rows first
 classes <- sapply(initial, class)
 tabAll <- read.table(“datatable.txt”, colClasses=classes)
 
-****** dget and dput
+**** dget and dput
 read and write R code files, contain the metadata from R for a single object
 > y<-data.frame(a=1,b='a')
 > dput(y) # dput to the console
@@ -3692,7 +3697,7 @@ structure(list(a = 1, b = structure(1L, .Label = "a", class = "factor")), .Names
   a b
 1 1 a
 
-****** source and dump
+**** source and dump
 read and  write R code files, contain the metadata from R, possibly for multiple objects
 > x<-'foo'
 > y<-data.frame(a=1,b='a')
@@ -3700,13 +3705,13 @@ read and  write R code files, contain the metadata from R, possibly for multiple
 > rm(x,y)
 > source('data.R')
 
-****** load and save
+**** load and save
 read and write workspaces
 
-****** serialize and unserialize
+**** serialize and unserialize
 write and read single R object in binary form
 
-****** file connections
+**** file connections
 file, opens a connection to a file
 gzfile, opens a connection to a gzip file
 bzfile, opens a connection to a bzip2 file
@@ -3725,11 +3730,11 @@ close(con)
 the same as 
 data ← read.csv('foo.txt')
 
-******* readLines and writeLines
+***** readLines and writeLines
 > con ← gzfile(“words.gz”)
 > x ← readLines(con,10) # read in 10 lines.
 
-******* Read in lines of a webpage
+***** Read in lines of a webpage
 con ← url(“http://www.jhsph.edu”,'r')
 x ← readLines(con)
 
