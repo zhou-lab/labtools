@@ -1,27 +1,456 @@
-I meant the discordance.  
+#+STARTUP: indent
+#+TAGS: memorize(a)
 
-* how ... operate in cell
-* quite an undertaking
-* totaling ...
+* russian
+осень
+дождь
+* words and sentences
+Last but foremost, our IHM approach lends itself in a straightforward manner to hypothesis  generation.
+what am I to do with these?
+It's a sensitive matter and Richard's asked for complete discretion.
+He's just shown he's willing to act of his own accord.
+My life was lent to me for on intent.
+I will honor your wish.
+I know this doesn't please you.
+The reader is cautioned that this nomenclature connotes neither the size nor functional characterization of these genomic elements
+We can work on this first, meanwhile we can work on the technical contents.
+Right now, there isn't much of a limit on interactive jobs.
+To restate this: what is the probability distribution of the different coverage values on a set after X randomly, independently selected elements of the set?
+
+** come about, race on,
+My mind raced on: Was this a laboratory model of human helplessness, one that could be used to understand how it comes about
+** how ... operate in cell
+** quite an undertaking
+** totaling ...
 The numbers assigned to nodes are the allelic copy numbers (totaling
 20, the number of segments)
-* a perspective of ... as ...
+** a perspective of ... as ...
 In 1976, Peter Nowell3 published a landmark perspective on cancer as an evolutionary process that is driven by stepwise, somatic-cell mutations with sequential, subclonal selection.
-* paradigm, stemming from, hematopoietic malignancy
+** paradigm, stemming from, hematopoietic malignancy
 The paradigm stemming from the study of hematopoietic malignancies and sarcomas is that cancers are of monoclonal origin
-
-* Of special importance is ...
+** Of special importance is ...
 Of special importance are changes that occur early during malignant transformation because they may result in oncogene addiction and thus represent promising targets for therapeutic intervention.
-
-* inadvertently
+** inadvertently
 Therapeutic intervention may destroy cancer clones and erode their habitats, but it can also inadvertently provide a potent selective pressure for the expansion of resistant variants.
-* harbor acquired aberrations, neoplasia, cytogenetic
+** harbor acquired aberrations, neoplasia, cytogenetic
 All or almost all neoplasias subjected to systematic cytogenetic scrutiny have been found to harbor acquired chromosomal aberrations.
-* a phase-informative site
-* set the stage for
+** a phase-informative site
+** set the stage for
 Early mathematical modeling of cancer, by Armitage and Doll, set the stage for the future development of the somatic evolutionary theory of cancer.
-* neoplastic cell
-* determined solely by, but also by
+** determined solely by, but also by
 Successful outgrowth of tumours and eventual metastasis is not determined solely by genetic alterations in tumour cells, but also by the fitness advantage such mutations confer in a given environment.
-* a population of mutant cells, called a clone
+** a population of mutant cells, called a clone
 In this way, a population of mutant cells, called a clone, can expand in the neoplasm. Clonal expansion is the signature of natural selection in cancer.
+** afflict
+what afflicted those dogs
+** our method will be advantageous
+** not the solution to the problem, xxx is the problem
+In this case, government is not the solution to the problem. Government is the problem.
+** a conceptual extension of xxx to xxx :memorize:
+The method developed here is a conceptual extension of this concept to the SFS
+** any specifics coming out of xxx     :memorize:
+but I don't remember any specifics coming out of it.
+** in this regard,
+** obstruct the advance of xxx
+** speaking of this,
+** not an expert of, did not provide [] to help me see :memorize:
+I am not an expert in either of these specific systems, but the write up did not provide enough background to help me see what was gained from the modeling exercise.
+** do not mean that xxx is wrong, only that
+I do not mean that the authors are wrong in this case, only that they did not provide information to show the readers that fewer parameters are appropriate here. 
+** versed in xxx
+This addition would make the manuscript more clear for people that are less versed in this type of modeling.
+** corroborate this assertion
+I can't corroborate this assertion.
+** despite the long-standing recognition that
+** the remarkable tapestry of
+Here we describe the remarkable tapestry of biological, evolutionary, and therapeutic insights that have emerged from systematic cancer genome characterization.
+** at its simplest ...
+What it means to be ...? At its simplest, it means ...
+** of assistance
+Let me know if I can be of assistance.
+* TODO other uncompiled
+they also expect the cost of genomic studies to plummet, with new technologies just over the horizon.
+
+whereas others thought that cancers were too hopelessly complicated to yield to systematic analysis.
+
+Such expansion in the copy number is considered a partial gain, *as opposed to* a complete gain whose start state is 0
+
+Two gene families (COG3319 and COG2931) which MUSCLE does not *accomodate*
+
+emphasis must be placed on ...
+
+besides --> additionally
+
+metabolism does not function in isolation from the other components of the cell.
+
+Other than --> *Apart from* these practical purposes,
+
+I'll highlight relevant prior work published by Sharan et al. (including Trey Ideker and Richard Karp) in JCB *circa* 2005
+
+changed our life immeasurably, for good.
+
+to redefine the SMILE language in a public manner.
+
+The HTC One’s “UltraPixel” camera sounds like marketing palaver but actually makes for an impressive shooter. In each situation we tested, the HTC One’s camera performed *on par with* — or better than — the competition. Whether it beats out the excellent Lumia 920 might come down to personal preference, but there’s no denying the HTC One’s camera exhibits such great low-light performance
+
+High-throughput sequencing platforms are emerging as the heir to the ubiquitous microarray, 
+
+These assays have the potential to accelerate biological discovery as comprehensive analyses of genomes, meta-genomes, transcriptomes and metabolomes becomes increasingly inexpensive and routine. 
+
+experimental design *has a large impact* on what algorithms and pipelines are a good fit
+
+At the same time, advances in high-throughput mass spectrometry are making it possible to investigate the outcomes of differential gene expression through simultaneous measurement of metabolites, transcriptomes, and epigenomes.
+
+Interpreting these vast data sets requires user-friendly but powerful visualization and modeling tools that promote exploration, analysis, and discovery.
+
+Databases are current as of October 2011
+
+Genome-scale metabolic networks can now be reconstructed based on
+annotated genomic data *augmented with* biochemical and physiological
+information about the organism.
+
+who are increasingly voicing concerns for ...
+
+i'm noticing a phenomenon
+
+the converging, so to speak, ...
+
+whatever the context may be,
+
+while the ambulances rushed in, sirens wailing, to reach the wounded, Afghan soldiers in full body armor quickly cordoned off the area.
+I saw dead bodies and wounded victims lying everywhere.
+
+for better, for worse, for richer, for poorer, in sickness and in health, until death do us part.
+
+ I'm here once again on the pristine little Italian island of Giglio, made famous not for its beauty, but for the tragedy on its shores.
+
+Based on these features, ORFans are not attributable to errors in gene annotation, limitations of current databases, or to failure of methods for detecting homology. *Rather*, ORFans in the genomes of free-living microorganisms apparently derive from bacteriophage and occasionally become established by assuming roles in key cellular functions.
+
+This theory is most clearly *manifested* in pathogenicity and ecological islands, which are contiguous sets of genes acquired through HGT that form genomic islands of atypical composition
+
+*It would be difficult to overstate the urgent need* for China to emulate South Korea in eliminating sex-biased abortion and neglect. 
+
+The American frontier earned its "Wild West" reputation for lawlessness because its towns overflowed with men, yet marriageable women were *vanishingly rare*.
+
+Throughout history, a surplus of young men often *heralded* violence. 
+
+Young men with poor prospects of ever starting a family spell danger to themselves and to their societies. 
+
+This story of the Nien Rebellion *foreshadows* one of the biggest issues that China will face in coming decades: the dramatic excess of young men.
+
+We discuss the need for additional theory and genomic level information to *disentangle* the roles of evolutionary mechanisms operating within and amongst individuals in driving the dynamics of gene distributions.
+
+what about you?
+
+The analysis of whole genomes has *reinvigorated* its investigation.
+
+The advancement of sequencing technologies has taken phylogenetic analysis to a new height.
+
+These effects can be pronounced in the primates, owing to large
+ancestral effective population sizes relative to the intervals between speciation events.
+
+Does it upset you that ?
+
+Despite the outrage *sparked* by a joke about the Holocaust, comedian Joan Rivers said she had nothing to apologize for.
+
+*As like I said*, I work two jobs, trying to support my family.
+
+I worry that I might feel like a wilting flower, is all, who never blossomed to her full potential, at least in a sexual realm. 
+
+you are actually into it as much as he was
+
+after this encounter on this special day,
+
+it also implies that 
+
+all that stuff, or information, *whatever you want to call it*, isn't out there...
+
+you said, no, this is not the way for me to go, right?
+
+can you imagine, how much it must have hurt Mr Alexandre, when you stuck that knife right into his chest, that really must have hurt, right
+
+If you torture the data enough, nature will always confess.
+
+Among the issues about which lawmakers showed greatest concern was the impact of the looming automatic budget cuts, or sequestration.
+
+the timing of the last-minute meeting has been widely criticized - but with most members of Congress out of town, *the likelihood* of Washington's top brass reaching a deal Friday to avert the cuts is *slim*.
+
+Environmental and political issues created by dependence on fossil fuels, coupled with diminishing petroleum resources, have *sparked a quest for* novel renewable sources of energy and chemicals
+
+Metabolism *encompasses* the biochemical basis of life and as such spans all biological disciplines.
+
+Gene loss cannot be unequivocally inferred for a species if one does not have the complete genome.
+
+The converse is also true—certain genomic studies are greatly improved by using evolutionary analysis.
+
+which is coined "module"
+
+I understand your apprehension.
+
+feature
+characterize
+possess
+mediate
+
+The game-changing output from these large-scale collaborative efforts is radically *transforming* the way cancer science is conducted.
+
+At the same time, these efforts are uncovering a staggering level of genome complexity in cancer, making it clear that effective translation of this newfound genomic knowledge into cancer therapeutics and diagnostics will require not only comprehensive cataloguing
+
+Note that *if desired*, these steps can be replaced by matching gene sequences against a database of known structural or functional protein domains to simultaneously detect the domain boundaries and domain families. 
+
+RIATA-HGT may overestimate the optimal number of HGT events; empirical performance, however, shows that such overestimation is very *mild*
+
+the fixation of genes horizontally transferred is not a *rampant* phenomenon
+
+Despite the sophisticated underlying models in these methods, a common assumption is to consider a gene as evolving as a single unit.
+
+special algorithms called “reconciliation methods” can be used to determine how the gene tree fits inside, *or rather “reconciles,”* to the species tree
+
+Accumulating prokaryotic gene and genome sequences reveal that the exchange of genetic information through both homology-dependent recombination and horizontal (lateral) gene transfer (HGT) is far more important, in quantity and quality, than *hitherto* imagined.
+
+take into consideration --> account for
+
+The traditional view, that prokaryotic evolution can be understood *primarily* in terms of clonal divergence and periodic selection, must *be augmented to* *embrace* gene exchange as a creative force, itself responsible for much of the pattern of similarities and differences we see between prokaryotic microbes.
+
+This method is of particular interest for studying genes that *exhibit* no, or only remote, homologies with already well-characterized proteins.
+
+Microbes occupy almost every habitable niche in the biosphere, *highlighting* their enormous capability for adaptation and survival. 
+
+This the acquisition of foreign genes
+
+highlights the promise
+outlines
+discuss
+allow us to consider
+
+characterize
+develop
+
+provide
+inform: Modelling efforts should in turn inform data collection, providing species of interest.
+
+accumulate
+
+pose huge challenge to
+many problem arise from xxx
+
+a must go hand-in-hand with b
+facilitating ...
+
+AAA is considered a touchstone of our understanding
+investigate
+
+tremendous potential
+overarching goal
+
+XXX is an exciting frontier
+
+AA has revolutionized BB
+
+aim to 
+
+capture
+
+forseeable future
+
+hold great promise
+
+address question
+
+something can be addressed only by considering XXX
+
+acknowledging XXXX
+
+something is uniquely apt for studying ...
+
+
+is scarce and something is still needed
+be bound to lead to exciting discoveries
+
+fundamentally system-level question
+, as a whole, 
+
+let's aim for next friday
+
+In the coming months, Mr. Rehn must decide whether to recommend punishing countries for missing their targets, possibly leading to large fines, or to offer them leniency.
+
+We all add to our memories of childhood appropriate bits of what we have read or heard since then.
+
+If a first, unpublicized marriage might lay to rest one contentious issue, there are others.
+
+The wardens, driving in two different vehicles, chased Dorner and a gun battle ensued.
+
+Comparative analyses of the human microbiome have revealed substantial variation in species and gene composition associated with a variety of disease states but may fall short of providing a comprehensive understanding of the impact of this variation on the community and on the host
+
+switch → migrate
+
+Any minute? Some people live a lifetime in a minute
+
+What little we have, we will share with her too.
+
+l am sorry to hear about your troubles, but, be that as it may, you still must carry out your responsibilities. Be that as it may, I still cannot help you. 
+He certainly was under pressure at the time. Be that as it may, he was still wrong to react in the way that he did.
+
+The characterization of tumor bioenergetics profile necessitates tumor excision and both molecular
+and functional analyses in a microenvironment that mimics the tumor milieu.
+
+We compared the difference in community structures against the difference in modularities and the genetic distance, to investigate the correlation, or lack thereof, among the three.
+
+78. The goals are to retain pertinent information and mitigate quantitative effects of peak misalignment.
+
+77. Mrs Clinton's remarks came a day after she accused Moscow of sending attack helicopters to Damascus, a claim vehemently rejected on Wednesday by Russia's Foreign Minister Sergei Lavrov.
+
+    ... in strain optimization efforts, where the best set of genetic modifications to impose over the wild type strain is sought
+
+    the lack of computational tools for the automation of their generation is particularly felt being this task typically conducted by a laborious and time consuming literature search.
+
+74. this task is not absent from important hurdles, being the first the inherent complexity of these GPRs.
+
+73. conclusions are directions for further work are outlined.
+
+72. specific details of each steps will follow, organized in sub-sections.
+
+71. I will be building a dam, when there is a pussy flood. for I am a collector of nature, and a lover of its treasure. I will use my savings, to quench those thirsty, and lubricate those angry, for i have suffered and suffered the pain and anguish.
+
+70. when a person's sanity is at balance, when human passion is raging, no etiquette must get in the way.
+
+when the weather gets really really appalling and everyone's miserable, it makes me happy.
+
+68. Aside from the technical challenges and sense of achievement that stem from understanding exactly how high-level programs are actually executed on devices built from simple building blocks, historical developments in computer architecture neatly capture and explain many design decisions that have shaped a landscape we now take for granted.
+
+67. Seemingly frivolous anecdotes and examples like this are increasingly being consigned to history whereas from an Engineering perspective, one would like to learn and understand previous approaches so as to potentially improve in the future.
+
+66. Thick black smoke rose from the scene - and some distance away there were shattered windows and scattered pieces of twisted metal, suggesting the blast had been massive.
+
+65. Nothing remained therefore to be done, but to think well of them both, to defend the conduct of each, and throw into the account of accident or mistake whatever could not be otherwise explained.
+
+64. When one door of happiness closes, another opens; but often we look so long at the closed door that we do not see the one which has been opened for us.
+
+the great thing about hitting in the head with a hammer is that when the pain goes, it feels so good.
+
+The world is a looking glass, and gives back to every man the reflection of his own face.
+
+All changes, even the most longed for, have their melancholy; for what we leave behind us is a part of ourselves; we must die to one life before we can enter another.
+
+The tragedy of life is what dies inside a man while he lives.
+
+It is not what we do, but also what we do not do, for which we are accountable.
+
+The religion of one age is the literary entertainment of the next.
+
+Naive you are / if you believe / life favours those / who aren't naive.
+
+If you talk to God, you are praying. If God talks to you, you have schizophrenia.
+
+Life is a tragedy for those who feel, and a comedy for those who think.
+
+54. It is of interest to note that while some dolphins are reported to have learned English -- up to fifty words used in correct context -- no human being has been reported to have learned dolphinese.
+
+53. Lying to ourselves is more deeply ingrained than lying to others.
+
+52. Jobs said, the day finally came when he could no longer perform his duties.
+
+51. If you are not so compassionate as to dine to-day with Louisa and me, we shall be in danger of hating each other for the rest of our lives, for a whole day's tete-a-tete between two women can never end without a quarrel.
+
+50. Learn the rules so you know how to break them properly
+
+49. Sometimes you just need a bigger hammer.
+
+48. The willow which bends to the tempest, often escapes better than the oak which resists it; and so in great calamities, it sometimes happens that light and frivolous spirits recover their elasticity and presence of mind sooner than those of a loftier character.
+
+47. As Laura has grown so have her ambitions.
+
+46. three concuring projects
+
+45. incur hefty loss
+
+With their win today, the Rangers are now on a par with the Orioles in the team rankings.
+
+Thursday's economic reports show that concerns over Greece are having a broader economic impact, according to economists.
+
+42. Nato leaders meeting in Chicago have endorsed plans to hand over combat command to Afghan forces by mid-2013.
+
+A personal friend of the emperor, he was allowed to address him as "tu", as opposed to "vous".
+
+As population changes the US will see an inevitable decline in the numbers of whites in the labour force, Mr Frey said, adding that better pathways to education were needed for the changing demographic groups.
+
+William Frey, head of demographics at the Brookings Institution, said the data presage a new set of challenges to the US in years to come.
+
+We marvel at the great speeches today when we read them.
+
+37. While men's appetites are driven by availability, women's are often driven by cravings. A dab of chocolate here, a pinch of sugar here, and some surreptitious midnight Dairy Queen runs lurk behind a woman's oh-so-virtuous bran breakfast, salad lunch, and grilled fish dinner.
+
+36. In this case, government is not the solution to the problem. Government is the problem.
+
+35. The pressure to try to behave in this impossible manner can cause some to become overly obsessed with “big problems” or “big theories”, others to lose any healthy scepticism in their own work or in their tools, and yet others still to become too discouraged to continue working in mathematics.
+
+34. This “cult of genius” in fact causes a number of problems, since nobody is able to produce these (very rare) inspirations on anything approaching a regular basis, and with reliably consistent correctness.
+
+33. Actually, I find the reality of mathematical research today – in which progress is obtained naturally and cumulatively as a consequence of hard work, directed by intuition, literature, and a bit of luck – to be far more satisfying than the romantic image that I had as a student of mathematics being advanced primarily by the mystic inspirations of some rare breed of “geniuses”.
+
+32. The advance from one stage of understanding to the next can be highly non-trivial, and sometimes rather unexpected, but still builds upon the foundation of earlier work rather than starting totally anew.
+
+We do have spectacular, deep and remarkable results and insights in this subject, of course, but they are the hard-won and cumulative achievement of years, decades, or even centuries of steady work and progress of many good and great mathematicians;
+
+30. The popular image of the lone (and possibly slightly mad) genius – who ignores the literature and other conventional wisdom and manages by some inexplicable inspiration (enhanced, perhaps, with a liberal dash of suffering) to come up with a breathtakingly original solution to a problem that confounded all the experts – is a charming and romantic image, but also a wildly inaccurate one, at least in the world of modern mathematics.
+
+29. But one does not need some sort of magic “genius gene” that spontaneously generates ex nihilo deep insights, unexpected solutions to problems, or other supernatural abilities.
+
+28. The latter are prima facie instances of lateral transfer of an entire gene or beyond.
+ 
+27. As a result, new applications require that other users have access to the underlying toolkit that can be a hindrance to the spread of the higher-level application.
+
+26. Probably more important than any of the  factors described here is the ability to freely reuse software and develop novel applications. (倒装）
+
+25. However, in the case of the latter, one is still at the mercy of the vendor who may or may not provide the results of a test suite.
+
+24. We were 45km from mainland Colombia when the first humpback whale breached the surface, exposing its massive white underside before splashing back down with an impressive display of power and grace. (In English, transitions can be made using when and before, those transitions do not necessarily mean the subsequent information is less important.)
+
+23. As a preface is the only place where an author can with propriety explain a purpose or apologize for shortcomings, I venture to avail myself of the privilege to make a statement for the benefit of my readers.
+
+22. Heywood's financial problems before he died prompted a former business associate to pay for his family's plane tickets to attend his London funeral.
+
+21. The person in question, Bo Guagua, whose parents are at the nexus of a seismic scandal roiling the party, issued a statement on Tuesday rejecting any connection with the luxury Italian sports car.
+
+20. Just as the rest of the university is constructed with equal-access in mind, so too should the treadmills be.
+
+19. But my wheelchair has at least offered me a redemptive taste of mobility and the rewarding joy of constant physical exertion.
+
+18. Let the shameful wall of exclusion finally come tumbling down.
+
+17. Therefore, it is to my great disappointment that my favorite lobby at Rice has been rendered inaccessible to me.
+
+16. The statement, which included a defense of his much-maligned academic record and a rebuttal of accusations that his education had been financed with soiled money, represented the first time that Mr. Bo had spoken publicly since his parents disappeared this month into the maw of China’s notoriously opaque justice system.
+
+15. So now that the dust has settled, how do the two new services stack up with the current king of cloud storage and sync, Dropbox? Let’s take a look.
+
+14. Linux users are justifiably miffed that the new cloud storage service doesn't support the free and open source operating system.
+
+13. Such a choice of vehicle seemed particularly unfortunate when paired with the many photographs, readily available on the Internet, that showed the young man in a dinner jacket and living it up at Oxford University while his father was preaching egalitarianism.
+
+12. Those contradictions were thrown into sharp relief last year after word spread that the younger Mr. Bo used a red Ferrari to squire the daughter of the American ambassador around Beijing.
+
+11. A few days later Mr. Bo — who had been angling for the party’s all-powerful Politburo Standing Committee — lost his job, a prelude to the more dire troubles that would soon follow.
+
+10. With his parents incommunicado, the foreign news media have been relentlessly focusing on Mr. Bo, especially his affinity for Champagne and first-class air travel, and the yearlong suspension from Oxford that stemmed from lagging grades.
+
+9. He also sought to directly address suggestions that he was excessively social.
+
+8. These are very vulnerable places of your body.
+
+7. Unfortunately, this is not confined to 64-bit systems.
+
+6. The duplication of genes may form a cornerstone in the evolution of biological complexity.
+
+5. another dramatic trend on the horizon is the use of...
+
+4. The beleaguered industry recently hit upon a solution that is pure Hollywood.
+Upon a high tower within the beleaguered city a man appeared.
+Even today, in some parts of China, it is common practice for a man to seek justice by summoning his family and their allies to beleaguer the home of the person who wronged him.
+
+3. We apologize in due form: we are in despair, we entreat forgiveness for the unfortunate misunderstanding.
+
+2. But the elder mage's health was taxed by the rigors of the journey.
+
+1. Wesnoth seems to be slipping inexorably into chaos, as marauding orcs pour south across the Great River, and mysterious and deadly creatures roam the night.
+

@@ -8581,6 +8581,121 @@ another example from wikipedia
     return 0;
   }
 #+end_src
+*** shared library
+**** introduction - 三种shared library names
+      http://tldp.org/HOWTO/Program-Library-HOWTO/shared-libraries.html
+      1. so name : /usr/lib/libreadline.so.3
+       	 this is a linker to real name (set by ldconfig)
+       	 this is the name that a user program would give
+       	 现存的程序通常记录一个major version number。
+       	 每次load的时候总是load这个so name
+      2. real name : /usr/lib/libreadline.so.3.0
+       	  this is the name of the file created by the developer
+       	  of the library.
+      3. linker name : /usr/lib/libreadline.so
+       	  this is a linker to so name (done during the library installation)
+       	  usually the latest so name
+       	  编译一个新程序，总是采用linker name，因为它总是指向最新的so name。
+**** ELF (Executable and Linkable Format) - the real .so format
+In fact, ELF format is also the format for all binary files, executables and core dumps
+http://en.wikipedia.org/wiki/Executable_and_Linkable_Format
+
+Its components include:
+#+BEGIN_EXAMPLE
+ELF header
+Program header table, describing zero or more segments
+Section header table, describing zero or more sections
+Data referred to by entries in the program header table or section header table
+#+END_EXAMPLE
+
+**** find what is in the shared library
+***** a brute-force way by using "strings" (NOT recommended)
+#+BEGIN_SRC sh
+strings /usr/lib64/libstdc++.so.6 | grep 'GLIBCXX'
+#+END_SRC
+***** objdump - display information from object files
+****** see private header using "objdump -p"
+#+BEGIN_SRC sh
+objdump /usr/lib64/libstdc++.so.6 -p
+#+END_SRC
+***** readelf - display information from ELF files
+#+BEGIN_SRC sh
+# display all info
+readelf -a mylib.so
+
+# display file header only
+readelf -h mylib.so 
+
+# display version info
+readelf -V mylib.so
+#+END_SRC
+
+***** file - display some of the library infomation
+**** ldd 显示一个程序所使用的所有.so
+例如 ldd /bin/ls
+for safety's sake, don't use ldd on programs you don't trust.
+ldd命令等同于 /lib/ld-linux.so.2 --list
+#+BEGIN_SRC sh
+ldd -r -v my_binary
+#+END_SRC
+-v prints the version info of the shared library
+-r prints the object
+**** what's GLIBCXX_3.4?
+this is the version reference
+can be seen using "objdump -p"
+**** find out which shared library is installed?
+rpm -q libstdc++
+or rpm -qa | grep libstdc++
+**** compile shared library using gcc
+    gcc -shared -Wl,-soname,your_soname -o real_name file_list library_list
+    注意-Wl,-soname,[yourname] 之间只有逗号，不能有空格。
+    避免使用-fomit-frame-pointer
+    -fPIC 产生 position independent code
+    -fpic 相同，但是为本地平台优化，速度更快，但不推荐。
+
+#+BEGIN_SRC sh
+  gcc -fPIC -g -c -Wall a.c
+  gcc -fPIC -g -c -Wall b.c
+  gcc -shared -Wl,-soname,libmystuff.so.1 -o libmystuff.so.1.0.1 a.o b.o -lc
+#+END_SRC
+**** ldconfig - install shared library
+(as root) Re-create the bindings and the cache for the loader of dynamic libraries ("ld"). You may want to run ldconfig after an installation of new dynamically linked libraries on your system. (It is also re-run every time you boot the computer, so if you reboot you don't have to run it manually.)
+
+ldconfig 用来更新 /etc/ld.so.cache。详情见下:
+When you install a new version of a library, you install it in one of a few special directories and then run the program ldconfig(8). ldconfig examines the existing files and creates the sonames as symbolic links to the real names, as well as setting up the cache file /etc/ld.so.cache.
+Searching all of these directories at program start-up would be grossly inefficient, so a caching arrangement is actually used. The program ldconfig(8) by default reads in the file /etc/ld.so.conf, sets up the appropriate symbolic links in the dynamic link directories (so they'll follow the standard conventions), and then writes a cache to /etc/ld.so.cache that's then used by other programs. This greatly speeds up access to libraries. The implication is that ldconfig must be run whenever a DLL is added, when a DLL is removed, or when the set of DLL directories changes; running ldconfig is often one of the steps performed by package managers when installing a library. On start-up, then, the dynamic loader actually uses the file /etc/ld.so.cache and then loads the libraries it needs.
+****** 设定环境变量以暂时改变以上默认行为（debug常用）
+******* LD_LIBRARY_PATH
+       	 a set of directory where libraries should be searched for first, before the standard set of directories;
+       	 LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH my_program
+       	 see "Why LD_LIBRARY_PATH is bad?"
+       	 http://www.visi.com/~barr/ldpath.html
+******* LD_RELOAD
+       	 override /etc/ld.so.preload
+******* LD_DEBUG
+       	 产生debug信息，可设为"files", "bindings","libs","versions", "help"
+       	 =======================
+       	 export LD_DEBUG=files
+       	 command_to_run
+       	 =======================
+****** 直接调用program loader （debug常用）
+       	/lib/ld-linux.so.2 --library-path PATH EXECUTABLE
+***** 安装shared library
+       ldconfig -n directory_with_shared_libraries.
+       -n 只更新指定的目录
+**** Procedure Linkage Table (PLT)
+程序中动态链接库集中放置的地方。
+a table in the program that lists every function that a program calls. When the program is started, the PLT contains code for each funcion to query the runtime linker for the address at which it has loaded a function. It then fills in that entry in the table and jumps there. As each function is called, its entry in the PLT is smplified into a direct jump to the loaded function.
+**** program loader /lib/ld-linux.so.X
+searches /etc/ld.so.conf for list of directories for libraries that needs loading.
+/etc/ld.so.conf usually include /etc/ld.so.conf.d/*.conf
+**** object file (.o)
+gdb -q myfile 查看.o文件的内存映像
+**** c++filt - demangle c++ and Java symbols
+#+BEGIN_SRC 
+readelf -aW <binary> | c++filt
+#+END_SRC
+
 ** LaTeX
 *** 用pdflatex emacs写文档
     C-c C-e document 自动提示documentclass，填充\begin{document} \end{document}
@@ -10076,129 +10191,6 @@ grep -cm1 return 1 regardless the amount of found matches
       目录的权限位：r:可列文件 w:可创建或删除 x:可进入或搜索 去掉x可使别的用户访问受限
 
       chmod -R 664 /usr/local/home/dave/* 连同子目录一起设置
-*** c-programming
-**** common library的位置
-     stdio.h: /usr/include/
-     boost:/usr/include/
-     time.h: /usr/include/sys/
-**** shared library
-     :PROPERTIES:
-     :VISIBILITY: children
-     :END:
-***** introduction - 三种shared library names
-      http://tldp.org/HOWTO/Program-Library-HOWTO/shared-libraries.html
-      1. so name : /usr/lib/libreadline.so.3
-       	 this is a linker to real name (set by ldconfig)
-       	 this is the name that a user program would give
-       	 现存的程序通常记录一个major version number。
-       	 每次load的时候总是load这个so name
-      2. real name : /usr/lib/libreadline.so.3.0
-       	  this is the name of the file created by the developer
-       	  of the library.
-      3. linker name : /usr/lib/libreadline.so
-       	  this is a linker to so name (done during the library installation)
-       	  usually the latest so name
-       	  编译一个新程序，总是采用linker name，因为它总是指向最新的so name。
-***** ELF (Executable and Linkable Format) - the real .so format
-In fact, ELF format is also the format for all binary files, executables and core dumps
-http://en.wikipedia.org/wiki/Executable_and_Linkable_Format
-
-Its components include:
-#+BEGIN_EXAMPLE
-ELF header
-Program header table, describing zero or more segments
-Section header table, describing zero or more sections
-Data referred to by entries in the program header table or section header table
-#+END_EXAMPLE
-
-***** find what is in the shared library
-****** a brute-force way by using "strings" (NOT recommended)
-#+BEGIN_SRC sh
-strings /usr/lib64/libstdc++.so.6 | grep 'GLIBCXX'
-#+END_SRC
-****** objdump - display information from object files
-******* see private header using "objdump -p"
-#+BEGIN_SRC sh
-objdump /usr/lib64/libstdc++.so.6 -p
-#+END_SRC
-****** readelf - display information from ELF files
-#+BEGIN_SRC sh
-# display all info
-readelf -a mylib.so
-
-# display file header only
-readelf -h mylib.so 
-
-# display version info
-readelf -V mylib.so
-#+END_SRC
-
-****** file - display some of the library infomation
-***** ldd 显示一个程序所使用的所有.so
-例如 ldd /bin/ls
-for safety's sake, don't use ldd on programs you don't trust.
-ldd命令等同于 /lib/ld-linux.so.2 --list
-#+BEGIN_SRC sh
-ldd -r -v my_binary
-#+END_SRC
--v prints the version info of the shared library
--r prints the object
-***** what's GLIBCXX_3.4?
-this is the version reference
-can be seen using "objdump -p"
-***** find out which shared library is installed?
-rpm -q libstdc++
-or rpm -qa | grep libstdc++
-***** compile shared library using gcc
-    gcc -shared -Wl,-soname,your_soname -o real_name file_list library_list
-    注意-Wl,-soname,[yourname] 之间只有逗号，不能有空格。
-    避免使用-fomit-frame-pointer
-    -fPIC 产生 position independent code
-    -fpic 相同，但是为本地平台优化，速度更快，但不推荐。
-
-#+BEGIN_SRC sh
-  gcc -fPIC -g -c -Wall a.c
-  gcc -fPIC -g -c -Wall b.c
-  gcc -shared -Wl,-soname,libmystuff.so.1 -o libmystuff.so.1.0.1 a.o b.o -lc
-#+END_SRC
-***** ldconfig - install shared library
-(as root) Re-create the bindings and the cache for the loader of dynamic libraries ("ld"). You may want to run ldconfig after an installation of new dynamically linked libraries on your system. (It is also re-run every time you boot the computer, so if you reboot you don't have to run it manually.)
-
-ldconfig 用来更新 /etc/ld.so.cache。详情见下:
-When you install a new version of a library, you install it in one of a few special directories and then run the program ldconfig(8). ldconfig examines the existing files and creates the sonames as symbolic links to the real names, as well as setting up the cache file /etc/ld.so.cache.
-Searching all of these directories at program start-up would be grossly inefficient, so a caching arrangement is actually used. The program ldconfig(8) by default reads in the file /etc/ld.so.conf, sets up the appropriate symbolic links in the dynamic link directories (so they'll follow the standard conventions), and then writes a cache to /etc/ld.so.cache that's then used by other programs. This greatly speeds up access to libraries. The implication is that ldconfig must be run whenever a DLL is added, when a DLL is removed, or when the set of DLL directories changes; running ldconfig is often one of the steps performed by package managers when installing a library. On start-up, then, the dynamic loader actually uses the file /etc/ld.so.cache and then loads the libraries it needs.
-******* 设定环境变量以暂时改变以上默认行为（debug常用）
-******** LD_LIBRARY_PATH
-       	 a set of directory where libraries should be searched for first, before the standard set of directories;
-       	 LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH my_program
-       	 see "Why LD_LIBRARY_PATH is bad?"
-       	 http://www.visi.com/~barr/ldpath.html
-******** LD_RELOAD
-       	 override /etc/ld.so.preload
-******** LD_DEBUG
-       	 产生debug信息，可设为"files", "bindings","libs","versions", "help"
-       	 =======================
-       	 export LD_DEBUG=files
-       	 command_to_run
-       	 =======================
-******* 直接调用program loader （debug常用）
-       	/lib/ld-linux.so.2 --library-path PATH EXECUTABLE
-****** 安装shared library
-       ldconfig -n directory_with_shared_libraries.
-       -n 只更新指定的目录
-***** Procedure Linkage Table (PLT)
-程序中动态链接库集中放置的地方。
-a table in the program that lists every function that a program calls. When the program is started, the PLT contains code for each funcion to query the runtime linker for the address at which it has loaded a function. It then fills in that entry in the table and jumps there. As each function is called, its entry in the PLT is smplified into a direct jump to the loaded function.
-***** program loader /lib/ld-linux.so.X
-searches /etc/ld.so.conf for list of directories for libraries that needs loading.
-/etc/ld.so.conf usually include /etc/ld.so.conf.d/*.conf
-**** object file (.o)
-gdb -q myfile 查看.o文件的内存映像
-**** c++filt - demangle c++ and Java symbols
-#+BEGIN_SRC 
-readelf -aW <binary> | c++filt
-#+END_SRC
-
 *** systems
 **** free
 free displays the total amount of free and used physical and swap
