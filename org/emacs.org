@@ -668,7 +668,7 @@ C-c C-s arrange time
 C-c C-d set deadline
 **** how to set a countdown timer
 C-c C-x ; org-timer-set-timer
-**** how to display a summary of time spent :memorize:
+**** how to display a summary of time spent
 C-c C-x C-d org-clock-display display time summaries for each subtree
 **** how to input date and time in the calendar buffer?
      C-c . add time stamp

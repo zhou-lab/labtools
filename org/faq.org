@@ -1,8 +1,20 @@
 #+STARTUP: overview
 #+STARTUP: indent
+#+TAGS: memorize(a) bash git
 ** recent
+*** color ui in git                        :git:
+git config --global color.ui true
+*** change space to tab
+unexpand -a
+handles multiple space
+*** change login to bash                  :bash:
+if ( -x /bin/bash ) then
+exec /bin/bash -l 
+endif
 *** insert time stamp in emacs             :emacs:
 C-u M-! date
+or with YASnippet
+time<tab>
 *** awk match remember use // instead of ""  :awk:
 // is regular expression
 "" is regarded as string
@@ -92,7 +104,6 @@ python setup.py install --user
 *** gensub vs gsub vs sub                    :awk:
 **** gensub(regexp, replacement, how [, target])
 awk -v OFS="\t" '{$7=gensub(/([[:digit:].]*)%/, "\\1", 1, $7) / 100.0; print $0}' varscan_snp_cms46.overlap
-
 
 **** sub(regexp, replacement, [, target])
 search target which is treated as a string for the leftmost, longest substring matched by the regular expression regexp. Modify the entire string by replacing the matched text with replacement. The modified string becomes the new value of target. Return the number of substitutions made (zero or one). 
@@ -2046,7 +2057,7 @@ git add file.txt revert the index to the working version again.
 git add --patch
 *** to unstage partially a file
 git reset -p (-p is short for --patch)
-*** to squash commits
+*** to squash commits                 :memorize:
 git reset --soft HEAD~2
 git commit
 The other intermediate commits are now detached. They are still in reflog and may be cleaned at some point.
@@ -4996,6 +5007,15 @@ read and  write R code files, contain the metadata from R, possibly for multiple
 > rm(x,y)
 > source('data.R')
 
+**** sink
+sink("/home/wanding/myfile.csv")
+datafile
+sink()
+完成
+
+**** write.table
+write.table(datafile,file="/home/wanding/myfile.csv")
+
 **** load and save
 read and write workspaces
 
@@ -5045,12 +5065,15 @@ the best solution to use C-type printf is to use cat + sprintf
 cat(sprintf('%1.3f\t%s\n', a.sorted[i], names(a.sorted)[i]))
 
 *** Manipulate Data
+***** assign()
+assign("x", function(arguments)) # Has the same effect, but uses the assignment function instead of the assignment operator.
+x<-function(arguments)
 ***** how to round a number using floor and ceiling
 sapply(vec, floor)
 trunc
 round
 signif
-***** Word wrap using strwrap function
+***** word wrap using strwrap function
 sapply(names(t), function(x) paste(strwrap(x,width=40),collapse="\n"))
 
 ***** view the class (type) of an object
@@ -5070,10 +5093,10 @@ NULL
 > names(x)<-c('foo','bar','norf')
 > x
  foo  bar norf 
-   1    2    3 
+  1    2    3 
 > names(x)
-[1] "foo"  "bar"  "norf"
-
+[ 1 ] "foo"  "bar"  "norf"
+# note that even with names, x remains a vector, not a data.frame
 ***** explicit type coersion
 as.numeric()
 as.character()
@@ -5081,42 +5104,74 @@ as.logical()
 as.complex()
 
 ***** integer and numeric
+numeric is equivalent to "double"
 “1” is numeric and “1L” is integer.
 
-***** Special character NaN and NA and Inf
+***** NaN and NA
+****** basics
 NA has a class too, there's integer NA and character NA.
+default is a logical NA
 NaN is NA, but NA is not NaN.
 > x<-c(1,2,NA,10,3)
 > is.na(x)
-[1] FALSE FALSE  TRUE FALSE FALSE
+[ 1 ] FALSE FALSE  TRUE FALSE FALSE
 > is.nan(x)
-[1] FALSE FALSE FALSE FALSE FALSE
+[ 1 ] FALSE FALSE FALSE FALSE FALSE
 > x<-c(1,2,NaN,NA,4)
 > is.na(x)
 [1] FALSE FALSE  TRUE  TRUE FALSE
 > is.nan(x)
 [1] FALSE FALSE  TRUE FALSE FALSE
-****** omit NA
+****** omit NA in a data.frame
 na.omit(dat)
 
-****** filter out NA
+****** filter out NA - is.na
 > x<-c(1,2,NA,4,NA,5)
-> bad<-is.na(x)
-> x[!bad]
-[1] 1 2 4 5
+> x[!is.na(x)]
+[ 1 ] 1 2 4 5
 
 ****** filter out NA for two vectors simultaneously using complete.cases.
 > x<-c(1,NA,2,4,NA,5)
 > y<-c('a','b',NA,'d',NA,'f')
 > good<-complete.cases(x,y)
 > good
-[1]  TRUE FALSE FALSE  TRUE FALSE  TRUE
+[ 1 ]  TRUE FALSE FALSE  TRUE FALSE  TRUE
 > x[good]
-[1] 1 4 5
+[ 1 ] 1 4 5
 > y[good]
-[1] "a" "d" "f"
+[ 1 ] "a" "d" "f"
 
+***** concatenate two string - paste
+paste("wan","ding")
+***** substring
+substring:
+substring("wanding",1,3)
+gives "wan"
 **** vector
+numeric, character, integer are all vectors
+***** create a numeric vector - numeric()
+e<-numeric()		create an empty numeric vector
+***** create a character vector - character()
+as.character(z)	convert to character
+***** create an integer vector - integer()
+as.integer(z)	convert to integer
+***** create empty vector
+list of empty character string vector is listed as character(0) and the empty numeric vector as numeric(0)
+***** take absolute value
+y[y<0]<- -y[y<0]
+has the same effect as y<- abs(y)
+***** repeat
+c(2,3)[rep(c(2,1),times=2)] gives 3 2 3 2
+y <- rep(x,times=5)
+y<- rep(x,each=5)
+
+***** how to create X1, Y2, X3, Y4 ... quickly
+labs<-paste(c("X","Y"),1:10,sep"")
+== c("X1", "Y2", "X3", "Y4", "X5", "Y6", "X7", "Y8", "X9", "Y10")
+the recycling of short lists takes place here.
+
+***** delete elements from vector
+x[-c(1,2,3)]	删掉第1，2，3个元素
 ***** how to generate (1,1,1,2,2,2,3,3,3) from (1,2,3)
 > rep(c("g1","g2","g3"),times=c(1,3,4))
 [1] "g1" "g2" "g2" "g2" "g3" "g3" "g3" "g3"
@@ -5128,10 +5183,13 @@ x ← c(T,F)
 x ← c(TRUE, FALSE)
 
 ***** range
-x ← 1:20
+x <- 1:20
 seq
 seq(from = 1, to = 1, by = ((to - from)/(length.out - 1))
-
+seq(-5, 5, by = .2)
+****** sample 51 points from -5 by interval 0.2
+seq(length = 51, from = -5, by = 0.2)
+****** sample 50 points from 3 to 7 evenly
 ***** type coersion in vectors
 elements in a vector must be of the same type, there will be implicit type coersion when different types are mixed.
 y ← c(1.7, “a”) ## character 1.7 → “1.7”
@@ -5139,18 +5197,29 @@ y ← c(TRUE,2) ## numeric TRUE → 1
 y ← c(“a”, TRUE) ## character TRUE → “TRUE”
 
 ***** subset a vector
+# different from python, 1-based, last element included.
+x[1:10] select the first 10 components of x
+y<-x[x<10]
+y<-x[!is.na(x)]
+(x+1)[(!is.na(x)) & x>0] ->z
+A<-c(1,2,3)
+B<-c(0,1,0)
+change A's element to 0 if B's element is 1: A[B==1]<-0
+
+y<-x[-(1:5)] gives y all but the first five elements of x
+
 > x<-c('a','b','c','c','d','a')
-> x[2]
-[1] "b"
+> x[ 2 ]
+[ 1 ] "b"
 > x[1:4]
-[1] "a" "b" "c" "c"
+[ 1 ] "a" "b" "c" "c"
 > x[x>"a"]
-[1] "b" "c" "c" "d"
+[ 1 ] "b" "c" "c" "d"
 > u<-x > 'a'
 > u
-[1] FALSE  TRUE  TRUE  TRUE  TRUE FALSE
+[ 1 ] FALSE  TRUE  TRUE  TRUE  TRUE FALSE
 > x[u]
-[1] "b" "c" "c" "d"
+[ 1 ] "b" "c" "c" "d"
 
 ***** vectorized operations
 > x <- 1:4; y <- 6:9
@@ -5175,8 +5244,12 @@ is.vector()
 ***** use match to find mapping between two vectors
 ma=match(cats, names(t))
 
+***** reverse the vector
+rev(vec)
+***** get index of an element in a vector
+which(vector == element_value)
 **** matrix
-****** make a matrix
+***** make a matrix
 > m ← matrix(nrow=2, ncol=3)
 initialized to “NA”
 > m ← matrix(1:6, nrow=2, ncol=3)
@@ -5192,28 +5265,46 @@ matrix initialization is “column first” or “columnwise”
 [1,]    1    3    5    7    9
 [2,]    2    4    6    8   10
 
-****** dimension of a matrix
+***** create a matrix
+diag(v) gives a diagonal matrix with elements of the vector as the diagonal entries.
+diag(M) gives the vector of main diagonal entries of M.
+diag(k) gives a k by k identity matrix
+***** create a matrix by concatenation
+cbind(arg_1,arg_2,arg_3,...) forms matrices by binding together matrices horizontally, or column-wise.
+rbind(arg_1,arg_2,arg_3,...) forms matrices by binding together matrices vertically, or row-wise.
+***** matrix multiplication
+"*" normal multiplication
+"%*%" matrix multiplication
+
+***** matrix transposition
+t() matrix transposition
+
+***** cross product two vector
+crossprod(x,y)==t(x)%*%y
+***** dimension of a matrix
 > dim(m)
 [1] 2 5
 
-****** remove the first row
-t[-1,]
+***** remove a column/row of a matrix
+d[,-5] deletes column 5
+mat[-3,] remove the 3rd row of the matrix
+t[-1,] remove the first row
 
-****** remove several rows
+***** remove several rows
 df[-(416:472), ]
 
-****** Sort a data frame by a certain column
+***** Sort a data frame by a certain column
 sortd=d[with(d, order(-ratio)),]
 
-****** rename column of data frame
+***** rename column of data frame
 names(d)[4]='ratio'
 
-****** view attributes of objects, e.g., names, dimnames, dimensions, class, length are all attributes.
+***** view attributes of objects, e.g., names, dimnames, dimensions, class, length are all attributes.
 > attributes(m)
 $dim
 [1] 2 3
 
-****** cbind and rbind
+***** cbind and rbind
 > x ← 1:3
 > y ← 10:12
 > cbind(x,y)
@@ -5226,10 +5317,10 @@ $dim
 x    1    2    3
 y   10   11   12
 
-****** add two columns rowwise using cbind
+***** add two columns rowwise using cbind
 ctbl = cbind(tbl[,"Freq"], tbl[,"None"] + tbl[,"Some"])
 
-****** matrix with dimnames (row names, column names)
+***** matrix with dimnames (row names, column names)
 > m<-matrix(1:4, nrow=2,ncol=2)
 > dimnames(m)<-list(c('a','b'),c('c','d'))
 > m
@@ -5237,7 +5328,27 @@ ctbl = cbind(tbl[,"Freq"], tbl[,"None"] + tbl[,"Some"])
 a 1 3
 b 2 4
 
-****** subset a matrix
+***** get or set the names of rows and columns
+rownames(matrix)
+colnames(matrix)
+
+can also use dimnames(matrix),where
+"rownames()" is equivalent to "dimnames(matrix)[ [1] ]"
+"colnames()" is equivalent to "dimnames(matrix)[ [2] ]"
+actually [[]] can be substituted by []
+dimnames() is built for high dimensional matrix e.g. 3,4...
+
+colnames(data)<-c('Apple','Orange')
+colnames(data)<-"Q"
+
+***** build matrix by column
+matrix <- cbind(column1 = 3, column2 = c(4:1,2:5))
+
+***** apply on rows/columns/*FMARK_START*/
+col.sums <- apply(matrix,2,sum)
+row.sums <- apply(matrix,1,sum)/*FMARK_END*/
+
+***** subset a matrix
 > x<-matrix(1:6,2,3)
 > x[1,2]
 [1] 3
@@ -5255,7 +5366,7 @@ by default when a matrix is subsetted, one get a vector instead of a matrix, if 
      [,1] [,2] [,3]
 [1,]    1    3    5
 
-****** vectorized operations
+***** vectorized operations
 > x <- matrix(1:4, 2, 2); y <- matrix(rep(10, 4), 2, 2) 
 > x * y ## element-wise multiplication 
    [,1] [,2] 
@@ -5333,6 +5444,17 @@ NULL
 > x$foo
 [1] 1 2 3 4
 
+***** create a list
+Lst<-list(name_1=object_1,...,name_m=object_m)	construct a new list
+
+Lst<-c(list.A, list.B, list.C)	concatenate lists
+
+Lst<-list(name="Fred",wife="Mary",no.children=3,child.ages=c(4,7,9))
+Lst[ [ 1 ] ] is equivalent to Lst$name.
+Lst[ [ 2 ] ] is equivalent to Lst$wife.
+Lst[ [ 3 ] ] is equivalent to Lst$no.children
+Lst[ [ 4 ] ][1] is equivalent to Lst$child.ages[1]
+
 ***** double subset using [[]]
 > x<-list(a=list(10,12,14),b=c(3.14,2.81))
 > x[ [c(1,3)] ] # the third element of the first element
@@ -5366,8 +5488,10 @@ for(i in 1:3){
   List[as.character(i)] <- list(sample(1:3))
 }
 
-
 **** factor
+
+if something is a factor, then typing "something" will give levels information.Besides, typing "attributes(something)"will have "levels" option. So we can use levels(something)
+
 ***** Ordered or unordered, represent categorical data
 > x ← factor(c(“yes”, “no”, “yes”, “no”, “yes”))
 > x
@@ -5388,6 +5512,9 @@ attr(,"levels")
 > attr(x,'levels')
 [1] "no"  "yes"
 
+***** make something a factor:
+something<-factor(something)
+
 ***** setup baseline level
 setup the baseline level, the baseline level would be the first level that is encountered in the “levels” option, otherwise it is determined by the alphabetic order.
 > x<-factor(c("yes","no", "yes", "no"), levels=c("yes","no"))
@@ -5404,8 +5531,14 @@ Levels: no yes
 > f<-gl(40,10)
 generate forty factor levels (each labeled as an integer), each level is repeated 10 times.
 
+***** convert factors to numeric
+t3<-as.numeric(as.character(f))
+Or more efficiently, as.numberic(levels(f))[as.integer(f)]
+
 **** data frame
 heterogenous columns, as opposed to matrix.
+***** create a dataframe
+bubba<-data.frame(first=a second=b f=levels)
 ***** add new column
 >saida["MY_NEW_COLUMN"] <- NA # That creates the new column named "MY_NEW_COLUMN" filled with "NA"
 >saida$MY_NEW_COLUMN <- saida$C - saida$D  # As an example, the new column receives the result of C - D
@@ -5521,6 +5654,23 @@ higher dimensional matrix:
 NROW()
 NCOL()
 
+***** Build contigency table
+table(vec)
+table(vec,vec2) 2-d contingency table(matrix)
+
+**** data.table - contingency table
+***** table - create table from vector
+a<-c("Sometimes","Sometimes","Never","Always","Always","Sometime","Sometimes","Never")
+b<-c("Maybe","Maybe","Yes","Maybe","Maybe","No","Yes","No")
+results2<-table(a,b)
+
+***** as.table - convert matrix to table
+sexsmoke<-matrix(c(70,120,65,140),ncol=2,byrow=TRUE)
+rownames(sexsmoke)<-c("male","female")
+colnames(sexsmoke)<-c("smoke","nosmoke")
+sexsmoke <- as.table(sexsmoke)
+
+***** xtabs - convert data.frame to table
 *** control structure
 ***** if structure
 if (<condition1>) {
@@ -6034,7 +6184,20 @@ printmessage <- function(x) {
 }
 
 “print” function will return the string it prints
+*** object
+unclass()	remove the class attribute of an object
+**** set attributes
+attr(z,"dim")<-c(10,10)		treat z as a 10 by 10 matrix
 *** Statistical tests
+
+描述性统计量
+sum mean median var sd min max range quantile summary 
+max(x),min(x),mean(x),range(x),sum(x),prod(x),length(x),
+var(x),sort(x),sort.list(),order(),quantile(x),sd(x)
+
+Summary will print out the statistics of all columns in the dataframe
+summary(argument)	print the five point descriptive statistics if the argument is a factor
+summary(factor)	print the frequency of each key if the argument is NOT a factor
 
 Wilcoxon
 wilcox.test(t$enzymes[t$symbiotic.!='endosymbiotic'], t$enzymes[t$symbiotic.=='endosymbiotic'], alternative='greater')
@@ -6062,6 +6225,22 @@ set.seed
 > rnorm(5)
 [1] -0.6264538  0.1836433 -0.8356286  1.5952808  0.3295078
 
+Binomial distribution
+dbinom(x,size,prob)	size is the number of trials, prob is the probability of success of each trial
+pbinom(q,size,prob)
+qbinom(p,size,prob)	p is the number of successes among size
+rbinom(p,size,prob)
+
+Normal distribution:
+help(Normal)
+1. dnorm(0,mean=0,sd=1)	returns the height of the probability distribution at each point. Assume zero-mean and one-standard deviation
+x<-seq(from=-10,to=10,by=0.1)
+y<-dnorm(x,mean=0,sd=1)
+plot(x,y)
+2. pnorm(v,mean=0,sd=1)	calculate the probability that a normally distributed random number will be less than v(cummulative probability).
+3. qnorm(v,mean=0,sd=1) calculate the number whose cummulative probability is v.
+4. rnorm(n,mean=0,sd=1)	gives n random numbers following the normal distribution.
+Two generic functions: qqnorm(y) and qqline(y) provide a normal QQ plot of the values in 'y'.qqline is a line connecting the first and the third quartiles.
 ***** sample from vector with replacement
 sample(vec,10,replace=TRUE)     sample from a vector
 ***** uniform distribution
@@ -6143,6 +6322,18 @@ rbinom(100, 1, 0.5)
 frequency count of discrete values
 Tabulate frequency counts
 table(d$numcc)
+**** linear regression:
+Before doing linear regression, one have to check if the factor attribute of the argument is removed or not first.
+fm<-lm(y~x,data=dummy)
+fit<-lm(rate~year)
+To get the interest rate in year 2015:	Note that one should use two square braces to get the number.
+fit$coefficients[[2]]*2015+fit$coefficients[[1]]
+residuals(fit)	the residuals of the fit. By definition is the difference between the each data point with the predicted value.
+abline(fit)	add fitted line onto the data plot.
+summary(fit)	can get the result of F-test.
+fm$call
+fm$coefficient: Intercept & x
+
 *** Plotting
 graphics package
 plot, hist, boxplot
@@ -6202,19 +6393,19 @@ xyplot(ozone ~ radiation, data=environmental)
 xyplot(ozone ~ radiation, data=environmental, main=”Ozone vs. Radiation”)
 
 *** Others
-Get working directory
+**** Get working directory
 > getwd()
 
-list file in the working directory
+**** list file in the working directory
 > dir()
 
-list object in the work space
+**** list object in the work space
 > ls()
 
-look for help
+**** look for help
 ?chisq.test
 
-display the internal structure of an R object using str
+**** display the internal structure of an R object using str
 diagnostic function and alternative to “summary”
 > str(str)
 function (object, ...)
@@ -6232,7 +6423,7 @@ function (name, pos = -1, envir = as.environment(pos), all.names = FALSE,
 > str(x)
  num [1:100] -0.61 3.586 2.446 -0.265 2.366 …
 
-Scoping rules
+**** Scoping rules
 to see the search paths (and their priorities). The global environment (or the user's workspace) is always the first on the search list and base package is always the last.
 > search()
  [1] ".GlobalEnv"        "tools:rstudio"     "package:stats"    
@@ -6248,7 +6439,7 @@ library() put the package to the second position of the search list
 [10] "Autoloads"         "package:base"    
 function and non-function are separated. One can have a function c and a object called c simultaneously.
 
-Lexical scoping
+**** Lexical scoping
 the values of free variables are searched for in the environment in which the function was defined.
 A function + an environment = a closure or function closure.
 Keep looking back in the search list.
@@ -6262,7 +6453,7 @@ attr(,"name")
 attr(,"path")
 [1] "/usr/lib/R/library/lattice"
 
-free variables are searched in the parent closure
+**** free variables are searched in the parent closure
 > make.power <- function(n) {pow <-function(x) {x^n}; pow}
 > cube <- make.power(3)
 > square <- make.power(2)
@@ -6279,7 +6470,7 @@ free variables are searched in the parent closure
 > get('n',environment(square))
 [1] 2
 
-debugging tools
+**** debugging tools
 Message, warning, error, condition
 condition: a generic concept for indicating that something unexpected can occur; programmers can create their own conditions.
 Warning
@@ -6288,7 +6479,7 @@ Warning
 Warning message: 
 In log(-1) : NaNs produced 
 
-traceback
+**** traceback
 prints out the function call stack, does nothing if there's no error
 > mean(x)
 Error in mean(x) : object 'x' not found
@@ -6306,7 +6497,7 @@ Error in eval(expr, envir, enclos) : object 'y' not found
 2: eval(mf, parent.frame())
 1: lm(y ~ x)
 
-debug
+**** debug
 flag a function for “debug” mode which allows you to step through execution of a function one line a time
 n: next line
 Q: quit
@@ -6328,14 +6519,14 @@ debug: ret.x <- x
 Browse[2]> n
 debug: ret.y <- y
 
-browser
+**** browser
 suspend the execution of a function wherever it is called and puts the function in debug mode
 the browser is just like your R work space (interactive shell)
 
-trace
+**** trace
 allows you to insert debugging code into a function a specific places
 
-recover
+**** recover
 allows you to modify the error behavior so that you can browse the function call stack
 > options(error=recover)
 > read.csv("nosuchfile")
@@ -6378,6 +6569,14 @@ Browse[1]> Q
       One can copy a region in Excel then use this command to import to R.
 ***** handle large data
       d.full=read.table('/home/wanding/sync/project_HGT/data2/2013_02_04_eval2alen.tab', header=T, comment.char="", colClasses=c("character", "integer", "numeric"), stringsAsFactors=F)
+*** scripting
+**** Old style: R CMD BATCH --args my_arg
+**** New style: ./script.R my_arg
+**** get command line argument
+args<-(commandArgs(TRUE))
+args
+"lalala"
+
 *** basic graphics
 **** common arguments
 ***** cex
@@ -6396,13 +6595,13 @@ Browse[1]> Q
 ***** bg - fill color of the symbol
 ***** xlab, ylab - put labels
 **** smoothScatter
-     smoothScatter(d$oldfitness, d$newfitness, xlab='iJR904 fitness', ylab='iAF1260 fitness', cex.lab=1.5)
+smoothScatter(d$oldfitness, d$newfitness, xlab='iJR904 fitness', ylab='iAF1260 fitness', cex.lab=1.5)
 ***** making a log scale smoothScatter
-      smoothScatter(x, log(y))
-      instead of using
-      smoothScatter(x, y, log='y')
-      see
-      https://stat.ethz.ch/pipermail/r-help/2009-July/205922.html
+smoothScatter(x, log(y))
+instead of using
+smoothScatter(x, y, log='y')
+see
+https://stat.ethz.ch/pipermail/r-help/2009-July/205922.html
 **** plot
      plot(x,y) scatter plot
      plot(... type="h") histogram
@@ -6428,36 +6627,14 @@ Browse[1]> Q
 ***** mfrow and mfcol
       multiple subplots
       par(mfrow=c(1,1))
-*** other
-**** clear workspace
-     rm(list=ls())
-*** old
-
-x<-seq(-pi,pi,len=65)
-plot(x,sin(x),type="l",col=2,xlab=expression(phi),ylab=expression(f(phi)))
-abline(h=-1:1,v=pi/2*(-6:6),col="gray90")
-lines(x,cos(x),col=3,lty=2)
-ex.cs1<-expression(plain(sin)*phi,paste("cos",phi))	##expression vector
-util::str(legend(-3,.9,ex.cs1,lty=1:2,plot=FALSE,adj=c(0,.6)))	##compactly display the internal structure of a R object.
-
-
-/*FMARK_END*/
-
-barplot() 柱状图/*FMARK_START*/
-
-/*FMARK_END*/
-
-
-hist() 直方图/*FMARK_START*/
+**** hist
 hist(w1$vals)
 hist(w1$vals,breaks=2)	breaks defines how many hists there are.
 hist(w1$vals,breaks=4)
 hist(w1$vals,breaks=12)
 hist(w1$vals,breaks=12,xlim=c(0,10))	xlim defines the ranges of the x axis for display
 hist(w1$vals,breaks=12,xlim=c(-1,2))
-/*FMARK_END*/
-
-stripchart()    窄带图/*FMARK_START*/
+**** stripchart
 stripchart(w1$vals)
 stripchart(w1$vals,method="stack")
 stripchart(w1$vals,method="jitter")
@@ -6465,18 +6642,14 @@ stripchart(w1$vals,vertical=TRUE)
 stripchart(w1$vals,vertical=TRUE,method="jitter")
 stripchart(w1$vals,method="stack",main='Leaf BioMass in High CO2 Environment',xlab="BioMass of Leaves"
 add title and label: title('Leaf BioMass in High CO2 Environment',xlab='BioMass of Leave')
-/*FMARK_END*/
-
-matplot() 矩阵图/*FMARK_START*/
+**** matplot
 x<-seq(-4,4,len=101)
 y<-cbind(sin(x),cos(x))
 matplot(x,y,type="l",xaxt="n",main=expression(paste(plain(sin)*phi," and ",plain(cos)*phi)),ylab=expression("sin"*phi,"cos"*phi),#only 1st is taken
 xlab=expression(past("Phase Angle ",phi)),
 col.main="blue")
 axis(1,at=c(-pi,-pi/2,0,pi/2,pi),labels=expression(-pi,-pi/2,0,pi/2,pi)) add an axis to a plot.
-/*FMARK_END*/
-
-# Venn's diagram 维恩图/*FMARK_START*/
+**** Venn's diagram
 ===================
 library(limma)
 hsb2<-read.table("http://www.ats.ucla.edu/stat/R/notes/hsb2.csv",sep=',',header=T)
@@ -6494,9 +6667,8 @@ g2<-c(rep(1,6),rep(0,3))
 g<-cbind(g1,g2)
 c<-vennCounts(g)
 vennDiagram(c)
-/*FMARK_END*/
+**** combined plots
 
-组合图/*FMARK_START*/
 1. Combine hist and stripchart
 hist(w1$vals,main='Leaf BioMass in High CO2 Environment',xlab='BioMass of Leaves',ylim=c(0,16))
 stripchart(w1$vals,add=TRUE,at=15.5)
@@ -6508,23 +6680,23 @@ boxplot(w1$vals,main='Leaf BioMass in High CO2 Environment',ylab="BioMass of Lea
 boxplot(tree$STBM~tree$C)	tree$C is a factor vector.
 /*FMARK_END*/
 
-legend()  图例 /*FMARK_START*/
+layout.show()  显示layout分布和编号
+**** legend
 legend(-3,.9,ex.cs1,lty=1:2,col=2:3,adj=c(0,.6))	##the components of each vector have to match. 
 ##col: the color vector of each component.
 ##lty: the line type 0=blank 1=solid 2=dashed 3=dotted 4=dotdash,5,longdash,6,twodash.
 op<-par(bg="white")	get an opaque box for the legend
 
-My example for legend:
 legend("topright",expression(paste("sin",phi),paste("cos",phi)),lty=1:1,col=c(1,2),title="right")
 Or we can designate the character on the line with exact coordinate of the legend by specifying pch:
 legend(-3,.9,expression(paste("sin",phi),paste("cos",phi)),lty=1:1,col=c(1,2),title="right",pch=2)
 
-
 legend("topright","(x,y)",pch=1,title="right")
 legend(-1,1.9,c("sin","cos","tan"),col=c(3,4,6),text.col="green4",lty=c(2,-1,1),pch=c(-1,3,4),merge=TRUE,bg='gray90')
-/*FMARK_END*/
 
-mtext() add text into the margin of a plot./*FMARK_START*/
+**** mtext - margin text
+mtext() add text into the margin of a plot.
+mtext(c("Low","High"),side=1,line=2,at=c(5,7))
 mtext(text,side=,line=,outer=FALSE,at=NA,adj=NA,padj=NA,cex=NA,col=NA,font=NA,...)
 side=1(bottom),2(left),3(top),4(right)
 line: Margin line starting at 0 counting outwards.
@@ -6532,70 +6704,8 @@ outer=TRUE,use outer margins if available.
 adj,padj: used to adjust the location of the text.
 col: the color to use,e.g. col=100 or col="darkred"
 font: the font for text
-/*FMARK_END*/
 
-Hershey: the special font vector/*FMARK_START*/
-demo(Hershey)   see how to draw special font in detail
-/*FMARK_END*/
-
-layout.show()  显示layout分布和编号。
-
-colors(): list all the colors available and their index
-
-/*FMARK_END*/
-
-Statistics/*FMARK_START*/
-
-描述性统计量
-sum mean median var sd min max range quantile summary 
-
-set.seed(N)     set up the sampling seed
-
-
-
-Binomial distribution /*FMARK_START*/
-dbinom(x,size,prob)	size is the number of trials, prob is the probability of success of each trial
-pbinom(q,size,prob)
-qbinom(p,size,prob)	p is the number of successes among size
-rbinom(p,size,prob)
-/*FMARK_END*/
-
-Normal distribution:/*FMARK_START*/
-help(Normal)
-1. dnorm(0,mean=0,sd=1)	returns the height of the probability distribution at each point. Assume zero-mean and one-standard deviation
-x<-seq(from=-10,to=10,by=0.1)
-y<-dnorm(x,mean=0,sd=1)
-plot(x,y)
-2. pnorm(v,mean=0,sd=1)	calculate the probability that a normally distributed random number will be less than v(cummulative probability).
-3. qnorm(v,mean=0,sd=1) calculate the number whose cummulative probability is v.
-4. rnorm(n,mean=0,sd=1)	gives n random numbers following the normal distribution.
-Two generic functions: qqnorm(y) and qqline(y) provide a normal QQ plot of the values in 'y'.qqline is a line connecting the first and the third quartiles.
-/*FMARK_END*/
-
-Build contigency table:/*FMARK_START*/
-table(vec)
-table(vec,vec2) 2-d contingency table(matrix)
-/*FMARK_END*/
-
-/*FMARK_END*/
-
-Data manipulation/*FMARK_START*/
-string manipulation/*FMARK_START*/
-concatenate two string
-paste("wan","ding")
-substring:
-substring("wanding",1,3)
-gives "wan"
-
-
-combine math and numeric variable:/*FMARK_START*/
-plot(1:10,type="n",xlab="",ylab="",main="plot math & numbers")
-theta<-1.23;
-mtext(bquote(hat(theta)==.(theta)))
-for(i in 2:9)
-	text(i,i+1,substitute(list(xi,eta)==group("(",list(x,y),")"),
-		list(x=i,y=i+1)))
-
+**** text
 plot(1:10,1:10)
 text(4,9,expression(hat(beta)==(X^t *X)^{-1}*X^t*y))	add text to a plot.
 text(4,8.4,"expression(hat(beta)==(X^t*X)^{-1}*X^t*y)",cex=.8)
@@ -6607,416 +6717,30 @@ text(x,y,labels,adj=,pos=,offset=,vfont=,cex=,col=,font=)
 	adj: adjustment of relative position of the text
 	pos=1,2,3,4,correspond to below, left, above, right. This overrides adj
 	cex= a value with 1 for normal size. for minization and enlargement
-/*FMARK_END*/
-/*FMARK_END*/
 
-array manipulation /*FMARK_START*/
-x[1:3]	显示第1，2，3个元素组成的子数组
-x[-c(1,2,3)]	删掉第1，2，3个元素
-z<-c(x,y)	合并x,y数组
+**** the special math symbols
+demo(Hershey)   see how to draw special font in detail
+**** combine math and numeric variable
+plot(1:10,type="n",xlab="",ylab="",main="plot math & numbers")
+theta<-1.23;
+mtext(bquote(hat(theta)==.(theta)))
+for(i in 2:9)
+text(i,i+1,substitute(list(xi,eta)==group("(",list(x,y),")"),
+list(x=i,y=i+1)))
+**** colors
+colors(): list all the colors available and their index
 
-rev(vec)	reverse the vector
-
-Convert factors to numeric:
-t3<-as.numeric(as.character(f))
-Or more efficiently, as.numberic(levels(f))[as.integer(f)]
-
-get index of an element in a vector:/*FMARK_START*/
-which(vector == element_value)
-/*FMARK_END*/
-/*FMARK_END*/
-
-matrix manipulation/*FMARK_START*/
-remove a column/row of a matrix/*FMARK_START*/
-d[,-5] deletes column 5
-mat<-matrix(vec3,ncol=2,nrow=5)
-mat[-3,]	remove the 3rd row of the matrix
-/*FMARK_END*/
-
-get or set the names of rows and columns/*FMARK_START*/
-rownames(matrix)
-colnames(matrix)
-
-can also use dimnames(matrix),where
-"rownames()" is equivalent to "dimnames(matrix)[[1]]"
-"colnames()" is equivalent to "dimnames(matrix)[[2]]"
-actually [[]] can be substituted by []
-dimnames() is built for high dimensional matrix e.g. 3,4...
-/*FMARK_END*/
-
-build matrix by column/*FMARK_START*/
-matrix <- cbind(column1 = 3, column2 = c(4:1,2:5))
-/*FMARK_END*/
-
-apply on rows/columns/*FMARK_START*/
-col.sums <- apply(matrix,2,sum)
-row.sums <- apply(matrix,1,sum)/*FMARK_END*/
-
-
-data frame manipulation/*FMARK_START*/
-change the header of a dataframe:
-names(d2)<-d[,1]
-
-change the names of a data.frame:
-colnames(data)<-c('Apple','Orange')
-colnames(data)<-"Q"
-
-/*FMARK_END*/
-
-读入数据：/*FMARK_START*/
-
-1. data1=read.table("/home/wanding/myfile",header=T)
-
-2. read multiple graphs:
-files <- list.files("<your-directory-here>")
-graphs <- lapply(files, read.graph, format="<your-format>")
-
-
-/*FMARK_END*/
-
-保存数据：/*FMARK_START*/
-sink("/home/wanding/myfile.csv")
-datafile
-sink()
-完成
-或者write.table(datafile,file="/home/wanding/myfile.csv")
-/*FMARK_END*/
-
-保存(输出)图像：/*FMARK_START*/
-write into file:
+**** save figure as pdf
 pdf(file="my2.pdf")
 <do my plot,which won't display>
 dev.off()
-/*FMARK_END*/
 
-edit(dataframe)	手工修改dataframe
-
-/*FMARK_END*/
-
-Scripting/*FMARK_START*/
-argument passing/*FMARK_START*/
-Old style:
-R CMD BATCH --args lalala
-New style:
-./script.R my_arg
-Then:
-args<-(commandArgs(TRUE))
-args
-"lalala"
-/*FMARK_END*/
-attach(data1)	使data1的列自动储入，无须data1$...
-get or set working directory/*FMARK_START*/
-getwd()
-setwd(dir)
-/*FMARK_END*/
-variable substitution/*FMARK_START*/
-a<-2
-bquote(a==.(a)) give "a == 2"
-/*FMARK_END*/
-assertion/*FMARK_START*/
-stopifnot()/*FMARK_END*/
-/*FMARK_END*/
-
-R system administration/*FMARK_START*/
-data()	看built-in system data
-history()	View the history
-library(help="utils")	view a complete list of utility functions
-
-use html help
-options(htmlhelp=FALSE)
-
-change prompt:
-options(prompt="R> ")
-
-list.files(pattern=".pairs")	list all the files satisfying some pattern in the current directory.
-/*FMARK_END*/
-
-
-
-rbind(vec,vec2)	We get a matrix.
-str(table(vec,vec2))	view internal structure: str();
-vec3<-1:10
-matrix(vec3,ncol=2,nrow=5)	construct a matrix from a 1d vector
-matrix(vec3,ncol=2,nrow=5,byrow=TRUE)
-dim(vec3)<-c(5,2)	cast the dimension of a 1d vector. Same effect as above.
-See ?Extract
-
-[.factor subsetting factors
-
-remove the factor attribute:
-attributes(t3$TF.fraction)<-NULL
-
-na.omit(dataframe);
-options("na.action");
-
-similarly jpeg(),png(),...
-
-example(rect)	view example of function rect
-
-
-Note: 假设A,B是两列factor，则A:B是nested factor
-
-cor(tree$STBM,tree$LFBM)	calculate the correlation coefficient.R NOT R^2
-
-qqnorm(w1$vals,main="Normal Q-Q Plot of the Leaf Biomass",xlab="Theoretical Quantiles of the Leaf Biomass",xlab="Theoretical Quantiles of the Leaf Biomass",ylab="Sample Quantiles of the Leaf Biomass")
-	to check if your data(w1$vals) is normally distributed or not.
-qqline(w1$vals) add the theoretical line.
-
-mnemonics:d for density; p for probability, q is inverse of p, r is the random number.
-
-t-distribution(Assume mean zero and standard deviation one):
-help(TDist)
-dt(x,df=50)	note that: df is the degree of freedom of the distribution, while the length of x is the number of sample.They are different.
-pt, qt and rt are like normal distribution
-
-help(Chisquare)
-dchisq(x,df=10)
-pchisq(2,df=10)
-qchisq(0.05,df=10)
-rchisq(3,df=10)
-
-
-min(a,b)	find the minimum of all the elements in either a or b.
-pmin(a,b)	return the vector of minimal element in corresponding position in a and b
-
-To create a dataframe:
-bubba<-data.frame(first=a second=b f=levels)
-
-One-way table:
-Method One(from a factor vector):	a<-factor(c("A","A","B","A","B","B","C","A","C"))
-					results<-table(a)
-Method Two(from a matrix):	occur<-matrix(c(4,3,2),ncol=3,byrow=TRUE)
-				colnames(occur)<-c("A","B","C")
-				occur<-as.table(occur)
-
-Two-way table:
-Method One:
-a<-c("Sometimes","Sometimes","Never","Always","Always","Sometime","Sometimes","Never")
-b<-c("Maybe","Maybe","Yes","Maybe","Maybe","No","Yes","No")
-results2<-table(a,b)
-
-Method Two:
-sexsmoke<-matrix(c(70,120,65,140),ncol=2,byrow=TRUE)
-rownames(sexsmoke)<-c("male","female")
-colnames(sexsmoke)<-c("smoke","nosmoke")
-sexsmoke <- as.table(sexsmoke)
-
-make something a factor:
-something<-factor(something)
-
-if something is a factor, then typing "something" will give levels information.Besides, typing "attributes(something)"will have "levels" option. So we can use levels(something)
-
-Summary will print out the statistics of all columns in the dataframe
-summary(argument)	print the five point descriptive statistics if the argument is a factor
-summary(factor)	print the frequency of each key if the argument is NOT a factor
-
-add the library path:
-in ~/.Renviron add "R_LIBS="home/wan/lib/R"
-
-read.csv(comma separated values) This uses data.frame to store data.
-heisenberg<-read.csv(file="simple.csv",head=TRUE,sep=",") head indicates whether or not the first row is a set of labels.
-summary(heisenberg)
-names(heisenberg) gives the names of the variables
-attributes(tree)	to list all the variables of the data.frame
-
-read.fwf	to read fixed width file
-
-power.law.fit(table(degree_vec))
-
-degree_vec<-degree(g,mode=c("total"))
-sort(degree_vec,decreasing=TRUE)
-
-levels(factor(degree_vec))
-
-plot(t,log="xy")
-
-lec<-leading.eigenvector.community(g)
-modularity(g,lec$membership)
-
-write.table(mod,file="modularity_table")
-
-lalala<-scan("filename",what=character(0))
-
-apply(X,MARGIN,FUN) 
-
-tapply(vector,factor,FUN)
-print(tapply(as.vector(iris[,i]),factor(iris[,5]),mean))
-
-seq1<-seq(from=1,to=50,by=2)
-
-dev.copy2pdf()
-dev.eps2pdf()
-
-R CMD BATCH myfirst.r
-
-x11()
-dev.copy(device=...)
-mtext()
-
-batch<-rep(c("m10s"),times=5)
-batchf<-factor(batch)
-
-linear regression:
-Before doing linear regression, one have to check if the factor attribute of the argument is removed or not first.
-fm<-lm(y~x,data=dummy)
-fit<-lm(rate~year)
-To get the interest rate in year 2015:	Note that one should use two square braces to get the number.
-fit$coefficients[[2]]*2015+fit$coefficients[[1]]
-residuals(fit)	the residuals of the fit. By definition is the difference between the each data point with the predicted value.
-abline(fit)	add fitted line onto the data plot.
-summary(fit)	can get the result of F-test.
-fm$call
-fm$coefficient: Intercept & x
-
-file.show(filepath)	display the file indicated in the filepath
-
-search the system for the full path of a file
-system.file("data","morley.tab",package="datasets")
-
-max(fastgreedy.community(rewire(g,niter=10000))$modularity)
-
-read.table()	read an entire data frame
-
-Lst<-list(name_1=object_1,...,name_m=object_m)	construct a new list
-
-Lst<-c(list.A, list.B, list.C)	concatenate lists
-
-Lst<-list(name="Fred",wife="Mary",no.children=3,child.ages=c(4,7,9))
-Lst[[1]] is equivalent to Lst$name.
-Lst[[2]] is equivalent to Lst$wife.
-Lst[[3]] is equivalent to Lst$no.children
-Lst[[4]][1] is equivalent to Lst$child.ages[1]
-
-table(statef)	returns the frequency table of factor statef
-to calculate the mode you can names(-table(state))
-equivalent to tapply(statef, statef, length)
-
-diag(v) gives a diagonal matrix with elements of the vector as the diagonal entries.
-diag(M) gives the vector of main diagonal entries of M.
-diag(k) gives a k by k identity matrix
-
-cbind(arg_1,arg_2,arg_3,...) forms matrices by binding together matrices horizontally, or column-wise.
-rbind(arg_1,arg_2,arg_3,...) forms matrices by binding together matrices vertically, or row-wise.
-
-"*" normal multiplication
-"%*%" matrix multiplication
-t() matrix transposition
-nrow(),ncol() gives the number of rows and columns in the matrix
-
-crossprod(x,y)==t(x)%*%y
-
-array(data_vector,dim_vector)	recycling rule applies for data_vector
-x<-array(1:20,dim=c(4,5))
-
-for any array Z, its dimension vector is dim(Z)
-
-column-major order:	the first subscript moving fastest
-
-dim(z)<-c(3,5,100)
-
-qt()		 to find the percentage points of the appropriate t-distributions
-
-stderr<-function(x) sqrt(var(x)/length(x))
-
-tapply(incomes,statef,mean)
-
-factor(...)
-levels(factor)
-
-plot()
-summary()
-display or react to an argument according to its class
-unclass()	remove the class attribute of an object
-
-attr(z,"dim")<-c(10,10)		treat z as a 10 by 10 matrix
-
-truncate methods:
-#1: reassign: alpha<-alpha[2*1:5]
-#2: length(alpha)<-3
-
-e<-numeric()		create an empty numeric vector
-as.character(z)	convert to character
-as.integer(z)	convert to integer
-
-list of empty character string vector is listed as character(0) and the empty numeric vector as numeric(0)
-
-mode(objects)
-length(objects)
-attributes(objects)
-
-y[y<0]<- -y[y<0]
-has the same effect as y<- abs(y)
-
-names(...)
-e.g. 
-fruit<-c(5,10,1,20)
-names(fruit)<-c("orange","banana","apple","peach")
-
-
-y<-x[-(1:5)] gives y all but the first five elements of x
-
-c(2,3)[rep(c(2,1),times=2)] gives 3 2 3 2
-
-x[6]	select the sixth component of x
-x[1:10] select the first 10 components of x
-
-y<-x[x<10]
-y<-x[!is.na(x)]
-(x+1)[(!is.na(x)) & x>0] ->z
-A<-c(1,2,3)
-B<-c(0,1,0)
-change A's element to 0 if B's element is 1: A[B==1]<-0
-
-labs<-paste(c("X","Y"),1:10,sep"")
-== c("X1", "Y2", "X3", "Y4", "X5", "Y6", "X7", "Y8", "X9", "Y10")
-the recycling of short lists takes place here.
-
-\ is used to escape
-\n newline
-\t tab
-\b backspace
-see ?Quotes
-
-is.na(x)
-is.nan(x)
-
-& for "and"
-| for "or"
-! for "negation"
-
-temp <- x > 13
-
-TRUE(1) FALSE(0) NA NaN	(NA for not available;NaN for Not a Number)
-
-y <- rep(x,times=5)
-y<- rep(x,each=5)
-
-z<- c(1:10) 2*1:15 seq(from=..., to=...)
-seq(-5,5,by=.2) seq(length=51,from=-5,by=0.2)
-z<- c(1:3,NA)
-
-sqrt(-17+0i)
-
-descriptive statistics:
-max(x),min(x),mean(x),range(x),sum(x),prod(x),length(x),
-var(x),sort(x),sort.list(),order(),quantile(x),sd(x)
-
-To change libPath temporarily:
-.libPaths(c("/usr/lib/R/library","/usr/share/R/library"))
-
-1/x: the reciprocal of all the members of x.
-x+1: all the members of x plus 1
-data are stored .RData
-command lines are stored .Rhistory
-
-sometimes, "=" equals "<-"
-
-source("commands.R")
-sink("record.lis")	divert output to record.lis
-sink()
-
-#is comment symbol
-
+*** other
+**** edit spreadsheet manually
+x <- edit(data.frame()) # Starts empty GUI spreadsheet editor for manual data entry
+x <- edit(x) # Opens existing data frame (table) 'x' in GUI spreadsheet editor.
+x <- scan(w="c") # Lets you enter values from the keyboard or by copy&paste and assigns them to vector 'x'.
+**** get help
 example(topic)
 
 ?help.search("chi-square")	fuzzy-match search for chi-square
@@ -7024,40 +6748,26 @@ help.search(igraph)	to search for topic in documents
 help("[[")
 ?"[["
 vignette("sandwich")	## a brief introduction to the package sandwich
+**** attach data
+attach(data1)	使data1的列自动储入，无须data1$...
+**** clear workspace
+rm(list=ls())
+**** change directory
+getwd()
+setwd(dir)
 
+**** set library path
+To change libPath temporarily:
+.libPaths(c("/usr/lib/R/library","/usr/share/R/library"))
 
-help(solve)
+permanently add the library path:
+in ~/.Renviron add R_LIBS="home/wan/lib/R"
 
-write.graph(g,"./new.pairs",format=c("edgelist"))
-
-rm(x,y)
-
-remove.packges(c("igraph"),lib=file.path("/usr/lib/R/library"))
-
-install.packages("/home/wanding/download/igraph_0.5.1.tar.gz",repos=NULL)
-
-install packages(c("igraph"),lib=file.path("/home/wan/lib/R/")) to install to local library
-library(igraph,lib.loc=c("/home/wan/lib/R/"))	to load the library
-
-read.graph("elst",format=c("edgelist"),directed=FALSE)
-
-library(igraph)	load igraph library
-
-help.start()
-help(read.csv,htmlhelp=FALSE)
-help.start(browser=c("firefox"))
-
-.libPaths() 
-
-getOption("defaultPackages") 
-
-in ~/.Rprofile
-It's initially set to the value of the environment variable R_DEFAULT_PACKAGES, e.g. setting R_DEFAULT_PACKAGES=NULL ensures that only package base is loaded.
-
-
-help="igraph"
-
-ls() "==objects()"
+**** use html help
+options(htmlhelp=FALSE)
+**** list files in current dir
+list.files(pattern=".pairs")	list all the files satisfying some pattern in the current directory.
+file.show(filepath)	display the file indicated in the filepath
 ** C++
 *** how to use const keyword
 **** The C++ 'const' Declaration: Why & How
@@ -10466,9 +10176,6 @@ man bash | col -b | lpr
 startx -- :1
 start another X-windows session on display 1.(the default is opened on display 0)
 *** user management
-    :PROPERTIES:
-    :VISIBILITY: folded
-    :END:
 **** talk and write
      username
      talk to another user currently logged on your machine(or "tal username@machinename" to talk to a user on a different computer")
@@ -10652,9 +10359,6 @@ When this value falls below 20, you should start considering backing up your dat
 ===
 
 *** network
-    :PROPERTIES:
-    :VISIBILITY: children
-    :END:
 **** ssh/scp
 ***** ssh relay through proxy
 
