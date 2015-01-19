@@ -841,7 +841,7 @@ find . -type f -exec sed -i '' -e s/Red/$color1/g -e s/Blue/$color2/g {} \;
 sed -i '$ d' foo.txt
 #+END_SRC
 
-** Java
+** Java Script
 *** confirm
 confirm('This is an example of using JS to create some interaction on a website. Click OK to continue!');
 *** prompt
@@ -902,6 +902,7 @@ var me = new Object();
 me.name = "waa";
 me["age"] = 30;
 var newArray = [[1,2,3],[1,2],[{a:4}]];
+** Java
 *** Basic concepts
 
 Java version history
