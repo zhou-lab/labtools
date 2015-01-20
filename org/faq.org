@@ -5752,12 +5752,14 @@ for(i in 1:100) {
 
 **** compact looping
 ***** lapply – loop apply
-loop over a list and evaluate a function on each element
+loop over a list or a vector and evaluate a function on each element
+lapply(X, FUN, ...)
 lapply takes a list X, a function FUN, and other arguments via …. if X is not a list, it will be coerced using as.list.
 Always return a list, list names are preserved.
 > x<-list(a=1:5,b=rnorm(10))
 > lapply(x,mean)
 $a
+
 [1] 3
 
 $b
@@ -6022,10 +6024,10 @@ MoreArgs is a list of other arguments to FUN
 > mapply(rep,1:4,4:1) 
 is equivalent to
 > list(rep(1,4), rep(2,3), rep(3,2),rep(4,1))
-[[1]] 
-[1] 1 1 1 1 
+[[1]]
+[1] 1 1 1 1
 
-[[2]] 
+[[2]]
 [1] 2 2 2 
 
 [[3]] 
@@ -6054,13 +6056,13 @@ is equivalent to
 list(noise(1,1,2), noise(2,2,2), noise(3,3,2), noise(4,4,2),noise(5,5,2))
 
 *** Functions
-****** see all formal arguments of a function
+**** see all formal arguments of a function
 formals
 
-****** check out what arguments are needed
+**** check out what arguments are needed
 args(function)
 
-****** arguments matching
+**** arguments matching
 > args(sd)
 function (x, na.rm = FALSE) 
 > mydata ← rnorm(100)
@@ -6070,7 +6072,7 @@ function (x, na.rm = FALSE)
 > sd(na.rm = FALSE, x = mydata)
 > sd(na.rm = FALSE, mydata)
 
-****** lazy evaluation
+**** lazy evaluation
 f ← function(a, b) {
 	a^2
 }
@@ -6088,12 +6090,12 @@ myplot ← function(x, y, type=”l”, …) {
 	plot(x, y, type = type, …)
 }
 
-****** generic function
+**** generic function
 > mean
 function (x, ...) 
 UseMethod("mean")
 
-******* "..." usage
+***** "..." usage
 when the number of arguments is unknown one should use … and any arguments that appear after … on the argument list must be named explicitly and cannot be partially matched.
 > args(paste)
 function (..., sep = " ", collapse = NULL) 
@@ -6115,7 +6117,7 @@ make.NegLogLik <- function(data, fixed=c(FALSE, FALSE)) {
 	}
 }
 
-******* to use generator function to make a negative log likelihood function
+***** to use generator function to make a negative log likelihood function
 > set.seed(1); normals<-rnorm(100,1,2)
 > nLL<-make.NegLogLik(normals)
 > nLL
@@ -6131,7 +6133,7 @@ function(p) {
 > ls(environment(nLL))
 [1] "data"   "fixed"  "params"
 
-******* to use nLL, with initial value of mu and sigma
+***** to use nLL, with initial value of mu and sigma
 > optim(c(mu=0, sigma=1), nLL)$par
       mu    sigma 
 1.218239 1.787343 
@@ -6146,19 +6148,19 @@ fixing mu = 1
 > optimize(nLL,c(1e-6,10))$minimum
 [1] 1.800596
 
-******* plot log likelihood function against mean
+***** plot log likelihood function against mean
 > nLL<-make.NegLogLik(normals,c(1,FALSE))
 > x<-seq(1.7,1.9,len=100)
 > y<-sapply(x,nLL)
 > plot(x,exp(-(y-min(y))),type='l')
 
-******* plot log likelihood function against sigma
+***** plot log likelihood function against sigma
 > nLL<-make.NegLogLik(normals, c(FALSE,2))
 > x<-seq(0.5,1.5,len=100)
 > y<-sapply(x,nLL)
 > plot(x,exp(-(y-min(y))),type="l")
 
-***** anonymous function
+**** anonymous function
 suppose we have x
 > x<-list(a=matrix(1:4,2,2),b=matrix(1:6,3,2))
 > x
@@ -6348,6 +6350,163 @@ the package lattrice package depend on
 grDevices package
 code for implementing graphics devices such as X11, PDF, PostScript, PNG, etc.
 
+**** basic graphics
+***** common arguments
+****** cex
+******* cex.lab
+       change label size relative to the plot
+       magnification of x and y labels relative to cex
+       cex.lab = 1.5
+******* cex.axis
+       magnification of axis annotation relative to cex
+****** xlim, ylim - x, y plotting range
+      plot(x, y, log='y', ylim=c(10, 20))
+****** pch - plotting character
+      plot character/marker/symbol
+      +: 3
+****** col - border color of the symbol
+****** bg - fill color of the symbol
+****** xlab, ylab - put labels
+***** smoothScatter
+smoothScatter(d$oldfitness, d$newfitness, xlab='iJR904 fitness', ylab='iAF1260 fitness', cex.lab=1.5)
+****** making a log scale smoothScatter
+smoothScatter(x, log(y))
+instead of using
+smoothScatter(x, y, log='y')
+see
+https://stat.ethz.ch/pipermail/r-help/2009-July/205922.html
+***** plot
+     plot(x,y) scatter plot
+     plot(... type="h") histogram
+     plot(... type="p") point graph
+     plot(... type="l") line graph
+     plot(... type="b") both line and points
+     plot(density(x)) density plot
+***** lines
+     add line using lines
+     x<-c(1,2,5,10,20,50,100)
+     y<-sapply(x, log2)
+     plot(d$numdiffcogs, d$entropy, log='x', xlab='alphabet size', ylab='entropy')
+     lines(x, y, lty='dashed')
+****** lty - line type
+      dashed: 2
+****** lwd - line width
+      relative to the default (default=1). 2 is twice as wide.
+***** abline
+     abline(0, 1, lty='dashed')
+***** title
+     title(main = NULL, sub = NULL, xlab = NULL, ylab = NULL)
+***** par
+****** mfrow and mfcol
+      multiple subplots
+      par(mfrow=c(1,1))
+***** hist
+hist(w1$vals)
+hist(w1$vals,breaks=2)	breaks defines how many hists there are.
+hist(w1$vals,breaks=4)
+hist(w1$vals,breaks=12)
+hist(w1$vals,breaks=12,xlim=c(0,10))	xlim defines the ranges of the x axis for display
+hist(w1$vals,breaks=12,xlim=c(-1,2))
+***** stripchart
+stripchart(w1$vals)
+stripchart(w1$vals,method="stack")
+stripchart(w1$vals,method="jitter")
+stripchart(w1$vals,vertical=TRUE)
+stripchart(w1$vals,vertical=TRUE,method="jitter")
+stripchart(w1$vals,method="stack",main='Leaf BioMass in High CO2 Environment',xlab="BioMass of Leaves"
+add title and label: title('Leaf BioMass in High CO2 Environment',xlab='BioMass of Leave')
+***** matplot
+x<-seq(-4,4,len=101)
+y<-cbind(sin(x),cos(x))
+matplot(x,y,type="l",xaxt="n",main=expression(paste(plain(sin)*phi," and ",plain(cos)*phi)),ylab=expression("sin"*phi,"cos"*phi),#only 1st is taken
+xlab=expression(past("Phase Angle ",phi)),
+col.main="blue")
+axis(1,at=c(-pi,-pi/2,0,pi/2,pi),labels=expression(-pi,-pi/2,0,pi/2,pi)) add an axis to a plot.
+***** Venn's diagram
+===================
+library(limma)
+hsb2<-read.table("http://www.ats.ucla.edu/stat/R/notes/hsb2.csv",sep=',',header=T)
+attach(hsb2)
+hw<-(write>=60) # the result is an array of TRUE or FALSE.
+hm<-(math>=60)  # the result is an array of TRUE or FALSE.
+hr<-(read>=60)  # the result is an array of TRUE or FALSE.
+c3<-cbind(hw,hm,hr)
+a<-vennCounts(c3)
+vennDiagram(a)
+===================
+vennDiagram(a,include="both", names=c("High Writing","High Math","High Reading"), cex=1, counts.sol="red")
+g1<-c(rep(0,6),rep(1,3))
+g2<-c(rep(1,6),rep(0,3))
+g<-cbind(g1,g2)
+c<-vennCounts(g)
+vennDiagram(c)
+***** combined plots
+
+1. Combine hist and stripchart
+hist(w1$vals,main='Leaf BioMass in High CO2 Environment',xlab='BioMass of Leaves',ylim=c(0,16))
+stripchart(w1$vals,add=TRUE,at=15.5)
+
+2. Combine hist with boxplot
+hist(w1$vals,main='Leaf BioMass in High CO2 Environment',xlab='BioMass of Leaves',ylim=c(0,16))
+boxplot(w1$vals,horizontal=TRUE,at=15.5,add=TRUE,axes=FALSE)
+boxplot(w1$vals,main='Leaf BioMass in High CO2 Environment',ylab="BioMass of Leaves",horizontal=TRUE)
+boxplot(tree$STBM~tree$C)	tree$C is a factor vector.
+/*FMARK_END*/
+
+layout.show()  显示layout分布和编号
+***** legend
+legend(-3,.9,ex.cs1,lty=1:2,col=2:3,adj=c(0,.6))	##the components of each vector have to match. 
+##col: the color vector of each component.
+##lty: the line type 0=blank 1=solid 2=dashed 3=dotted 4=dotdash,5,longdash,6,twodash.
+op<-par(bg="white")	get an opaque box for the legend
+
+legend("topright",expression(paste("sin",phi),paste("cos",phi)),lty=1:1,col=c(1,2),title="right")
+Or we can designate the character on the line with exact coordinate of the legend by specifying pch:
+legend(-3,.9,expression(paste("sin",phi),paste("cos",phi)),lty=1:1,col=c(1,2),title="right",pch=2)
+
+legend("topright","(x,y)",pch=1,title="right")
+legend(-1,1.9,c("sin","cos","tan"),col=c(3,4,6),text.col="green4",lty=c(2,-1,1),pch=c(-1,3,4),merge=TRUE,bg='gray90')
+
+***** mtext - margin text
+mtext() add text into the margin of a plot.
+mtext(c("Low","High"),side=1,line=2,at=c(5,7))
+mtext(text,side=,line=,outer=FALSE,at=NA,adj=NA,padj=NA,cex=NA,col=NA,font=NA,...)
+side=1(bottom),2(left),3(top),4(right)
+line: Margin line starting at 0 counting outwards.
+outer=TRUE,use outer margins if available.
+adj,padj: used to adjust the location of the text.
+col: the color to use,e.g. col=100 or col="darkred"
+font: the font for text
+
+***** text
+plot(1:10,1:10)
+text(4,9,expression(hat(beta)==(X^t *X)^{-1}*X^t*y))	add text to a plot.
+text(4,8.4,"expression(hat(beta)==(X^t*X)^{-1}*X^t*y)",cex=.8)
+text(4,7,expression(bar(x)==sum(frac(x[i],n),i==1,n))
+text(4,6.4,"expression(bar(x)==sum(frac(x[i],n),i==1,n))",cex=.8)
+text(8,5,expression(paste(frac(1,sigma*sqrt(2*pi))," ",plain(e)^{frac(-(x-mu)^2,2*sigma^2)})),cex=1.2)
+
+text(x,y,labels,adj=,pos=,offset=,vfont=,cex=,col=,font=)
+	adj: adjustment of relative position of the text
+	pos=1,2,3,4,correspond to below, left, above, right. This overrides adj
+	cex= a value with 1 for normal size. for minization and enlargement
+
+***** the special math symbols
+demo(Hershey)   see how to draw special font in detail
+***** combine math and numeric variable
+plot(1:10,type="n",xlab="",ylab="",main="plot math & numbers")
+theta<-1.23;
+mtext(bquote(hat(theta)==.(theta)))
+for(i in 2:9)
+text(i,i+1,substitute(list(xi,eta)==group("(",list(x,y),")"),
+list(x=i,y=i+1)))
+***** colors
+colors(): list all the colors available and their index
+
+***** save figure as pdf
+pdf(file="my2.pdf")
+<do my plot,which won't display>
+dev.off()
 **** basic plotting
 add line using lines
 x<-c(1,2,5,10,20,50,100)
@@ -6393,7 +6552,37 @@ head(environmental)
 xyplot(ozone ~ radiation, data=environmental)
 xyplot(ozone ~ radiation, data=environmental, main=”Ozone vs. Radiation”)
 
-*** Others
+*** data IO
+**** read.table
+***** commonly used arguments
+****** file
+****** header
+****** sep
+       default to space
+****** colClasses=c("character", "integer", "numeric")
+       this may speed the data import
+       e.g., colClasses=”numeric”
+****** nrows
+****** comment.char
+       default to “#”, set comment.char=”” if there are no commented lines in your file.
+****** skip
+       the number of lines to skip from the beginning
+****** stringsAsFactors
+       hould character variables be coded as factors?
+***** read.table("clipboard")
+      Read table from clipboard
+      read.table(“clipboard”)
+      One can copy a region in Excel then use this command to import to R.
+***** handle large data
+      d.full=read.table('/home/wanding/sync/project_HGT/data2/2013_02_04_eval2alen.tab', header=T, comment.char="", colClasses=c("character", "integer", "numeric"), stringsAsFactors=F)
+*** scripting
+**** Old style: R CMD BATCH --args my_arg
+**** New style: ./script.R my_arg
+**** get command line argument
+args<-(commandArgs(TRUE))
+args
+"lalala"
+*** other
 **** Get working directory
 > getwd()
 
@@ -6524,9 +6713,6 @@ debug: ret.y <- y
 suspend the execution of a function wherever it is called and puts the function in debug mode
 the browser is just like your R work space (interactive shell)
 
-**** trace
-allows you to insert debugging code into a function a specific places
-
 **** recover
 allows you to modify the error behavior so that you can browse the function call stack
 > options(error=recover)
@@ -6547,196 +6733,6 @@ select a level in the call stack to see around, in this case, read.csv, for exam
 Called from: top level 
 Browse[1]> Q
 
-*** data IO
-**** read.table
-***** commonly used arguments
-****** file
-****** header
-****** sep
-       default to space
-****** colClasses=c("character", "integer", "numeric")
-       this may speed the data import
-       e.g., colClasses=”numeric”
-****** nrows
-****** comment.char
-       default to “#”, set comment.char=”” if there are no commented lines in your file.
-****** skip
-       the number of lines to skip from the beginning
-****** stringsAsFactors
-       hould character variables be coded as factors?
-***** read.table("clipboard")
-      Read table from clipboard
-      read.table(“clipboard”)
-      One can copy a region in Excel then use this command to import to R.
-***** handle large data
-      d.full=read.table('/home/wanding/sync/project_HGT/data2/2013_02_04_eval2alen.tab', header=T, comment.char="", colClasses=c("character", "integer", "numeric"), stringsAsFactors=F)
-*** scripting
-**** Old style: R CMD BATCH --args my_arg
-**** New style: ./script.R my_arg
-**** get command line argument
-args<-(commandArgs(TRUE))
-args
-"lalala"
-
-*** basic graphics
-**** common arguments
-***** cex
-****** cex.lab
-       change label size relative to the plot
-       magnification of x and y labels relative to cex
-       cex.lab = 1.5
-****** cex.axis
-       magnification of axis annotation relative to cex
-***** xlim, ylim - x, y plotting range
-      plot(x, y, log='y', ylim=c(10, 20))
-***** pch - plotting character
-      plot character/marker/symbol
-      +: 3
-***** col - border color of the symbol
-***** bg - fill color of the symbol
-***** xlab, ylab - put labels
-**** smoothScatter
-smoothScatter(d$oldfitness, d$newfitness, xlab='iJR904 fitness', ylab='iAF1260 fitness', cex.lab=1.5)
-***** making a log scale smoothScatter
-smoothScatter(x, log(y))
-instead of using
-smoothScatter(x, y, log='y')
-see
-https://stat.ethz.ch/pipermail/r-help/2009-July/205922.html
-**** plot
-     plot(x,y) scatter plot
-     plot(... type="h") histogram
-     plot(... type="p") point graph
-     plot(... type="l") line graph
-     plot(... type="b") both line and points
-     plot(density(x)) density plot
-**** lines
-     add line using lines
-     x<-c(1,2,5,10,20,50,100)
-     y<-sapply(x, log2)
-     plot(d$numdiffcogs, d$entropy, log='x', xlab='alphabet size', ylab='entropy')
-     lines(x, y, lty='dashed')
-***** lty - line type
-      dashed: 2
-***** lwd - line width
-      relative to the default (default=1). 2 is twice as wide.
-**** abline
-     abline(0, 1, lty='dashed')
-**** title
-     title(main = NULL, sub = NULL, xlab = NULL, ylab = NULL)
-**** par
-***** mfrow and mfcol
-      multiple subplots
-      par(mfrow=c(1,1))
-**** hist
-hist(w1$vals)
-hist(w1$vals,breaks=2)	breaks defines how many hists there are.
-hist(w1$vals,breaks=4)
-hist(w1$vals,breaks=12)
-hist(w1$vals,breaks=12,xlim=c(0,10))	xlim defines the ranges of the x axis for display
-hist(w1$vals,breaks=12,xlim=c(-1,2))
-**** stripchart
-stripchart(w1$vals)
-stripchart(w1$vals,method="stack")
-stripchart(w1$vals,method="jitter")
-stripchart(w1$vals,vertical=TRUE)
-stripchart(w1$vals,vertical=TRUE,method="jitter")
-stripchart(w1$vals,method="stack",main='Leaf BioMass in High CO2 Environment',xlab="BioMass of Leaves"
-add title and label: title('Leaf BioMass in High CO2 Environment',xlab='BioMass of Leave')
-**** matplot
-x<-seq(-4,4,len=101)
-y<-cbind(sin(x),cos(x))
-matplot(x,y,type="l",xaxt="n",main=expression(paste(plain(sin)*phi," and ",plain(cos)*phi)),ylab=expression("sin"*phi,"cos"*phi),#only 1st is taken
-xlab=expression(past("Phase Angle ",phi)),
-col.main="blue")
-axis(1,at=c(-pi,-pi/2,0,pi/2,pi),labels=expression(-pi,-pi/2,0,pi/2,pi)) add an axis to a plot.
-**** Venn's diagram
-===================
-library(limma)
-hsb2<-read.table("http://www.ats.ucla.edu/stat/R/notes/hsb2.csv",sep=',',header=T)
-attach(hsb2)
-hw<-(write>=60) # the result is an array of TRUE or FALSE.
-hm<-(math>=60)  # the result is an array of TRUE or FALSE.
-hr<-(read>=60)  # the result is an array of TRUE or FALSE.
-c3<-cbind(hw,hm,hr)
-a<-vennCounts(c3)
-vennDiagram(a)
-===================
-vennDiagram(a,include="both", names=c("High Writing","High Math","High Reading"), cex=1, counts.sol="red")
-g1<-c(rep(0,6),rep(1,3))
-g2<-c(rep(1,6),rep(0,3))
-g<-cbind(g1,g2)
-c<-vennCounts(g)
-vennDiagram(c)
-**** combined plots
-
-1. Combine hist and stripchart
-hist(w1$vals,main='Leaf BioMass in High CO2 Environment',xlab='BioMass of Leaves',ylim=c(0,16))
-stripchart(w1$vals,add=TRUE,at=15.5)
-
-2. Combine hist with boxplot
-hist(w1$vals,main='Leaf BioMass in High CO2 Environment',xlab='BioMass of Leaves',ylim=c(0,16))
-boxplot(w1$vals,horizontal=TRUE,at=15.5,add=TRUE,axes=FALSE)
-boxplot(w1$vals,main='Leaf BioMass in High CO2 Environment',ylab="BioMass of Leaves",horizontal=TRUE)
-boxplot(tree$STBM~tree$C)	tree$C is a factor vector.
-/*FMARK_END*/
-
-layout.show()  显示layout分布和编号
-**** legend
-legend(-3,.9,ex.cs1,lty=1:2,col=2:3,adj=c(0,.6))	##the components of each vector have to match. 
-##col: the color vector of each component.
-##lty: the line type 0=blank 1=solid 2=dashed 3=dotted 4=dotdash,5,longdash,6,twodash.
-op<-par(bg="white")	get an opaque box for the legend
-
-legend("topright",expression(paste("sin",phi),paste("cos",phi)),lty=1:1,col=c(1,2),title="right")
-Or we can designate the character on the line with exact coordinate of the legend by specifying pch:
-legend(-3,.9,expression(paste("sin",phi),paste("cos",phi)),lty=1:1,col=c(1,2),title="right",pch=2)
-
-legend("topright","(x,y)",pch=1,title="right")
-legend(-1,1.9,c("sin","cos","tan"),col=c(3,4,6),text.col="green4",lty=c(2,-1,1),pch=c(-1,3,4),merge=TRUE,bg='gray90')
-
-**** mtext - margin text
-mtext() add text into the margin of a plot.
-mtext(c("Low","High"),side=1,line=2,at=c(5,7))
-mtext(text,side=,line=,outer=FALSE,at=NA,adj=NA,padj=NA,cex=NA,col=NA,font=NA,...)
-side=1(bottom),2(left),3(top),4(right)
-line: Margin line starting at 0 counting outwards.
-outer=TRUE,use outer margins if available.
-adj,padj: used to adjust the location of the text.
-col: the color to use,e.g. col=100 or col="darkred"
-font: the font for text
-
-**** text
-plot(1:10,1:10)
-text(4,9,expression(hat(beta)==(X^t *X)^{-1}*X^t*y))	add text to a plot.
-text(4,8.4,"expression(hat(beta)==(X^t*X)^{-1}*X^t*y)",cex=.8)
-text(4,7,expression(bar(x)==sum(frac(x[i],n),i==1,n))
-text(4,6.4,"expression(bar(x)==sum(frac(x[i],n),i==1,n))",cex=.8)
-text(8,5,expression(paste(frac(1,sigma*sqrt(2*pi))," ",plain(e)^{frac(-(x-mu)^2,2*sigma^2)})),cex=1.2)
-
-text(x,y,labels,adj=,pos=,offset=,vfont=,cex=,col=,font=)
-	adj: adjustment of relative position of the text
-	pos=1,2,3,4,correspond to below, left, above, right. This overrides adj
-	cex= a value with 1 for normal size. for minization and enlargement
-
-**** the special math symbols
-demo(Hershey)   see how to draw special font in detail
-**** combine math and numeric variable
-plot(1:10,type="n",xlab="",ylab="",main="plot math & numbers")
-theta<-1.23;
-mtext(bquote(hat(theta)==.(theta)))
-for(i in 2:9)
-text(i,i+1,substitute(list(xi,eta)==group("(",list(x,y),")"),
-list(x=i,y=i+1)))
-**** colors
-colors(): list all the colors available and their index
-
-**** save figure as pdf
-pdf(file="my2.pdf")
-<do my plot,which won't display>
-dev.off()
-
-*** other
 **** edit spreadsheet manually
 x <- edit(data.frame()) # Starts empty GUI spreadsheet editor for manual data entry
 x <- edit(x) # Opens existing data frame (table) 'x' in GUI spreadsheet editor.
@@ -10407,6 +10403,9 @@ cat id_rsa.pub >>authorized_keys
 cat id_rsa.pub >>authorized_keys2
 both lines are necessary to ensure compability of ssh1.5 and openssh2.0 protocols** netconf
    (as root) A very good menu-driven setup of your network.
+***** troubleshoot
+http://askubuntu.com/questions/69433/ssh-no-longer-allows-public-key-authentication
+make sure that on the server side, your home directory (~), the ~/.ssh directory, and the ~/.ssh/authorized_keys file, are all writable only by their owner. In particular, none of them must be writable by the group (even if the user is alone in the group). chmod 755 or chmod 700 is ok, chmod 770 is not.
 **** ping machine_name
 Check if you can contact another machine (give the machine's name or IP), press <Ctrl>C when done (it keeps going).
 ping tells if a certain host is reachable or not from your web
