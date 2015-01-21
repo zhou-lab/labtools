@@ -2,6 +2,8 @@
 #+STARTUP: indent
 #+TAGS: memorize(a) bash git
 ** recent
+*** sort file size
+du -sh * | sort -k1,1 -h | les
 *** color ui in git                        :git:
 git config --global color.ui true
 *** change space to tab

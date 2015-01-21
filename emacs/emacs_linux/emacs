@@ -84,6 +84,9 @@
 ;; as it will affect other tasks.
 ;; (load-library "wanding-gnus")
 
+;; tramp
+(setq tramp-default-method "ssh")
+
 ;; w3m
 ;; (load-library "wanding-w3m")
 
@@ -94,7 +97,7 @@
 (load-library "wanding-dired")
 
 ;; helm mode (previously known as anything mode)
-(helm-mode 1)
+;; (helm-mode 1)
 (load-library "wanding-helm")
 (setq recentf-max-saved-items 1000)
 ;; (global-set-key (kbd "M-r") 'recentf-open-files)
