@@ -23,6 +23,7 @@ alias renamephotos='jhead -n%Y-%m-%d-%H.%M.%S *.jpg'
 export HGEDITOR=emacsclient
 export SVN_EDITOR=emacsclient
 #export ALTERNATE_EDITOR=emacs EDITOR=emacsc VISUAL=emacsc
+export PYTHONPATH=/home/wanding/wzlib/pyutils
 
 alias m='cd /media/ExternalDrivLarg/slowsync/2012-05-23-NCBI-Pal-56-pro-dataset'
 
