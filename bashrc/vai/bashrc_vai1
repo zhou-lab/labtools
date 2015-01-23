@@ -7,6 +7,8 @@ alias ls='ls --color'
 alias rm='rm -i'
 alias lc="wc -l"
 alias ll="ls -l"
+alias rf="readlink -f"
+alias parallel="parallel --gnu"
 
 PS1='\u@\h:\w\$ '
 
@@ -43,11 +45,20 @@ function prompt {
   local CYANBOLD="\[\033[1;36m\]"
   local WHITE="\[\033[0;37m\]"
   local WHITEBOLD="\[\033[1;37m\]"
-  export PS1="$REDBOLD[\t]${SCREENTITLE}$GREY[$GREENBOLD\u@\h $YELLOWBOLD\w$GREY]"'$ '
+  # export PS1="$REDBOLD[\t]${SCREENTITLE}$GREY[$GREENBOLD\u@\h $YELLOWBOLD\w$GREY]"'$ '
+  export PS1="$REDBOLD[\t]${SCREENTITLE}$GREY[$GREENBOLD\u@\h $YELLOWBOLD\w$GREY]\$ "
 
 }
 
 prompt
+
+# PROMPT_COMMAND='echo -ne "\033k\033\134\033k${HOSTNAME}[`basename ${PWD}`]\033\134"'
+# PROMPT_COMMAND='echo -ne "\033k\033\134\033k[`basename ${PWD}`]\033\134"'
+PROMPT_COMMAND='/bin/echo -ne "\033k\033\0134\033k[`basename ${PWD}`]\033\0134"'
+
+# case "$TERM" in
+#     screen*) PROMPT_COMMAND='echo -ne "\033k\033\0134"'
+# esac
 
 # % cpan
 # cpan> o conf makepl_arg INSTALL_BASE=/mydir/perl

@@ -2,6 +2,10 @@
 #+STARTUP: indent
 #+TAGS: memorize(a) bash git bioinfo
 ** recent
+*** how to sort chr1, chr20 etc?
+use --version-sort see:
+sort -V
+it sorts natural numbers within text
 *** how many bases are overlapped by feature A and feature B? :bioinfo:
 bedtools intersect -a A -b B -wo
 *** how many feature B are overlapping feature A? :bioinfo:
