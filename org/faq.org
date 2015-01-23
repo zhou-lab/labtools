@@ -1,7 +1,37 @@
 #+STARTUP: overview
 #+STARTUP: indent
-#+TAGS: memorize(a) bash git
+#+TAGS: memorize(a) bash git bioinfo
 ** recent
+*** how many bases are overlapped by feature A and feature B? :bioinfo:
+bedtools intersect -a A -b B -wo
+*** how many feature B are overlapping feature A? :bioinfo:
+bedtools intersect -a A -b B -c
+count the number of CpG island within each window.
+*** how to output feature A that are NOT overlapping with any feature B?
+bedtools intersect -a A -b B -v
+*** how to require minimal fraction of overlap A by a feature B?
+bedtools intersect -a A -b B -wo -f 0.50
+*** how to sort and use sorted bed files?
+Each dataset must be sorted by the chromosome and then by start position
+sort -k1,1 -k2,2n
+*** how to overlap feature A with multiple feature B, C, D
+require bedtools 2.21.0
+bedtools intersect -a A -b B C D -sorted
+# how many cpg, gwas and chromHmm are overlapping with exons?
+bedtools intersect -a exons.bed -b cpg.bed gwas.bed hesc.chromHmm.bed -sorted
+**** using -names for labeling compared features.
+bedtools intersect -a exons.bed -b cpg.bed gwas.bed hesc.chromHmm.bed -sorted -wa -wb -names cpg gwas chromhmm | head -10000 | tail -10
+*** how to merge alignment from ChiP-seq experiment?
+bedtools merge 
+*** recursive download folder via ftp using wget
+wget -r ftp://yourfolder
+*** gnu screen set window title to be working directory
+http://unix.stackexchange.com/questions/28430/screen-status-bar-to-display-current-directory-for-zsh-bash-shell
+http://vim.wikia.com/wiki/Automatically_set_screen_title
+fix the bug
+http://superuser.com/questions/244299/gnu-screen-how-to-update-dynamically-the-title-of-a-window
+about using PROMPT_COMMAND (specific to bash, allows putting command result before the PS
+http://www.tldp.org/HOWTO/Bash-Prompt-HOWTO/x264.html
 *** sort file size
 du -sh * | sort -k1,1 -h | les
 *** color ui in git                        :git:
