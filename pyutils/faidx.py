@@ -80,3 +80,7 @@ class RefGenome:
     def __exit__(self, type, value, traceback):
         self.fasta_handle.close()
         self.faidx_handle.close()
+
+    def chrm2len(self, chrm):
+        slen,offset,blen,bytelen=self.faidx[chrm]
+        return slen
