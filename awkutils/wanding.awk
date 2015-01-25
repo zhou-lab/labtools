@@ -1,4 +1,8 @@
-function dnarev(string) {
+function abs(value) {
+    return (value<0?-value:value);
+}
+
+function dnarev(string,        chars, dic, new_string) {
     dic["A"] = "T";
     dic["T"] = "A";
     dic["G"] = "C";
@@ -13,6 +17,8 @@ function dnarev(string) {
     return new_string;
 }
 
+# join fields by specifying a range
+# for example, from $3 to $10, one can use joinr(3,10)
 function joinr(start, end,     result, i) {
 
     result = ""
@@ -38,7 +44,8 @@ function join(array, start, end, sep,    result, i)
 }
 
 # escape the string when the string is
-# used as a pattern
+# used as a pattern in regular expression
+# i.e., \ needs to be replaced by \\
 function escape(pat,   safe) {
   safe = pat
   gsub(/[][^$.*?+{}\\()|]/, "\\\\&", safe)
