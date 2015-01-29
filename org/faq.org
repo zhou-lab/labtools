@@ -2,10 +2,51 @@
 #+STARTUP: indent
 #+TAGS: memorize(a) bash git bioinfo
 ** recent
+*** ssh X11 tunneling
+ssh -X
+to make default, put in ~/.ssh/config
+ForwardX11 yes
+on the server side, put in /etc/ssh/sshd_config
+X11Forwarding yes
+*** parallelize large data copy
+find . -type f | parallel 'mkdir -p ../Copy/{//}; rsync -a {} ../Copy/{}'
+or simply
+find . -type f | parallel cp -a {} .
+*** what's a daemon thread?
+A daemon thread is alive only when the main thread calling the daemon is alive.
+see
+http://stackoverflow.com/questions/2846653/python-multithreading-for-dummies
+*** multiprocessing vs threading
+in short
+threading: interleaving
+multiprocessing: real parallelization
+http://stackoverflow.com/questions/2846653/python-multithreading-for-dummies
+"For actual parallelization in Python, you should use the multiprocessing module to fork multiple processes that execute in parallel (due to the global interpreter lock, Python threads provide interleaving but are in fact executed serially, not in parallel, and are only useful when interleaving I/O operations)."
+*** wait for enqueued tasks to be completed
+https://docs.python.org/2/library/queue.html#Queue.Queue
+#+BEGIN_SRC python
+def worker():
+    while True:
+        item = q.get()
+        do_work(item)
+        q.task_done()
+
+q = Queue() # equivalent to multiprocessing.JoinableQueue
+for i in range(num_worker_threads):
+     t = Thread(target=worker)
+     t.daemon = True
+     t.start()
+
+for item in source():
+    q.put(item)
+
+q.join()       # block until all tasks are done
+#+END_SRC
 *** how to sort chr1, chr20 etc?
 use --version-sort see:
 sort -V
 it sorts natural numbers within text
+see also vcf-sort which uses sort -V
 *** how many bases are overlapped by feature A and feature B? :bioinfo:
 bedtools intersect -a A -b B -wo
 *** how many feature B are overlapping feature A? :bioinfo:
@@ -940,8 +981,7 @@ me["age"] = 30;
 var newArray = [[1,2,3],[1,2],[{a:4}]];
 ** Java
 *** Basic concepts
-
-Java version history
+**** Java version history
 http://en.wikipedia.org/wiki/Java_version_history
 JDK 1.0 → JDK 1.1 → J2SE 1.2 → … → J2SE 1.4 → J2SE 5.0 → Java SE 6 → Java SE 7
 
@@ -949,25 +989,52 @@ There are three implementations of Java on Ubuntu, openjdk, sun java and ibm jav
 openjdk package: openjdk-6-jre + icetea6-plugin (the browser plugin) + openjdk-6-jdk
 sun java package: sun-java6-jre + sun-java6-plugin (the browser plugin) + sun-java6-jdk
 
-*** to change java running environment:
+**** to change java running environment:
 sudo update-java-alternatives --set java-6-sun
 
-*** to list all java implementation on your computer:
+**** to list all java implementation on your computer:
 update-java-alternatives --list
 
-*** to show the java you are currently running:
+**** to show the java you are currently running:
 java -version
 
 Source file name has to be spelled the same (case sensitive) as the name of the public class contained.
 e.g., ImageViewer.java has public class ImageViewer
-
+**** to compile and run java
+javac Welcome.java
+java Welcome # NO ".class"
+**** .java .class and .jar
 .java : source file to be compiled to .class by javac command
 .class : byte code compiled and run by JVM
-.jar : a collection of .class
+.jar : a collection of .class and resource files (images, binaries etc.), .jar file is zip compressed. Therefore one could use "jar" on normal zip file. e.g., "jar xvf src.zip"
 
-*** what's main method signature
+***** convert .class to .jar
+jar cf myFile.jar *.class
+f is for output .jar file name
+all the class file names are appended to the end
+
+jar cmf Manifest.txt myFile.jar *.class
+m is for Manifest file
+***** convert .jar to .class
+jar xf myFile.jar
+***** compile .java to .class
+javac myCode.java
+**** specify maximum java memory size
+# 80 Mb memory
+java -Xmx80m
+# 2 Gb memory
+java -Xmx4096m
+# 4 Gb memory
+java -Xmx4g
+**** specify class path and class name in execution
+java -cp [CLASSPATH]
+or
+java -classpath [CLASSPATH]
+java -cp /home/uec-00/shared/production/software/ECWorkflow/ECWorkFlow.jar:/home/uec-00/shared/production/software/ECWorkflow/pegasus.jar edu.usc.epigenome.workflow.generator.ReportFromPileup -pbs workFlowParams.txt
+**** what's main method signature
 public static void main(String args[])
 public means it's accessible from outside the class.
+static means it's not invoked upon an object.
 
 // for comments
 
@@ -977,6 +1044,19 @@ the following are equivalent
 1. String[] args
 2. String []args
 3. String args[]
+
+*** Applet
+**** how to compile and use applet?
+You need 2 files, WelcomeApplet.java is the source code. And WelcomeApplet.html is the html
+javac WelcomeApplet.java
+appletviewer WelcomeApplet.html
+
+inside WelcomeApplet.html you have something like
+#+BEGIN_SRC html
+<applet code="WelcomeApplet.class">
+<param name="greeting" value="something">
+</applet>
+#+END_SRC
 
 *** Ant
 build javadoc in ant
