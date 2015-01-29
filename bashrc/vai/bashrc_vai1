@@ -16,15 +16,18 @@ HOME=/home/wzhou
 
 export PATH=~/bin:$PATH
 export SCREENRC=$HOME/wzlib/screenrc/screenrc_hp
-# export PYTHONPATH=$HOME/pythonlib/lib/python2.6/site-packages
-# export PYTHONPATH=/home/wzhou/tools/scikit-learn-0.15.0/build/lib.linux-x86_64-2.7:/home/wzhou/pythonlib/pyvcf/PyVCF-master:$PYTHONPATH
-export PYTHONPATH=/home/wzhou/wzlib/pyutils
+export PYTHONPATH=$HOME/wzlib/pyutils
+export AWKPATH=$HOME/wzlib/awk
 
-# alias python='~/canopy/bin/python'
+# % cpan
+# cpan> o conf makepl_arg INSTALL_BASE=/mydir/perl
+# cpan> o conf commit
+# export PERL5LIB=/home/wzhou1/tools/perltools/lib/perl5:/home/wzhou1/tools/vcftools/vcftools_0.1.11/lib/perl5/site_perl:${PERL5LIB}
+
 alias scp='rsync -Pravdtze ssh'
-# alias hpc='rsync -Pravdtuze ssh /cygdrive/y/project_vaf/src/ ris:/RIS/home/wzhou/project_vaf/src/ --exclude=pathsetup.py --exclude=*~ --exclude=*.pyc'
+alias awk='awk -v OFS="\t"'
 alias les="less -S"
-alias qsuball="find /home/wzhou/htcpbs/ -type f | sort | xargs -I {} qsub {}"
+alias qsuball="find $HOME/htcpbs/ -type f | sort | xargs -I {} qsub {}"
 alias qdelall="qstat | grep wzhou | awk '{print $1}' | xargs -I {} qdel {}"
 
 function prompt {
@@ -59,11 +62,6 @@ PROMPT_COMMAND='/bin/echo -ne "\033k\033\0134\033k[`basename ${PWD}`]\033\0134"'
 # case "$TERM" in
 #     screen*) PROMPT_COMMAND='echo -ne "\033k\033\0134"'
 # esac
-
-# % cpan
-# cpan> o conf makepl_arg INSTALL_BASE=/mydir/perl
-# cpan> o conf commit
-# export PERL5LIB=/home/wzhou1/tools/perltools/lib/perl5:/home/wzhou1/tools/vcftools/vcftools_0.1.11/lib/perl5/site_perl:${PERL5LIB}
 
 function wz_vcffilter {
     vcffile=$1;
@@ -122,8 +120,6 @@ function wzqsub {
     find ~/pbs/ -type f | sort | sed -n "${1},${2}"p | xargs -I {} qsub {}
 }
 
-alias awk='awk -v OFS="\t"'
-
 ### git ###
 
 alias gs="git status"
@@ -139,8 +135,4 @@ function gl {
   if [ -z "$1" ]; then message="minor, message omitted"; else message="$1"; fi;
   git commit -a -m "$message";
   git push;
-}
-
-function bcl {
-  bc -l <<< "$1";
 }

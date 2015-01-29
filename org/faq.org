@@ -101,9 +101,23 @@ or #STARTUP: indent
 *** ignore file mode change in Git         :git:
 git config core.fileMode false
 *** source awk library and mingle with command line :awk:
+**** -f filename -e ''
 awk -f [library_path] -e [command_line]
 E.g.,
 awk -f /home/wanding/wzlib/wanding.awk -F"\t" -e '$9!="."{match($9, /^(\S+) \(([+-]), coding\)/, a); match($3, /ins([ATGC]+)/, b); print $3"\t"$5"\t"a[2]"\t"b[1]"\trev\t"dnarev(b[1])}' cosmic_insertion_tnuc_revanno 
+**** setup AWKPATH
+AWKPATH is the environmental variable where awk will look for files
+**** '@include "filename";'
+in .bashrc
+export AWKPATH=~/.awk
+in ~/.awk create awkfun
+add 
+function abs(value) {
+return (value<0?-value:value)
+}
+
+echo "-10" | awk '@include "awkfun"; {print $1, abs($1)}'
+
 *** rsync
 PROJECTNAMECODE="project_sv"
 rsync -Pravdtuze ssh /home/wzhou1/$(PROJECTNAMECODE)/src/ ris:/RIS/home/wzhou1/$(PROJECTNAMECODE)/src/ --exclude=pathsetup.py --exclude=*~ --exclude=*.pyc
