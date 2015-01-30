@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
+from __future__ import division # make sure division yields floating
 import sys, re
 import argparse
-
 class Indices:
 
     def __init__(self):
@@ -365,7 +365,21 @@ def main_colindex(args):
     for line in args.table:
         fields = line.strip().split(args.delim)
         print [(i+1, _) for i, _ in enumerate(fields) if p.search(_)]
+        if not args.all:
+            break
 
+def main_headerexp(args):
+
+    headerline = args.table.readline()
+    fields = headerline.strip().split(args.delim)
+    exp = args.e
+    if args.list:
+        for i, field in enumerate(fields):
+            print i+1, field
+    for i, field in enumerate(fields):
+        exp = re.sub('\|'+field+'\|', '$'+str(i+1), exp)
+    print exp
+    
 def main_classify(args):
 
     k2v = {}
@@ -420,6 +434,40 @@ def main_dupcompress(args):
     for k, v in k2v.iteritems():
         print '%s\t%d\t%s' % ('\t'.join(k), len(v), '\t'.join(v))
 
+def div(denom, divid):
+
+    return 'NA' if divid == 0 else denom / divid
+
+def main_nameawk(args):
+
+    exp = '['+args.e+']'
+    fields = args.table.readline().strip().split(args.delim)
+    for i, field in enumerate(fields):
+
+        # print field, exp
+        # try convert to integer
+        exp = re.sub('i\|'+field+'\|', 'int(fields['+str(i)+'])', exp)
+        # try convert to float
+        exp = re.sub('f\|'+field+'\|', 'float(fields['+str(i)+'])', exp)
+        # convert to string
+        exp = re.sub('\|'+field+'\|', 'fields['+str(i)+']', exp)
+
+    if args.header:
+        print re.sub(',', '\t', args.header)
+    else:                       # use expression as header
+        # ',' vs ', '
+        # note that ', ' is used to separate fields
+        # ',' used inside a function should contain no space afterward
+        # e.g., field1, func(field2,field3)
+        print re.sub(', ', '\t', args.e)
+
+    try:
+        for line in args.table:
+            fields = line.strip().split(args.delim)
+            print '\t'.join(map(str, eval(exp)))
+    except IOError:
+        sys.exit(1)
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Manipulate tables')
@@ -433,11 +481,19 @@ if __name__ == '__main__':
     parser_reorder.add_argument('-nskip', default=0, type=int, help='number of lines to skip before header')
     parser_reorder.set_defaults(func=main_reorder)
 
-    parser_colindex = subparsers.add_parser("colindex", help="find the index of a particular column")
+    parser_colindex = subparsers.add_parser("colindex", help="find the index of a particular column, indices are 1-based")
     parser_colindex.add_argument('table', help="data table", type = argparse.FileType('r'), default='-')
     parser_colindex.add_argument('--delim', default="\t", help="table delimiter [\\t]")
     parser_colindex.add_argument('-r', default=None, help='regular expression')
+    parser_colindex.add_argument('--all', action='store_true', help='analyze all lines, not just first line')
     parser_colindex.set_defaults(func=main_colindex)
+
+    parser_headerexp = subparsers.add_parser("headerexp", help='translate header name into column index, indices are 1-based')
+    parser_headerexp.add_argument('table', help="data table", type = argparse.FileType('r'), default='-')
+    parser_headerexp.add_argument('-e', default=None, help='expression, $colname1$+$colname2$')
+    parser_headerexp.add_argument('--delim', default="\t", help="table delimiter [\\t]")
+    parser_headerexp.add_argument('--list', action='store_true', help="list all column names with indices")
+    parser_headerexp.set_defaults(func=main_headerexp)
 
     parser_transpose = subparsers.add_parser("transpose", help="transpose table")
     parser_transpose.add_argument('table', help="data table", type = argparse.FileType('r'), default='-')
@@ -528,6 +584,14 @@ if __name__ == '__main__':
     parser_dupcompress.add_argument('-v', type=int, required=True, help="column to list (1-based)")
     parser_dupcompress.add_argument('--delim', default="\t", help="table delimiter [\\t]")
     parser_dupcompress.set_defaults(func=main_dupcompress)
+
+    parser_nameawk = subparsers.add_parser('nameawk', help='behave like awk, but use column name')
+    parser_nameawk.add_argument('--delim', default="\t", help="table delimiter [\\t]")
+    parser_nameawk.add_argument('table', help="data table", type = argparse.FileType('r'), default='-')
+    parser_nameawk.add_argument('-e', default=None, help='expression, e.g., |colname1|+|colname2|')
+    parser_nameawk.add_argument('--header', default=None, help='header, coma separated')
+    parser_nameawk.set_defaults(func=main_nameawk)
+
 
     args = parser.parse_args()
     args.func(args)

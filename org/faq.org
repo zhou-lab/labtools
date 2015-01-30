@@ -1,7 +1,45 @@
 #+STARTUP: overview
 #+STARTUP: indent
-#+TAGS: memorize(a) bash git bioinfo
+#+TAGS: memorize(a) bash git bioinfo awk
 ** recent
+*** awk uses pipe and redirection in print
+https://www.gnu.org/software/gawk/manual/html_node/Redirection.html
+print items > "output-file"
+print items >> "output-file"
+print $1 | "sort -r > names.sorted"
+*** sort ignore header                    :bash:
+**** using awk (best solution)            :awk:
+awk 'NR==1;NR>1{print|"sort"}' [in] > [out]
+
+**** using bash (2nd best solution)
+cat [in] | (read -r; print "%s\n" "$REPLY"; sort)
+explanation: read -r is for reading one line from the standard input without escaping backslash "\". the result is put into variable $REPLY. -r is needed if the header line contains backslashes.
+echo without $REPLY will condense whitespace
+
+**** make a function for bash solution (only skip the first line)
+#+BEGIN_SRC sh
+body() {
+  IFS=read -r header
+  printf '%s\n' "$header"
+  "$@"
+}
+#+END_SRC
+example usage:
+ps -o pid,comm | body sort -k2
+ps -o pid,comm | body grep "somethingtofind"
+
+**** or using head and tail
+(head -n2 <file> && tail -n+3 <file> | sort) > newfile
+
+**** or using head and sed
+head -1 [file] > [out]
+sed 1d [file] | sort >> [out]
+
+**** using perl
+cat [in] | perl -e 'print scalar (<>); print sort {...} <>'
+The perl solution uses the sort function in perl instead the unix sort.
+The ... in sort {...} defines how sorting takes place. for example, sort {$a <=> $b} means numerical ascending sort. See perl sort manual for detail.
+
 *** ssh X11 tunneling
 ssh -X
 to make default, put in ~/.ssh/config
@@ -101,7 +139,7 @@ or #STARTUP: indent
 *** ignore file mode change in Git         :git:
 git config core.fileMode false
 *** source awk library and mingle with command line :awk:
-**** -f filename -e ''
+**** -f filename -e '' [only AFTER awk4.01]
 awk -f [library_path] -e [command_line]
 E.g.,
 awk -f /home/wanding/wzlib/wanding.awk -F"\t" -e '$9!="."{match($9, /^(\S+) \(([+-]), coding\)/, a); match($3, /ins([ATGC]+)/, b); print $3"\t"$5"\t"a[2]"\t"b[1]"\trev\t"dnarev(b[1])}' cosmic_insertion_tnuc_revanno 
@@ -590,6 +628,11 @@ equivalent to
 for ((i=1;i<=END;++i)); do echo $i; done
 * archive
 ** AWK
+*** install a new version in a local path
+wget http://git.savannah.gnu.org/cgit/gawk.git/snapshot/gawk-gawk-4.0.1.tar.gz
+./configure --prefix /home/wzhou/tools/awk4.01/gawk-4.01-install
+make
+make install
 *** basics
 #+BEGIN_SRC 
 awk 'BEGIN {<initializations>} 

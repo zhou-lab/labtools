@@ -2,6 +2,10 @@ function abs(value) {
     return (value<0?-value:value);
 }
 
+function div(denom, divd) {
+    return (divd == 0? "NA" : denom/divd);
+}
+
 function dnarev(string,        chars, dic, new_string) {
     dic["A"] = "T";
     dic["T"] = "A";
