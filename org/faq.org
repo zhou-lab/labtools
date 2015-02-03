@@ -2,6 +2,17 @@
 #+STARTUP: indent
 #+TAGS: memorize(a) bash git bioinfo awk
 ** recent
+*** how to remap mac iterm2 key binding
+http://stackoverflow.com/questions/6205157/iterm2-how-to-get-jump-to-beginning-end-of-line-in-bash-shell
+preferences -> keys
+alt/opt <-  SEND ESC SEQ b
+alt/opt ->  SEND ESC SEQ f
+command a   HEX CODE 0x01
+command e   HEX CODE 0x05
+
+command d   HEX CODE 0x04 # this is deletion! otherwise iterm2 will emit the annoying vertical split
+see http://www.unix-manuals.com/refs/misc/ascii-table.html
+then remember to "copy preferences to profile"
 *** awk uses pipe and redirection in print
 https://www.gnu.org/software/gawk/manual/html_node/Redirection.html
 print items > "output-file"
@@ -537,7 +548,7 @@ tr -d "\n"
 remove all newline characters.
 *** how to sort with header
 (head -n 2 <file> && tail -n +3 <file> | sort) > newfile
-*** how to extract pattern from string
+*** how to extract pattern from string                               :bash:
 use expr
 http://tldp.org/LDP/abs/html/string-manipulation.html
 expr $a : '.*\(Tumor-[0-9]*\).*'

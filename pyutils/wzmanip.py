@@ -440,6 +440,11 @@ def div(denom, divid):
 
 def main_nameawk(args):
 
+    """ use column name as if in awk
+    e.g.,
+    wzmanip nameawk -e i|colname1| + i|colname2|, div(f|colname3|,f|colname4|)
+    Note that "," inside function is different from ", " that are used to separate columns
+    """
     exp = '['+args.e+']'
     fields = args.table.readline().strip().split(args.delim)
     for i, field in enumerate(fields):
@@ -589,7 +594,7 @@ if __name__ == '__main__':
     parser_nameawk.add_argument('--delim', default="\t", help="table delimiter [\\t]")
     parser_nameawk.add_argument('table', help="data table", type = argparse.FileType('r'), default='-')
     parser_nameawk.add_argument('-e', default=None, help='expression, e.g., |colname1|+|colname2|')
-    parser_nameawk.add_argument('--header', default=None, help='header, coma separated')
+    parser_nameawk.add_argument('--header', default=None, help='header, "," separated, no need to append space after ","')
     parser_nameawk.set_defaults(func=main_nameawk)
 
 
