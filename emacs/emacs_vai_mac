@@ -11,6 +11,9 @@
 
 (setq mac-command-modifier 'control)
 
+(add-to-list 'default-frame-alist '(height . 80))
+(add-to-list 'default-frame-alist '(width . 100))
+
 (show-paren-mode 1)
 (require 'mouse)
 (xterm-mouse-mode t)
@@ -29,6 +32,9 @@
 (global-set-key (kbd "<f11>") 'dabbrev-expand)
 (global-set-key (kbd "<f9>") 'my-switch-to-other-buffer)
 (global-set-key (kbd "<f10>") 'list-buffers)
+
+(setq sh-basic-offset 2
+      sh-indentation 2)
 
 ;; Wanding functions
 (defun my-switch-to-other-buffer ()
