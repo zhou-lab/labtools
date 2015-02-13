@@ -6,6 +6,41 @@ import numpy as np
 import scipy.stats as stats
 import math
 
+class Indices:
+
+    def __init__(self):
+        self.spans = []
+
+    def extend(self, start, end):
+        self.spans.append((start, end))
+
+    def extract(self, lst):
+        result = []
+        for start, end in self.spans:
+            if not end:
+                end = len(lst)
+            result.extend([lst[_] for _ in xrange(start, end)])
+
+        return result
+
+def parse_indices(indstr):
+    indices = Indices()
+    if not indstr: return indices
+    rgs = indstr.split(',')
+    for rg in rgs:
+        if rg.find('-') >= 0:
+            pair = rg.split('-')
+            if not pair[0]:
+                pair[0] = 0
+            if not pair[1]:
+                pair[1] = None
+            indices.extend(int(pair[0])-1 if pair[0] else 0,
+                           int(pair[1]) if pair[1] else None)
+        else:
+            indices.extend(int(rg)-1, int(rg))
+
+    return indices
+
 def main_Utest(args):
     
     if args.skipheader:
@@ -41,37 +76,39 @@ def main_Utest(args):
 
 def main_basic(args):
     
-    if args.skipheader:
-        args.table.readline()
+    indices = parse_indices(args.c)
 
-    rgs = args.c.split(',')
-    indices = []
-    for rg in rgs:
-        if rg.find('-') >= 0:
-            pair = rg.split('-')
-            if not pair[0]:
-                pair[0] = 0
-            if not pair[1]:
-                pair[1] = 99
-            indices.extend(range(int(pair[0])-1, int(pair[1])))
-        else:
-            indices.append(int(rg)-1)
+    if args.skipheader:
+        header = args.table.readline()
+        headerfields = header.strip().split(args.delim)
+        print('stats\t%s' % '\t'.join(indices.extract(headerfields)))
 
     vals = []
     for i, line in enumerate(args.table):
         fields = line.strip().split(args.delim)
-        vals.append([float(fields[_]) for _ in indices])
+        if i == 0:
+            vals = [[] for _ in indices.extract(fields)]
+        for j, val in enumerate(indices.extract(fields)):
+            if val != 'NA':
+                vals[j].append(float(val))
 
-    data = zip(*vals)
 
-    print "sum:\t%s" % '\t'.join([str(sum(d)) for d in data])
+    print('valid_count\t%s' % '\t'.join(map(str, map(len, vals))))
+    print('sum\t%s' % '\t'.join(map(str, map(sum, vals))))
+    print('median\t%s' % '\t'.join(map(str, map(np.median, vals))))
+    print('mean\t%s' % '\t'.join(map(str, map(np.mean, vals))))
+    print('max\t%s' % '\t'.join(map(str, map(max, vals))))
+    print('min\t%s' % '\t'.join(map(str, map(min, vals))))
+    
+    # data = zip(*vals)
+    # print "sum:\t%s" % '\t'.join([str(sum(d)) for d in data])
     # print "sum: %.2f" % sum(vals) '\t'.join([str(sum(d)) for d in data])
-    print "median:\t%s" % '\t'.join([str(np.median(d)) for d in data])
-    print "max:\t%s" % '\t'.join([str(max(d)) for d in data])
-    print "min:\t%s" % '\t'.join([str(min(d)) for d in data])
-#     print "median: %.2f" % np.median(vals)
-#     print "max: %.2f" % max(vals)
-#     print "min: %.2f" % min(vals)
+    # print "median:\t%s" % '\t'.join([str(np.median(d)) for d in data])
+    # print "max:\t%s" % '\t'.join([str(max(d)) for d in data])
+    # print "min:\t%s" % '\t'.join([str(min(d)) for d in data])
+    # print "median: %.2f" % np.median(vals)
+    # print "max: %.2f" % max(vals)
+    # print "min: %.2f" % min(vals)
 
 def main_overlap(args):
     """ find overlap of two list """
@@ -107,8 +144,8 @@ if __name__ == '__main__':
     # basic statistics
     psr_basic = subparsers.add_parser("basic", help=""" Basic statistics (mean, median, std, max, min) """)
     psr_basic.add_argument('-c', default=None, help="columns to study, 1-based. E.g., -c 1,3-4 [None]")
-    psr_basic.add_argument('-r', action="store_true", help="row mode, apply to each row in the input table")
-    psr_basic.add_argument('--eldelim', default=",", help="delimiter between elements, only effective under row mode [,]")
+    # psr_basic.add_argument('-r', action="store_true", help="row mode, apply to each row in the input table")
+    # psr_basic.add_argument('--eldelim', default=",", help="delimiter between elements, only effective under row mode [,]")
     add_std_options(psr_basic)
     psr_basic.set_defaults(func=main_basic)
 

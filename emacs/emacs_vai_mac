@@ -5,6 +5,13 @@
   (package-initialize)
   )
 
+(setq tab-width 2)
+(setq-default tab-width 2)
+(setq indent-tabs-mode nil)
+
+(setq sh-basic-offset 2
+      sh-indentation 2)
+
 (setq mouse-wheel-scroll-amount '(2))
 (setq mouse-wheel-progressive-speed nil)
 (global-visual-line-mode t)
@@ -175,6 +182,7 @@
   (yank)
   (goto-char (line-beginning-position 0))
 )
+
 
 (defun insert-before-line ()
   "insert the content yanked (e.g., copied) before the current line"

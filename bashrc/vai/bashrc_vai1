@@ -3,12 +3,18 @@ if [ -f /etc/bashrc ]; then
 	. /etc/bashrc
 fi
 
+# load some environment
+if [ -f /home/wzhou/wzlib/other/pipeline_environment/vai1.sh ]; then
+   . /home/wzhou/wzlib/other/pipeline_environment/vai1.sh;
+fi
+
 alias ls='ls --color'
 alias rm='rm -i'
 alias lc="wc -l"
 alias ll="ls -l"
 alias rf="readlink -f"
 alias parallel="parallel --gnu"
+alias igv=~/tools/igv/IGVDistribution_2.2.9/igv.sh
 
 PS1='\u@\h:\w\$ '
 
@@ -17,7 +23,7 @@ HOME=/home/wzhou
 export PATH=~/bin:$PATH
 export SCREENRC=$HOME/wzlib/screenrc/screenrc_hp
 export PYTHONPATH=$HOME/wzlib/pyutils
-export AWKPATH=$HOME/wzlib/awk
+export AWKPATH=$HOME/wzlib/awkutils
 
 # % cpan
 # cpan> o conf makepl_arg INSTALL_BASE=/mydir/perl
@@ -25,10 +31,11 @@ export AWKPATH=$HOME/wzlib/awk
 # export PERL5LIB=/home/wzhou1/tools/perltools/lib/perl5:/home/wzhou1/tools/vcftools/vcftools_0.1.11/lib/perl5/site_perl:${PERL5LIB}
 
 alias scp='rsync -Pravdtze ssh'
-alias awk='awk -v OFS="\t"'
+alias awk='$HOME/tools/awk4.01/gawk-4.01-install/bin/awk -F"\t" -v OFS="\t"'
 alias les="less -S"
 alias qsuball="find $HOME/htcpbs/ -type f | sort | xargs -I {} qsub {}"
 alias qdelall="qstat | grep wzhou | awk '{print $1}' | xargs -I {} qdel {}"
+alias curl="curl -OL"
 
 function prompt {
   local BLACK="\[\033[0;30m\]"

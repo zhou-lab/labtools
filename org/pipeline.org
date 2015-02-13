@@ -1,0 +1,290 @@
+#+STARTUP: indent
+#+STARTUP: content
+
+* perl utils usc
+
+** fastqConstantSplit.pl
+fastqConstantSplit.pl [#parts] [1.fq] [2.fq]
+
+#+BEGIN_SRC
+/home/uec-00/shared/production/software/perl_utils_usc/fastqConstantSplit.pl 1 /export/uec-gs1/laird/users/bberman/research/agilentRrbs/fromAgilent/KJ_SC112012_KJ80_I001_ATCACG_L005_R1.fastq /export/uec-gs1/laird/users/bberman/research/agilentRrbs/fromAgilent/KJ_SC112012_KJ80_I001_ATCACG_L005_R2.fastq
+#+END_SRC
+
+** wrap_bsmap.pl
+
+wrap_bsmap.pl [result.bam] [ref.fa] [r1.fq] [r2.fq]
+
+#+BEGIN_SRC 
+/home/uec-00/shared/production/software/perl_utils_usc/wrap_bsmap.pl KJ_SC112012_KJ80_I001_ATCACG_L005_R1.fastq.NC_001416.fa.bam /home/uec-00/shared/production/genomes/lambdaphage/NC_001416.fa
+/export/uec-gs1/laird/users/bberman/research/agilentRrbs/fromAgilent/KJ_SC112012_KJ80_I001_ATCACG_L005_R1.fastq /export/uec-gs1/laird/users/bberman/research/agilentRrbs/fromAgilent/KJ_SC112012_KJ80_I001_ATCACG_L005_R2.fastq
+#+END_SRC
+
+** orgcontamcheck.pl - contamination check
+orgcontamcheck.pl [.fq] [noreads] [contam1.fa] [contam2.fa] [contam3.fa]...
+
+#+BEGIN_SRC 
+/home/uec-00/shared/production/software/perl_utils_usc/orgcontamcheck.pl /export/uec-gs1/laird/users/bberman/research/agilentRrbs/fromAgilent/KJ_SC112012_KJ80_I001_ATCACG_L005_R1.fastq 5000000  /home/uec-00/shared/production/genomes/encode_hg19_mf/female.hg19.fa  /home/uec-00/shared/production/genomes/sacCer1/sacCer1.fa  /home/uec-00/shared/production/genomes/phi-X174/phi_plus_SNPs.fa  /home/uec-00/shared/production/genomes/arabidopsis/tair8.pluscontam.fa  /home/uec-00/shared/production/genomes/mm9_unmasked/mm9_unmasked.fa  /home/uec-00/shared/production/genomes/Ecoli/EcoliIHE3034.fa  /home/uec-00/shared/production/genomes/rn4_unmasked/rn4.fa  /home/uec-00/shared/production/genomes/salmon/salmosalar.fa  /home/uec-00/shared/production/genomes/rRNA/rRNA.fa  /home/uec-00/shared/production/genomes/lambdaphage/NC_001416.fa 
+#+END_SRC
+
+** merge_bams.pl - Merge bam files
+
+since FASTQ was aligned separately
+this adds read groups using the Picard, mark duplicates and flagstat
+
+merge_bams.pl [target.bam] [source1.bam] [source2.bam] ...
+
+#+BEGIN_SRC
+ /home/uec-00/shared/production/software/perl_utils_usc/merge_bams.pl ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam /export/uec-gs1/laird/shared/production/ga/flowcells/D295HACXX/results/D295HACXX/D295HACXX_7_NIC1254A76/ResultCount_D295HACXX_7_NIC1254A76.hg19_rCRSchrm.fa.mdups.bam /export/uec-gs1/laird/shared/production/ga/flowcells/C1LBAACXX/results/C1LBAACXX/C1LBAACXX_6_NIC1254A76/ResultCount_C1LBAACXX_6_NIC1254A76.hg19_rCRSchrm.fa.mdups.bam /export/uec-gs1/laird/shared/production/ga/flowcells/C27BLACXX/run2/results/C27BLACXX/C27BLACXX_6_NIC1254A76/ResultCount_C27BLACXX_6_NIC1254A76.hg19_rCRSchrm.fa.mdups.bam
+#+END_SRC
+
+or
+#+BEGIN_SRC 
+/home/uec-00/shared/production/software/perl_utils_usc/merge_bams.pl ResultCount_AGILENT_1_SC112012L005.NC_001416.fa.bam KJ_SC112012_KJ80_I001_ATCACG_L005_R1.fastq.NC_001416.fa.bam.rmuln.bam
+#+END_SRC
+
+** wrap_java_report.pl - merge QC metrics
+
+wrap_java_report.pl MERGING_qcmetrics.csv bisulfiteQCMetrics.pl [dir]
+
+#+BEGIN_SRC 
+/home/uec-00/shared/production/software/perl_utils_usc/wrap_java_report.pl MERGING_qcmetrics.csv /home/uec-00/shared/production/software/perl_utils_usc/bisulfiteQCMetrics.pl /export/uec-gs1/laird/shared/production/ga/merges/2014-02-12_1437_merge_NIC1254A76/results/MERGING/MERGING_1_NIC1254A76
+#+END_SRC
+
+** wrap_lc_extrap.pl - coverage extrapolation
+
+wrap_lc_extrap.pl [.bam] [.metric.txt] 
+
+#+BEGIN_SRC 
+/home/uec-00/shared/production/software/perl_utils_usc/wrap_lc_extrap.pl  ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam.CoverageProjection.metric.txt
+#+END_SRC
+
+** wrap_picard.pl
+java -Xmx12g -jar picard.jar TMP_DIR=/export/uec-gs1/laird/shared/tmp
+*** GC bias from Picard
+
+wrap_picard.pl CollectBcBiasMerics.jar INPUT=[.bam] OUTPUT=[.CollectGcBiasMetrics.metric.txt]
+
+#+BEGIN_SRC 
+/home/uec-00/shared/production/software/perl_utils_usc/wrap_picard.pl CollectGcBiasMetrics.jar INPUT=ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam OUTPUT=ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam.CollectGcBiasMetrics.metric.txt VALIDATION_STRINGENCY=SILENT CHART_OUTPUT=chart REFERENCE_SEQUENCE=/home/uec-00/shared/production/genomes/hg19_rCRSchrm/hg19_rCRSchrm.fa
+#+END_SRC
+
+*** QualityScore Distribution
+
+wrap_picard.pl QualityScoreDistribution.jar INPUT=[.bam] OUTPUT=[QualityScoreDistribution.metric.txt VALIDATION_STRINGENCY=SILENT CHART_OUTPUT=chart
+
+#+BEGIN_SRC 
+/home/uec-00/shared/production/software/perl_utils_usc/wrap_picard.pl QualityScoreDistribution.jar INPUT=ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam OUTPUT=ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam.QualityScoreDistribution.metric.txt VALIDATION_STRINGENCY=SILENT CHART_OUTPUT=chart
+#+END_SRC
+
+*** CollectAlignmentSummaryMetrics
+
+wrap_picard.pl CollectAlignmentSummaryMetrics.jar INPUT=[.bam] OUTPUT=[.CollectAlignmentSummaryMetrics.metric.txt] IS_BISULFITE_SEQUENCED=true REFERENCE_SEQUENCE=[reference.fa]
+
+#+BEGIN_SRC 
+/home/uec-00/shared/production/software/perl_utils_usc/wrap_picard.pl CollectAlignmentSummaryMetrics.jar INPUT=ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.mdups.bam OUTPUT=ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.mdups.bam.CollectAlignmentSummaryMetrics.metric.txt IS_BISULFITE_SEQUENCED=true REFERENCE_SEQUENCE=/home/uec-00/shared/production/genomes/hg19_rCRSchrm/hg19_rCRSchrm.fa
+#+END_SRC
+
+*** CollectInsertSizeMetrics
+
+wrap_picard.pl CollectInsertSizeMetrics.jar INPUT=[.bam] OUTPUT=[.CollectInsertSizeMetrics.metric.txt] VALIDATION_STRINGENCY=SILENT HISTOGRAM_FILE=chart
+
+#+BEGIN_SRC
+/home/uec-00/shared/production/software/perl_utils_usc/wrap_picard.pl CollectInsertSizeMetrics.jar INPUT=ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam OUTPUT=ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam.CollectInsertSizeMetrics.metric.txt VALIDATION_STRINGENCY=SILENT HISTOGRAM_FILE=chart
+#+END_SRC
+
+*** MeanQualityByCycle.jar
+
+wrap_picard.pl MeanQualityByCycle.jar INPUT=[.bam] OUTPUT=[.MeanQualityByCycle.metric.txt] VALIDATION_STRINGENCY=SILENT CHART_OUTPUT=chart
+
+#+BEGIN_SRC 
+/home/uec-00/shared/production/software/perl_utils_usc/wrap_picard.pl MeanQualityByCycle.jar INPUT=ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam OUTPUT=ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam.MeanQualityByCycle.metric.txt VALIDATION_STRINGENCY=SILENT CHART_OUTPUT=chart
+#+END_SRC
+
+** bissnp_trinuc_sample.pl - MethLevelAverages by Yaping
+
+NOTE: this depends on the bis-snp output:
+*.raw.vcf.MethySummarizeList.txt
+
+bissnp_trinuc_sampletrinuc_sample.pl [MethLevelAverages.metric.txt] [.bam] [reference.fa] [optional: chrM]
+
+#+BEGIN_SRC
+/home/uec-00/shared/production/software/perl_utils_usc/bissnp_trinuc_sample.pl ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam.MethLevelAverages.metric.txt ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam /home/uec-00/shared/production/genomes/hg19_rCRSchrm/hg19_rCRSchrm.fa
+#+END_SRC
+
+#+BEGIN_SRC
+/home/uec-00/shared/production/software/perl_utils_usc/bissnp_trinuc_sample.pl ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam.chrM.MethLevelAverages.metric.txt ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam /home/uec-00/shared/production/genomes/hg19_rCRSchrm/hg19_rCRSchrm.fa chrM
+#+END_SRC
+
+** countnmer.pl
+countnmer.pl [1.fq] [2.fq]
+
+actually runs $JAVA edu.usc.epigenome.scripts.FastaToNmerCounts -nmer $i
+#+BEGIN_SRC 
+/home/uec-00/shared/production/software/perl_utils_usc/countnmer.pl nmerCount_AGILENT_s_1_3mers.csv KJ_SC112012_KJ80_I001_ATCACG_L005_R1.1.fastq KJ_SC112012_KJ80_I001_ATCACG_L005_R2.1.fastq 
+#+END_SRC
+** wrap_wigToBigWig.pl - wigToBigWig
+
+wrap_wigToBigWig.pl [.wig] [.bw]
+
+#+BEGIN_SRC 
+/home/uec-00/shared/production/software/perl_utils_usc/wrap_wigToBigWig.pl ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam.winsize30dumpv.BinDepths.metric.wig ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam.winsize30dumpv.BinDepths.metric.wig.bw
+#+END_SRC
+
+#+BEGIN_SRC
+/home/uec-00/shared/production/software/perl_utils_usc/wrap_wigToBigWig.pl ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam.winsize5000dumpv.BinDepths.metric.wig ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam.winsize5000dumpv.BinDepths.metric.wig.bw
+#+END_SRC
+** trackversions.pl - track versions
+
+trackversions.pl [.bam] [.ApplicationStackMetrics.metric.txt]
+
+#+BEGIN_SRC 
+/home/uec-00/shared/production/software/perl_utils_usc/trackversions.pl ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam.ApplicationStackMetrics.metric.txt
+#+END_SRC
+
+** cleanPipelineParts.pl - clean pipeline parts
+
+cleanPipelineParts.pl [dir]
+
+#+BEGIN_SRC 
+/home/uec-00/shared/production/software/perl_utils_usc/cleanPipelineParts.pl /export/uec-gs1/laird/shared/production/ga/merges/2014-02-12_1437_merge_NIC1254A76/results/MERGING/MERGING_1_NIC1254A76
+#+END_SRC
+
+** wrap_rnaseq_metrics.pl
+
+wrap_rnaseq_metrics.pl [.bam] [.fa] [.CollectRnaSeqMetrics.metric.txt]
+
+#+BEGIN_SRC
+/home/uec-00/shared/production/software/perl_utils_usc/wrap_rnaseq_metrics.pl ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.mdups.bam /home/uec-00/shared/production/genomes/hg19_rCRSchrm/hg19_rCRSchrm.fa ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.mdups.bam.CollectRnaSeqMetrics.metric.txt
+#+END_SRC
+
+** bamToElementEnrichment.pl
+
+bamToElementEnrichment.pl [.bam] [.CPGvsRandomCov.metric.txt]
+
+#+BEGIN_SRC
+/home/uec-00/shared/production/software/perl_utils_usc/bamToElementEnrichment.pl  ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam /home/rcf-40/bberman/tumor/genomic-data-misc/CGIs/Takai_Jones_from_Fei_122007.fixed.PROMOTERONLY.oriented.hg19.bed ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam.CPGvsRandomCov.metric.txt
+#+END_SRC
+
+** solexaFilterContams.pl
+* uecgatk.pl
+** bin depths
+
+uecgatk.pl -T BinDepths -R [reference.fa] -I [.bam] -o [.wig]
+
+#+BEGIN_SRC
+/home/uec-00/shared/production/software/uecgatk/default/uecgatk.pl  -T BinDepths -R /home/uec-00/shared/production/genomes/hg19_rCRSchrm/hg19_rCRSchrm.fa -I ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam -o ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam.winsize30dumpv.BinDepths.metric.wig -winsize 30 -dumpv
+#+END_SRC
+
+#+BEGIN_SRC
+/home/uec-00/shared/production/software/uecgatk/default/uecgatk.pl  -T BinDepths -R /home/uec-00/shared/production/genomes/hg19_rCRSchrm/hg19_rCRSchrm.fa -I ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam -o ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam.p5000000winsize50000dumpv.BinDepths.metric.wig -p 5000000 -winsize 5000 -dumpv
+#+END_SRC
+
+#+BEGIN_SRC
+/home/uec-00/shared/production/software/uecgatk/default/uecgatk.pl  -T BinDepths -R /home/uec-00/shared/production/genomes/hg19_rCRSchrm/hg19_rCRSchrm.fa -I ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam -o ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam.winsize5000dumpv.BinDepths.metric.wig -winsize 5000 -dumpv
+#+END_SRC
+
+** DownsampleDups - downsample duplicates
+
+uecgatk.pl -T DownsampleDups -R [reference.fa] -I [.bam] -o [DownsampleDups.metric.txt]
+
+#+BEGIN_SRC 
+/home/uec-00/shared/production/software/uecgatk/default/uecgatk.pl  -T DownsampleDups -R /home/uec-00/shared/production/genomes/hg19_rCRSchrm/hg19_rCRSchrm.fa -I ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam -o ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam.p5000000trials100nt8.DownsampleDups.metric.txt -p 5000000 -trials 100 -nt 8
+#+END_SRC
+
+** Read length metric
+
+uecgatk.pl -T ReadLength -R [.fa] -I [.bam] -o [ReadLength.metric.txt]
+
+#+BEGIN_SRC 
+/home/uec-00/shared/production/software/uecgatk/default/uecgatk.pl  -T ReadLength -R /home/uec-00/shared/production/genomes/hg19_rCRSchrm/hg19_rCRSchrm.fa -I ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam -o ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam..ReadLength.metric.txt
+#+END_SRC
+
+** MethLevelAverages
+
+uecgatk.pl -T MethLevelAverages -R [reference.fa] -I [.bam] -o [.cph.MethLevelAverages.metric.txt] -cph
+
+specify chromosomes: -L chrM:1234-12345
+
+#+BEGIN_SRC 
+/home/uec-00/shared/production/software/uecgatk/default/uecgatk.pl  -T MethLevelAverages -R /home/uec-00/shared/production/genomes/hg19_rCRSchrm/hg19_rCRSchrm.fa -I ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam -o ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam.cph.MethLevelAverages.metric.txt -cph
+#+END_SRC
+
+** FlagStat
+
+uecgatk.pl -T FlagStat -R [reference.fa] -I [.bam] -o [.FlagStat.metric.txt]
+
+#+BEGIN_SRC 
+/home/uec-00/shared/production/software/uecgatk2/default/uecgatk.pl  -T FlagStat -R /home/uec-00/shared/production/genomes/hg19_rCRSchrm/hg19_rCRSchrm.fa -I ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.mdups.bam -o ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.mdups.bam.rfNumberHitsEqualsOne.FlagStat.metric.txt -rf NumberHitsEqualsOne
+#+END_SRC
+
+** InvertedReadPairDups
+
+uecgatk.pl -T InvertedReadPairDups -R [reference.fa] -I [.bam] -o [.InvertedReadPairDups.metric.txt]
+
+#+BEGIN_SRC 
+/home/uec-00/shared/production/software/uecgatk/default/uecgatk.pl  -T InvertedReadPairDups -R /home/uec-00/shared/production/genomes/hg19_rCRSchrm/hg19_rCRSchrm.fa -I ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam -o ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam..InvertedReadPairDups.metric.txt
+#+END_SRC
+
+* bissnp pipeline
+
+bissnp_pipeline.pl [.bam] [reference.fa]
+
+#+BEGIN_SRC 
+/home/uec-00/shared/production/software/bissnp/bissnp_pipeline.pl ResultCount_MERGING_1_NIC1254A76.hg19_rCRSchrm.fa.bam /home/uec-00/shared/production/genomes/hg19_rCRSchrm/hg19_rCRSchrm.fa
+#+END_SRC
+
+** bam_indel_realign
+
+java -jar bissnp.jar -R 
+
+** bam_mdups
+
+** bam_base_recalibration
+
+** bissnp
+
+** vcf_sort
+
+** vcf_filter
+
+** vcf2bed6plus2
+
+** vcf2bed6plus2_filter
+
+** vcf2tdf
+
+* GATK
+** CountReads - count reads from bam file
+java -jar $GATK -R [reference.fasta] -I [.bam]
+** CountLoci - count how many bases have been covered by at least one or more reads
+java -jar $GATK -T CountLoci -R GATK-3.3.0/resources/exampleFASTA.fasta -I GATK-3.3.0/resources/exampleBAM.bam -o output.txt
+* Picard
+** AddOrReplaceReadGroups
+
+#+BEGIN_SRC 
+$JAVABIN -Xmx4g -jar ~/tools/picard/picard-tools-1.128/picard.jar AddOrReplaceReadGroups INPUT=output/NIC1254A45.bam OUTPUT=output/NIC1254A45_RG.bam RGLB=MERGING RGPL=illumina RGPU=1 RGSM=NIC1254A45
+#+END_SRC
+
+or old picard
+#+BEGIN_SRC 
+$JAVA -Xmx4g -jar $PICARD/AddOrReplaceReadGroups.jar CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate
+MAX_RECORDS_IN_RAM=1000000 INPUT='$bamIn' OUTPUT='with_rg_$bamOut' RGID='$flowcell\.$lane' RGLB='$lib' RGPL='illumina Hiseq'
+RGPU='$flowcell\.$lane' RGSM='$lib' RGCN='USC EPIGENOME CENTER' RGDS='from file $bamIn on $date'"
+#+END_SRC
+
+** MergeSamFiles
+
+$JAVA -Xmx4g -jar picard.jar MergeSamFiles INPUT=[in1.bam] INPUT=[in2.bam] ... OUTPUT=[out.bam]
+
+or old picard
+#+BEGIN_SRC
+$JAVA -Xmx4g -jar $PICARD/MergeSamFiles.jar $cmd
+#+END_SRC
+
+** MarkDuplicate
+
+#+BEGIN_SRC 
+$JAVA -Xms7g -Xmx7g -jar $PICARD/MarkDuplicates.jar CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT METRICS_FILE=dupmets.txt
+READ_NAME_REGEX=null INPUT=$output OUTPUT=$outputdups
+#+END_SRC
+

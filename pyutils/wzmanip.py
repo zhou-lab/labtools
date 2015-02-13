@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
+from __future__ import division # make sure division yields floating
 import sys, re
 import argparse
-
 class Indices:
 
     def __init__(self):
@@ -63,11 +63,14 @@ def main_transpose(args):
 
     data = []
     for line in args.table:
-        fields = line.strip('\n').split(args.delim)
+        fields = line.strip('\n').split(args.delimi)
+        if (args.skipblank and
+            (all([_.isspace() or not _ for _ in fields]))):
+            continue
         data.append(fields)
 
     for fields in zip(*data):
-        print args.delim.join(fields)
+        print args.delimo.join(fields)
 
     return
 
@@ -82,6 +85,9 @@ def _build_map(args, index):
 
     c = parse_indices(args_c) if args_c else None
     p = parse_indices(args_p) if args_p else None
+
+    if getattr(args, "skipheader%d" % index):
+        getattr(args, "t%d" % index).readline()
     lmap = {}
     for line in getattr(args, "t%d" % index):
         f = line.strip().split("\t")
@@ -365,7 +371,21 @@ def main_colindex(args):
     for line in args.table:
         fields = line.strip().split(args.delim)
         print [(i+1, _) for i, _ in enumerate(fields) if p.search(_)]
+        if not args.all:
+            break
 
+def main_headerexp(args):
+
+    headerline = args.table.readline()
+    fields = headerline.strip().split(args.delim)
+    exp = args.e
+    if args.list:
+        for i, field in enumerate(fields):
+            print i+1, field
+    for i, field in enumerate(fields):
+        exp = re.sub('\|'+field+'\|', '$'+str(i+1), exp)
+    print exp
+    
 def main_classify(args):
 
     k2v = {}
@@ -420,6 +440,67 @@ def main_dupcompress(args):
     for k, v in k2v.iteritems():
         print '%s\t%d\t%s' % ('\t'.join(k), len(v), '\t'.join(v))
 
+def div(denom, divid):
+
+    return 'NA' if divid == 0 else denom / divid
+
+def main_nameawk(args):
+
+    """ use column name as if in awk
+    e.g.,
+    wzmanip nameawk -e i|colname1| + i|colname2|, div(f|colname3|,f|colname4|)
+    Note that "," inside function is different from ", " that are used to separate columns
+    """
+    exp = '['+args.e+']'
+    fields = args.table.readline().strip().split(args.delim)
+    for i, field in enumerate(fields):
+
+        # print field, exp
+        # try convert to integer
+        exp = re.sub('i\|'+field+'\|', 'int(fields['+str(i)+'])', exp)
+        # try convert to float
+        exp = re.sub('f\|'+field+'\|', 'float(fields['+str(i)+'])', exp)
+        # convert to string
+        exp = re.sub('\|'+field+'\|', 'fields['+str(i)+']', exp)
+
+    if args.header:
+        print re.sub(',', '\t', args.header)
+    else:                       # use expression as header
+        # ',' vs ', '
+        # note that ', ' is used to separate fields
+        # ',' used inside a function should contain no space afterward
+        # e.g., field1, func(field2,field3)
+        print re.sub(', ', '\t', args.e)
+
+    try:
+        for line in args.table:
+            fields = line.strip().split(args.delim)
+            print '\t'.join(map(str, eval(exp)))
+    except IOError:
+        sys.exit(1)
+
+def main_unique(args):
+
+    prev_key = None
+    prev_line = None
+    for line in args.table:
+        fields = line.strip().split(args.delim)
+        key = fields[args.k-1]
+        if args.keep == 'first':
+            if prev_key != key:
+                print(line.strip())
+
+        if args.keep == 'last':
+            if key != prev_key and prev_key:
+                print(prev_line.strip())
+
+        prev_key = key
+        prev_line = line
+
+    if args.keep == 'last' and prev_line:
+        print(prev_line.strip())
+
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Manipulate tables')
@@ -433,15 +514,25 @@ if __name__ == '__main__':
     parser_reorder.add_argument('-nskip', default=0, type=int, help='number of lines to skip before header')
     parser_reorder.set_defaults(func=main_reorder)
 
-    parser_colindex = subparsers.add_parser("colindex", help="find the index of a particular column")
+    parser_colindex = subparsers.add_parser("colindex", help="find the index of a particular column, indices are 1-based")
     parser_colindex.add_argument('table', help="data table", type = argparse.FileType('r'), default='-')
     parser_colindex.add_argument('--delim', default="\t", help="table delimiter [\\t]")
     parser_colindex.add_argument('-r', default=None, help='regular expression')
+    parser_colindex.add_argument('--all', action='store_true', help='analyze all lines, not just first line')
     parser_colindex.set_defaults(func=main_colindex)
+
+    parser_headerexp = subparsers.add_parser("headerexp", help='translate header name into column index, indices are 1-based')
+    parser_headerexp.add_argument('table', help="data table", type = argparse.FileType('r'), default='-')
+    parser_headerexp.add_argument('-e', default=None, help='expression, $colname1$+$colname2$')
+    parser_headerexp.add_argument('--delim', default="\t", help="table delimiter [\\t]")
+    parser_headerexp.add_argument('--list', action='store_true', help="list all column names with indices")
+    parser_headerexp.set_defaults(func=main_headerexp)
 
     parser_transpose = subparsers.add_parser("transpose", help="transpose table")
     parser_transpose.add_argument('table', help="data table", type = argparse.FileType('r'), default='-')
-    parser_transpose.add_argument('--delim', default="\t", help="table delimiter [\\t]")
+    parser_transpose.add_argument('--delimi', default="\t", help="table delimiter [\\t]")
+    parser_transpose.add_argument('--delimo', default="\t", help="table delimiter [\\t]")
+    parser_transpose.add_argument('--skipblank', action='store_false', help='skip blank lines')
     parser_transpose.set_defaults(func=main_transpose)
 
     parser_compare = subparsers.add_parser("compare", help="compare two columns of two table")
@@ -451,6 +542,9 @@ if __name__ == '__main__':
     parser_compare.add_argument("-c1", default=None, help="column(s) to be compared in table 1, e.g., '1,2-5' (1-based)")
     parser_compare.add_argument("-c2", default=None, help="column(s) to be compared in table 2, e.g., '1,2-5' (1-based)")
     parser_compare.add_argument("-c3", default=None, help="column(s) to be compared in table 3, e.g., '1,2-5' (1-based)")
+    parser_compare.add_argument("--skipheader1", action="store_true")
+    parser_compare.add_argument("--skipheader2", action="store_true")
+    parser_compare.add_argument("--skipheader3", action="store_true")
     parser_compare.add_argument("-fc1", default=None, help="format key in table 1, e.g., {f[0]}:{f[1]}")
     parser_compare.add_argument("-fc2", default=None, help="format key in table 2, e.g., {f[0]}:{f[1]}")
     parser_compare.add_argument("-fc3", default=None, help="format key in table 3, e.g., {f[0]}:{f[1]}")
@@ -528,6 +622,20 @@ if __name__ == '__main__':
     parser_dupcompress.add_argument('-v', type=int, required=True, help="column to list (1-based)")
     parser_dupcompress.add_argument('--delim', default="\t", help="table delimiter [\\t]")
     parser_dupcompress.set_defaults(func=main_dupcompress)
+
+    parser_nameawk = subparsers.add_parser('nameawk', help='behave like awk, but use column name')
+    parser_nameawk.add_argument('--delim', default="\t", help="table delimiter [\\t]")
+    parser_nameawk.add_argument('table', help="data table", type = argparse.FileType('r'), default='-')
+    parser_nameawk.add_argument('-e', default=None, help='expression, e.g., |colname1|+|colname2|')
+    parser_nameawk.add_argument('--header', default=None, help='header, "," separated, no need to append space after ","')
+    parser_nameawk.set_defaults(func=main_nameawk)
+
+    parser_unique = subparsers.add_parser('unique', help='report only one version of a contiguous lines')
+    parser_unique.add_argument('-k', type=int, help='column to unique')
+    parser_unique.add_argument('-keep', default='first', help='{first, last}')
+    parser_unique.set_defaults(func=main_unique)
+    parser_unique.add_argument('--delim', default="\t", help="table delimiter [\\t]")
+    parser_unique.add_argument('table', help="data table", type = argparse.FileType('r'), default='-')
 
     args = parser.parse_args()
     args.func(args)

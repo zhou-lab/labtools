@@ -8,6 +8,43 @@ import numpy as np
 import matplotlib.cm as cm
 import itertools
 import numpy as np
+import operator
+
+class Indices:
+
+    def __init__(self):
+        self.spans = []
+
+    def extend(self, start, end):
+        self.spans.append((start, end))
+
+    def extract(self, lst):
+        result = []
+        for start, end in self.spans:
+            if not end:
+                end = len(lst)
+            result.extend([lst[_] for _ in xrange(start, end)])
+
+        return result
+
+def parse_indices(indstr):
+    indices = Indices()
+    if not indstr: return indices
+    rgs = indstr.split(',')
+    for rg in rgs:
+        if rg.find('-') >= 0:
+            pair = rg.split('-')
+            if not pair[0]:
+                pair[0] = 0
+            if not pair[1]:
+                pair[1] = None
+            indices.extend(int(pair[0])-1 if pair[0] else 0,
+                           int(pair[1]) if pair[1] else None)
+        else:
+            indices.extend(int(rg)-1, int(rg))
+
+    return indices
+
 
 colorcycle = ['DarkSlateGray', 'Brown', 'Burlywood', 'DarkSlateBlue', 'yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'y', 'k', 'c', 'g']
 ccycle = itertools.cycle(colorcycle)
@@ -61,7 +98,11 @@ def main_scatter(args):
     __prelude__(args)
 
     if args.skipheader:
-        args.table.readline()
+        headerfields = args.table.readline().strip().split(args.delim)
+        if not args.xlabel:
+            args.xlabel = headerfields[args.x-1]
+        if not args.ylabel:
+            args.ylabel = headerfields[args.y-1]
 
     if args.skipline > 0:
         for i in xrange(args.skipline):
@@ -121,6 +162,53 @@ def main_scatter(args):
     __core__(args)
 
 
+def main_ezscatter_table(args):
+
+    """
+    plot x vs multiple y with each y in a separate column (table format)
+    assumes the reader line contains the label for each category
+    e.g.,
+    x y_apple y_orange y_banana
+    1 1       1        1
+    2 2       2        2
+    ...
+    """
+
+    __prelude__(args)
+
+    yinds = parse_indices(args.ys)
+    labels = args.table.readline().strip().split('\t')
+    # need to make xs because there might exist 'NA' for some y
+    xs = [[] for _ in yinds.extract(labels)]
+    ys = [[] for _ in xs]
+    for i, line in enumerate(args.table):
+        field = line.strip().split(args.delim)
+        for j, yval in enumerate(yinds.extract(field)):
+            if yval != 'NA':
+                xs[j].append(float(field[args.x-1]))
+                ys[j].append(float(yval))
+
+    for j in xrange(len(xs)):
+        plt.scatter(xs[j], ys[j], color=colorcycle[j])
+
+    plt.legend(yinds.extract(labels))
+
+    __core__(args)
+
+                
+def main_ezscatter_factor(args):
+
+    """
+    plot x vs multiple y in with a factor column
+    e.g.,
+    x  y  category
+    1  1  apple
+    2  2  orange
+    ...
+    """
+    pass
+
+
 def adjust_spines(ax,spines):
     for loc, spine in ax.spines.items():
         if loc in spines:
@@ -142,17 +230,17 @@ def adjust_spines(ax,spines):
         # no xaxis ticks
         ax.xaxis.set_ticks([])
 
-def _hist_multiplot(args):
-
-    mpl.rcParams['xtick.direction'] = 'out'
-    mpl.rcParams['ytick.direction'] = 'out'
-
+def _hist_multiread(args):
+    
 
     cat2data = {}
     for i, line in enumerate(args.table):
         fields = line.strip().split(args.delim)
         cat = fields[args.cat-1]
-        data = float(fields[args.c-1])
+        datastr = fields[args.c-1]
+        if datastr == 'NA':
+            continue
+        data = float(datastr)
 
         # find min, max to determine range
         if i==0:
@@ -167,6 +255,16 @@ def _hist_multiplot(args):
             cat2data[cat].append(data)
         else:
             cat2data[cat] = [data]
+
+    return cat2data, dmin, dmax
+
+
+def _hist_multiplot(args):
+
+    mpl.rcParams['xtick.direction'] = 'out'
+    mpl.rcParams['ytick.direction'] = 'out'
+
+    cat2data, dmin, dmax = _hist_multiread(args)
 
     if args.xrange:
         dmin, dmax = eval(args.xrange)
@@ -188,10 +286,75 @@ def _hist_multiplot(args):
 
     return
 
+def main_ezhist_stack(args):
+
+    """
+    this plots histogram in which different categories stack on top of each other
+    e.g.,
+    hist1
+    hist2
+    hist3
+    """
+
+    pass
+    
+
+def main_ezhist_sidebyside(args):
+
+    """
+    this plots histograms in which different categories stand side by side
+    input format:
+    category  count
+    cat1      12
+    cat1      11
+    ...
+    cat2      13
+    cat3      18
+    
+    plots
+    cat1,cat2,cat3  cat1,cat2,cat3
+         bin1            bin2
+    """
+
+    mpl.rcParams['xtick.direction'] = 'out'
+    mpl.rcParams['ytick.direction'] = 'out'
+    
+    __prelude__(args)
+    cat2data, dmin, dmax = _hist_multiread(args)
+    ncats = len(cat2data)
+
+    barwidth = 0.5
+    spacing = 0.1
+    binwidth = barwidth * ncats + spacing
+
+    cats = []
+    obs  = []
+    for i, (cat,data_seq) in enumerate(cat2data.iteritems()):
+        hts, edges = np.histogram(data_seq, range=(dmin, dmax), bins=args.bins)
+        binlefts = [1+j*binwidth for j in xrange(len(hts))]
+        barlefts = [k+i*barwidth for k in binlefts]
+        ob = plt.bar(barlefts, hts, edgecolor="none", linewidth=0, width=barwidth, facecolor=next(ccycle), alpha=args.alpha)
+        obs.append(ob)
+        cats.append(cat)
+    plt.xticks(binlefts, map(lambda a: '%1.2g' % a, edges[:-1]), rotation=args.xtlrotat)
+
+    plt.legend(obs, cats)
+
+    __core__(args)
+
+def main_ezhist_substack(args):
+
+    """
+    this plots histogram in different subplots stacking on top of each other
+    """
+    pass
+
+
+
 def _hist_oneplot(args):
 
     if args.skipheader:
-        args.table.readline()
+        headerline = args.table.readline()
 
     if args.skipline > 0:
         for i in xrange(args.skipline):
@@ -202,6 +365,8 @@ def _hist_oneplot(args):
         if i > args.maxline:
             break
         pair = line.strip().split(args.delim)
+        if pair[args.c-1] == 'NA':
+            continue
         data.append(float(pair[args.c-1]))
 
 
@@ -226,6 +391,9 @@ def _hist_oneplot(args):
             plt.xticks(coords, locs)
     else:
         plt.hist(data, bins=args.bins, log=args.log, linewidth=0, edgecolor='none', alpha=args.alpha, rwidth=0.9, facecolor=next(ccycle))
+
+    if not args.xlabel and args.skipheader:
+        args.xlabel = headerline.strip().split(args.delim)[args.c-1]
 
     return
 
@@ -305,7 +473,74 @@ def main_box(args):
             
         __core__(args)
 
+
+def main_boxbin(args):
+
+    __prelude__(args)
+
+    def drawmean(starts, ends, means, color):
+        for start, end, mean in zip(starts, ends, means):
+            plt.hlines(y=mean, xmin=start, xmax=end, color=color, lw=3)
+
+        return
+
+    def setcolor(ob, col):
+        for item in ['medians', 'fliers', 'whiskers', 'boxes', 'caps']:
+            plt.setp(ob[item], color=col, lw=1.3)
+            
+        plt.setp(ob["medians"], lw=1.3)
+
+        return
+    
+    yinds = parse_indices(args.ys)
+    labels = args.table.readline().strip().split(args.delim)
+
+    ylabels = yinds.extract(labels)
+    xs = [[] for _ in ylabels]
+    ys = [[] for _ in xs]
+    x0 = []
+    for i, line in enumerate(args.table):
+        fields = line.strip().split(args.delim)
+
+        if fields[args.x-1] == 'NA':
+            continue
+
+        x = float(fields[args.x-1])
+        x0.append(x)
+        for j, yval in enumerate(yinds.extract(fields)):
+            if yval == 'NA':
+                continue
+            y = float(yval)
+            xs[j].append(x)
+            ys[j].append(float(yval))
+
+    grids = np.linspace(min(x0), max(x0), args.bins)
+    obs = []
+    for j, y in enumerate(ys):
+        dataseq = [[y[i] for i, x in enumerate(xs[j]) if x >= grids[k] and x < grids[k+1]] for k in xrange(len(grids)-1)]
+        centerpoints = range(1, len(dataseq)+1)
+        ob = plt.boxplot(dataseq, sym=args.symb, positions=centerpoints, widths=0.2)
+        if args.mean:
+            drawmean([_-0.1 for _ in centerpoints], [_+0.1 for _ in centerpoints], map(np.mean, dataseq), colorcycle[j])
+        setcolor(ob, colorcycle[j])
+        obs.append(ob['boxes'][0])
+
+    if not args.xlabel:
+        args.xlabel = labels[args.x-1]
+
+    if not args.ylabel and len(ys) == 1:
+        args.ylabel = yinds.extract(labels)[0]
+
+    plt.xticks(range(len(grids)), map(lambda a: '%1.2f' % a, grids))
+        
+    if len(ys) > 1:
+        plt.legend(obs, yinds.extract(labels), loc=args.legloc)
+    
+    __core__(args)
+
 def main_bar(args):
+
+    """ category labels are """
 
     __prelude__(args)
 
@@ -342,6 +577,141 @@ def main_bar(args):
     #     bottom += col
 
     __core__(args)
+
+
+def _bar_multiread_table(args):
+
+    indices = parse_indices(args.hs)
+    headerline = args.table.readline()
+    headerfields = headerline.strip().split(args.delim)
+    xlabel = headerfields[args.x-1]
+    cats = indices.extract(headerfields)
+    
+    data = [[] for j in xrange(len(cats))]
+    xticklabels = []
+    for line in args.table:
+        fields = line.strip().split(args.delim)
+        xticklabels.append(fields[args.x-1])
+        for j, n in enumerate(indices.extract(fields)):
+            data[j].append(float(n))
+
+    return xlabel, xticklabels, cats, data
+
+def main_ezbar_sidebyside(args):
+
+    """ input format:
+
+    header cat1 cat2
+    x1     n11   n12
+    x2     n21   n22
+    x3     n31   n32
+    ...
+
+    results:
+
+
+    bar(n11) bar(n12)   bar(n21) bar(n22)   bar(n31) bar(n32)
+    ==========================================================
+           x1                   x2                 x3
+
+    """
+    
+    xlabels, xticklabels, cats, data = _bar_multiread_table(args)
+    
+    ncats = len(cats)
+    barwidth = args.barwidth
+    spacing = args.spacing
+    binwidth = barwidth * ncats + spacing
+
+    obs = []
+    for i, bardata in enumerate(data):
+        binlefts = [1+j*binwidth for j in xrange(len(bardata))]
+        barlefts = [k+i*barwidth for k in binlefts]
+        ob = plt.bar(barlefts, bardata, edgecolor="none", linewidth=0, width=barwidth, facecolor=next(ccycle), alpha=args.alpha)
+        obs.append(ob)
+
+    binrights = [k+barwidth*ncats+spacing for k in binlefts]
+    bincenter = map(lambda x,y: (x+y)/2.0, binlefts, binrights)
+    plt.xticks(bincenter, xticklabels, rotation=args.xtlrotat, horizontalalignment='center')
+    plt.legend(obs, cats)
+
+    if not args.xmin:
+        args.xmin = binlefts[0]-binwidth
+        
+    if not args.xmax:
+        args.xmax = binrights[-1]+binwidth
+
+    __core__(args)
+        
+    
+
+def main_ezbar_stack(args):
+
+
+    """ input format:
+    
+    header cat1 cat2
+    x1     n11  n12
+    x2     n21  n22
+    x3     n31  n32
+    ...
+
+    bar(n12)    bar(n22)   bar(n32)
+    bar(n11)    bar(n21)   bar(n31)
+    ===============================
+       x1          x2         x3
+    """
+    xlabels, xticklabels, cats, data = _bar_multiread_table(args)
+
+    ncats = len(cats)
+    barwidth = 2
+    spacing = 0.4
+    binwidth = barwidth + spacing
+
+    obs = []
+    for i, bardata in enumerate(data):
+        barlefts = [1+j*binwidth for j in xrange(len(bardata))]
+        if i == 0:
+            bottom = [0 for _ in bardata]
+        ob = plt.bar(barlefts, bardata, bottom=bottom, edgecolor="none", linewidth=0, width=barwidth, facecolor=next(ccycle), alpha=args.alpha)
+        obs.append(ob)
+        bottom = map(operator.add, bottom, bardata)
+        bottom = map(lambda x: x+args.vspacing, bottom)
+
+    plt.xticks(barlefts, xticklabels, rotation=args.xtlrotat)
+    plt.legend(obs, cats)
+
+    __core__(args)
+
+def main_ezbar_substack(args):
+
+    """ same as stack but in different subplots so to allow different scale """
+    xlabels, xticklabels, cats, data = _bar_multiread_table(args)
+
+    ncats = len(cats)
+    barwidth = 2
+    spacing = 0.4
+    binwidth = barwidth + spacing
+
+    obs = []
+    nrows = len(data)
+    plt.subplots_adjust(hspace=0)
+    for i, bardata in enumerate(data):
+        plt.subplot(nrows, 1, i+1)
+        barlefts = [1+j*binwidth for j in xrange(len(bardata))]
+        ob = plt.bar(barlefts, bardata, edgecolor="none", linewidth=0, width=barwidth, facecolor=next(ccycle), alpha=args.alpha)
+        obs.append(ob)
+        plt.ylabel(cats[i])
+        if i != 0:
+            yticks, yticklabels = plt.yticks()
+            plt.yticks(yticks[:-1])
+        if i != nrows - 1:
+            plt.xticks([])
+
+    plt.xticks(barlefts, xticklabels, rotation=args.xtlrotat)
+
+    __core__(args)
+
 
 ### horizontal bar
 # #!/usr/bin/env python
@@ -650,7 +1020,14 @@ if __name__ == '__main__':
     add_std_options(psr_scatter)
     psr_scatter.set_defaults(func=main_scatter)
 
-
+    ezscatter_parsers = subparsers.add_parser('ezscatter', help='easy scatter plots')
+    ezscatter_subparsers = ezscatter_parsers.add_subparsers()
+    psr_ezs_table = ezscatter_subparsers.add_parser('table', help="plot x vs multiple y with each y in a separate column (table format)")
+    psr_ezs_table.add_argument('-ys', default='', help='column of ys (1-based)')
+    psr_ezs_table.add_argument('-x', type=int, help="column of x (1-based)")
+    add_std_options(psr_ezs_table)
+    psr_ezs_table.set_defaults(func=main_ezscatter_table)
+    
     # hexbin
     psr_hexbin = subparsers.add_parser("hexbin", help=""" hexbin plot """)
     psr_hexbin.add_argument('-x', type=int, help="column of x (1-based)")
@@ -659,7 +1036,7 @@ if __name__ == '__main__':
     psr_hexbin.set_defaults(func=main_hexbin)
 
     # boxplot
-    psr_box = subparsers.add_parser("box", help=""" boxplot """)
+    psr_box = subparsers.add_parser("box", help="box plot with discrete x-value")
     psr_box.add_argument('-c', type=int, help="column of value to plot [required]")
     psr_box.add_argument('--dim1', type=int, default=-1, help="column of dimention 1 category (1-based)")
     psr_box.add_argument('--dim2', type=int, default=-1, help="column of dimention 2 category (1-based)")
@@ -667,6 +1044,17 @@ if __name__ == '__main__':
     psr_box.add_argument('--catsep', type=int, default=0.5, help="separation between categories [0.1]")
     add_std_options(psr_box)
     psr_box.set_defaults(func=main_box)
+
+    # boxbin
+    psr_boxbin = subparsers.add_parser("boxbin", help="box plot binned by continuous value rather than from a given category")
+    psr_boxbin.add_argument('-ys', help='column')
+    psr_boxbin.add_argument('-x', type=int, help='value to be binned')
+    psr_boxbin.add_argument('--mean', action='store_true', help='draw mean on each box')
+    psr_boxbin.add_argument('--bins', type=int, default=15, help="number of bins [15]")
+    psr_boxbin.add_argument('--catsep', type=int, default=0.5, help="separation between categories [0.1]")
+    psr_boxbin.add_argument('--symb', default='+', help='symbol for outliers')
+    add_std_options(psr_boxbin)
+    psr_boxbin.set_defaults(func=main_boxbin)
 
     # histogram
     psr_hist = subparsers.add_parser("hist", help=""" histogram """)
@@ -681,6 +1069,15 @@ if __name__ == '__main__':
     add_std_options(psr_hist)
     psr_hist.set_defaults(func=main_hist)
 
+    ezhist_parsers = subparsers.add_parser('ezhist', help='easy histogram plots')
+    ezhist_subparsers = ezhist_parsers.add_subparsers()
+    psr_ezh_sidebyside = ezhist_subparsers.add_parser('sidebyside')
+    psr_ezh_sidebyside.add_argument('-c', type=int, help="column to plot (1-based)")
+    psr_ezh_sidebyside.add_argument('--bins', type=int, default=10, help="number of bins [10]")
+    psr_ezh_sidebyside.add_argument('--cat', type=int, help="column to indicate category (1-based)")
+    add_std_options(psr_ezh_sidebyside)
+    psr_ezh_sidebyside.set_defaults(func=main_ezhist_sidebyside)
+
     # pie
     psr_pie = subparsers.add_parser("pie", help=""" pie chart """)
     psr_pie.add_argument('-c', type=int, help="column to plot (1-based)")
@@ -694,10 +1091,32 @@ if __name__ == '__main__':
     psr_bar.add_argument('-l', type=int, help="x dimensional column index (1-based)")
     psr_bar.add_argument('--cat', type=int, default=-1, help='column for category (stacked or juxtaposed)')
     psr_bar.add_argument('--catlabels', help='category labels')
-    # psr_bar.add_argument('--frac', type=int, default=1, help='index of fraction column')
-    # psr_bar.add_argument('--label', type=int, default=2, help='index of label column')
     add_std_options(psr_bar)
     psr_bar.set_defaults(func=main_bar)
+
+    ezbar_parsers = subparsers.add_parser('ezbar', help='easy bar plots')
+    ezbar_subparsers = ezbar_parsers.add_subparsers()
+    psr_ezb_sidebyside = ezbar_subparsers.add_parser('sidebyside')
+    psr_ezb_sidebyside.add_argument('-x', type=int, help="column to plot bar labels (1-based), should contain unique text labels")
+    psr_ezb_sidebyside.add_argument('-hs', help="column to plot bar heights (1-based), if only one column is given the plot is a simple bar plot, if more than one columns are given, the plot stacks multiple columns next to each other")
+    psr_ezb_sidebyside.add_argument('--spacing', type=float, default=0.3, help='default[0.3]')
+    psr_ezb_sidebyside.add_argument('--barwidth', type=float, default=1.5, help='default[1.5]')
+    add_std_options(psr_ezb_sidebyside)
+    psr_ezb_sidebyside.set_defaults(func=main_ezbar_sidebyside)
+
+    psr_ezb_stack = ezbar_subparsers.add_parser('stack')
+    psr_ezb_stack.add_argument('-x', type=int, help="column to plot bar labels (1-based), should contain unique text labels")
+    psr_ezb_stack.add_argument('-hs', help="column to plot bar heights (1-based), if only one column is given the plot is a simple bar plot, if more than one columns are given, the plot stacks multiple columns on top of another")
+    psr_ezb_stack.add_argument('--vspacing', type=float, default=0, help="vertical spacing")
+    add_std_options(psr_ezb_stack)
+    psr_ezb_stack.set_defaults(func=main_ezbar_stack)
+
+    psr_ezb_substack = ezbar_subparsers.add_parser('substack')
+    psr_ezb_substack.add_argument('-x', type=int, help="column to plot bar labels (1-based), should contain unique text labels")
+    psr_ezb_substack.add_argument('-hs', help="column to plot bar heights (1-based), if only one column is given the plot is a simple bar plot, if more than one columns are given, the plot substacks multiple columns on top of another")
+    add_std_options(psr_ezb_substack)
+    psr_ezb_substack.set_defaults(func=main_ezbar_substack)
+
 
     # venn diagram
     psr_venn = subparsers.add_parser("venn", help=""" Venn's diagram (need matplotlib venn) """)
