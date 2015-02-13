@@ -63,11 +63,14 @@ def main_transpose(args):
 
     data = []
     for line in args.table:
-        fields = line.strip('\n').split(args.delim)
+        fields = line.strip('\n').split(args.delimi)
+        if (args.skipblank and
+            (all([_.isspace() or not _ for _ in fields]))):
+            continue
         data.append(fields)
 
     for fields in zip(*data):
-        print args.delim.join(fields)
+        print args.delimo.join(fields)
 
     return
 
@@ -82,6 +85,9 @@ def _build_map(args, index):
 
     c = parse_indices(args_c) if args_c else None
     p = parse_indices(args_p) if args_p else None
+
+    if getattr(args, "skipheader%d" % index):
+        getattr(args, "t%d" % index).readline()
     lmap = {}
     for line in getattr(args, "t%d" % index):
         f = line.strip().split("\t")
@@ -473,6 +479,28 @@ def main_nameawk(args):
     except IOError:
         sys.exit(1)
 
+def main_unique(args):
+
+    prev_key = None
+    prev_line = None
+    for line in args.table:
+        fields = line.strip().split(args.delim)
+        key = fields[args.k-1]
+        if args.keep == 'first':
+            if prev_key != key:
+                print(line.strip())
+
+        if args.keep == 'last':
+            if key != prev_key and prev_key:
+                print(prev_line.strip())
+
+        prev_key = key
+        prev_line = line
+
+    if args.keep == 'last' and prev_line:
+        print(prev_line.strip())
+
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Manipulate tables')
@@ -502,7 +530,9 @@ if __name__ == '__main__':
 
     parser_transpose = subparsers.add_parser("transpose", help="transpose table")
     parser_transpose.add_argument('table', help="data table", type = argparse.FileType('r'), default='-')
-    parser_transpose.add_argument('--delim', default="\t", help="table delimiter [\\t]")
+    parser_transpose.add_argument('--delimi', default="\t", help="table delimiter [\\t]")
+    parser_transpose.add_argument('--delimo', default="\t", help="table delimiter [\\t]")
+    parser_transpose.add_argument('--skipblank', action='store_false', help='skip blank lines')
     parser_transpose.set_defaults(func=main_transpose)
 
     parser_compare = subparsers.add_parser("compare", help="compare two columns of two table")
@@ -512,6 +542,9 @@ if __name__ == '__main__':
     parser_compare.add_argument("-c1", default=None, help="column(s) to be compared in table 1, e.g., '1,2-5' (1-based)")
     parser_compare.add_argument("-c2", default=None, help="column(s) to be compared in table 2, e.g., '1,2-5' (1-based)")
     parser_compare.add_argument("-c3", default=None, help="column(s) to be compared in table 3, e.g., '1,2-5' (1-based)")
+    parser_compare.add_argument("--skipheader1", action="store_true")
+    parser_compare.add_argument("--skipheader2", action="store_true")
+    parser_compare.add_argument("--skipheader3", action="store_true")
     parser_compare.add_argument("-fc1", default=None, help="format key in table 1, e.g., {f[0]}:{f[1]}")
     parser_compare.add_argument("-fc2", default=None, help="format key in table 2, e.g., {f[0]}:{f[1]}")
     parser_compare.add_argument("-fc3", default=None, help="format key in table 3, e.g., {f[0]}:{f[1]}")
@@ -597,6 +630,12 @@ if __name__ == '__main__':
     parser_nameawk.add_argument('--header', default=None, help='header, "," separated, no need to append space after ","')
     parser_nameawk.set_defaults(func=main_nameawk)
 
+    parser_unique = subparsers.add_parser('unique', help='report only one version of a contiguous lines')
+    parser_unique.add_argument('-k', type=int, help='column to unique')
+    parser_unique.add_argument('-keep', default='first', help='{first, last}')
+    parser_unique.set_defaults(func=main_unique)
+    parser_unique.add_argument('--delim', default="\t", help="table delimiter [\\t]")
+    parser_unique.add_argument('table', help="data table", type = argparse.FileType('r'), default='-')
 
     args = parser.parse_args()
     args.func(args)

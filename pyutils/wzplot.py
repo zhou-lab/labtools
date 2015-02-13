@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib.cm as cm
 import itertools
 import numpy as np
+import operator
 
 class Indices:
 
@@ -302,6 +303,17 @@ def main_ezhist_sidebyside(args):
 
     """
     this plots histograms in which different categories stand side by side
+    input format:
+    category  count
+    cat1      12
+    cat1      11
+    ...
+    cat2      13
+    cat3      18
+    
+    plots
+    cat1,cat2,cat3  cat1,cat2,cat3
+         bin1            bin2
     """
 
     mpl.rcParams['xtick.direction'] = 'out'
@@ -566,14 +578,140 @@ def main_bar(args):
 
     __core__(args)
 
+
+def _bar_multiread_table(args):
+
+    indices = parse_indices(args.hs)
+    headerline = args.table.readline()
+    headerfields = headerline.strip().split(args.delim)
+    xlabel = headerfields[args.x-1]
+    cats = indices.extract(headerfields)
+    
+    data = [[] for j in xrange(len(cats))]
+    xticklabels = []
+    for line in args.table:
+        fields = line.strip().split(args.delim)
+        xticklabels.append(fields[args.x-1])
+        for j, n in enumerate(indices.extract(fields)):
+            data[j].append(float(n))
+
+    return xlabel, xticklabels, cats, data
+
 def main_ezbar_sidebyside(args):
 
-    pass
+    """ input format:
 
+    header cat1 cat2
+    x1     n11   n12
+    x2     n21   n22
+    x3     n31   n32
+    ...
+
+    results:
+
+
+    bar(n11) bar(n12)   bar(n21) bar(n22)   bar(n31) bar(n32)
+    ==========================================================
+           x1                   x2                 x3
+
+    """
+    
+    xlabels, xticklabels, cats, data = _bar_multiread_table(args)
+    
+    ncats = len(cats)
+    barwidth = args.barwidth
+    spacing = args.spacing
+    binwidth = barwidth * ncats + spacing
+
+    obs = []
+    for i, bardata in enumerate(data):
+        binlefts = [1+j*binwidth for j in xrange(len(bardata))]
+        barlefts = [k+i*barwidth for k in binlefts]
+        ob = plt.bar(barlefts, bardata, edgecolor="none", linewidth=0, width=barwidth, facecolor=next(ccycle), alpha=args.alpha)
+        obs.append(ob)
+
+    binrights = [k+barwidth*ncats+spacing for k in binlefts]
+    bincenter = map(lambda x,y: (x+y)/2.0, binlefts, binrights)
+    plt.xticks(bincenter, xticklabels, rotation=args.xtlrotat, horizontalalignment='center')
+    plt.legend(obs, cats)
+
+    if not args.xmin:
+        args.xmin = binlefts[0]-binwidth
+        
+    if not args.xmax:
+        args.xmax = binrights[-1]+binwidth
+
+    __core__(args)
+        
+    
 
 def main_ezbar_stack(args):
 
-    pass
+
+    """ input format:
+    
+    header cat1 cat2
+    x1     n11  n12
+    x2     n21  n22
+    x3     n31  n32
+    ...
+
+    bar(n12)    bar(n22)   bar(n32)
+    bar(n11)    bar(n21)   bar(n31)
+    ===============================
+       x1          x2         x3
+    """
+    xlabels, xticklabels, cats, data = _bar_multiread_table(args)
+
+    ncats = len(cats)
+    barwidth = 2
+    spacing = 0.4
+    binwidth = barwidth + spacing
+
+    obs = []
+    for i, bardata in enumerate(data):
+        barlefts = [1+j*binwidth for j in xrange(len(bardata))]
+        if i == 0:
+            bottom = [0 for _ in bardata]
+        ob = plt.bar(barlefts, bardata, bottom=bottom, edgecolor="none", linewidth=0, width=barwidth, facecolor=next(ccycle), alpha=args.alpha)
+        obs.append(ob)
+        bottom = map(operator.add, bottom, bardata)
+        bottom = map(lambda x: x+args.vspacing, bottom)
+
+    plt.xticks(barlefts, xticklabels, rotation=args.xtlrotat)
+    plt.legend(obs, cats)
+
+    __core__(args)
+
+def main_ezbar_substack(args):
+
+    """ same as stack but in different subplots so to allow different scale """
+    xlabels, xticklabels, cats, data = _bar_multiread_table(args)
+
+    ncats = len(cats)
+    barwidth = 2
+    spacing = 0.4
+    binwidth = barwidth + spacing
+
+    obs = []
+    nrows = len(data)
+    plt.subplots_adjust(hspace=0)
+    for i, bardata in enumerate(data):
+        plt.subplot(nrows, 1, i+1)
+        barlefts = [1+j*binwidth for j in xrange(len(bardata))]
+        ob = plt.bar(barlefts, bardata, edgecolor="none", linewidth=0, width=barwidth, facecolor=next(ccycle), alpha=args.alpha)
+        obs.append(ob)
+        plt.ylabel(cats[i])
+        if i != 0:
+            yticks, yticklabels = plt.yticks()
+            plt.yticks(yticks[:-1])
+        if i != nrows - 1:
+            plt.xticks([])
+
+    plt.xticks(barlefts, xticklabels, rotation=args.xtlrotat)
+
+    __core__(args)
+
 
 ### horizontal bar
 # #!/usr/bin/env python
@@ -953,12 +1091,32 @@ if __name__ == '__main__':
     psr_bar.add_argument('-l', type=int, help="x dimensional column index (1-based)")
     psr_bar.add_argument('--cat', type=int, default=-1, help='column for category (stacked or juxtaposed)')
     psr_bar.add_argument('--catlabels', help='category labels')
-    # psr_bar.add_argument('--frac', type=int, default=1, help='index of fraction column')
-    # psr_bar.add_argument('--label', type=int, default=2, help='index of label column')
     add_std_options(psr_bar)
     psr_bar.set_defaults(func=main_bar)
 
-    psr_ezbar_parsers = subparsers
+    ezbar_parsers = subparsers.add_parser('ezbar', help='easy bar plots')
+    ezbar_subparsers = ezbar_parsers.add_subparsers()
+    psr_ezb_sidebyside = ezbar_subparsers.add_parser('sidebyside')
+    psr_ezb_sidebyside.add_argument('-x', type=int, help="column to plot bar labels (1-based), should contain unique text labels")
+    psr_ezb_sidebyside.add_argument('-hs', help="column to plot bar heights (1-based), if only one column is given the plot is a simple bar plot, if more than one columns are given, the plot stacks multiple columns next to each other")
+    psr_ezb_sidebyside.add_argument('--spacing', type=float, default=0.3, help='default[0.3]')
+    psr_ezb_sidebyside.add_argument('--barwidth', type=float, default=1.5, help='default[1.5]')
+    add_std_options(psr_ezb_sidebyside)
+    psr_ezb_sidebyside.set_defaults(func=main_ezbar_sidebyside)
+
+    psr_ezb_stack = ezbar_subparsers.add_parser('stack')
+    psr_ezb_stack.add_argument('-x', type=int, help="column to plot bar labels (1-based), should contain unique text labels")
+    psr_ezb_stack.add_argument('-hs', help="column to plot bar heights (1-based), if only one column is given the plot is a simple bar plot, if more than one columns are given, the plot stacks multiple columns on top of another")
+    psr_ezb_stack.add_argument('--vspacing', type=float, default=0, help="vertical spacing")
+    add_std_options(psr_ezb_stack)
+    psr_ezb_stack.set_defaults(func=main_ezbar_stack)
+
+    psr_ezb_substack = ezbar_subparsers.add_parser('substack')
+    psr_ezb_substack.add_argument('-x', type=int, help="column to plot bar labels (1-based), should contain unique text labels")
+    psr_ezb_substack.add_argument('-hs', help="column to plot bar heights (1-based), if only one column is given the plot is a simple bar plot, if more than one columns are given, the plot substacks multiple columns on top of another")
+    add_std_options(psr_ezb_substack)
+    psr_ezb_substack.set_defaults(func=main_ezbar_substack)
+
 
     # venn diagram
     psr_venn = subparsers.add_parser("venn", help=""" Venn's diagram (need matplotlib venn) """)
