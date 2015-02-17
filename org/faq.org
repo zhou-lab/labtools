@@ -2,7 +2,10 @@
 #+STARTUP: indent
 #+TAGS: memorize(a) bash git bioinfo awk
 ** recent
-*** how to extract pattern from string                               :bash:
+*** how to manipulate sam flags
+0x400
+samtools view -h input.bam | awk '{if(and($2,1024)){$2-=1024}; print}' | samtools view -Sb > input.unmarked.bam
+*** how to extract pattern from string                                 :bash:
 use expr
 http://tldp.org/LDP/abs/html/string-manipulation.html
 expr $a : '.*\(Tumor-[0-9]*\).*'
@@ -8363,6 +8366,7 @@ For example, <hash_map> is in STL but not in C++ standard library
     cout << hex << noshowbase << n << endl;
     cout.flags( ios::right | ios::hex | ios::showbase )
 ** C
+*** gdb
 *** define bit array in macro
 define a bit array
 #define BITOP(a,b,op) ((a)[(size_t)(b)/(CHAR_BIT*sizeof *(a))] op ((size_t)1<<((size_t)(b)%(CHAR_BIT*sizeof *(a)))))
