@@ -9,6 +9,7 @@ import matplotlib.cm as cm
 import itertools
 import numpy as np
 import operator
+import re
 
 class Indices:
 
@@ -540,33 +541,75 @@ def main_boxbin(args):
 
 def main_bar(args):
 
-    """ category labels are """
+    """
+    simple bar plot
+
+    input:
+    xlabel   ylabel
+    bar1name bar1height
+    bar2name bar2height
+    bar3name bar3height
+    """
 
     __prelude__(args)
 
-    rows = []
-    catlabels = args.table.readline().strip().split('\t')
-    print catlabels
+    fields = args.table.readline().strip().split('\t')
+    x = []
+    y = []
+    if (re.match(r'^[\-\.0-9]*$', fields[args.y-1])):
+        y.append(float(fields[args.y-1]))
+        x.append(fields[args.x-1])
+        if not args.ylabel:
+            args.ylabel = "column %d" % args.y
+        if not args.xlabel:
+            args.xlabel = "column %d" % args.x
+    else:
+        if not args.ylabel:
+            args.ylabel = "column %d" % args.y
+        if not args.xlabel:
+            args.xlabel = "column %d" % args.x
+
     for line in args.table:
-        pair = line.strip().split('\t')
-        rows.append([pair[0]]+map(float, pair[1:]))
+        fields = line.strip().split('\t')
+        y.append(float(fields[args.y-1]))
+        x.append(fields[args.x-1])
 
-    cols = zip(*rows)
+    # print x
+    # print y
 
-    ncats = len(cols)-1
-    xdim = len(cols[0])
-    sep = 0.2
-    lefts = np.arange(1, (ncats+sep)*xdim+1, ncats+sep)
-    mids = np.arange(1+(ncats+sep)/2, (ncats+sep)*xdim+1, ncats+sep)
-    for col in cols[1:]:
-        plt.bar(lefts, [_+0.1 for _ in col], width=0.98, facecolor=next(ccycle), linewidth=0, alpha=args.alpha)
-        lefts += 1
+    barwidth = 1.0
+    barsep = 0.2
+    barstep = barwidth + barsep
+    
+    lefts = [1+_*barstep for _ in xrange(len(x))]
+    mids = [_+barwidth/2 for _ in lefts]
+    # print len(x)
+    # print lefts
+    # print mids
+    plt.bar(lefts, y, width=barwidth, facecolor=next(ccycle), linewidth=0, alpha=args.alpha)
+    
+    # rows = []
+    # catlabels = args.table.readline().strip().split('\t')
+    # print catlabels
+    # for line in args.table:
+    #     pair = line.strip().split('\t')
+    #     rows.append([pair[0]]+map(float, pair[1:]))
 
-    plt.axis('equal')
-    plt.legend(catlabels, loc=args.legloc)
-    plt.xticks(mids, cols[0])
-    plt.ylim(bottom = -1)
-    plt.xlim(left=0.5, right=(ncats+sep)*xdim+1)
+    # cols = zip(*rows)
+    # ncats = len(cols)-1
+    # xdim = len(cols[0])
+    # sep = 0.2
+    # lefts = np.arange(1, (ncats+sep)*xdim+1, ncats+sep)
+    # mids = np.arange(1+(ncats+sep)/2, (ncats+sep)*xdim+1, ncats+sep)
+    # for col in cols[1:]:
+    #     plt.bar(lefts, [_+0.1 for _ in col], width=0.98, facecolor=next(ccycle), linewidth=0, alpha=args.alpha)
+    #     lefts += 1
+
+    # plt.axis('equal')
+    # plt.legend(catlabels, loc=args.legloc)
+    plt.xticks(mids, x)
+    # plt.ylim(bottom = -1)
+    # plt.xlim(left=0.5, right=(ncats+sep)*xdim+1)
 
     # # stacked
     # bottom = np.zeros(len(cols[0]))
@@ -1088,9 +1131,8 @@ if __name__ == '__main__':
 
     # bar
     psr_bar = subparsers.add_parser("bar", help=""" bar chart """)
-    psr_bar.add_argument('-l', type=int, help="x dimensional column index (1-based)")
-    psr_bar.add_argument('--cat', type=int, default=-1, help='column for category (stacked or juxtaposed)')
-    psr_bar.add_argument('--catlabels', help='category labels')
+    psr_bar.add_argument('-x', type=int, help="x axis column (1-based)")
+    psr_bar.add_argument('-y', type=int, help='y axis column (1-based)')
     add_std_options(psr_bar)
     psr_bar.set_defaults(func=main_bar)
 

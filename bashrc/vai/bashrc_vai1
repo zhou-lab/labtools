@@ -114,17 +114,21 @@ function tv {
     samtools tview $1 /workspace/zchong/clinsek/test_data/hg19.fa
 }
 function sv {
-    samtools view $1 $2 | les
+    samtools view $@ |& les
 }
 
 function bt {
-    bcftools view $1 | les
+    bcftools view $1 |& les
 }
 
 MANPATH=$MANPATH:$HOME/share/man
 
 function wzqsub {
     find ~/pbs/ -type f | sort | sed -n "${1},${2}"p | xargs -I {} qsub {}
+}
+
+function mkdircd {
+  mkdir $1 && cd $_;
 }
 
 ### git ###

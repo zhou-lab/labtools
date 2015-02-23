@@ -410,6 +410,8 @@ Matlab is a funny language.
 **** how to set the startup visibility for all files?
 (setq org-startup-folded 'content)
 options are: overview, content, showall
+**** how to set the startup folding/indent?
+(setq org-startup-indented t)
 **** how to set the startup visibility for one certain file?
 #+BEGIN_EXAMPLE
 #+STARTUP: overview
