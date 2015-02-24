@@ -8,8 +8,11 @@ LSAM0119 = $(LSAM0119D)/libsam.a
 KLIBD = lib/klib
 KLIB = lib/klib/klib.a
 
-PROG = bin/correct_bsstrand bin/get_unmapped bin/sample_trinuc	
-# PROG = bin/sample_trinuc
+LUTILSD = lib/utils
+LUTILS = lib/utils/libutils.a
+
+# PROG = correct_bsstrand get_unmapped sample_trinuc	
+PROG = sample_trinuc
 
 release : CFLAGS += -O3
 release : $(PROG)
@@ -30,6 +33,16 @@ $(KLIBD)/%.o: $(KLIBD)/%.c
 clean-klib:
 	rm -f $(KLIBD)/*.o $(KLIB)
 
+.PHONY: utils
+utils: $(LUTILS)
+LUTILSOBJ = $(LUTILSD)/encode.o
+$(LUTILS): $(LUTILSOBJ)
+	ar -csru $@ $(LUTILSOBJ)
+$(LUTILSD)/%.o: $(LUTILSD)/%.c
+	gcc -c $(CFLAGS) -I$(INCLUDE) $< -o $@
+clean-utils:
+	rm -f $(LUTILSD)/*.o $(LUTILS)
+
 .PHONY: correct_bsstrand
 correct_bsstrand : bin/correct_bsstrand
 bin/correct_bsstrand: $(LSAM0119)
@@ -46,8 +59,8 @@ clean-get_unmapped:
 
 .PHONY: sample_trinuc
 sample_trinuc : bin/sample_trinuc
-bin/sample_trinuc: $(LSAM0119)
-	gcc $(CFLAGS) -o $@ src/sample_trinuc/sample_trinuc.c -lpthread $(LSAM0119) -lpthread
+bin/sample_trinuc: $(LSAM0119) src/sample_trinuc/sample_trinuc.c
+	gcc $(CFLAGS) -o $@ -I$(LSAM0119D) -I$(INCLUDE) src/sample_trinuc/sample_trinuc.c -lpthread $(LSAM0119) $(LUTILS) -lpthread -lz
 clean-sample_trinuc:
 	rm -f bin/sample_trinuc
 

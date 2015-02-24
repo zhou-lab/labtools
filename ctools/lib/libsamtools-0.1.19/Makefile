@@ -1,5 +1,5 @@
 
-CFLAGS=-g -finline-functions -fPIC -O3 # no -W to suppress Warning from samtools
+CFLAGS=-finline-functions -fPIC -O3 # -g no -W to suppress Warning from samtools
 
 LOBJ = bam.o sam_header.o bgzf.o kstring.o bam_aux.o sam.o bam_import.o faidx.o razf.o bam_pileup.o bam_index.o bam_sort.o bam_rmdup.o bam_rmdupse.o knetfile.o
 

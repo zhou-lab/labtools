@@ -1,3 +1,9 @@
+function rev(string, x,i) {
+		for(i=length;i!=0;i--)
+				x=(x substr(string,i,1))
+		return x
+}
+
 function abs(value) {
     return (value<0?-value:value);
 }

@@ -54,9 +54,9 @@ mpl.rcParams['axes.color_cycle'] = colorcycle
 def __prelude__(args):
 
     if args.figsize:
-        plt.figure(figsize=map(int, args.figsize.split(',')))
-
-    plt.figure(frameon=False)
+        plt.figure(figsize=tuple(map(int, args.figsize.split(','))), frameon=False)
+    else:
+        plt.figure(frameon=False)
 
 def __core__(args, bbox_inches='tight'):
 
@@ -324,8 +324,10 @@ def main_ezhist_sidebyside(args):
     cat2data, dmin, dmax = _hist_multiread(args)
     ncats = len(cat2data)
 
-    barwidth = 0.5
-    spacing = 0.1
+    plt.figure(figsize=(10,1))
+
+    barwidth = 0.8
+    spacing = 0.3
     binwidth = barwidth * ncats + spacing
 
     cats = []
@@ -554,6 +556,11 @@ def main_bar(args):
     __prelude__(args)
 
     fields = args.table.readline().strip().split('\t')
+    if not args.xlabel:
+        args.xlabel = fields[args.x-1]
+    if not args.ylabel:
+        args.ylabel = fields[args.y-1]
+    
     x = []
     y = []
     if (re.match(r'^[\-\.0-9]*$', fields[args.y-1])):
@@ -587,7 +594,11 @@ def main_bar(args):
     # print lefts
     # print mids
     plt.bar(lefts, y, width=barwidth, facecolor=next(ccycle), linewidth=0, alpha=args.alpha)
-    
+
+    if not args.xmin:
+        args.xmin = 1-barwidth
+    if not args.xmax:
+        args.xmax = lefts[-1]+2*barwidth
     # rows = []
     # catlabels = args.table.readline().strip().split('\t')
     # print catlabels
@@ -607,7 +618,7 @@ def main_bar(args):
 
     # plt.axis('equal')
     # plt.legend(catlabels, loc=args.legloc)
-    plt.xticks(mids, x)
+    plt.xticks(mids, x, rotation=args.xtlrotat)
     # plt.ylim(bottom = -1)
     # plt.xlim(left=0.5, right=(ncats+sep)*xdim+1)
 
@@ -660,7 +671,8 @@ def main_ezbar_sidebyside(args):
     """
     
     xlabels, xticklabels, cats, data = _bar_multiread_table(args)
-    
+
+    __prelude__(args)
     ncats = len(cats)
     barwidth = args.barwidth
     spacing = args.spacing
@@ -747,11 +759,17 @@ def main_ezbar_substack(args):
         plt.ylabel(cats[i])
         if i != 0:
             yticks, yticklabels = plt.yticks()
-            plt.yticks(yticks[:-1])
+            plt.yticks(yticks[:-2])
         if i != nrows - 1:
             plt.xticks([])
 
-    plt.xticks(barlefts, xticklabels, rotation=args.xtlrotat)
+        barmids = [_+barwidth/2 for _ in barlefts]
+        plt.xticks(barmids, xticklabels, horizontalalignment='center', rotation=args.xtlrotat)
+        
+        if not args.xmin:
+            plt.gca().set_xlim(left=1-barwidth)
+        if not args.xmax:
+            plt.gca().set_xlim(right=barlefts[-1]+barwidth*2)
 
     __core__(args)
 

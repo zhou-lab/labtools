@@ -2,6 +2,11 @@
 #+STARTUP: indent
 #+TAGS: memorize(a) bash git bioinfo awk
 ** recent
+*** how to specify the maximum length in regular expression
+[A-Z]{3,7} range from 3 to 7
+[A-Z]{3,} minimum length 3
+[A-Z]{,7} maximum length 7
+
 *** how to manipulate sam flags
 0x400
 samtools view -h input.bam | awk '{if(and($2,1024)){$2-=1024}; print}' | samtools view -Sb > input.unmarked.bam

@@ -1,3 +1,14 @@
+/* 
+ * correct bisulfite strand information if it is very inconsistent with C2T/G2A count
+ * by zhouwanding@gmail.com
+ *
+ * if nC2T > 1 and nG2A > 1: then fail and mark "?"
+ * if nC2T - nG2A > 2 and "-" => "+"
+ * if nG2A - nC2T > 2 and "+" => "-"
+ *
+ * output a summary of how many reads are inconsistent
+ *
+ */
 
 #include <stdio.h>
 #include <string.h>
@@ -54,19 +65,13 @@ int sam_fetch(char *ifn, char *ofn, char *reg, void *data, sam_fetch_f func) {
 
 #define bscall(seq, pos) bam_nt16_rev_table[bam1_seqi(seq, pos)]
 
-/* created by Wanding Zhou <zhouwanding@gmail.com>
- * if nC2T > 1 and nG2A > 1: then fail and mark "?"
- * if nC2T - nG2A > 2 and "-" => "+"
- * if nG2A - nC2T > 2 and "+" => "-"
- */
-
 typedef struct {
 	uint8_t output_read, output_all_read;
 	uint8_t infer_bsstrand;
 } bsstrand_conf_t;
 
 typedef struct {
-	RefSeq *rs;
+	refseq_t *rs;
 	int n_corr, n_mapped, n_fail, n_unmapped;
 	bsstrand_conf_t *conf;
 } bsstrand_data_t;
@@ -87,7 +92,7 @@ int bsstrand_func(bam1_t *b, const samfile_t *in, samfile_t *out, void *data) {
 		return 0;
 	}
 	
-	fetch_RefSeq(d->rs, in->header->target_name[c->tid], c->pos, c->pos+1);
+	fetch_refseq(d->rs, in->header->target_name[c->tid], c->pos, c->pos+1);
 	uint32_t rpos=c->pos+1, qpos=0;
 	int i, nC2T = 0, nG2A = 0;
 	uint32_t j;
@@ -99,7 +104,7 @@ int bsstrand_func(bam1_t *b, const samfile_t *in, samfile_t *out, void *data) {
 		switch(op) {
 		case BAM_CMATCH:
 			for(j=0; j<oplen; ++j) {
-				rbase = toupper(getbase_RefSeq(d->rs, rpos+j));
+				rbase = toupper(getbase_refseq(d->rs, rpos+j));
 				qbase = bscall(bam1_seq(b), qpos+j);
 				if (rbase == 'C' && qbase == 'T') nC2T += 1;
 				if (rbase == 'G' && qbase == 'A') nG2A += 1;
@@ -113,6 +118,9 @@ int bsstrand_func(bam1_t *b, const samfile_t *in, samfile_t *out, void *data) {
 			break;
 		case BAM_CDEL:
 			rpos += oplen;
+			break;
+		case BAM_CSOFT_CLIP:
+			qpos += oplen;
 			break;
 		default:
 			fprintf(stderr, "Unknown cigar, %u\n", op);
@@ -172,7 +180,7 @@ int bsstrand_main(char *reffn, char *ifn, char *ofn, bsstrand_conf_t *conf, char
 		.n_mapped = 0,
 		.n_fail = 0,
 		.n_unmapped = 0,
-		.rs = init_RefSeq(reffn, 100, 100000),
+		.rs = init_refseq(reffn, 100, 100000),
 		.conf = conf,
 	};
 	sam_fetch(ifn, ofn, reg, &d, bsstrand_func);
@@ -183,14 +191,14 @@ int bsstrand_main(char *reffn, char *ifn, char *ofn, bsstrand_conf_t *conf, char
 					__func__, __LINE__, d.n_corr, (double)d.n_corr/(double)d.n_mapped*100.);
 	fprintf(stderr, "[%s:%d] Failed reads: %d (%1.2f%%)\n",
 					__func__, __LINE__, d.n_fail, (double)d.n_fail/(double)d.n_mapped*100.);
-	free_RefSeq(d.rs);
+	free_refseq(d.rs);
 	return 0;
 }
 
 
 static int usage() {
   fprintf(stderr, "\n");
-  fprintf(stderr, "Usage: bsstrancorr [options] -r [ref.fa] -i [in.bam] -o [out.bam] -e [readlist] -g [chr1:123-234]\n");
+  fprintf(stderr, "Usage: correct_bsstrand [options] -r [ref.fa] -i [in.bam] -o [out.bam] -e [readlist] -g [chr1:123-234]\n");
   fprintf(stderr, "Input options:\n");
 	fprintf(stderr, "     -i        input bam.\n");
   fprintf(stderr, "     -r        reference in fasta.\n");
