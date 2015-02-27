@@ -12,7 +12,7 @@ LUTILSD = lib/utils
 LUTILS = lib/utils/libutils.a
 
 # PROG = correct_bsstrand get_unmapped sample_trinuc	
-PROG = sample_trinuc
+PROG = pileup_cytosine
 
 release : CFLAGS += -O3
 release : $(PROG)
@@ -60,9 +60,16 @@ clean-get_unmapped:
 .PHONY: sample_trinuc
 sample_trinuc : bin/sample_trinuc
 bin/sample_trinuc: $(LSAM0119) src/sample_trinuc/sample_trinuc.c
-	gcc $(CFLAGS) -o $@ -I$(LSAM0119D) -I$(INCLUDE) src/sample_trinuc/sample_trinuc.c -lpthread $(LSAM0119) $(LUTILS) -lpthread -lz
+	gcc $(CFLAGS) -o $@ -I$(LSAM0119D) -I$(INCLUDE) src/sample_trinuc/sample_trinuc.c -lpthread $(LSAM0119) $(LUTILS) -lz
 clean-sample_trinuc:
 	rm -f bin/sample_trinuc
+
+.PHONY: pileup_cytosine
+pileup_cytosine : bin/pileup_cytosine
+bin/pileup_cytosine: $(LSAM0119) src/pileup_cytosine/pileup_cytosine.c
+	gcc $(CFLAGS) -o $@ -I$(LSAM0119D) -I$(INCLUDE) src/pileup_cytosine/pileup_cytosine.c $(LSAM0119) $(LUTILS) -lpthread  -lz
+clean-pileup_cytosine:
+	rm -f bin/pileup_cytosine
 
 # .c.o :
 # 	gcc -c $(CFLAGS) $< -o $@

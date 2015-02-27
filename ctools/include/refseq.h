@@ -77,4 +77,10 @@ static inline char getbase_refseq(refseq_t *rs, uint32_t rpos) {
 static inline char *subseq_refseq(refseq_t *rs, uint32_t rpos) {
 	return rs->seq+rpos-rs->beg;
 }
+
+static inline void subseq_refseq2(refseq_t *rs, uint32_t rpos, char *seq, int len) {
+	int i;
+	for (i=0; i<len; ++i)
+		seq[i] = toupper(rs->seq[rpos-rs->beg+i]);
+}
 #endif /* _WZ_REFSEQ_H_ */

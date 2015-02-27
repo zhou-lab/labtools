@@ -339,6 +339,11 @@ use mouse left key to set the start of the rectangle.
 2. Run M-=, or M-| wc for older versions of emacs.
 3. See the count of lines, words, and characters, in the mode-line.
 
+** insert time stamp in emacs                                     :memorize:
+C-u M-! date
+or with YASnippet
+time<tab>
+
 ** others
 *** how to revert the buffer to the last auto-saved state
     revert-buffer
@@ -349,6 +354,7 @@ use mouse left key to set the start of the rectangle.
    :END:
    http://orgmode.org/org.html
 *** the basics
+
 **** how to mark entire subtree      :memorize:
 M-h org-mark-element
 mark the element, or the paragraph beneath
@@ -417,6 +423,10 @@ options are: overview, content, showall
 #+STARTUP: overview
 #+END_EXAMPLE
 possible values are overview, content, showall, showeverything
+**** org mode clean view in org-indent-mode                    :emacs:org:
+(org-indent-mode)
+or #STARTUP: indent
+
 *** property
 C-c C-x p org-set-property
 *** markup
@@ -472,10 +482,10 @@ application/pdf; /usr/bin/evince %s
 C-c C-c  up and down arrow 可用来使用已有的tag。
 C-c C-q  set tag for the current entry
 you can also use S-<right> / S-<left> to set TODO
-***** how to search tags?
+***** how to search tags?                                      :memorize:
 C-c \ 搜索标签
 C-c / / use regular expression to search tag
-***** how to remove tag filtering?
+***** how to remove tag filtering?                             :memorize:
 shift-tab
 ***** how to remove temporary highlighting
 C-c C-c 

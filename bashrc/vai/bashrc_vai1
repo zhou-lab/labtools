@@ -111,7 +111,7 @@ function getseq {
 }
 
 function tv {
-    samtools tview $1 /workspace/zchong/clinsek/test_data/hg19.fa
+    samtools tview $1 ~/genomes/hg19_rCRSchrm/hg19_rCRSchrm.fa
 }
 function sv {
     samtools view $@ |& les
@@ -129,6 +129,10 @@ function wzqsub {
 
 function mkdircd {
   mkdir $1 && cd $_;
+}
+
+function hist {
+  history | les
 }
 
 ### git ###

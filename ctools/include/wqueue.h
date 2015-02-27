@@ -62,6 +62,17 @@
     q->empty = 0;																												\
     pthread_mutex_unlock(&q->mut);																			\
     pthread_cond_signal(&q->not_empty);																	\
+  }																																			\
+  static inline void wqueue_put2_##name(wqueue_##name##_t *q,						\
+																				_wqueue_elem_t e) {							\
+    pthread_mutex_lock(&q->mut);																				\
+    while(q->full) pthread_cond_wait(&q->not_full, &q->mut);						\
+    q->data[q->tail++] = e;																							\
+    if (q->tail == q->size) q->tail = 0;																\
+    if (q->head == q->tail) q->full = 1;																\
+    q->empty = 0;																												\
+    pthread_mutex_unlock(&q->mut);																			\
+    pthread_cond_signal(&q->not_empty);																	\
   }
 
 #define wqueue_t(name) wqueue_##name##_t
@@ -74,5 +85,6 @@
 
 #define wqueue_put(name, q, e) wqueue_put_##name(q, e)
 
+#define wqueue_put2(name, q, e) wqueue_put2_##name(q, e)
 
 #endif
