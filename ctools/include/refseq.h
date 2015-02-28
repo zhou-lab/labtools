@@ -11,6 +11,7 @@ typedef struct {
 	char *seq;
 	uint32_t flank1;
 	uint32_t flank2;
+	int seqlen;
 } refseq_t;
 
 static inline refseq_t* init_refseq(char *ref_fn, uint32_t flank1, uint32_t flank2) {
@@ -33,8 +34,8 @@ static inline void fetch_refseq(refseq_t *rs, char *chrm, uint32_t beg, uint32_t
 	else {
 
 		/* get sequence length */
-		int seqlen = faidx_seqlen(rs->fai, chrm);
-		if (seqlen < 0) {
+		rs->seqlen = faidx_seqlen(rs->fai, chrm);
+		if (rs->seqlen < 0) {
 			fprintf(stderr, "[%s:%d] Error, cannot retrieve reference %s:%u-%u.\n",
 							__func__, __LINE__, chrm, rs->beg, rs->end);
 			exit(1);
@@ -43,7 +44,7 @@ static inline void fetch_refseq(refseq_t *rs, char *chrm, uint32_t beg, uint32_t
 		/* beg and end */
 		if (rs->flank1 > beg + 1) rs->beg = 1;
 		else rs->beg = beg - rs->flank1;
-		if (end + rs->flank2 > (unsigned) seqlen) rs->end = seqlen;
+		if (end + rs->flank2 > (unsigned) rs->seqlen) rs->end = rs->seqlen;
 		else rs->end = end + rs->flank2;
 
 		rs->chrm = realloc(rs->chrm, strlen(chrm)+1);
@@ -70,6 +71,11 @@ static inline void free_refseq(refseq_t *rs) {
 
 /* rpos is 1-based */
 static inline char getbase_refseq(refseq_t *rs, uint32_t rpos) {
+	if (rpos<rs->beg || rpos>rs->end) {
+		fprintf(stderr, "[%s:%d] Error retrieving base %u outside range %s:%u-%u.\n",
+						__func__, __LINE__, rpos, rs->chrm, rs->beg, rs->end);
+		exit(1);
+	}
 	return rs->seq[rpos-rs->beg];
 }
 
@@ -79,6 +85,11 @@ static inline char *subseq_refseq(refseq_t *rs, uint32_t rpos) {
 }
 
 static inline void subseq_refseq2(refseq_t *rs, uint32_t rpos, char *seq, int len) {
+	if (rpos < rs->beg || rpos+len-1 > rs->end) {
+		fprintf(stderr, "[%s:%d] Error retrieving range %u-%u outside range %s:%u-%u.\n",
+						__func__, __LINE__, rpos, rpos+len, rs->chrm, rs->beg, rs->end);
+		exit(1);
+	}
 	int i;
 	for (i=0; i<len; ++i)
 		seq[i] = toupper(rs->seq[rpos-rs->beg+i]);
