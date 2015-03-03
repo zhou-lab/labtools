@@ -5,9 +5,17 @@
   (package-initialize)
   )
 
+(load-theme 'leuven t)
+
+
 (setq tab-width 2)
 (setq-default tab-width 2)
 (setq indent-tabs-mode nil)
+
+(setq org-startup-indented t)
+(setq org-startup-folded 'content)
+(setq org-src-fontify-natively t)
+(setq org-edit-src-content-indentation 0)
 
 (setq sh-basic-offset 2
       sh-indentation 2)

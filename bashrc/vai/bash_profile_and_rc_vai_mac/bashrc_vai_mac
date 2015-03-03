@@ -58,6 +58,9 @@ prompt
 # PROMPT_COMMAND='echo -ne "\033k\033\134\033k${HOSTNAME}[`basename ${PWD}`]\033\134"'
 # PROMPT_COMMAND='echo -ne "\033k\033\134\033k[`basename ${PWD}`]\033\134"'
 # `basename ${PWD}`]\033\0134"'
+# note in mac /bin/echo is different from echo
+# the following is super important
+export PROMPT_COMMAND='echo -ne "\033k\033\0134\033k[`basename ${PWD}`]\033\0134"'
 
 # case "$TERM" in
 #     screen*) PROMPT_COMMAND='echo -ne "\033k\033\0134"'

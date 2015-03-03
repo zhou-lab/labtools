@@ -16,7 +16,7 @@ alias rf="readlink -f"
 alias parallel="parallel --gnu"
 alias igv=~/tools/igv/IGVDistribution_2.2.9/igv.sh
 
-PS1='\u@\h:\w\$ '
+# PS1='\u@\h:\w\$ '
 
 HOME=/home/wzhou
 
