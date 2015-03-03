@@ -1,5 +1,10 @@
 CFLAGS=-W -Wall -finline-functions -fPIC -std=gnu99
 
+OS := $(shell uname)
+ifeq ($(OS),  Darwin)
+  CFLAGS += -Wno-unused-function
+endif
+
 INCLUDE = include
 
 LSAM0119D = lib/libsamtools-0.1.19
