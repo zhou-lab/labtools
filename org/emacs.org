@@ -116,6 +116,10 @@ M-x customize-variable [RET] [your variable] [RET]
 to view the content of a variable
 C-h v [your variable]
 * basic editting
+** make bigger font size in emacs
+C-x C-+ and C-x C--
+or
+C-x C-= and C-x C-- (better)
 ** moving around
    jump to matched parenthesis: C-M-f / C-M-b
    C-x C-v <RET>  reload a file
@@ -494,6 +498,8 @@ C-c C-c
 C-c C-t 设置 TODO DONE 或空白
 S-<right> / S-<left>
 Select the following/preceding TODO state, similar to cycling.
+***** how to show a local todo sparse tree from the current org file? :memorize:
+C-c / t org-show-todo-tree
 ***** how to show a global todo sparse tree from all the agenda files?
 C-c a t org-todo-list
 ***** how to do an overview of subtasks for each heading
@@ -522,8 +528,6 @@ or
 ***** how to select a TODO keywords using completion?
 C-u C-c C-t org-todo
 With C-u prefix arg, use completion to determine the new state.
-***** how to show a local todo sparse tree from the current org file?
-C-c / t org-show-todo-tree
 **** priority tag
 ***** how to set the priority tag?
 C-c , org-priority
