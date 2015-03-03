@@ -11,8 +11,8 @@ KLIB = lib/klib/klib.a
 LUTILSD = lib/utils
 LUTILS = lib/utils/libutils.a
 
-# PROG = correct_bsstrand get_unmapped  pileup_cytosine
-PROG = sample_trinuc
+# PROG = correct_bsstrand get_unmapped  pileup_cytosine sample_trinuc
+PROG = hemifinder
 
 release : CFLAGS += -O3
 release : $(PROG)
@@ -66,14 +66,21 @@ clean-sample_trinuc:
 
 .PHONY: pileup_cytosine
 pileup_cytosine : bin/pileup_cytosine
-bin/pileup_cytosine: $(LSAM0119) src/pileup_cytosine/pileup_cytosine.c
+bin/pileup_cytosine: $(LSAM0119) $(LUTILS) src/pileup_cytosine/pileup_cytosine.c
 	gcc $(CFLAGS) -o $@ -I$(LSAM0119D) -I$(INCLUDE) src/pileup_cytosine/pileup_cytosine.c $(LSAM0119) $(LUTILS) -lpthread  -lz
 clean-pileup_cytosine:
 	rm -f bin/pileup_cytosine
 
-# .c.o :
-# 	gcc -c $(CFLAGS) $< -o $@
+.PHONY: hemifinder
+hemifinder : bin/hemifinder
+bin/hemifinder: $(LSAM0119) $(LUTILS) src/hemifinder/hemifinder.c
+	gcc $(CFLAGS) -o $@ -I$(LSAM0119D) -I$(INCLUDE) src/hemifinder/hemifinder.c $(LSAM0119) $(LUTILS) -lpthread  -lz
+clean-hemifinder:
+	rm -f bin/hemifinder
+
+.c.o :
+	gcc -c $(CFLAGS) $< -o $@
 
 .PHONY: clean-all
-clean-all : clean-sample_trinuc clean-get_unmapped clean-correct_bsstrand clean-klib
+clean-all : clean-sample_trinuc clean-get_unmapped clean-correct_bsstrand clean-hemifinder clean-pileup_cytosine clean-klib
 	make -C $(LSAM0119D) clean

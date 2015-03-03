@@ -433,8 +433,8 @@ static int usage() {
 	fprintf(stderr, "     -s        step of window dispatching [100000].\n");
 	fprintf(stderr, "     -q        number of threads [3] recommend 20.\n");
 	fprintf(stderr, "     -b        min base quality [10].\n");
-	fprintf(stderr, "     -t        max retention in a read [5].\n");
-	fprintf(stderr, "     -l        minimum read length [60].\n");
+	fprintf(stderr, "     -t        max retention in a read [999999].\n");
+	fprintf(stderr, "     -l        minimum read length [10].\n");
 	fprintf(stderr, "     -e        minimum distance to end of a read [3].\n");
 	fprintf(stderr, "     -c        turn off filtering secondary mapping.\n");
 	fprintf(stderr, "     -n        maximum nm tag [2].\n");
@@ -455,8 +455,8 @@ int main(int argc, char *argv[]) {
 		.step = 100000,
 		.n_threads = 3,
 		.min_base_qual = 10,
-		.max_retention = 5,
-		.min_read_len = 60,
+		.max_retention = 999999,
+		.min_read_len = 10,
 		.filter_secondary = 1,
 		.print_retention_only = 1,
 		.min_dist_end = 3,

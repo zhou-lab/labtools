@@ -425,7 +425,7 @@ static int usage() {
 	fprintf(stderr, "     -q        number of threads [3].\n");
 	fprintf(stderr, "     -b        min base quality [10].\n");
 	fprintf(stderr, "     -d        minimum distance to end [2].\n");
-	fprintf(stderr, "     -t        max retention in a read [5].\n");
+	fprintf(stderr, "     -t        max retention in a read [999999].\n");
 	fprintf(stderr, "     -z        drop stringency filter, allow reads with nG2A>0 and nC2T>0 and no correction of bsstrand if nG2A/nC2T is not consistent with bsstrand.\n");
   fprintf(stderr, "     -h        this help.\n");
   fprintf(stderr, "\n");
@@ -443,7 +443,7 @@ int main(int argc, char *argv[]) {
 		.n_threads = 3,
 		.output_retention = NULL,
 		.min_base_qual = 10,
-		.max_retention = 5,
+		.max_retention = 999999,
 		.min_dist_end = 2,
 		.relax = 0,
 	};

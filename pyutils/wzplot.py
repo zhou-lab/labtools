@@ -324,8 +324,6 @@ def main_ezhist_sidebyside(args):
     cat2data, dmin, dmax = _hist_multiread(args)
     ncats = len(cat2data)
 
-    plt.figure(figsize=(10,1))
-
     barwidth = 0.8
     spacing = 0.3
     binwidth = barwidth * ncats + spacing
