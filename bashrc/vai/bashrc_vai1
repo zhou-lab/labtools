@@ -14,7 +14,7 @@ alias lc="wc -l"
 alias ll="ls -l"
 alias rf="readlink -f"
 alias parallel="parallel --gnu"
-alias igv=~/tools/igv/IGVDistribution_2.2.9/igv.sh
+alias igv=~/tools/igv/IGV_2.3.40/igv.sh
 
 # PS1='\u@\h:\w\$ '
 
@@ -111,20 +111,28 @@ function getseq {
 }
 
 function tv {
-    samtools tview $1 /workspace/zchong/clinsek/test_data/hg19.fa
+    samtools tview $1 ~/genomes/hg19_rCRSchrm/hg19_rCRSchrm.fa
 }
 function sv {
-    samtools view $1 $2 | les
+    samtools view $@ |& les
 }
 
 function bt {
-    bcftools view $1 | les
+    bcftools view $1 |& les
 }
 
 MANPATH=$MANPATH:$HOME/share/man
 
 function wzqsub {
     find ~/pbs/ -type f | sort | sed -n "${1},${2}"p | xargs -I {} qsub {}
+}
+
+function mkdircd {
+  mkdir $1 && cd $_;
+}
+
+function hist {
+  history | les
 }
 
 ### git ###

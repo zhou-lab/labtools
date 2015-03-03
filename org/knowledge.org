@@ -1,0 +1,179 @@
+#+STARTUP: overview
+#+STARTUP: indent
+#+TAGS: memorize(a) unknown(u)
+* computer
+** what's a daemon thread?
+A daemon thread is alive only when the main thread calling the daemon is alive.
+see
+http://stackoverflow.com/questions/2846653/python-multithreading-for-dummies
+** multiprocessing vs threading in python
+in short
+threading: interleaving
+multiprocessing: real parallelization
+http://stackoverflow.com/questions/2846653/python-multithreading-for-dummies
+"For actual parallelization in Python, you should use the multiprocessing module to fork multiple processes that execute in parallel (due to the global interpreter lock, Python threads provide interleaving but are in fact executed serially, not in parallel, and are only useful when interleaving I/O operations)."
+* biology
+* epigenetics
+** Cancer has widespread hypomethylation and focal CGI hypermethylation
+** IDH1's effect on methylation
+IDH1 normally convert isocitrate to alpha-ketoglutarate.
+IDH1 mutation reverse alpha-ketoglutarate to 2-hydroxyglutarate.
+2-hydroxyglutarate is oncometabolite which inhibits 
+** polymerase epsilon
+transcribed by POLE1, the catalytic unit, POLE2 and POLE3
+mutation in POLE cause a lot of mutation in cancer
+http://en.wikipedia.org/wiki/DNA_polymerase#Polymerases_.CE.B1.2C_.CE.B4_and_.CE.B5_.28Polymerases_alpha.2C_delta.2C_and_epsilon.29
+* human genes
+** transcription factors
+*** CTCF
+CCCTC binding Factor
+
+a transcriptional repressor
+a insulator, blocks enhancer and promoter
+VDJ recombination
+regulation of chromotin structure
+
+represses IGF-2
+*** CTCFL/BORIS
+paralog of CTCF
+Brother of Regulator of Imprinted Sites
+similar function as CTCF, a transcription repressor
+*** IGF-2
+*** CREB
+cAMP-response element binding protein
+
+in neurons, involved in forming long term memory
+
+related to Huntington's disease
+*** Myc
+a transcription factor
+
+bins Enhancer Box sequence (E-box)
+recruit HAT
+*** PML
+promyelocytic leukemia protein
+has TRIM motif
+** SMAD
+tranduce cytoplasmic signal to nucleus
+** DNA helicase / chromatine remodeller
+*** CHD1
+chromodomain-helicase DNA binding protein1
+chromatin remodeller
+*** SWI/SNF-A (BAF) chromatin-remodelling complex
+BRG1-or HRBM-associated factors
+a set of helicase and ATPase
+can destabilise histone-DNA interactions in reconstituted nucleosomes
+*** SWI/SNF-B(PBAF) chromatin-remodelling complex
+polybromo-associated BAF
+**** ATRX
+ATP-dependent helicase, x-linked
+contains ATPase/helicase domain
+mutation related to alpha-thalassemia
+**** ARID1A
+AT-rich interactive domain-containing protein 1A
+**** SMARCA4
+ATP-dependent helicase
+**** SMARCB1
+**** PBRM1
+component of PBAF chromatin-remodeling complex
+tumor suppressor gene
+** histone
+*** H3F3A
+encode histone H3.3
+
+K27 and G34 are 2 important amino acids whose mutation leads to cancer (glioma)
+*** HIST1H3B and HIST1H3C
+encode histone H3.1
+** DNA methylation
+*** DNMT3A
+*** TET1
+*** TET2
+*** MGMT
+O6-Methylguanine DNA methyltransferase
+repairs O6-alkylated guanine residues in genomic DNA. O6-methylguanine pairs with thymine and would lead to a G-to-A transition during DNA replication if left unrepaired.
+** histone modification
+*** KDM1A aka LSD1
+Lysine(K)-specific DeMethylase 1A
+a histone demethylase
+
+demethylate H3K4 and H3K9
+*** HMT
+histone methyltransferase
+**** ASH1L
+**** EZH1 and EZH2
+*** HAT
+Histone acetyltransferase
+**** CBP/P300 family
+**** GNAT family
+**** MYST family
+*** HDAC
+Histone DeACetylase
+**** HDAC1
+** immune
+*** immuno suppressive factor
+**** PDL1
+**** ALOX12B
+** metabolism
+*** IDH1 and IDH2
+Isocitrate DeHydrogenase
+
+inactivate histone demethyltransferase
+** cancer
+*** tumor suppressor
+**** PTEN
+most seen lost tumor suppressor
+dephosphorylate PIP3 => inhibits AKT pathway
+**** TP53
+guardian of the genome
+regulate cell cycle, arrest cell at G1/S checkpoint (p53 => p21 =| CDK2 => cell proliferation)
+initiate apoptosis if DNA irreparable
+
+activate DNA repair
+53 kilo dalton in SDS-PAGE
+**** Rb
+retinoblastoma protein
+** MAPK pathway
+signals cell division
+mitogen => EGFR => Ras => Raf => MAP3K =>MAP2K => MAPK => myc
+defect in MAPK pathway causes uncontroled growth and cancer
+*** MAPK
+Mitogen-Activated Protein Kinase 
+originally called "extracellular signal-regulated kinases" (ERKs)
+*** Ras family
+**** KRAS
+GTPase, activates c-Raf and PI3K
+mutation of KRAS leads to cancer
+**** NRAS
+**** HRAS
+*** Raf kinase family
+Raf stands for "Rapidly Accelerated Fibrosarcoma"
+**** BRAF
+encodes B-Raf, a kinase
+leads to cell division
+**** RAF1
+encodes c-Raf
+**** ARAF
+encodes serine/threonine-kinase A-Raf
+*** JNK branch
+**** DAXX
+Death-domain associated protein
+
+** JAKs-STAT pathway
+signals apoptosis
+cytokines => JAKs => STAT3,5 => Bcl-xL => Cas9 => apoptosis
+
+** PI3K/AKT/mTOR pathway
+signals cell cycle
+RTK => PI3K => AKT => PKC => NF-kB
+*** PIK3CA
+** cell cycle
+*** CDK4
+cycline-dependent kinase 4
+activate Rb
+
+*** CDKN2A
+cycline-dependent kinase inhibitor 2A
+encodes p16, inhibits CDK4
+
+** Knudson's two-hit hypothesis
+

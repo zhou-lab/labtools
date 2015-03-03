@@ -1,6 +1,128 @@
 #+STARTUP: indent
 #+STARTUP: content
+* MDA map2.sh pipeline
+Note 
+bwa merge -r infers read group from file name
+#+BEGIN_SRC sh
+cd /projects/flowcell61_A_paired_BCX
+echo align the reads at `date`
+echo `pwd`
+echo `date` map Cap474-101069-23_GAGTGG_L004_R1_001.fastq.gz..
+/projects/tools/bwa-0.6.2/bwa  aln -t 1 /projects/database/reference/hs37d5.fa data/IPCT-BCX-PT155-101068-A-TU-A01/gz/Cap474-101069-23_GAGTGG_L004_R1_001.fastq.gz>data/IPCT-BCX-PT155-101068-A-TU-A01/bam/Cap474-101069-23_GAGTGG_L004_R1_001.fastq.gz.sai
+echo `date` map Cap474-101069-23_GAGTGG_L004_R1_001.fastq.gz done .
 
+echo `date` map Cap474-101069-23_GAGTGG_L004_R1_002.fastq.gz..
+/projects/tools/bwa-0.6.2/bwa  aln -t 1 /projects/database/reference/hs37d5.fa data/IPCT-BCX-PT155-101068-A-TU-A01/gz/Cap474-101069-23_GAGTGG_L004_R1_002.fastq.gz>data/IPCT-BCX-PT155-101068-A-TU-A01/bam/Cap474-101069-23_GAGTGG_L004_R1_002.fastq.gz.sai
+echo `date` map Cap474-101069-23_GAGTGG_L004_R1_002.fastq.gz done .
+
+echo `date` map Cap474-101069-23_GAGTGG_L004_R1_003.fastq.gz..
+/projects/tools/bwa-0.6.2/bwa  aln -t 1 /projects/database/reference/hs37d5.fa data/IPCT-BCX-PT155-101068-A-TU-A01/gz/Cap474-101069-23_GAGTGG_L004_R1_003.fastq.gz>data/IPCT-BCX-PT155-101068-A-TU-A01/bam/Cap474-101069-23_GAGTGG_L004_R1_003.fastq.gz.sai
+echo `date` map Cap474-101069-23_GAGTGG_L004_R1_003.fastq.gz done .
+
+echo `date` map Cap474-101069-23_GAGTGG_L004_R1_004.fastq.gz..
+/projects/tools/bwa-0.6.2/bwa  aln -t 1 /projects/database/reference/hs37d5.fa data/IPCT-BCX-PT155-101068-A-TU-A01/gz/Cap474-101069-23_GAGTGG_L004_R1_004.fastq.gz>data/IPCT-BCX-PT155-101068-A-TU-A01/bam/Cap474-101069-23_GAGTGG_L004_R1_004.fastq.gz.sai
+echo `date` map Cap474-101069-23_GAGTGG_L004_R1_004.fastq.gz done .
+
+echo `date` map Cap474-101069-23_GAGTGG_L004_R2_001.fastq.gz..
+/projects/tools/bwa-0.6.2/bwa  aln -t 1 /projects/database/reference/hs37d5.fa data/IPCT-BCX-PT155-101068-A-TU-A01/gz/Cap474-101069-23_GAGTGG_L004_R2_001.fastq.gz>data/IPCT-BCX-PT155-101068-A-TU-A01/bam/Cap474-101069-23_GAGTGG_L004_R2_001.fastq.gz.sai
+echo `date` map Cap474-101069-23_GAGTGG_L004_R2_001.fastq.gz done .
+
+echo `date` map Cap474-101069-23_GAGTGG_L004_R2_002.fastq.gz..
+/projects/tools/bwa-0.6.2/bwa  aln -t 1 /projects/database/reference/hs37d5.fa data/IPCT-BCX-PT155-101068-A-TU-A01/gz/Cap474-101069-23_GAGTGG_L004_R2_002.fastq.gz>data/IPCT-BCX-PT155-101068-A-TU-A01/bam/Cap474-101069-23_GAGTGG_L004_R2_002.fastq.gz.sai
+echo `date` map Cap474-101069-23_GAGTGG_L004_R2_002.fastq.gz done .
+
+echo `date` map Cap474-101069-23_GAGTGG_L004_R2_003.fastq.gz..
+/projects/tools/bwa-0.6.2/bwa  aln -t 1 /projects/database/reference/hs37d5.fa data/IPCT-BCX-PT155-101068-A-TU-A01/gz/Cap474-101069-23_GAGTGG_L004_R2_003.fastq.gz>data/IPCT-BCX-PT155-101068-A-TU-A01/bam/Cap474-101069-23_GAGTGG_L004_R2_003.fastq.gz.sai
+echo `date` map Cap474-101069-23_GAGTGG_L004_R2_003.fastq.gz done .
+
+echo `date` map Cap474-101069-23_GAGTGG_L004_R2_004.fastq.gz..
+/projects/tools/bwa-0.6.2/bwa  aln -t 1 /projects/database/reference/hs37d5.fa data/IPCT-BCX-PT155-101068-A-TU-A01/gz/Cap474-101069-23_GAGTGG_L004_R2_004.fastq.gz>data/IPCT-BCX-PT155-101068-A-TU-A01/bam/Cap474-101069-23_GAGTGG_L004_R2_004.fastq.gz.sai
+echo `date` map Cap474-101069-23_GAGTGG_L004_R2_004.fastq.gz done .
+
+echo `date` sampe ..
+/projects/tools/bwa-0.6.2/bwa  sampe /projects/database/reference/hs37d5.fa data/IPCT-BCX-PT155-101068-A-TU-A01/bam/Cap474-101069-23_GAGTGG_L004_R1_001.fastq.gz.sai data/IPCT-BCX-PT155-101068-A-TU-A01/bam/Cap474-101069-23_GAGTGG_L004_R2_001.fastq.gz.sai data/IPCT-BCX-PT155-101068-A-TU-A01/gz/Cap474-101069-23_GAGTGG_L004_R1_001.fastq.gz data/IPCT-BCX-PT155-101068-A-TU-A01/gz/Cap474-101069-23_GAGTGG_L004_R2_001.fastq.gz| /projects/tools/samtools-0.1.19/samtools view  -b -S -|/projects/tools/samtools-0.1.19/samtools sort - data/IPCT-BCX-PT155-101068-A-TU-A01/bam/IPCT-BCX-PT155-101068-A-TU-A01_1
+
+/projects/tools/bwa-0.6.2/bwa  sampe /projects/database/reference/hs37d5.fa data/IPCT-BCX-PT155-101068-A-TU-A01/bam/Cap474-101069-23_GAGTGG_L004_R1_002.fastq.gz.sai data/IPCT-BCX-PT155-101068-A-TU-A01/bam/Cap474-101069-23_GAGTGG_L004_R2_002.fastq.gz.sai data/IPCT-BCX-PT155-101068-A-TU-A01/gz/Cap474-101069-23_GAGTGG_L004_R1_002.fastq.gz data/IPCT-BCX-PT155-101068-A-TU-A01/gz/Cap474-101069-23_GAGTGG_L004_R2_002.fastq.gz| /projects/tools/samtools-0.1.19/samtools view  -b -S -|/projects/tools/samtools-0.1.19/samtools sort - data/IPCT-BCX-PT155-101068-A-TU-A01/bam/IPCT-BCX-PT155-101068-A-TU-A01_2
+
+/projects/tools/bwa-0.6.2/bwa  sampe /projects/database/reference/hs37d5.fa data/IPCT-BCX-PT155-101068-A-TU-A01/bam/Cap474-101069-23_GAGTGG_L004_R1_003.fastq.gz.sai data/IPCT-BCX-PT155-101068-A-TU-A01/bam/Cap474-101069-23_GAGTGG_L004_R2_003.fastq.gz.sai data/IPCT-BCX-PT155-101068-A-TU-A01/gz/Cap474-101069-23_GAGTGG_L004_R1_003.fastq.gz data/IPCT-BCX-PT155-101068-A-TU-A01/gz/Cap474-101069-23_GAGTGG_L004_R2_003.fastq.gz| /projects/tools/samtools-0.1.19/samtools view  -b -S -|/projects/tools/samtools-0.1.19/samtools sort - data/IPCT-BCX-PT155-101068-A-TU-A01/bam/IPCT-BCX-PT155-101068-A-TU-A01_3
+
+/projects/tools/bwa-0.6.2/bwa  sampe /projects/database/reference/hs37d5.fa data/IPCT-BCX-PT155-101068-A-TU-A01/bam/Cap474-101069-23_GAGTGG_L004_R1_004.fastq.gz.sai data/IPCT-BCX-PT155-101068-A-TU-A01/bam/Cap474-101069-23_GAGTGG_L004_R2_004.fastq.gz.sai data/IPCT-BCX-PT155-101068-A-TU-A01/gz/Cap474-101069-23_GAGTGG_L004_R1_004.fastq.gz data/IPCT-BCX-PT155-101068-A-TU-A01/gz/Cap474-101069-23_GAGTGG_L004_R2_004.fastq.gz| /projects/tools/samtools-0.1.19/samtools view  -b -S -|/projects/tools/samtools-0.1.19/samtools sort - data/IPCT-BCX-PT155-101068-A-TU-A01/bam/IPCT-BCX-PT155-101068-A-TU-A01_4
+
+echo `date` sampe done. 
+
+/projects/tools/samtools-0.1.19/samtools view -H data/IPCT-BCX-PT155-101068-A-TU-A01/bam/IPCT-BCX-PT155-101068-A-TU-A01_1.bam>data/IPCT-BCX-PT155-101068-A-TU-A01/bam/header.txt
+echo -e "@RG	ID:IPCT-BCX-PT155-101068-A-TU-A01_1	LB:IPCT-BCX-PT155-101068-A-TU-A01	SM:IPCT-BCX-PT155-101068-A-TU-A01">>data/IPCT-BCX-PT155-101068-A-TU-A01/bam/header.txt
+echo -e "@RG	ID:IPCT-BCX-PT155-101068-A-TU-A01_2	LB:IPCT-BCX-PT155-101068-A-TU-A01	SM:IPCT-BCX-PT155-101068-A-TU-A01">>data/IPCT-BCX-PT155-101068-A-TU-A01/bam/header.txt
+echo -e "@RG	ID:IPCT-BCX-PT155-101068-A-TU-A01_3	LB:IPCT-BCX-PT155-101068-A-TU-A01	SM:IPCT-BCX-PT155-101068-A-TU-A01">>data/IPCT-BCX-PT155-101068-A-TU-A01/bam/header.txt
+echo -e "@RG	ID:IPCT-BCX-PT155-101068-A-TU-A01_4	LB:IPCT-BCX-PT155-101068-A-TU-A01	SM:IPCT-BCX-PT155-101068-A-TU-A01">>data/IPCT-BCX-PT155-101068-A-TU-A01/bam/header.txt
+echo `date` merge the small bam files..
+/projects/tools/samtools-0.1.19/samtools merge -r -h data/IPCT-BCX-PT155-101068-A-TU-A01/bam/header.txt -f data/IPCT-BCX-PT155-101068-A-TU-A01/bam/IPCT-BCX-PT155-101068-A-TU-A01.sorted.bam data/IPCT-BCX-PT155-101068-A-TU-A01/bam/IPCT-BCX-PT155-101068-A-TU-A01_*.bam
+echo `date` small bams merged. Sorted.bam obtained.
+
+echo `date` indexing data/IPCT-BCX-PT155-101068-A-TU-A01/bam/IPCT-BCX-PT155-101068-A-TU-A01.sorted.bam..
+/projects/tools/samtools-0.1.19/samtools index data/IPCT-BCX-PT155-101068-A-TU-A01/bam/IPCT-BCX-PT155-101068-A-TU-A01.sorted.bam
+echo `date` index done.
+
+echo `date` run flagstat..
+/projects/tools/samtools-0.1.19/samtools flagstat data/IPCT-BCX-PT155-101068-A-TU-A01/bam/IPCT-BCX-PT155-101068-A-TU-A01.sorted.bam>data/IPCT-BCX-PT155-101068-A-TU-A01/bam/IPCT-BCX-PT155-101068-A-TU-A01.sorted.bam.flagstat
+echo `date` flagstat done.
+echo `date` MarkDuplicates..
+/usr/bin/java -jar /projects/tools/picard-tools-1.80/MarkDuplicates.jar I=data/IPCT-BCX-PT155-101068-A-TU-A01/bam/IPCT-BCX-PT155-101068-A-TU-A01.sorted.bam O=data/IPCT-BCX-PT155-101068-A-TU-A01/bam/IPCT-BCX-PT155-101068-A-TU-A01.rmdup.bam M=data/IPCT-BCX-PT155-101068-A-TU-A01/bam/IPCT-BCX-PT155-101068-A-TU-A01.markdup.metrics AS=true REMOVE_DUPLICATES=true VALIDATION_STRINGENCY=LENIENT
+echo `date`  MarkDuplicate Done.
+echo remove sorted.bam file..
+rm data/IPCT-BCX-PT155-101068-A-TU-A01/bam/IPCT-BCX-PT155-101068-A-TU-A01.sorted.bam
+echo sorted.bam deleted.
+
+echo `date` indexing the rmduped files..
+/projects/tools/samtools-0.1.19/samtools index data/IPCT-BCX-PT155-101068-A-TU-A01/bam/IPCT-BCX-PT155-101068-A-TU-A01.rmdup.bam
+echo `date` index done.
+
+echo `date` mpilup the rmduped bam..
+/projects/tools/samtools-0.1.19/samtools mpileup -q 20 -C 50 -f /projects/database/reference/hs37d5.fa data/IPCT-BCX-PT155-101068-A-TU-A01/bam/IPCT-BCX-PT155-101068-A-TU-A01.rmdup.bam | awk '{if($4!=0) print $0}'>data/IPCT-BCX-PT155-101068-A-TU-A01/bam/IPCT-BCX-PT155-101068-A-TU-A01.rmdup.mpileup
+echo `date` mpileup done at `date`.
+
+echo `date` running flagstat for rmduped bam..
+/projects/tools/samtools-0.1.19/samtools flagstat data/IPCT-BCX-PT155-101068-A-TU-A01/bam/IPCT-BCX-PT155-101068-A-TU-A01.rmdup.bam>data/IPCT-BCX-PT155-101068-A-TU-A01/bam/IPCT-BCX-PT155-101068-A-TU-A01.rmdup.bam.flagstat
+echo `date` flagstat done.
+
+rm data/IPCT-BCX-PT155-101068-A-TU-A01/bam/IPCT-BCX-PT155-101068-A-TU-A01_*.bam
+echo removing the intermediate bam files..
+echo intermediate bam files removed.
+echo All Done!
+#+END_SRC
+* MDA gatk_realign.sh pipeline
+#+BEGIN_SRC sh
+cd /scratch/bcb/hzhao1/scratch/clinsek_comparison
+echo `date` start pre-processing for sample IPCT-CH-5446-Tumor-1290
+
+echo `date` 
+~/ipct/jdk1.7.0_51/bin/java -jar /scratch/bcb/hzhao1/tools/picard-tools-1.80/AddOrReplaceReadGroups.jar I=data/IPCT-CH-5446-Tumor-1290/bam/IPCT-CH-5446-Tumor-1290.rmdup.bam O=data/IPCT-CH-5446-Tumor-1290/bam/rg_added.IPCT-CH-5446-Tumor-1290.rmdup.bam RGPL=Illumina RGID=IPCT-CH-5446-Tumor-1290 RGSM=IPCT-CH-5446-Tumor-1290 RGLB=IPCT-CH-5446-Tumor-1290 RGPU=IPCT-CH-5446-Tumor-1290 SORT_ORDER=coordinate VALIDATION_STRINGENCY=LENIENT
+~/tools/samtools-0.1.19/samtools index data/IPCT-CH-5446-Tumor-1290/bam/rg_added.IPCT-CH-5446-Tumor-1290.rmdup.bam
+echo `date` AddOrReplaceReadGroups Done.
+
+echo `date` start realignertargetCreator of IndelRealignments..
+java -Xmx15g -jar GenomeAnalysisTK.jar -R /scratch/bcb/hzhao1/ipct/reference/hs37d5.fa -T RealignerTargetCreator -nt 4 -I data/IPCT-CH-5446-Tumor-1290/bam/rg_added.IPCT-CH-5446-Tumor-1290.rmdup.bam -o data/IPCT-CH-5446-Tumor-1290/bam/IPCT-CH-5446-Tumor-1290.intervals -known hs37_gatk_ref/1000G_phase1.indels.hs37.vcf -known hs37_gatk_ref/Mills_and_1000G_gold_standard.indels.hs37.vcf
+echo `date` RealignerTargetCreator done.
+
+echo `date` IndelRealignments..
+java -Xmx15g -jar GenomeAnalysisTK.jar -R /scratch/bcb/hzhao1/ipct/reference/hs37d5.fa  -T IndelRealigner -I data/IPCT-CH-5446-Tumor-1290/bam/rg_added.IPCT-CH-5446-Tumor-1290.rmdup.bam -targetIntervals data/IPCT-CH-5446-Tumor-1290/bam/IPCT-CH-5446-Tumor-1290.intervals -o data/IPCT-CH-5446-Tumor-1290/bam/IPCT-CH-5446-Tumor-1290.IndelRealigned.bam -known hs37_gatk_ref/1000G_phase1.indels.hs37.vcf -known hs37_gatk_ref/Mills_and_1000G_gold_standard.indels.hs37.vcf
+~/tools/samtools-0.1.19/samtools index data/IPCT-CH-5446-Tumor-1290/bam/IPCT-CH-5446-Tumor-1290.IndelRealigned.bam
+echo `date` IndelRealigner and index Done. 
+
+echo `date` BaseRecalibrator ..
+java -Xmx15g -jar GenomeAnalysisTK.jar -R /scratch/bcb/hzhao1/ipct/reference/hs37d5.fa  -T BaseRecalibrator -I data/IPCT-CH-5446-Tumor-1290/bam/IPCT-CH-5446-Tumor-1290.IndelRealigned.bam -o data/IPCT-CH-5446-Tumor-1290/bam/IPCT-CH-5446-Tumor-1290.recal.table -knownSites hs37_gatk_ref/dbsnp138.hs37.vcf -knownSites hs37_gatk_ref/Mills_and_1000G_gold_standard.indels.hs37.vcf
+echo `date` BaseRecalibrator done.
+
+echo `date` Print reads..
+java -Xmx15g -jar GenomeAnalysisTK.jar -R /scratch/bcb/hzhao1/ipct/reference/hs37d5.fa  -T PrintReads -I data/IPCT-CH-5446-Tumor-1290/bam/IPCT-CH-5446-Tumor-1290.IndelRealigned.bam -BQSR data/IPCT-CH-5446-Tumor-1290/bam/IPCT-CH-5446-Tumor-1290.recal.table -o data/IPCT-CH-5446-Tumor-1290/bam/IPCT-CH-5446-Tumor-1290.recaled.bam
+echo `date` PrintReads done.
+
+echo `date` index and flagstat the recalibrated bam
+~/tools/samtools-0.1.19/samtools index data/IPCT-CH-5446-Tumor-1290/bam/IPCT-CH-5446-Tumor-1290.recaled.bam
+~/tools/samtools-0.1.19/samtools flagstat data/IPCT-CH-5446-Tumor-1290/bam/IPCT-CH-5446-Tumor-1290.recaled.bam>data/IPCT-CH-5446-Tumor-1290/bam/IPCT-CH-5446-Tumor-1290.recaled.bam.flagstat
+echo `date` Recalibrated BAM has been indexed.
+echo Preprocessing of IPCT-CH-5446-Tumor-1290 is ALL DONE.
+#+END_SRC
 * perl utils usc
 
 ** fastqConstantSplit.pl
