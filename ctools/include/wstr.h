@@ -2,6 +2,7 @@
 #ifndef _WZ_STR_H_
 #define _WZ_STR_H_
 
+#include <stdio.h>
 #include <stdarg.h>
 #include "kstring.h"
 

@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include "wstr.h"
 #include "wqueue.h"
 #include "encode.h"
 #include "sam.h"
@@ -35,17 +36,22 @@ typedef struct {
 	char *output_retention;
 	uint32_t min_base_qual;
 	uint32_t max_retention;
+	uint8_t min_dist_end;
+	uint8_t relax;
 } conf_t;
 
-typedef struct {
-	bam1_t *b;
-	int rpos;
-	int qpos;
-	int bsstrand;
-	char context[3];
-} record_t;
+DEFINE_WQUEUE(record, char*)
 
-DEFINE_WQUEUE(record, record_t)
+/* typedef struct { */
+/* 	bam1_t *b; */
+/* 	int rpos; */
+/* 	int qpos; */
+/* 	int bsstrand; */
+/* 	char context[3]; */
+/* } record_t; */
+
+
+/* DEFINE_WQUEUE(record, record_t) */
 
 typedef struct {
   int n_targets;
@@ -77,15 +83,30 @@ typedef struct {
 	char *outfn;
 } writer_conf_t;
 
+/* void *write_func(void *data) { */
+/* 	writer_conf_t *c = (writer_conf_t*) data; */
+/* 	FILE *out = fopen(c->outfn, "w"); */
+/* 	while (1) { */
+/* 		record_t rec; */
+/* 		wqueue_get(record, c->q, &rec); */
+/* 		if(!rec.b) break; */
+/* 		fprintf(out, "%s\t%d\t%d\t%c%c%c\n", bam1_qname(rec.b), rec.rpos, rec.qpos, rec.context[0], rec.context[1], rec.context[2]); */
+/* 		bam_destroy1(rec.b); */
+/* 	} */
+/* 	fclose(out); */
+/* 	return 0; */
+/* } */
+
 void *write_func(void *data) {
 	writer_conf_t *c = (writer_conf_t*) data;
 	FILE *out = fopen(c->outfn, "w");
+	fputs("chrm\tpos\tbsstrand\tcontext\tstrand\tpos_on_reads\tqname\tread_len\n", out);
 	while (1) {
-		record_t rec;
+		char *rec;
 		wqueue_get(record, c->q, &rec);
-		if(!rec.b) break;
-		fprintf(out, "%s\t%d\t%d\t%c%c%c\n", bam1_qname(rec.b), rec.rpos, rec.qpos, rec.context[0], rec.context[1], rec.context[2]);
-		bam_destroy1(rec.b);
+		if(!rec) break;
+		fputs(rec, out);
+		free(rec);									/* rec is alloc-ed */
 	}
 	fclose(out);
 	return 0;
@@ -114,6 +135,47 @@ void merge_results(result_t *dst, result_t *src) {
 
 #define bscall(seq, pos) bam_nt16_rev_table[bam1_seqi(seq, pos)]
 
+void profile_read(bam1_t *b, refseq_t *rs, uint8_t *bsstrand, uint32_t *cnt_retention, uint32_t *nC2T, uint32_t *nG2A) {
+
+	*cnt_retention = 0; *nC2T = 0; *nG2A = 0;
+	int i; uint32_t j;
+	bam1_core_t *c = &b->core;
+	uint32_t rpos =c->pos+1, qpos = 0;
+	for (i=0; i<c->n_cigar; ++i) {
+		uint32_t op = bam_cigar_op(bam1_cigar(b)[i]);
+		uint32_t oplen = bam_cigar_oplen(bam1_cigar(b)[i]);
+		char rb, qb;
+		switch(op) {
+		case BAM_CMATCH:
+			for (j=0; j<oplen; ++j) {
+				rb = getbase_refseq(rs, rpos+j);
+				qb = bscall(bam1_seq(b), qpos+j);
+				if (rb == 'C' && qb == 'T') (*nC2T)++;
+				if (rb == 'G' && qb == 'A') (*nG2A)++;
+				if (bsstrand[0] == '+' && rb == 'C' && qb == 'C') (*cnt_retention)++;
+				if (bsstrand[0] == '-' && rb == 'G' && qb == 'G') (*cnt_retention)++;
+				else  continue;
+			}
+			rpos += oplen;
+			qpos += oplen;
+			break;
+		case BAM_CINS:
+			qpos += oplen;
+			break;
+		case BAM_CDEL:
+			rpos += oplen;
+			break;
+		case BAM_CSOFT_CLIP:
+			qpos += oplen;
+			break;
+		default:
+			fprintf(stderr, "Unknown cigar, %u\n", op);
+			abort();
+		}
+	}
+}
+
+
 void *process_func(void *data) {
 
   result_t *res = (result_t*) data;
@@ -134,7 +196,8 @@ void *process_func(void *data) {
     wqueue_get(window, res->q, &w);
     if (w.tid == -1) break;
 		/* since we need to look ahead and after */
-		fetch_refseq(rs, in->header->target_name[w.tid], w.beg>100?w.beg-100:1, w.end+100);
+		char *chrm = in->header->target_name[w.tid];
+		fetch_refseq(rs, chrm, w.beg>100?w.beg-100:1, w.end+100);
 		bam_iter_t iter = bam_iter_query(idx, w.tid, w.beg, w.end);
 		bam1_t *b = bam_init1();
 		int ret;
@@ -151,47 +214,23 @@ void *process_func(void *data) {
 			uint8_t *nm = bam_aux_get(b, "NM");
 			if (nm && bam_aux2i(nm)>2) continue;
 
-			uint32_t cnt_retention = 0;
-			for (i=0; i<c->n_cigar; ++i) {
-				uint32_t op = bam_cigar_op(bam1_cigar(b)[i]);
-				uint32_t oplen = bam_cigar_oplen(bam1_cigar(b)[i]);
-				char rb, qb;
-				switch(op) {
-				case BAM_CMATCH:
-					for (j=0; j<oplen; ++j) {
-						rb = getbase_refseq(rs, rpos+j);
-						qb = bscall(bam1_seq(b), qpos+j);
-						if (bsstrand[0] == '+' && rb == 'C' && qb == 'C') cnt_retention++;
-						if (bsstrand[0] == '-' && rb == 'G' && qb == 'G') cnt_retention++;
-						else  continue;
-					}
-					rpos += oplen;
-					qpos += oplen;
-					break;
-				case BAM_CINS:
-					qpos += oplen;
-					break;
-				case BAM_CDEL:
-					rpos += oplen;
-					break;
-				case BAM_CSOFT_CLIP:
-					qpos += oplen;
-					break;
-				default:
-					fprintf(stderr, "Unknown cigar, %u\n", op);
-					abort();
-				}
+			uint32_t cnt_retention = 0, nC2T = 0, nG2A = 0;
+			profile_read(b, rs, bsstrand, &cnt_retention, &nC2T, &nG2A);
+			if (!conf->relax) {
+				if (nC2T > 0 && nG2A > 0) continue;
+				if (nC2T > 0 && bsstrand[0] == '-') bsstrand[0] = '+';
+				if (nG2A > 0 && bsstrand[0] == '+') bsstrand[0] = '-';
 			}
 			if (cnt_retention >= conf->max_retention) continue;
 
-			rpos = c->pos+1; qpos = 0;
 			for (i=0; i<c->n_cigar; ++i) {
 				uint32_t op = bam_cigar_op(bam1_cigar(b)[i]);
 				uint32_t oplen = bam_cigar_oplen(bam1_cigar(b)[i]);
 				switch(op) {
 				case BAM_CMATCH:
 					for (j=0; j<oplen; ++j) {
-						if(qpos+j<3 || c->l_qseq-qpos-j < 3) continue;
+						if(qpos+j <= conf->min_dist_end ||
+							 c->l_qseq-qpos-j <= conf->min_dist_end) continue;
 						if(bam1_qual(b)[qpos+j] <= conf->min_base_qual) continue;
 						rbase = subseq_refseq(rs, rpos+j);
 						if (rpos+j <= 1) continue; /* skip first base */
@@ -209,11 +248,12 @@ void *process_func(void *data) {
 							if (qbase == 'C') {
 								res->retained[c->tid][trinuc2ind(trinuc)]++;
 								if (res->rq) {
-									record_t rec = {.rpos = rpos+j, .qpos=qpos+j};
-									memcpy(rec.context, trinuc, 3);
-									rec.b = bam_dup1(b);
-									rec.bsstrand = '+';
-									wqueue_put(record, res->rq, &rec);
+									wqueue_put2(record, res->rq,
+															wasprintf("%s\t%u\t%c\t%.3s\t%c\t%u\t%s\t%d\n",
+																				chrm, rpos, bsstrand[0], trinuc,
+																				c->flag & BAM_FREVERSE ? '-' : '+',
+																				c->flag & BAM_FREVERSE ? c->l_qseq-qpos-j : qpos+j+1,
+																				bam1_qname(b), c->l_qseq));
 								}
 							}
 						} else if (bsstrand[0] == '-' && trinuc[1] == 'G') {
@@ -222,11 +262,12 @@ void *process_func(void *data) {
 							if (qbase == 'G') {
 								res->retained[c->tid][trinuc2ind(trinuc_r)]++;
 								if (res->rq) {
-									record_t rec = {.rpos = rpos+j, .qpos=qpos+j};
-									memcpy(rec.context, trinuc_r, 3);
-									rec.b = bam_dup1(b);
-									rec.bsstrand = '-';
-									wqueue_put(record, res->rq, &rec);
+									wqueue_put2(record, res->rq,
+															wasprintf("%s\t%u\t%c\t%.3s\t%c\t%u\t%s\t%d\n",
+																				chrm, rpos, bsstrand[0], trinuc,
+																				c->flag & BAM_FREVERSE ? '-' : '+',
+																				c->flag & BAM_FREVERSE ? c->l_qseq-qpos-j : qpos+j+1,
+																				bam1_qname(b), c->l_qseq));
 								}
 							}
 						} else {
@@ -322,8 +363,9 @@ int sample_trinuc_main(char *reffn, char *infn, char *reg, conf_t *conf) {
 	}
 
 	if (conf->output_retention) {
-		record_t rec = {.b=0};
-		wqueue_put(record, writer_conf.q, &rec);
+		wqueue_put2(record, writer_conf.q, NULL);
+		/* record_t rec = {.b=0}; */
+		/* wqueue_put(record, writer_conf.q, &rec); */
 		pthread_join(writer, NULL);
 		wqueue_destroy(record, writer_conf.q);
 	}
@@ -382,7 +424,9 @@ static int usage() {
 	fprintf(stderr, "     -s        step of window dispatching [100000].\n");
 	fprintf(stderr, "     -q        number of threads [3].\n");
 	fprintf(stderr, "     -b        min base quality [10].\n");
+	fprintf(stderr, "     -d        minimum distance to end [2].\n");
 	fprintf(stderr, "     -t        max retention in a read [5].\n");
+	fprintf(stderr, "     -z        drop stringency filter, allow reads with nG2A>0 and nC2T>0 and no correction of bsstrand if nG2A/nC2T is not consistent with bsstrand.\n");
   fprintf(stderr, "     -h        this help.\n");
   fprintf(stderr, "\n");
   return 1;
@@ -400,10 +444,12 @@ int main(int argc, char *argv[]) {
 		.output_retention = NULL,
 		.min_base_qual = 10,
 		.max_retention = 5,
+		.min_dist_end = 2,
+		.relax = 0,
 	};
 
 	if (argc<2) return usage();
-	while ((c=getopt(argc, argv, "i:o:r:g:q:e:b:t:h"))>=0) {
+	while ((c=getopt(argc, argv, "i:o:r:g:s:q:e:b:t:d:z:h"))>=0) {
 		switch (c) {
 		case 'i': infn = optarg; break;
 		case 'r': reffn = optarg; break;
@@ -413,6 +459,8 @@ int main(int argc, char *argv[]) {
 		case 'q': conf.n_threads = atoi(optarg); break;
 		case 'b': conf.min_base_qual = atoi(optarg); break;
 		case 't': conf.max_retention = atoi(optarg); break;
+		case 'd': conf.min_dist_end = atoi(optarg); break;
+		case 'z': conf.relax = 1; break;
 		case 'h': return usage();
     default:
       fprintf(stderr, "[%s:%d] Unrecognized command: %c.\n", __func__, __LINE__, c);

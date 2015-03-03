@@ -11,8 +11,8 @@ KLIB = lib/klib/klib.a
 LUTILSD = lib/utils
 LUTILS = lib/utils/libutils.a
 
-# PROG = correct_bsstrand get_unmapped sample_trinuc	
-PROG = pileup_cytosine
+# PROG = correct_bsstrand get_unmapped  pileup_cytosine
+PROG = sample_trinuc
 
 release : CFLAGS += -O3
 release : $(PROG)
