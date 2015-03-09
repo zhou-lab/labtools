@@ -513,6 +513,7 @@ for f in *; do a=$(wc -l $f | cut -d" " -f1); cntall=$(expr $cntall + $a); done
 #+END_SRC
 
 *** top
+s  change refresh rate, default is 3s
 t  切换summary information
 m  切换memory information
 A  按各种系统资源使用排序
@@ -2933,7 +2934,7 @@ x[-c(1,2,3)]	删掉第1，2，3个元素
 **** how to generate (1,1,1,2,2,2,3,3,3) from (1,2,3)
 > rep(c("g1","g2","g3"),times=c(1,3,4))
 [1] "g1" "g2" "g2" "g2" "g3" "g3" "g3" "g3"
-**** Create an empty vector
+**** Createpr an empty vector
 x ← vector(“numeric”, length=10)
 vector elements are initialized to 0.0
 logical vector
@@ -3053,9 +3054,6 @@ df[-(416:472), ]
 
 **** Sort a data frame by a certain column
 sortd=d[with(d, order(-ratio)),]
-
-**** rename column of data frame
-names(d)[4]='ratio'
 
 **** view attributes of objects, e.g., names, dimnames, dimensions, class, length are all attributes.
 > attributes(m)
@@ -3300,6 +3298,9 @@ bubba<-data.frame(first=a second=b f=levels)
 **** add new column
 >saida["MY_NEW_COLUMN"] <- NA # That creates the new column named "MY_NEW_COLUMN" filled with "NA"
 >saida$MY_NEW_COLUMN <- saida$C - saida$D  # As an example, the new column receives the result of C - D
+**** rename column of data frame
+names(d)[4]='ratio'
+
 **** build a data frame in a loop, adding row by row
 ***** method 1
 d <- data.frame()
@@ -3411,11 +3412,20 @@ ncol()
 higher dimensional matrix:
 NROW()
 NCOL()
+**** randomly sample rows
+df[sample(nrow(df), 10),]
+
+Note that this is equivalent to (and is a convenient feature of sample)
+df[sample(1:nrow(df), 10),]
+or
+df[sample(seq(1:nrow(df)), 10),]
 
 **** Build contigency table
 table(vec)
 table(vec,vec2) 2-d contingency table(matrix)
 
+**** merge two data frame on common column
+merge(probes.sampled, sampledata, by.x="pname", by.y="Composite Element REF")
 *** data.table - contingency table
 **** table - create table from vector
 a<-c("Sometimes","Sometimes","Never","Always","Always","Sometime","Sometimes","Never")
@@ -4522,6 +4532,7 @@ options(htmlhelp=FALSE)
 *** list files in current dir
 list.files(pattern=".pairs")	list all the files satisfying some pattern in the current directory.
 file.show(filepath)	display the file indicated in the filepath
+** parallel
 * Python
 ** to set python default install location
 edit

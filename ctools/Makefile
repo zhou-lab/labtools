@@ -16,8 +16,8 @@ KLIB = lib/klib/klib.a
 LUTILSD = lib/utils
 LUTILS = lib/utils/libutils.a
 
-# PROG = correct_bsstrand get_unmapped  pileup_cytosine sample_trinuc
-PROG = hemifinder
+PROG = correct_bsstrand get_unmapped  pileup_cytosine sample_trinuc
+# PROG = hemifinder
 
 release : CFLAGS += -O3
 release : $(PROG)

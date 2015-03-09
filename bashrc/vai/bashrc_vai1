@@ -13,7 +13,7 @@ alias rm='rm -i'
 alias lc="wc -l"
 alias ll="ls -l"
 alias rf="readlink -f"
-alias parallel="parallel --gnu"
+alias parallel="parallel --gnu --progress"
 alias igv=~/tools/igv/IGV_2.3.40/igv.sh
 
 # PS1='\u@\h:\w\$ '

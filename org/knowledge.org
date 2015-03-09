@@ -13,6 +13,11 @@ multiprocessing: real parallelization
 http://stackoverflow.com/questions/2846653/python-multithreading-for-dummies
 "For actual parallelization in Python, you should use the multiprocessing module to fork multiple processes that execute in parallel (due to the global interpreter lock, Python threads provide interleaving but are in fact executed serially, not in parallel, and are only useful when interleaving I/O operations)."
 * biology
+** acrocentric and metacentric
+chr13,14,15,21,22 are acrocentric
+others are metacentric
+** ADHD
+attention deficit hyperactivity disorder
 * epigenetics
 ** Cancer has widespread hypomethylation and focal CGI hypermethylation
 ** IDH1's effect on methylation

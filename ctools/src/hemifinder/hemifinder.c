@@ -124,7 +124,7 @@ void *process_func(void *data) {
 	refseq_t *rs = init_refseq(res->ref_fn, 1000, 1000);
 
 	window_t w;
-	int i, k; uint32_t j;
+	int i; uint32_t j, k;
   while (1) {
 
     wqueue_get(window, res->q, &w);
@@ -151,6 +151,7 @@ void *process_func(void *data) {
 
 			uint32_t rpos = c->pos+1, qpos = 0;
 			if (conf->filter_secondary && c->flag & BAM_FSECONDARY) continue;
+			if (!(c->flag & BAM_FPROPER_PAIR)) continue;
 			uint8_t *nm = bam_aux_get(b, "NM");
 			if (nm && bam_aux2i(nm)>conf->max_nm) continue;
 
@@ -164,31 +165,34 @@ void *process_func(void *data) {
 				switch(op) {
 				case BAM_CMATCH:
 					for (j=0; j<oplen; ++j) {
-						if (rpos+j<w.beg || rpos+j>=w.end) continue; /* include begin but not end */
 						rb = toupper(getbase_refseq(rs, rpos+j));
 						qb = bscall(b, qpos+j);
+						if (rpos+j<w.beg || rpos+j>w.end) continue; /* include begin but not end */
+						if (rpos+j == w.end && qb != 'G') continue; /* cross window C|G */
 						if (rb == 'C' && bsstrand[0] == '+') {
+							if (rpos+j+1 >= (unsigned) rs->seqlen) continue;
 							rb_next = toupper(getbase_refseq(rs, rpos+j+1));
 							if (rb_next != 'G') continue;
 							insert_v **inses = pos2inserts + rpos + j - w.beg;
 							if (!*inses) *inses = init_insert_v(2);
 							insert_t *insert = next_ref_insert_v(*inses);
 							insert->qname = strdup(bam1_qname(b));
-							insert->beg = c->pos+1;
-							insert->end = c->pos+1+c->isize;
+							insert->beg = c->pos<c->mpos?c->pos:c->mpos+1;
+							insert->end = insert->beg + abs(c->isize);
 							insert->bsstrand = bsstrand[0];
 							if (qb == 'C') insert->bsstate = BSS_RETENTION;
 							else if (qb == 'T') insert->bsstate = BSS_CONVERSION;
 							else insert->bsstate = BSS_OTHER;
 						} else if (rb == 'G' && bsstrand[0] == '-') {
+							if (rpos+j-1 <= w.beg) continue;
 							rb_prev = toupper(getbase_refseq(rs, rpos+j-1));
 							if (rb_prev != 'C') continue;
 							insert_v **inses = pos2inserts + rpos + j - w.beg - 1;
 							if (!*inses) *inses = init_insert_v(2);
 							insert_t *insert = next_ref_insert_v(*inses);
 							insert->qname = strdup(bam1_qname(b));
-							insert->beg = c->pos+1-c->isize;
-							insert->end = c->pos+1;
+							insert->beg = c->pos<c->mpos?c->pos:c->mpos+1;
+							insert->end = insert->beg + abs(c->isize);
 							insert->bsstrand = bsstrand[0];
 							if (qb == 'G') insert->bsstate = BSS_RETENTION;
 							else if (qb == 'A') insert->bsstate = BSS_CONVERSION;
@@ -220,23 +224,27 @@ void *process_func(void *data) {
 			if (inses && inses->size <= conf->max_plpsize) {
 				unsigned i_bsw, i_bsc;
 				for (i_bsw = 0; i_bsw < inses->size; ++i_bsw) {
+
 					insert_t *bsw = ref_insert_v(inses, i_bsw);
 					if (bsw->bsstrand != '+') continue;
 					for (i_bsc = 0; i_bsc < inses->size; ++i_bsc) {
 						insert_t *bsc = ref_insert_v(inses, i_bsc);
 						if (bsc->bsstrand != '-') continue;
-						if (abs(bsc->beg - bsw->beg) > 2 || abs(bsc->end - bsc->end) >2) continue;
-						wqueue_put2(record, res->rq,
-												wasprintf("%s\t%u\t%s\t%u-%u\t%s\t%u-%u\n",
-																	chrm, j, bsw->qname, bsw->beg, bsw->end,
-																	bsc->qname, bsc->beg, bsc->end));
+						if (abs(bsw->beg - bsc->beg) + abs(bsw->end - bsc->end)>1) continue;
+						if ((bsw->bsstate == BSS_CONVERSION && bsc->bsstate == BSS_RETENTION) ||
+								(bsw->bsstate == BSS_RETENTION && bsc->bsstate == BSS_CONVERSION)) {
+							wqueue_put2(record, res->rq,
+													wasprintf("%s\t%u\t%s\t%u-%u\t%d\t%s\t%u-%u\t%d\n",
+																		chrm, j, bsw->qname, bsw->beg, bsw->end, bsw->bsstate, 
+																		bsc->qname, bsc->beg, bsc->end, bsc->bsstate));
+						}
 					}
 				}
 			}
 		}
 		for (i=0; i<n; ++i) {
 			if (pos2inserts[i]) {
-				for (k=0; k<n; ++k) {
+				for (k=0; k<pos2inserts[i]->size; ++k) {
 					insert_t *ins = ref_insert_v(pos2inserts[i], k);
 					free(ins->qname);
 				}
