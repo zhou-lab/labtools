@@ -88,74 +88,50 @@ sed '/^$/d' file.txt
 awk '/./' file.txt
 tr -s '\n' < file.txt
 
-*** how to show line end and tab
-cat -te
+*** how to show non-printable characters like line end and tab
+cat -vet | less
 *** how to merge extra blank lines
 cat -s
-** how to print pattern to pattern using sed and awk
-sed -n '/StartPattern/,/EndPattern/p' FileName
-awk '/StartPattern/,/EndPattern/' FileName
+*** how to remove all blank space
+#+BEGIN_SRC sh
+echo -e ' test test test ' | tr -d '[[:space:] ]'
+# testtesttest
+#+END_SRC
 
-** join lines in a file                                            :unknown:
-perl -ne 'chomp;print;' file
-tr -d '\n' < file
-awk '{printf $0;}' file
-paste -s --delimiters="" file
-sed -e :a  -e 'N;s/\n//;ta'  file
-** delete character in line using tr
-tr -d "\n"
-remove all newline characters.
+*** how to remove leading and trailing white space
+sed
+#+BEGIN_SRC sh
+$(echo -e "${FOO}" | sed -e 's/^[[:space:] ]*//' -e 's/[[:space:] ]*$//')"
+#+END_SRC
 
-** how to use basic calculator (bc) in unix
--l load standard math library
-bc -l <<< "5*7/3"
-11.6666
-$ result=$(echo "scale=2; 5 * 7 /3;" | bc)
-$ echo $result
-11.66
+xargs
+#+BEGIN_SRC sh
+echo "   lol  " | xargs
+#+END_SRC
 
-** to interpret MS dos (Windows) file with ^M                      :unknown:
-The ^M that you are seeing is actually a CR or \r. If you want to test for carraige returns in a file, you want to look for \r. Try this on the file
-dos2unix
-or
-tr '\r' '\n' < [file] > [output]
-** ssh X11 tunneling
-ssh -X
-to make default, put in ~/.ssh/config
-ForwardX11 yes
-on the server side, put in /etc/ssh/sshd_config
-X11Forwarding yes
+pure bash
+#+BEGIN_SRC sh
+var="    abc    "
+var="${var#"${var%%[![:space:]]*}"}"   # remove leading whitespace characters
+var="${var%"${var##*[![:space:]]}"}"   # remove trailing whitespace characters
+echo "===$var==="
 
-** mkdir and cd into it
-mkdir /foo/bar && cd $_;
-$_ is the most recent parameter
-** curl
-*** download following redirection
-curl -O -L http://sourceforge.net/...
-** wget
-*** recursive download folder via ftp using wget
-wget -r ftp://yourfolder
-** gnu parallel
-*** how to redirect inside parallel
-use quote "'>'"
-e.g.,
-find /data/largeS2/pl-bs/data/2015-01-27-bam-all/ -name *.bam | parallel --gnu -j 10 samtools view -f 4 {} '>' unaligned_reads/{/.}.unaligned.bam
-*** parallelize large data copy
-find . -type f | parallel 'mkdir -p ../Copy/{//}; rsync -a {} ../Copy/{}'
-or simply
-find . -type f | parallel cp -a {} .
-** gnu screen
-*** gnu screen set window title to be working directory
-http://unix.stackexchange.com/questions/28430/screen-status-bar-to-display-current-directory-for-zsh-bash-shell
-http://vim.wikia.com/wiki/Automatically_set_screen_title
-fix the bug
-http://superuser.com/questions/244299/gnu-screen-how-to-update-dynamically-the-title-of-a-window
-about using PROMPT_COMMAND (specific to bash, allows putting command result before the PS
-http://www.tldp.org/HOWTO/Bash-Prompt-HOWTO/x264.html
+trim() {
+    local var="$*"
+    var="${var#"${var%%[![:space:]]*}"}"   # remove leading whitespace characters
+    var="${var%"${var##*[![:space:]]}"}"   # remove trailing whitespace characters
+    echo -n "$var"
+}
+#+END_SRC
 
 ** find
-*** to find regular files in the directory
-find . -type f | wc -l
+*** let find -regex support [ [:digit:]]
+does not support POSIX character classes like [ [:digit:] ]
+or you can do 
+find -regextype posix-extended -regex '.*[ [:digit:] ]'
+*** find -exec
+**** change mode of all directories
+find . -type d -exec chmod 777 {} \;
 *** find subfolders in the current directory (including the current directory)
 find . -type d -maxdepth 1 | wc -l 
 *** find with regular expression
@@ -182,13 +158,13 @@ GNU Emacs style regular expression
 -regextype posix-extended
 find . -regextype posix-extended -regex '.*COG[[:digit:]]+.phylip$'
 
-*** find with -name and -iname (case insensitive)
+*** find -name and -iname (case insensitive)
 find /usr/lib -name '*netcdf*'
 find /usr/lib* -name '*netcdf*'
 find /lib* -name '*netcdf*'
 note we cannot put more than 1 wildcards in the pattern
 e.g., find . -name *.log would work
-but find . -name *alt* wouldn't work
+but find . -name *alt* wouldn't work, need to put a quotation
 
 *** find file names that doesn't match pattern
 find . -maxdepth 1 ! -name *.py -print
@@ -303,8 +279,8 @@ find . -maxdepth 1 ! -name *.py -print
 *** some examples
 ***** find the total number of lines in multiple files
        find . -name "*.java" -exec wc -l '{}' \; | awk '{sum += $1} END {print sum}'
-*** change mode of all directories
-     find . -type d -exec chmod 777 {} \;
+*** to find regular files in the directory
+find . -type f | wc -l
 *** unclassified
      find . ! -name '*.net' -type f -exec rm {} \; 删除不含.net的普通文件
      sudo find / -type f -name *.jpg  -exec cp {} . \;
@@ -400,6 +376,66 @@ find . -maxdepth 1 ! -name *.py -print
      find /raid -type d -name ".local_sd_customize" -exec ls {} \; 
      find /raid -type d -name ".local_sd_customize" \
      -exec cp /raid/04d/MCAD-apps/I_Custom/SD_custom/site_sd_customize/user_filer_project_dirs {} \;
+** how to print pattern to pattern using sed and awk
+sed -n '/StartPattern/,/EndPattern/p' FileName
+awk '/StartPattern/,/EndPattern/' FileName
+
+** join lines in a file                                            :unknown:
+perl -ne 'chomp;print;' file
+tr -d '\n' < file
+awk '{printf $0;}' file
+paste -s --delimiters="" file
+sed -e :a  -e 'N;s/\n//;ta'  file
+** delete character in line using tr
+tr -d "\n"
+remove all newline characters.
+
+** how to use basic calculator (bc) in unix
+-l load standard math library
+bc -l <<< "5*7/3"
+11.6666
+$ result=$(echo "scale=2; 5 * 7 /3;" | bc)
+$ echo $result
+11.66
+
+** to interpret MS dos (Windows) file with ^M                      :unknown:
+The ^M that you are seeing is actually a CR or \r. If you want to test for carraige returns in a file, you want to look for \r. Try this on the file
+dos2unix
+or
+tr '\r' '\n' < [file] > [output]
+** ssh X11 tunneling
+ssh -X
+to make default, put in ~/.ssh/config
+ForwardX11 yes
+on the server side, put in /etc/ssh/sshd_config
+X11Forwarding yes
+
+** mkdir and cd into it
+mkdir /foo/bar && cd $_;
+$_ is the most recent parameter
+** curl
+*** download following redirection
+curl -O -L http://sourceforge.net/...
+** wget
+*** recursive download folder via ftp using wget
+wget -r ftp://yourfolder
+** gnu parallel
+*** how to redirect inside parallel
+use quote "'>'"
+e.g.,
+find /data/largeS2/pl-bs/data/2015-01-27-bam-all/ -name *.bam | parallel --gnu -j 10 samtools view -f 4 {} '>' unaligned_reads/{/.}.unaligned.bam
+*** parallelize large data copy
+find . -type f | parallel 'mkdir -p ../Copy/{//}; rsync -a {} ../Copy/{}'
+or simply
+find . -type f | parallel cp -a {} .
+** gnu screen
+*** gnu screen set window title to be working directory
+http://unix.stackexchange.com/questions/28430/screen-status-bar-to-display-current-directory-for-zsh-bash-shell
+http://vim.wikia.com/wiki/Automatically_set_screen_title
+fix the bug
+http://superuser.com/questions/244299/gnu-screen-how-to-update-dynamically-the-title-of-a-window
+about using PROMPT_COMMAND (specific to bash, allows putting command result before the PS
+http://www.tldp.org/HOWTO/Bash-Prompt-HOWTO/x264.html
 ** shell utility
 *** recall commands from shell prompt
 C-r search backward the command
@@ -2281,6 +2317,12 @@ sed -n '2p' myfile
 -n : no print
 The -n option tells sed to print only those lines matching the pattern.
 sed -n '1,100p' filename
+** how to get \t in mac sed
+the bsd sed is a little different from the gnu sed
+brew install gnu-sed
+and use gsed
+
+or you could type control-v then tab for the tab
 
 ** print line with certain pattern
 sed -n '/xzy/p' $filename
@@ -2731,6 +2773,31 @@ gdb -q myfile 查看.o文件的内存映像
 readelf -aW <binary> | c++filt
 #+END_SRC
 * R
+:PROPERTIES:
+:VISIBILITY: children
+:END:
+** basics
+*** what is S3 scheme of method dispatching?
+S3 is a naming scheme of method dispatching (or method overload, or polymorphism or whatever you call it)
+
+S3 method means one have different method instantiation when applied to different S3 classes.
+
+it works by:
+setting the return value of a call to method "glm" to be "glm"
+print.glm is the specific version of print when it applies to object of class "glm"
+
+For example, if you type "median", you see "UseMethod("median"). That means it is an S3 method. To list all the S3 classes
+#+BEGIN_SRC R
+methods(median)
+methods(print)
+#+END_SRC
+
+Notice that some of the methods have *s next to their name. That means that they are hidden inside some package's namespace. Use find to find out which package they are in. For example
+#+BEGIN_SRC R
+find("acf")  #it's in the stats package
+stats:::print.acf
+#+END_SRC
+
 ** Data IO
 see R wiki for more options
 http://en.wikibooks.org/wiki/R_Programming/Importing_and_exporting_data
@@ -2777,7 +2844,6 @@ write.table(datafile,file="/home/wanding/myfile.csv")
 
 *** load and save
 read and write workspaces
-
 *** serialize and unserialize
 write and read single R object in binary form
 
@@ -2866,8 +2932,10 @@ as.complex()
 numeric is equivalent to "double"
 “1” is numeric and “1L” is integer.
 
-**** NaN and NA
+**** NULL, NaN and NA
 ***** basics
+NULL is nothing. is.null()
+
 NA has a class too, there's integer NA and character NA.
 default is a logical NA
 NaN is NA, but NA is not NaN.
@@ -2949,6 +3017,8 @@ seq(-5, 5, by = .2)
 ***** sample 51 points from -5 by interval 0.2
 seq(length = 51, from = -5, by = 0.2)
 ***** sample 50 points from 3 to 7 evenly
+***** seq_along - the counterpart of python enumerate
+seq_along(x) is equivalent to seq(along=x)
 **** type coersion in vectors
 elements in a vector must be of the same type, there will be implicit type coersion when different types are mixed.
 y ← c(1.7, “a”) ## character 1.7 → “1.7”
@@ -3100,9 +3170,17 @@ colnames(data)<-"Q"
 **** build matrix by column
 matrix <- cbind(column1 = 3, column2 = c(4:1,2:5))
 
-**** apply on rows/columns/*FMARK_START*/
+**** apply on rows/columns
 col.sums <- apply(matrix,2,sum)
-row.sums <- apply(matrix,1,sum)/*FMARK_END*/
+row.sums <- apply(matrix,1,sum)
+
+**** use sweep to normalize data
+
+#+BEGIN_SRC R
+x <- sweep(x, 2, rowMeans(x, na.rm = na.rm))
+sx <- apply(x, 1, sd, na.rm = na.rm)
+x <- sweep(x, 1, sx, "/")
+#+END_SRC
 
 **** subset a matrix
 > x<-matrix(1:6,2,3)
@@ -3293,11 +3371,56 @@ Or more efficiently, as.numberic(levels(f))[as.integer(f)]
 
 *** data frame
 heterogenous columns, as opposed to matrix.
+**** convert data frame to numeric matrix
+data.matrix
+
+**** remove rows with any value NA
+#+BEGIN_SRC R
+na.omit(x)
+#+END_SRC
+**** remove rows with all values NA
+#+BEGIN_SRC R
+x[apply(x, 1, function(y) !all(is.na(y))),]
+or 
+x[rowSums(is.na(x))!=num_columns, ]
+#+END_SRC
+**** count the number of NAs in each row
+apply(x, 1, function(z) sum(is.na(z)))
+**** remove rows with more than 3 NAs
+numNAs = apply(x, 1, function(z) sum(is.na(z)))
+x[!(numNAs > 3),]
+**** accessing column of data frame
+#+BEGIN_SRC R
+data <- data.frame (id=1:3, weight=c(20,27,24))
+# id weight
+#  1     20
+#  2     27
+#  3     24
+
+
+# Ways to add a column
+data$size      <- c("small", "large", "medium")
+data[["size"]] <- c("small", "large", "medium")
+data["size"]   <- c("small", "large", "medium")
+data[,"size"]  <- c("small", "large", "medium")
+data$size      <- 0
+
+
+# Ways to remove the column
+data$size      <- NULL
+data[["size"]] <- NULL
+data["size"]   <- NULL
+data[,"size"]  <- NULL
+data[3]        <- NULL
+data[,3]       <- NULL
+data           <- subset(data, select=-size)
+#+END_SRC
 **** create a dataframe
 bubba<-data.frame(first=a second=b f=levels)
 **** add new column
 >saida["MY_NEW_COLUMN"] <- NA # That creates the new column named "MY_NEW_COLUMN" filled with "NA"
 >saida$MY_NEW_COLUMN <- saida$C - saida$D  # As an example, the new column receives the result of C - D
+**** rownames (or row.names) and colnames
 **** rename column of data frame
 names(d)[4]='ratio'
 
@@ -3340,7 +3463,6 @@ d = data.frame( x=rep(0, 10), y=rep(0,10), z=rep(0,10))
 And in the loop (index i):
 
 d[i, ] = c(x, y, z)
-
 **** see the beginning of the data frame
 head(df)
 
@@ -3348,9 +3470,6 @@ head(df)
 df[apply(df > 5, 1, all)]
 df[apply(df > 5, 1, any)]
 1 means row and “all” and “any” are logical functions.
-
-**** convert data frame to matrix
-data.matrix
 
 **** create a data frame
 dat <- data.frame(x1 = c(1,2,3, NA, 5), x2 = c(100, NA, 300, 400, 500))
@@ -4117,6 +4236,20 @@ the package lattrice package depend on
 grDevices package
 code for implementing graphics devices such as X11, PDF, PostScript, PNG, etc.
 
+*** quickly show a color vector
+pie(rep(1,n), col=jet.colors(n))
+barplot(seq(1:n), col=topo.colors(12))
+
+*** never use palette
+all it does is to let one specify color by integer index
+e.g.,
+palette(rainbow(6))
+then one can do
+col=1:30
+
+*** get color gradient
+ColorRampPalette(c("red","green"))(5)
+colorRampPalette(c("#3794bf", "#FFFFFF", "#df8640"))(5)
 *** basic graphics
 **** common arguments
 ***** cex
@@ -4350,6 +4483,15 @@ args<-(commandArgs(TRUE))
 args
 "lalala"
 ** other
+*** type <- in Rstudio, emacs ESS
+RStudio ALT -
+emacs ESS SHIFT -
+*** convert to LaTeX table
+#+BEGIN_SRC R
+library(xtable)
+print(xtable(res), file="~/tab.tex", digits=2, floating=FALSE)
+#+END_SRC
+*** repress printing to console when a variable is not assigned
 *** Get working directory
 > getwd()
 
@@ -4533,7 +4675,15 @@ options(htmlhelp=FALSE)
 list.files(pattern=".pairs")	list all the files satisfying some pattern in the current directory.
 file.show(filepath)	display the file indicated in the filepath
 ** parallel
+#+BEGIN_SRC R
+mclapply(x, func)
+
+#+END_SRC
+
 * Python
+** difference between numpy.array and numpy.matrix
+numpy.matrix is strictly 2-d
+please use numpy.array most of the time
 ** to set python default install location
 edit
 ~/.pydistutils.cfg
@@ -4861,14 +5011,7 @@ zip([1,2,3],[4,5,6],[7,8,9]) = [1,4,7], [2,5,8], [3,6,9]
 ** string
 s.split()  with no argument, it splits on whitespace.
 s.ljust(n)  pad the string on the right until n characters if string longer than n, leave the string untruncated.
-** collections
-*** collections.defaultdict
-     The whole point of the defaultdict is that it will automatically initialize values to zero.
-     http://stackoverflow.com/questions/893417/item-frequency-count-in-python
-*** collections.Counter - tabulate the frequency
-     http://stackoverflow.com/questions/893417/item-frequency-count-in-python
-** numpy
-*** numpy.take
+** numpy.take
 x = [1,2,3,4]
 numpy.take(x, [1,3])		# return [2,4]
 ** scipy
@@ -7485,7 +7628,7 @@ git config core.fileMode false
 
 ** color ui in git                                                :memorize:
 git config --global color.ui true
-** to exclude/hide file from git status
+** to exclude/hide/ignore file from git status
 put this to ~/.gitconfig
 =======
 [core]

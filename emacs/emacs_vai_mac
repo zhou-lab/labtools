@@ -2,11 +2,26 @@
   (require 'package)
   (add-to-list 'package-archives '("melpa" . "http://melpa.milkbox.net/packages/") t)
   (add-to-list 'package-archives '("marmalade" . "http://marmalade-repo.org/packages/"))
+	;; (add-to-list 'package-archives '("ELPA", "http://tromey.com/elpa/"))
   (package-initialize)
   )
 
+;; (require 'ess)
+(load "ess-site")
+auto-mode-alist (append (list '("\\.c$" . c-mode)	
+			      '("\\.tex$" . latex-mode)
+			      '("\\.S$" . S-mode)
+			      '("\\.s$" . S-mode)
+			      '("\\.R$" . R-mode)
+			      '("\\.r$" . R-mode)
+			      '("\\.html$" . html-mode)
+            '("\\.emacs" . emacs-lisp-mode)
+						)
+						auto-mode-alist)
+						
 (load-theme 'leuven t)
 
+;; (global-linum-mode t)
 
 (setq tab-width 2)
 (setq-default tab-width 2)
@@ -312,3 +327,6 @@ Then move to that line and indent according to mode"
 (global-set-key (kbd "M-<up>") 'move-line-upward)
 (global-set-key (kbd "M-<down>") 'move-line-downward)
 
+;; helm
+(setq recentf-max-saved-items 1000)
+(global-set-key (kbd "M-r") 'helm-recentf)

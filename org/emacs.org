@@ -116,6 +116,8 @@ M-x customize-variable [RET] [your variable] [RET]
 to view the content of a variable
 C-h v [your variable]
 * basic editting
+** add ChangeLog
+C-x 4 a edit change log
 ** make bigger font size in emacs
 C-x C-+ and C-x C--
 or
@@ -352,6 +354,38 @@ time<tab>
 *** how to revert the buffer to the last auto-saved state
     revert-buffer
 * major editting modes
+** ESS mode
+   :PROPERTIES:
+   :VISIBILITY: children
+   :END:
+*** start R session
+M-x R
+*** submit code to R console
+C-c C-j ess-eval-line submit region to R console
+C-c C-c ess-eval-fun/paragraph-and-step
+C-c M-j ess-eval-line-and-go
+C-c C-f ess-eval-function
+C-c M-f ess-eval-function-and-go
+C-c C-r ess-eval-region
+C-c M-r ess-eval-region-and-go
+C-c C-b ess-eval-buffer
+C-c M-b ess-eval-buffer-and-go
+C-c C-n ess-eval-line-and-step
+C-c C-p submit paragraph to R console
+*** use Roxygen to document function
+C-c C-o
+*** look for documentation
+?galaxies
+press 'n' to jump to next section
+press 'p' to jump to previous section
+*** Fix slow code sending
+If so, this is a long-standing bug. Add:
+(setq ess-eval-visibly-p nil)
+** helm mode
+   :PROPERTIES:
+   :VISIBILITY: children
+   :END:
+*** helm-recentf M-r
 ** org mode
    :PROPERTIES:
    :VISIBILITY: children
