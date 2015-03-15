@@ -1,4 +1,18 @@
 import numpy as np
+import itertools
+
+def p_euclidean(X):
+    from numpy.linalg import norm
+    m, n = X.shape
+    dm = np.zeros((m * (m - 1)) // 2, dtype=np.double)
+    k = 0
+    for i in xrange(0, m - 1):
+        for j in xrange(i + 1, m):
+            diff = X[i] - X[j]
+            dm[k] = norm(diff[np.invert(np.isnan(diff))])
+            k = k + 1
+    return dm
+
 def compute_dendrogram(Z, w=None):
 
     """ w is of size n is the initial weight of the leaves
@@ -19,7 +33,7 @@ def compute_dendrogram(Z, w=None):
                 if i < n:
                     weight[i] = w[i]
                 else:
-                    weight[i] = (weight[Z[i-n,0]] + weight[Z[i-n,1]]) / 2.0
+                    weight[i] = max(weight[Z[i-n,0]], weight[Z[i-n,1]]) # (weight[Z[i-n,0]] + weight[Z[i-n,1]]) / 2.0
             else:
                 stack.append(Z[i-n,1])
                 stack.append(Z[i-n,0]) # visit this first
@@ -29,7 +43,9 @@ def compute_dendrogram(Z, w=None):
     stack = [2*n-2]
     last = None
     heights = np.zeros(2*n-1, dtype='float32')
-    lefts = np.zeros(2*n-1, dtype='float32')
+    locs = np.zeros(2*n-1, dtype='int')
+    lefts = np.zeros(2*n-1, dtype='int')
+    rights = np.zeros(2*n-1, dtype='int')
     while stack:
         i = stack[-1]
         if i < n:               # leaf
@@ -37,36 +53,147 @@ def compute_dendrogram(Z, w=None):
             last = i
             leaforder.append(i)
             heights[i] = 0
+            locs[i] = len(leaforder)
             lefts[i] = len(leaforder)
+            rights[i] = len(leaforder)
         elif Z[i-n,0] == last or Z[i-n,1] == last: # nonleaf
             stack.pop()
             last = i
-            lefts[i] = (lefts[Z[i-n,0]]+lefts[Z[i-n,1]]) / 2.0
+            locs[i] = (locs[Z[i-n,0]]+locs[Z[i-n,1]]) / 2.0
             heights[i] = (Z[i-n,2]+heights[Z[i-n,0]]+heights[Z[i-n,1]])/2.0
+            if heights[i] < heights[Z[i-n,0]]:
+                heights[i] = heights[Z[i-n,0]]*1.05
+            if heights[i] < heights[Z[i-n,1]]:
+                heights[i] = heights[Z[i-n,1]]*1.05
+            lefts[i] = min(lefts[int(Z[i-n,0])], lefts[int(Z[i-n,1])])
+            rights[i] = max(rights[int(Z[i-n,0])], rights[int(Z[i-n,1])])
         else:
-            # bigger weight visited first
-            if weight[Z[i-n,1]] > weight[Z[i-n,0]]:
+            # bigger weight visited last
+            if weight[Z[i-n,1]] < weight[Z[i-n,0]]:
                 stack.append(Z[i-n,0])
                 stack.append(Z[i-n,1])
             else:
                 stack.append(Z[i-n,1])
                 stack.append(Z[i-n,0])
 
-    return (lefts, heights, leaforder)
+    d = Dendrogram()
+    d.Z = Z
+    d.locs = locs
+    d.lefts = lefts
+    d.rights = rights
+    d.heights = heights
+    d.leaforder = leaforder
 
-def plot_dendrogram(fig, Z, lefts, heights, leaforder):
+    return d
 
-    axis = fig.add_axes()
+class Dendrogram():
 
-    n = Z.shape[0] + 1
-    for i in xrange(2n-1):
-        if i >= n:
-            lines.append(lefts[Z[i,0]], lefts[Z[i,1]]
-            heights[i] - heights[Z[i,0]]
-    
-    axis.add_collection(colors_to_collections[color])
-    
-    return
+    def __init__(self):
+
+        pass
+
+    def plot(self, fig, dim=[0.1,0.1,0.8,0.7], color_threshold=None, orientation="top"):
+
+        Z, heights, leaforder = self.Z, self.heights, self.leaforder
+        locs, lefts, rights = self.locs, self.lefts, self.rights
+        n = Z.shape[0] + 1
+
+        # identify color information
+        color = ['k']*(2*n-1)
+        if color_threshold is None:
+            color_threshold = 0.7*max(Z[:,2])
+
+        import wzcolors
+        clade_colors = itertools.cycle(wzcolors.get_spectral_colors_rgb_dark(6))
+        curr_col = next(clade_colors)
+        col_changed = False
+        stack = [2*n-2]
+        last = None
+        while stack:
+            i = stack[-1]
+            if color[int(i)] is None and not col_changed:
+                curr_col = next(clade_colors)
+                col_changed = True
+            if i < n or Z[i-n,0] == last or Z[i-n,1] == last:
+                stack.pop()
+                last = i
+                if i < n:
+                    broken = False
+                    color[int(i)] = curr_col
+                    col_changed = False
+                else:
+                    if (color[int(Z[i-n, 0])] != 'k' and
+                        color[int(Z[i-n, 1])] != 'k' and
+                        color[int(Z[i-n, 0])] == color[int(Z[i-n, 1])]):
+                        color[int(i)] = color[int(Z[i-n, 0])]
+                    else:
+                        color[int(i)] = 'k'
+            else:
+                if Z[i-n,2] > color_threshold:
+                    color[int(Z[i-n, 1])] = None
+                    color[int(Z[i-n, 0])] = None
+                stack.append(Z[i-n,1])
+                stack.append(Z[i-n,0]) # visit this first
+
+        import matplotlib as mpl
+        import matplotlib.patches as mpatches
+        axis = fig.add_axes(dim, frameon=False)
+
+        xlines = []
+        ylines = []
+        clines = []
+        for i in xrange(2*n-1):
+            if i<n: continue
+            col = color[i]
+            c1 = int(Z[i-n,0])
+            c2 = int(Z[i-n,1])
+            # horizontal
+            xlines.append((locs[c1], locs[c2]))
+            ylines.append((heights[i], heights[i]))
+            clines.append(col)
+            # vertical of c0
+            xlines.append((locs[c1], locs[c1]))
+            ylines.append((heights[i], heights[c1]))
+            clines.append(col)
+            # vertical of c1
+            xlines.append((locs[c2], locs[c2]))
+            ylines.append((heights[i], heights[c2]))
+            clines.append(col)
+                
+        if orientation == 'top':
+            axis.set_ylim(0, max(heights))
+            axis.set_xlim(0.5, max(locs)+0.5)
+        elif orientation == 'bottom':
+            axis.set_ylim(max(heights), 0)
+            axis.set_xlim(0.5, max(locs)+0.5)
+        elif orientation == 'left':
+            tmp = xlines
+            xlines = ylines
+            ylines = tmp
+            axis.set_xlim(max(heights), 0)
+            axis.set_ylim(0.5, max(locs)+0.5)
+        elif orientation == 'right':
+            tmp = xlines
+            xlines = ylines
+            ylines = tmp
+            axis.set_xlim(0, max(heights))
+            axis.set_ylim(0.5, max(locs)+0.5)
+        else:
+            raise Exception("Invalid orientation %s" % orientation)
+
+        col2lines = {}
+        for xline, yline, col in zip(xlines, ylines, clines):
+            if i >= n:
+                if col not in col2lines:
+                    col2lines[col] = []
+                col2lines[col].append(list(zip(xline, yline)))
+        for col, lines in col2lines.iteritems():
+            axis.add_collection(mpl.collections.LineCollection(lines,color=col))
+
+        axis.set_xticks([])
+        axis.set_yticks([])
+
+        return axis
 
 
 

@@ -41,7 +41,7 @@ def get_spectral_colors_rgb(num_colors):
     colors=[]
     for i in np.arange(0., 360., 360. / num_colors):
         hue = i/360.
-        lightness = (50 + np.random.rand() * 10)/100.
+        lightness = (30 + np.random.rand() * 10)/100.
         saturation = (90 + np.random.rand() * 10)/100.
         colors.append(colorsys.hls_to_rgb(hue, lightness, saturation))
         
@@ -63,15 +63,20 @@ def _round_hex(x):
     if rx == 256: rx -= 1
     return rx
 
+def get_spectral_colors_rgb_dark(n, lightness=0.4, saturation=0.25):
+    return [colorsys.hls_to_rgb(1.0/n*i,lightness,saturation) for i in xrange(n)]
+
 def get_distinct_colors_hex(num_colors):
     return ['#%02x%02x%02x' % (int(r*256), int(g*256), int(b*256))
             for r,g,b in get_distinct_colors_rgb(num_colors)]
 
-def map_distinct_colors_hex(data):
+def map_distinct_colors_hex(data, other2grey=False):
 
     levels = set(data)
     colors = get_distinct_colors_hex(len(levels))
     level2color = dict(zip(levels, colors))
+    if other2grey and "other" in level2color:
+        level2color["other"] = "#E6E6E6"
     return ([level2color[datum] for datum in data], level2color)
 
 if __name__ == "__main__":
