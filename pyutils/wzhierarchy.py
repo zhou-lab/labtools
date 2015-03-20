@@ -22,6 +22,7 @@ def compute_dendrogram(Z, w=None):
 
     # post-order traversal, set weight
     weight = np.zeros(2*n-1, dtype='float32')
+    cladesize = np.zeros(2*n-1, dtype='float32')
     if w is not None:
         stack = [2*n-2]
         last = None
@@ -30,10 +31,15 @@ def compute_dendrogram(Z, w=None):
             if i < n or Z[i-n,0] == last or Z[i-n,1] == last:
                 stack.pop()
                 last = i
-                if i < n:
+                if i < n:       # leaf
+                    cladesize[i] = 1
                     weight[i] = w[i]
                 else:
-                    weight[i] = max(weight[Z[i-n,0]], weight[Z[i-n,1]]) # (weight[Z[i-n,0]] + weight[Z[i-n,1]]) / 2.0
+                    cladesize[i] = cladesize[Z[i-n,0]] + cladesize[Z[i-n,1]]
+                    weight[i] = weight[Z[i-n,0]] + weight[Z[i-n,1]]
+                    # weight[i] = max(weight[Z[i-n,0]], weight[Z[i-n,1]])
+                    # weight[i] = (weight[Z[i-n,0]] + weight[Z[i-n,1]]) / 2.0
+                    # print Z[i-n,0], Z[i-n,1], i, weight[Z[i-n,0]], weight[Z[i-n,1]], weight[i]
             else:
                 stack.append(Z[i-n,1])
                 stack.append(Z[i-n,0]) # visit this first
@@ -69,7 +75,7 @@ def compute_dendrogram(Z, w=None):
             rights[i] = max(rights[int(Z[i-n,0])], rights[int(Z[i-n,1])])
         else:
             # bigger weight visited last
-            if weight[Z[i-n,1]] < weight[Z[i-n,0]]:
+            if weight[Z[i-n,1]]/cladesize[Z[i-n,1]] < weight[Z[i-n,0]]/cladesize[Z[i-n,0]]:
                 stack.append(Z[i-n,0])
                 stack.append(Z[i-n,1])
             else:

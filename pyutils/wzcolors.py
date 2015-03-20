@@ -70,10 +70,20 @@ def get_distinct_colors_hex(num_colors):
     return ['#%02x%02x%02x' % (int(r*256), int(g*256), int(b*256))
             for r,g,b in get_distinct_colors_rgb(num_colors)]
 
-def map_distinct_colors_hex(data, other2grey=False):
+def get_grey_scale_rgb(num_colors, greyscale_range=(0.1,0.9)):
+    darkest, lightest = greyscale_range
+    if num_colors == 1:
+        return [(lightest,lightest,lightest,1)]
+    # print [(c,c,c,1.) for c in np.linspace(darkest,lightest,num_colors)]
+    return [(c,c,c,1.) for c in np.linspace(darkest,lightest,num_colors)]
+
+def map_distinct_colors_hex(data, other2grey=False, greyscale=False, greyscale_range=(0.1,0.9)):
 
     levels = set(data)
-    colors = get_distinct_colors_hex(len(levels))
+    if greyscale:
+        colors = get_grey_scale_rgb(len(levels), greyscale_range=greyscale_range)
+    else:
+        colors = get_distinct_colors_hex(len(levels))
     level2color = dict(zip(levels, colors))
     if other2grey and "other" in level2color:
         level2color["other"] = "#E6E6E6"

@@ -454,7 +454,6 @@ def main_nameawk(args):
     exp = '['+args.e+']'
     fields = args.table.readline().strip().split(args.delim)
     for i, field in enumerate(fields):
-
         # print field, exp
         # try convert to integer
         exp = re.sub('i\|'+field+'\|', 'int(fields['+str(i)+'])', exp)
@@ -463,6 +462,9 @@ def main_nameawk(args):
         # convert to string
         exp = re.sub('\|'+field+'\|', 'fields['+str(i)+']', exp)
 
+
+    exp = re.sub(r'\|[^\|]*\|','None',exp)
+        
     if args.header:
         print re.sub(',', '\t', args.header)
     else:                       # use expression as header
@@ -475,7 +477,13 @@ def main_nameawk(args):
     try:
         for line in args.table:
             fields = line.strip().split(args.delim)
-            print '\t'.join(map(str, eval(exp)))
+            try:
+                result = '\t'.join(map(str, eval(exp)))
+            except IndexError:
+                if not args.silent:
+                    sys.stderr.write("Aberrantly short line: %s skip\n" % line.strip())
+                continue
+            print result
     except IOError:
         sys.exit(1)
 
@@ -628,6 +636,7 @@ if __name__ == '__main__':
     parser_nameawk.add_argument('table', help="data table", type = argparse.FileType('r'), default='-')
     parser_nameawk.add_argument('-e', default=None, help='expression, e.g., |colname1|+|colname2|')
     parser_nameawk.add_argument('--header', default=None, help='header, "," separated, no need to append space after ","')
+    parser_nameawk.add_argument('--silent', action='store_true', help='repress warning')
     parser_nameawk.set_defaults(func=main_nameawk)
 
     parser_unique = subparsers.add_parser('unique', help='report only one version of a contiguous lines')
