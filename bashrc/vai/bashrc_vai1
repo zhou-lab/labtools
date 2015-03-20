@@ -16,13 +16,15 @@ alias rf="readlink -f"
 alias parallel="parallel --gnu --progress"
 alias igv=~/tools/igv/IGV_2.3.40/igv.sh
 
+export CC=/home/wzhou/tools/gcc/gcc-4.9.2/objdir/bin/gcc
+
 # PS1='\u@\h:\w\$ '
 
 HOME=/home/wzhou
 
 export PATH=~/bin:$PATH
 export SCREENRC=$HOME/wzlib/screenrc/screenrc_hp
-export PYTHONPATH=$HOME/wzlib/pyutils
+export PYTHONPATH=$HOME/wzlib/pyutils:$HOME/pythonlib/lib/python2.7/site-packages/
 export AWKPATH=$HOME/wzlib/awkutils
 
 # % cpan
