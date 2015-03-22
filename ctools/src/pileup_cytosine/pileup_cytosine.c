@@ -441,7 +441,7 @@ static int usage() {
 	fprintf(stderr, "     -c        turn off filtering secondary mapping.\n");
 	fprintf(stderr, "     -n        maximum nm tag [2].\n");
 	fprintf(stderr, "     -a        print all reads. Default prints only retention reads in the appended pileup.\n");
-	fprintf(stderr, "     -d        print prints only C/G with retention. Default prints all positions with coverage. \n");
+	fprintf(stderr, "     -d        prints only C/G with retention. Default prints all positions with coverage. \n");
   fprintf(stderr, "     -h        this help.\n");
   fprintf(stderr, "\n");
   return 1;
@@ -482,8 +482,8 @@ int main(int argc, char *argv[]) {
 		case 'l': conf.min_read_len = atoi(optarg); break;
 		case 'e': conf.min_dist_end = atoi(optarg); break;
 		case 'c': conf.filter_secondary = 0; break;
-		case 'a': conf.plp_all = 1; break;
-		case 'd': conf.plp_print_all = 0; break;
+		case 'a': conf.plp_print_all = 0; break;
+		case 'd': conf.plp_all = 1; break;
 		case 'n': conf.max_nm = atoi(optarg); break;
 		case 'h': return usage();
     default:
