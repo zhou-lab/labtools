@@ -22,7 +22,8 @@ typedef struct {
 	uint8_t min_dist_end;
 	uint8_t max_nm;
 	uint8_t filter_secondary:1;
-	uint8_t print_retention_only:1;
+	uint8_t plp_all:1;
+	uint8_t plp_print_all:1;
 } conf_t;
 
 typedef enum {BSS_RETENTION, BSS_CONVERSION, BSS_OTHER} bsstate_t;
@@ -147,7 +148,7 @@ char *plp_format(refseq_t *rs, char *chrm, uint32_t rpos, pileup_data_v *dv, con
 	uint8_t nf = 0;
 	for (i=0; i<dv->size; ++i) {
 		pileup_data_t *d = ref_pileup_data_v(dv,i);
-		if (conf->print_retention_only && d->bsstate != BSS_RETENTION) continue;
+		if ((!conf->plp_print_all) && d->bsstate != BSS_RETENTION) continue;
 		if (nf) kputc(',', &s);
 		else nf = 1;
 		kputuw(d->cnt_ret, &s);
@@ -156,7 +157,7 @@ char *plp_format(refseq_t *rs, char *chrm, uint32_t rpos, pileup_data_v *dv, con
 	kputc('\t', &s);
 	for (i=0; i<dv->size; ++i) {
 		pileup_data_t *d = ref_pileup_data_v(dv,i);
-		if (conf->print_retention_only && d->bsstate != BSS_RETENTION) continue;
+		if ((!conf->plp_print_all) && d->bsstate != BSS_RETENTION) continue;
 		kputc(d->strand?'-':'+', &s);
 	}
 	
@@ -164,7 +165,7 @@ char *plp_format(refseq_t *rs, char *chrm, uint32_t rpos, pileup_data_v *dv, con
 	nf = 0;
 	for (i=0; i<dv->size; ++i) {
 		pileup_data_t *d = ref_pileup_data_v(dv,i);
-		if (conf->print_retention_only && d->bsstate != BSS_RETENTION) continue;
+		if ((!conf->plp_print_all) && d->bsstate != BSS_RETENTION) continue;
 		if (nf) kputc(',', &s);
 		else nf = 1;
 		kputuw(d->qpos, &s);
@@ -173,14 +174,14 @@ char *plp_format(refseq_t *rs, char *chrm, uint32_t rpos, pileup_data_v *dv, con
 	kputc('\t', &s);
 	for (i=0; i<dv->size; ++i) {
 		pileup_data_t *d = ref_pileup_data_v(dv,i);
-		if (conf->print_retention_only && d->bsstate != BSS_RETENTION) continue;
+		if ((!conf->plp_print_all) && d->bsstate != BSS_RETENTION) continue;
 		kputc(d->qual+33, &s);
 	}
 
 	kputc('\t', &s);
 	for (i=0; i<dv->size; ++i) {
 		pileup_data_t *d = ref_pileup_data_v(dv,i);
-		if (conf->print_retention_only && d->bsstate != BSS_RETENTION) continue;
+		if ((!conf->plp_print_all) && d->bsstate != BSS_RETENTION) continue;
 		kputc(d->bsstrand?'-':'+', &s);
 	}
 
@@ -332,7 +333,8 @@ void *process_func(void *data) {
 		for (j=w.beg; j<w.end; ++j) {
 			rb = getbase_refseq(rs, j);
 			pileup_data_v *plp_data = plp->data[j-w.beg];
-			if (plp_data && plp_cnt_retention(plp_data)>0) {
+			if (plp_data) {
+				if ((!conf->plp_all) && plp_cnt_retention(plp_data)<=0) continue;
 				wqueue_put2(record, res->rq, plp_format(rs, chrm, j, plp_data, res->conf));
 			}
 		}
@@ -438,7 +440,8 @@ static int usage() {
 	fprintf(stderr, "     -e        minimum distance to end of a read [3].\n");
 	fprintf(stderr, "     -c        turn off filtering secondary mapping.\n");
 	fprintf(stderr, "     -n        maximum nm tag [2].\n");
-	fprintf(stderr, "     -a        print all, not just retention reads.\n");
+	fprintf(stderr, "     -a        print all reads. Default prints only retention reads in the appended pileup.\n");
+	fprintf(stderr, "     -d        print prints only C/G with retention. Default prints all positions with coverage. \n");
   fprintf(stderr, "     -h        this help.\n");
   fprintf(stderr, "\n");
   return 1;
@@ -458,14 +461,15 @@ int main(int argc, char *argv[]) {
 		.max_retention = 999999,
 		.min_read_len = 10,
 		.filter_secondary = 1,
-		.print_retention_only = 1,
+		.plp_all = 0,
+		.plp_print_all = 1,
 		.min_dist_end = 3,
 		.max_nm = 2,
 	};
 
 
 	if (argc<2) return usage();
-	while ((c=getopt(argc, argv, "i:o:r:g:q:e:b:t:l:cah"))>=0) {
+	while ((c=getopt(argc, argv, "i:o:r:g:q:e:b:t:l:cadh"))>=0) {
 		switch (c) {
 		case 'i': infn = optarg; break;
 		case 'r': reffn = optarg; break;
@@ -478,7 +482,8 @@ int main(int argc, char *argv[]) {
 		case 'l': conf.min_read_len = atoi(optarg); break;
 		case 'e': conf.min_dist_end = atoi(optarg); break;
 		case 'c': conf.filter_secondary = 0; break;
-		case 'a': conf.print_retention_only = 0; break;
+		case 'a': conf.plp_all = 1; break;
+		case 'd': conf.plp_print_all = 0; break;
 		case 'n': conf.max_nm = atoi(optarg); break;
 		case 'h': return usage();
     default:
