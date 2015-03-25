@@ -14,7 +14,8 @@ alias lc="wc -l"
 alias ll="ls -l"
 alias rf="readlink -f"
 alias parallel="parallel --gnu --progress"
-alias igv=~/tools/igv/IGV_2.3.40/igv.sh
+alias igv="~/tools/igv/IGV_2.3.40/igv.sh"
+alias sort="LC_ALL=C /home/wzhou/tools/coreutils/coreutils-8.23/src/sort"
 
 export CC=/home/wzhou/tools/gcc/gcc-4.9.2/objdir/bin/gcc
 
@@ -143,7 +144,7 @@ alias gs="git status"
 alias gu="git pull"
 alias gp="git pull"
 alias gh="git push"
-alias gc="git commit -a"
+alias gc="git commit -a -m"
 alias ga="git add"
 
 # lazy git
