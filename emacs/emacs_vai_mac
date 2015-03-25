@@ -21,6 +21,8 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 						
 (load-theme 'leuven t)
 
+(setq-default indent-tabs-mode nil)
+
 ;; (global-linum-mode t)
 
 (setq tab-width 2)

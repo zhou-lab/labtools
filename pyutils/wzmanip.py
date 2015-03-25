@@ -472,7 +472,10 @@ def main_nameawk(args):
         # note that ', ' is used to separate fields
         # ',' used inside a function should contain no space afterward
         # e.g., field1, func(field2,field3)
-        print re.sub(', ', '\t', args.e)
+        h = re.sub('\|, \|', '\t', args.e)
+        h = re.sub('^\|' ,'', h)
+        h = re.sub('\|$', '', h)
+        print h
 
     try:
         for line in args.table:

@@ -9,6 +9,7 @@ alias lc="wc -l"
 alias ll="ls -l"
 alias rf="readlink -f"
 alias parallel="parallel --gnu --progress"
+alias sort="LC_ALL=C /Users/wandingzhou/tools/coreutils/coreutils-8.23/src/sort"
 
 PS1='\u@\h:\w\$ '
 
@@ -121,6 +122,11 @@ MANPATH=$MANPATH:$HOME/share/man
 
 function wzqsub {
     find ~/pbs/ -type f | sort | sed -n "${1},${2}"p | xargs -I {} qsub {}
+}
+
+
+function mkdircd {
+  mkdir $1 && cd $_;
 }
 
 ### git ###

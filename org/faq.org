@@ -71,6 +71,20 @@ chr1 7 8 -/- T/T -/-
 *** search near features
 bedtools window -w 5000 -a a.bed -b b.bed
 #searches 5kb up and downstream of each feature in a
+
+** bedops
+
+*** sort-bed
+For example, the following command allocates two gigabytes of memory to sorting a large BED file:
+
+#+BEGIN_SRC sh
+$ sort-bed --max-mem 2G unsortedBigData.bed > sortedBigData.bed
+#+END_SRC
+
+This revision of sort-bed includes the functionality of the former BEDOPS bbms (Big Bed Merge Sort) script, which implemented a merge sort of BED input on memory-constrained workstations.
+
+With bbms, once each of the subsets was sorted in memory with sort-bed, sorted output was constructed from the entire set, applying a multiset union operation with BEDOPS bedops.
+
 ** how to unmark sam's duplicate flag
 samtools view -h input.bam | awk '{if(and($2,1024)){$2-=1024}; print}' | samtools view -Sb > input.unmarked.bam
 ** to use BioPerl to change 1-letter amino acid code to 3-letter amino acid code
@@ -437,6 +451,97 @@ http://superuser.com/questions/244299/gnu-screen-how-to-update-dynamically-the-t
 about using PROMPT_COMMAND (specific to bash, allows putting command result before the PS
 http://www.tldp.org/HOWTO/Bash-Prompt-HOWTO/x264.html
 ** shell utility
+*** sort
+version 8.23 support --parallel=N
+this is the mergesort which might not be as fast as quicksort
+
+--buffer-size=5G
+cap buffer size in RAM
+
+sort -S 50% file
+to use (up toe) 50% of your memory as a sorting buffer do
+
+The -T option allows you to specify somewhere else besides /tmp for `sort` to put its stuff.
+
+The --compress-program option, tells `sort` to compress its temp files using whatever compressor you tell it to use.
+
+use
+LC_ALL=C sort
+to enforce a consistent sort order on alphabets
+how sort sorts is dependent on the locale (language) settings of the environment that the script is running under.
+
+#+BEGIN_SRC sh
+$ echo 'CO2_
+CO_' | env LC_ALL=C sort
+CO2_
+CO_
+
+$ echo 'CO2_
+CO_' | env LC_ALL=en_US sort
+CO_
+CO2_
+#+END_SRC
+
+-k --key=POS1
+-n --numeric-sort sort according to string numerical value
+-r --reverse
+-t --field-separator
+examples:
+#+BEGIN_SRC sh
+ps | sort > pssort.out
+ps | sort | more
+ps xo comm | sort | uniq | grep -v sh | more
+#+END_SRC
+**** split and merge sort
+
+#+BEGIN_SRC sh
+split -l5000000 data.tsv '_tmp';
+ls -1 _tmp* | while read FILE; do sort $FILE -o $FILE & done;
+Followed by:
+sort -m _tmp* -o data.tsv.sorted
+#+END_SRC
+
+`--merge'
+Merge the given files by sorting them as a group. Each input file
+must always be individually sorted. It always works to sort
+instead of merge; merging is provided because it is faster, in the
+case where it works
+
+**** sort file by size
+du -sh * | sort -k1,1 -h | les
+
+**** sort ignore header
+***** using awk (best solution)
+awk 'NR==1;NR>1{print|"sort"}' [in] > [out]
+
+***** using bash (2nd best solution)
+cat [in] | (read -r; print "%s\n" "$REPLY"; sort)
+explanation: read -r is for reading one line from the standard input without escaping backslash "\". the result is put into variable $REPLY. -r is needed if the header line contains backslashes.
+echo without $REPLY will condense whitespace
+
+***** make a function for bash solution (only skip the first line)
+#+BEGIN_SRC sh
+body() {
+  IFS=read -r header
+  printf '%s\n' "$header"
+  "$@"
+}
+#+END_SRC
+example usage:
+ps -o pid,comm | body sort -k2
+ps -o pid,comm | body grep "somethingtofind"
+
+***** or using head and tail
+(head -n2 <file> && tail -n+3 <file> | sort) > newfile
+
+***** or using head and sed
+head -1 [file] > [out]
+sed 1d [file] | sort >> [out]
+
+***** using perl
+cat [in] | perl -e 'print scalar (<>); print sort {...} <>'
+The perl solution uses the sort function in perl instead the unix sort.
+The ... in sort {...} defines how sorting takes place. for example, sort {$a <=> $b} means numerical ascending sort. See perl sort manual for detail.
 *** recall commands from shell prompt
 C-r search backward the command
 !! last command
@@ -568,55 +673,6 @@ show all the hard limits
 
 throttle memory usage
 ulimit -Sv 1000000 (six “zero”s ~1 G, unit is kilobyte)
-
-*** sort
-sort lines of text files into alphabetic order
-
--k --key=POS1
--n --numeric-sort sort according to string numerical value
--r --reverse
--t --field-separator
-examples:
-#+BEGIN_SRC sh
-ps | sort > pssort.out
-ps | sort | more
-ps xo comm | sort | uniq | grep -v sh | more
-#+END_SRC
-**** sort file by size
-du -sh * | sort -k1,1 -h | les
-
-**** sort ignore header
-***** using awk (best solution)
-awk 'NR==1;NR>1{print|"sort"}' [in] > [out]
-
-***** using bash (2nd best solution)
-cat [in] | (read -r; print "%s\n" "$REPLY"; sort)
-explanation: read -r is for reading one line from the standard input without escaping backslash "\". the result is put into variable $REPLY. -r is needed if the header line contains backslashes.
-echo without $REPLY will condense whitespace
-
-***** make a function for bash solution (only skip the first line)
-#+BEGIN_SRC sh
-body() {
-  IFS=read -r header
-  printf '%s\n' "$header"
-  "$@"
-}
-#+END_SRC
-example usage:
-ps -o pid,comm | body sort -k2
-ps -o pid,comm | body grep "somethingtofind"
-
-***** or using head and tail
-(head -n2 <file> && tail -n+3 <file> | sort) > newfile
-
-***** or using head and sed
-head -1 [file] > [out]
-sed 1d [file] | sort >> [out]
-
-***** using perl
-cat [in] | perl -e 'print scalar (<>); print sort {...} <>'
-The perl solution uses the sort function in perl instead the unix sort.
-The ... in sort {...} defines how sorting takes place. for example, sort {$a <=> $b} means numerical ascending sort. See perl sort manual for detail.
 
 *** uniq
 
@@ -12312,3 +12368,37 @@ then remember to "copy preferences to profile"
 
 you can also use 'showkey -a'
 to find hex code
+* vim
+
+C-d half-page down
+C-u half-page up
+
+C-b page up
+C-f page down
+
+C-o last cursor
+C-i next cursor
+
+% jump match bracket
+
+4j move down 4 lines
+
+:syntax on
+
+open file and split window
+:n
+:new [new filename]
+
+open file and not 
+:e 
+
+turn on line number
+:set number
+:set nu
+
+turn off line number
+:set nonumber
+:set nu!
+
+mark current line
+V

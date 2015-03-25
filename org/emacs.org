@@ -116,6 +116,10 @@ M-x customize-variable [RET] [your variable] [RET]
 to view the content of a variable
 C-h v [your variable]
 * basic editting
+** change tab to space
+(setq-default indent-tabs-mode nil)
+C-h x
+M-x untabify
 ** add ChangeLog
 C-x 4 a edit change log
 ** make bigger font size in emacs
