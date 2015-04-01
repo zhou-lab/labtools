@@ -1,7 +1,11 @@
+import matplotlib.colors as mcolors
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import matplotlib.collections as mcolls
+import matplotlib.colorbar as mcolorbar
+import matplotlib.lines as mlines
+import numpy as np
 
 # def plot_heatmap(fig, dim, data, cmap=None):
 #     if cmap is None:
@@ -86,10 +90,11 @@ def plot_heatmap(data, dim=[0.1,0.1,0.85,0.85], fig=None, xlabels=None, ylabels=
 
     return ax
 
-def colorshow_legend(l2c, (left,bottom,width), fig, fontsize=8, patchheight=0.015, horizontalspace=0.05):
+def colorshow_legend(l2c, (left,bottom,width,height), fig, fontsize=7,
+                     horizontalspace=0.05, title=None, title_fontsize=7):
 
     n = len(l2c)
-    ax = fig.add_axes((left, bottom, width, n*patchheight), frameon=False)
+    ax = fig.add_axes((left, bottom, width, height), frameon=False)
     ax.set_xlim(0,1)
     ax.set_ylim(0,n)
     levels, colors = zip(*l2c.items())
@@ -101,6 +106,8 @@ def colorshow_legend(l2c, (left,bottom,width), fig, fontsize=8, patchheight=0.01
     # ax.yaxis.tick_right()
     ax.set_yticks([])
     ax.set_xticks([])
+    if title:
+        ax.set_title(title, fontsize=title_fontsize)
 
     return ax
 
@@ -108,11 +115,11 @@ def discrete_array_colorshow(data, dim, fig, orientation='horizontal',
                              greyscale=False, greyscale_range=(0.1,0.9)):
 
     n = len(data)
-    if orientation == 'horizontal':
+    if orientation == 'horizontal' or orientation == 'h':
         beg = '(i,0)'
         xmax = n
         ymax = 1
-    elif orientation == 'vertical':
+    elif orientation == 'vertical' or orientation == 'v':
         beg = '(0,i)'
         xmax = 1
         ymax = n
@@ -139,6 +146,133 @@ def discrete_array_colorshow(data, dim, fig, orientation='horizontal',
 
     return ax, level2color
 
+def continuous_array_colorshow(data, dim=[0.1,0.1,0.85,0.85], fig=None, cmap='jet', orientation='horizontal'):
+
+    dmin = min(data)
+    dmax = max(data)
+
+    norm = mcolors.Normalize(vmin=dmin, vmax=dmax)
+    colormap = cm.get_cmap(cmap)
+    data_mat = np.array(data)
+    if orientation == 'horizontal' or orientation == 'h':
+        data_mat.shape = (1, len(data))
+    if orientation == 'vertical' or orientation == 'v':
+        data_mat.shape = (len(data), 1)
+
+    if fig == None:
+        fig = plt.figure()
+
+    ax = fig.add_axes(dim, frameon=False)
+    # ax.pcolor(data_mat, cmap=colormap, norm=norm)#, interpolation='none')
+    ax.imshow(data_mat, cmap=colormap, aspect='auto', norm=norm, interpolation='none')
+    ax.set_xticks([])
+    ax.set_yticks([])
+    
+    return ax, norm, colormap
+
+def continuous_array_colorshow_legend(norm, colormap, dim=[0.1,0.1,0.85,0.85], fig=None, title=None, fontsize=7, title_fontsize=7):
+
+    if fig == None:
+        fig = plt.figure()
+
+    ax = fig.add_axes(dim, frameon=False)
+    cb = mcolorbar.ColorbarBase(ax, cmap=colormap, norm=norm)
+    
+    cb.ax.tick_params(labelsize=fontsize)
+    cb.outline.set_color('white')
+    cb.outline.set_linewidth(2)
+    # cb.dividers.set_color('white')
+    # cb.dividers.set_linewidth(2)
+    
+    if title:
+        ax.set_title(title, fontsize=title_fontsize)
+
+    return ax
+
+def fig_add_line(fig, xcoor, ycoor, color='k', linewidth=.5):
+    fig.lines.append(mlines.Line2D(xcoor, ycoor, transform=fig.transFigure,
+                                   figure=fig, color=color, linewidth=linewidth))
+
+class WCbar(object):
+
+    def __init__(self, data, continuous=False, label=None, cmap='jet',
+                 greyscale=False, greyscale_range=(0.1,0.9)):
+
+        self.continuous = continuous
+        self.label = label
+        self.data = data
+        self.ax = None
+
+        # for discrete color map
+        self.label2color = None
+        self.greyscale = greyscale
+        self.greyscale_range = greyscale_range
+
+        # for continuous color map
+        self.cmap = cmap
+        self.norm = None
+        self.colormap = None
+
+    def plot(self, dim, fig, orientation='horizontal',
+             labelside='right', labelspacing=0.001, labelfontsize=5, labelfontweight='light',
+             annhei = None, annlft = None, annlen = 0.03, lineanno=None):
+
+        left, bottom, width, height = dim
+        top = bottom + height
+        
+        if self.continuous:
+            self.ax, self.norm, self.colormap = continuous_array_colorshow(
+                self.data, dim, fig, cmap=self.cmap)
+        else:
+            self.ax, self.label2color = discrete_array_colorshow(
+                self.data, dim, fig, orientation=orientation)
+
+        if lineanno == 'topleft':
+            if annhei is None and annlft is None:
+                annlft = left - 0.05
+                annhei = top + 0.05
+            elif annhei is None:
+                annhei = top + (left + width/2.0 - annlft)
+            elif annlft is None:
+                annlft = left + width/2.0 - (annhei - top)
+                
+            # slant line
+            fig_add_line(fig, [annlft, left+width/2.0], [annhei, top])
+            # horizontal line
+            fig_add_line(fig, [annlft-annlen, annlft], [annhei, annhei])
+            fig.text(annlft, annhei, self.label,
+                     fontsize = labelfontsize, fontweight = labelfontweight,
+                     horizontalalignment='right', verticalalignment='bottom')
+        elif self.label is not None:
+            if labelside == 'right' or labelside == 'r':
+                fig.text(left+width+labelspacing, bottom+height/2.0, self.label,
+                         fontsize=labelfontsize, fontweight=labelfontweight,
+                         horizontalalignment='left', verticalalignment='center')
+            elif labelside == 'left' or labelside == 'l':
+                fig.text(left-labelspacing, bottom+height/2.0, self.label,
+                         fontsize=labelfontsize, fontweight=labelfontweight,
+                         horizontalalignment='right', verticalalignment='center')
+            else:
+                raise Exception('Unacceptable labelside %s' % labelside)
+
+
+        return
+
+    def plot_legend(self, (left, bottom, width), fig, patchheight=0.015,
+                    continuous_height=0.1, title_fontsize=7):
+
+        if self.continuous:
+            continuous_array_colorshow_legend(
+                self.norm, self.colormap, (left, bottom, width, continuous_height),
+                fig, title=self.label)
+            height = continuous_height
+        else:
+            height = len(self.label2color)*patchheight
+            colorshow_legend(self.label2color, (left, bottom, width, height),
+                             fig, title=self.label, title_fontsize=title_fontsize)
+
+        self.leghei = height
+        return
 
 def scatter_matrix(frame, alpha=0.5, figsize=None, ax=None, grid=False,
                    diagonal='hist', marker='.', density_kwds=None,

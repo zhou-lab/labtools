@@ -26,8 +26,9 @@ export AWKPATH=$HOME/wzlib/awk
 # export PERL5LIB=/home/wzhou1/tools/perltools/lib/perl5:/home/wzhou1/tools/vcftools/vcftools_0.1.11/lib/perl5/site_perl:${PERL5LIB}
 
 alias scp='rsync -Pravdtze ssh'
-alias awk='awk -v OFS="\t"'
+alias awk='gawk -F"\t" -v OFS="\t"'
 alias les="less -S"
+alias zles="zless -S"
 alias qsuball="find $HOME/htcpbs/ -type f | sort | xargs -I {} qsub {}"
 alias qdelall="qstat | grep wzhou | awk '{print $1}' | xargs -I {} qdel {}"
 

@@ -39,7 +39,7 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 
 (setq mouse-wheel-scroll-amount '(2))
 (setq mouse-wheel-progressive-speed nil)
-(global-visual-line-mode t)
+(global-visual-line-mode nil)
 (setq word-wrap nil)
 (setq mac-command-modifier 'control)
 

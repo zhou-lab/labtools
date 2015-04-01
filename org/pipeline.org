@@ -410,3 +410,21 @@ $JAVA -Xms7g -Xmx7g -jar $PICARD/MarkDuplicates.jar CREATE_INDEX=true VALIDATION
 READ_NAME_REGEX=null INPUT=$output OUTPUT=$outputdups
 #+END_SRC
 
+* COX regression
+
+hmohiv.dat
+#+BEGIN_SRC R
+library(survival)
+cphb.drug = coxph(Surv(time, status)~drug, data=dat, method="beslow")
+cphbef.drug = coxph(Surv(time, status)~drug, data=dat, method="efron")
+cphbex.drug = coxph(Surv(time, status)~drug, data=dat, method="exact") # the best
+
+#+END_SRC
+
+      coef   exp(coef) ...
+drug  0.8571  2.3564
+
+Interpretation
+the risk of drug 1 is lower than risk of drug 0
+
+gage = cut(dat$age, br=c(19,29,34,39,60), labels=c("[20-29]", "[30...))

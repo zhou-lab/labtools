@@ -42,6 +42,33 @@ function dnarev(string,        chars, dic, new_string) {
     return new_string;
 }
 
+function aa3to1(string,    dic) {
+    dic["Ala"]="A";
+    dic["Arg"]="R";
+    dic["Asn"]="N";
+    dic["Asp"]="D";
+    dic["Cys"]="C";
+    dic["Glu"]="E";
+    dic["Gln"]="Q";
+    dic["Gly"]="G";
+    dic["His"]="H";
+    dic["Ile"]="I";
+    dic["Leu"]="L";
+    dic["Lys"]="K";
+    dic["Met"]="M";
+    dic["Phe"]="F";
+    dic["Pro"]="P";
+    dic["Ser"]="S";
+    dic["Thr"]="T";
+    dic["Trp"]="W";
+    dic["Tyr"]="Y";
+    dic["Val"]="V";
+    dic["Sec"]="U";
+    dic["Pyl"]="O";
+    dic["X"]="*";
+    return dic[string];
+}
+
 # join fields by specifying a range
 # for example, from $3 to $10, one can use joinr(3,10)
 function joinr(start, end,     result, i) {
