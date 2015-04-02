@@ -514,7 +514,7 @@ def main_unique(args):
 def main_dedupfun(args):
 
     prev_key = None
-    for line in args.table:
+    for line in args.t:
         fields = line.strip().split(args.delim)
         key = fields[args.k-1]
         if prev_key != key:
