@@ -39,7 +39,11 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 
 (setq mouse-wheel-scroll-amount '(2))
 (setq mouse-wheel-progressive-speed nil)
-(global-visual-line-mode nil)
+;; (global-visual-line-mode nil)
+(set-default 'truncate-lines t)
+;; (define-key org-mode-map "\M-q" 'toggle-truncate-lines)
+(global-set-key (kbd "M-q") 'toggle-truncate-lines)
+
 (setq word-wrap nil)
 (setq mac-command-modifier 'control)
 
