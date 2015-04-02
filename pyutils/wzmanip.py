@@ -662,7 +662,7 @@ if __name__ == '__main__':
     parser_unique.add_argument('--delim', default="\t", help="table delimiter [\\t]")
     parser_unique.add_argument('table', help="data table", type = argparse.FileType('r'), default='-')
 
-    parser_reduce = subparsers.add_parser('dedupfun', help='dedup remove dup in one column by applying a function to another column')
+    parser_dupfun = subparsers.add_parser('dedupfun', help='dedup remove dup in one column by applying a function to another column')
     parser_dupfun.add_argument('-t',type=argparse.FileType('r'), default='-')
     parser_dupfun.add_argument('-k', type=int, required=True, help="column to dedup (1-based)")
     parser_dupfun.add_argument('-v', type=int, required=True, help="column to apply function (1-based)")
