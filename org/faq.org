@@ -2946,9 +2946,28 @@ the best solution to use C-type printf is to use cat + sprintf
 cat(sprintf('%1.3f\t%s\n', a.sorted[i], names(a.sorted)[i]))
 
 ** Manipulate Data
+**** cut
+group data into intervals
+> a=c(3,7,2,5,7,12,15,13,17)
+> cut(a, br=c(1,5,10,15))
+[1] (1,5]   (5,10]  (1,5]   (1,5]   (5,10]  (10,15] (10,15] (10,15] <NA>   
+Levels: (1,5] (5,10] (10,15]
+> ac=cut(a, br=c(1,5,10,15))
+> class(ac)
+[1] "factor"
+> as.character(ac)
+[1] "(1,5]"   "(5,10]"  "(1,5]"   "(1,5]"   "(5,10]"  "(10,15]" "(10,15]" "(10,15]"
+[9] NA
+
+***** specify labels
+> cut(a, br=c(1,5,10,15),labels=c('1-5','5 to 10','10~15'))
+[1] 1-5     5 to 10 1-5     1-5     5 to 10 10~15   10~15   10~15   <NA>   
+Levels: 1-5 5 to 10 10~15
+
 **** assign()
 assign("x", function(arguments)) # Has the same effect, but uses the assignment function instead of the assignment operator.
 x<-function(arguments)
+
 **** how to round a number using floor and ceiling
 sapply(vec, floor)
 trunc
