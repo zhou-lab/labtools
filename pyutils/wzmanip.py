@@ -511,6 +511,19 @@ def main_unique(args):
     if args.keep == 'last' and prev_line:
         print(prev_line.strip())
 
+def main_dedupfun(args):
+
+    prev_key = None
+    for line in args.t:
+        fields = line.strip().split(args.delim)
+        key = fields[args.k-1]
+        if prev_key != key:
+            print('%s\t%s' % (str(prev_key), str(eval(args.r))))
+            vals = [key]
+
+        prev_key = key
+
+    print('%s\t%s' % (str(prev_key), str(eval(args.r))))
 
 if __name__ == '__main__':
 
@@ -648,6 +661,14 @@ if __name__ == '__main__':
     parser_unique.set_defaults(func=main_unique)
     parser_unique.add_argument('--delim', default="\t", help="table delimiter [\\t]")
     parser_unique.add_argument('table', help="data table", type = argparse.FileType('r'), default='-')
+
+    parser_dupfun = subparsers.add_parser('dedupfun', help='dedup remove dup in one column by applying a function to another column')
+    parser_dupfun.add_argument('-t',type=argparse.FileType('r'), default='-')
+    parser_dupfun.add_argument('-k', type=int, required=True, help="column to dedup (1-based)")
+    parser_dupfun.add_argument('-v', type=int, required=True, help="column to apply function (1-based)")
+    parser_dupfun.add_argument('-r', default='np.mean(vals)', help='function to apply, will be evaled, argument is called "vals"')
+    parser_dupfun.add_argument('--delim', default="\t", help="table delimiter [\\t]")
+    parser_dupfun.set_defaults(func=main_dedupfun)
 
     args = parser.parse_args()
     args.func(args)

@@ -12387,6 +12387,23 @@ then remember to "copy preferences to profile"
 
 you can also use 'showkey -a'
 to find hex code
+** fink
+*** install fink
+sh Install\ fink.tool
+then follow the instruction
+
+fink will install everything under /sw/bin/
+
+*** use fink
+
+search packages
+fink list bioperl
+
+install packages
+fink install bioperl-pm1546
+
+there would be a separate version of perl5.16.2 instead of the default perl
+
 * vim
 
 C-d half-page down
