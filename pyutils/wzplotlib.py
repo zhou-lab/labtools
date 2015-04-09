@@ -69,7 +69,7 @@ import numpy as np
 
 #     return ax, level2color
 
-def plot_heatmap(data, dim=[0.1,0.1,0.85,0.85], fig=None, xlabels=None, ylabels=None, label_fontsize=8, cmap=None):
+def plot_heatmap(data, dim=[0.1,0.1,0.85,0.85], fig=None, xlabels=None, ylabels=None, label_fontsize=8, cmap=None, interpolation=None):
     if cmap is None:
         cmap = cm.jet
         cmap.set_bad('w', 1)
@@ -78,7 +78,7 @@ def plot_heatmap(data, dim=[0.1,0.1,0.85,0.85], fig=None, xlabels=None, ylabels=
             fig = plt.figure()
             
     ax = fig.add_axes(dim, frameon=False)
-    ax.imshow(data, aspect='auto', origin='lower', cmap=cmap)
+    ax.imshow(data, aspect='auto', origin='lower', cmap=cmap, interpolation=interpolation)
 
     ax.set_xticks([])
     ax.set_yticks([])

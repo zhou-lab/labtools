@@ -96,6 +96,9 @@ it sorts natural numbers within text
 see also vcf-sort which uses sort -V
 * unix
 ** other
+*** change default bash
+edit /etc/shells and make sure the shell you want to use is in that file
+chsh -s /usr/local/bin/bash
 *** how to remove blank lines
 grep -v "^$" file.txt
 sed '/^$/d' file.txt

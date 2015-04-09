@@ -103,3 +103,32 @@ function escape(pat,   safe) {
   gsub(/[][^$.*?+{}\\()|]/, "\\\\&", safe)
   return safe
 }
+
+
+
+function resplit(       a, l, i, j, b, k, BNF) # all are local variables
+{
+    l=split($0, a, /[\"\']/)
+    BNF=0
+    delete B
+    for (i=1;i<=l;++i)
+    {
+        if (i % 2)
+        {
+            # print i,"1", a[i]
+            k=split(a[i], b)
+            for (j=1;j<=k;++j) {
+                B[++BNF] = b[j]
+                # print BNF, B[BNF];
+            }
+        }
+        else
+        {
+            # print i,"0", a[i]
+            B[++BNF] = a[i]
+            # print BNF, B[BNF]
+        }
+    }
+    # print "length", length(B)
+    # print "\n"
+}
