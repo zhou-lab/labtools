@@ -154,7 +154,7 @@ char *plp_format(refseq_t *rs, char *chrm, uint32_t rpos, pileup_data_v *dv, con
     else nf = 1;
     kputuw(d->cnt_ret, &s);
   }
-  
+
   kputc('\t', &s);
   for (i=0; i<dv->size; ++i) {
     pileup_data_t *d = ref_pileup_data_v(dv,i);
@@ -269,15 +269,9 @@ void *process_func(void *data) {
 
       bam1_core_t *c = &b->core;
 
-      if (c->l_qseq < 0 || (unsigned) c->l_qseq < conf->min_read_len) continue;
-      
       uint32_t rpos = c->pos+1, qpos = 0;
-      if (conf->filter_secondary && c->flag & BAM_FSECONDARY) continue;
       uint8_t *nm = bam_aux_get(b, "NM");
-      if (nm && bam_aux2i(nm)>conf->max_nm) continue;
-
       int cnt_ret = cnt_retention(rs, b);
-      if (cnt_ret < 0 || (unsigned) cnt_ret > conf->max_retention) continue;
 
       rpos = c->pos+1; qpos = 0;
       for (i=0; i<c->n_cigar; ++i) {
@@ -295,9 +289,38 @@ void *process_func(void *data) {
             pileup_data_t *plp_data = next_ref_pileup_data_v(*plp_data_vec);
             plp_data->base = qb;
             plp_data->qual = bam1_qual(b)[qpos+j];
+            plp_data->cnt_ret = (unsigned) cnt_ret;
+            plp_data->strand = (c->flag&BAM_FREVERSE)?1:0;
+            plp_data->qpos = qpos+j;
+            plp_data->rlen = c->l_qseq;
+  
             if (bsstrand[0] == '-') plp_data->bsstrand = 1;
             else if (bsstrand[0] == '+') plp_data->bsstrand = 0;
-            else continue;
+            else {
+              plp_data->bsstate = BSS_OTHER;
+              continue;
+            }
+
+            if (c->l_qseq < 0 || (unsigned) c->l_qseq < conf->min_read_len) {
+              plp_data->bsstate = BSS_OTHER;
+              continue;
+            }
+
+            if (conf->filter_secondary && c->flag & BAM_FSECONDARY) {
+              plp_data->bsstate = BSS_OTHER;
+              continue;
+            }
+
+            if (nm && bam_aux2i(nm)>conf->max_nm) {
+              plp_data->bsstate = BSS_OTHER;
+              continue;
+            }
+
+            if (cnt_ret < 0 || (unsigned) cnt_ret > conf->max_retention) {
+              plp_data->bsstate = BSS_OTHER;
+              continue;
+            }
+
             if (rb == 'C' && !plp_data->bsstrand) {
               if (qb == 'C') plp_data->bsstate = BSS_RETENTION;
               else if (qb == 'T') plp_data->bsstate = BSS_CONVERSION;
@@ -307,10 +330,6 @@ void *process_func(void *data) {
               else if (qb == 'A') plp_data->bsstate = BSS_CONVERSION;
               else plp_data->bsstate = BSS_OTHER;
             } else plp_data->bsstate = BSS_OTHER;
-            plp_data->cnt_ret = (unsigned) cnt_ret;
-            plp_data->strand = (c->flag&BAM_FREVERSE)?1:0;
-            plp_data->qpos = qpos+j;
-            plp_data->rlen = c->l_qseq;
           }
           rpos += oplen;
           qpos += oplen;
@@ -331,6 +350,7 @@ void *process_func(void *data) {
       }
     }
 
+    /* run through cytosines */
     for (j=w.beg; j<w.end; ++j) {
       rb = getbase_refseq(rs, j);
       pileup_data_v *plp_data = plp->data[j-w.beg];

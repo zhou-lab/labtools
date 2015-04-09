@@ -430,7 +430,7 @@ def main_box(args):
 
     __prelude__(args)
 
-    if args.dim1>=0 and args.dim2>=0:
+    if args.dim1>=0 and args.dim2>=0: # two levels of category
         if args.skipheader:
             args.table.readline()
 
@@ -474,8 +474,39 @@ def main_box(args):
             
         __core__(args)
 
+    elif args.dim1 >= 0:        # one level of category
+
+        k2vs = {}
+        if args.inputraw:
+            for i, line in enumerate(args.table):
+                if i > args.maxline:
+                    break
+                fields = line.strip().split(args.delim)
+                k = fields[args.dim1-1]
+                vs = eval(fields[args.c-1])
+                if k not in vs:
+                    k2vs[k] = []
+                k2vs[k].extend(vs)
+
+        ks, vss = zip(*k2vs.items())
+
+        lefts = range(1,len(ks)+1)
+        mids = [_+args.width/2 for _ in lefts]
+        plt.boxplot(vss, positions=lefts, widths=args.width)
+        ax=plt.gca()
+        ax.set_xlim(left=lefts[0]-0.5-args.width/2)
+        ax.set_xticks(mids)
+        ax.set_xticklabels(ks, size=args.xtlsize, rotation=args.xtlrotat)
+
+        __core__(args)
+
+
 
 def main_boxbin(args):
+
+    """ x is continuous and binned 
+    y is plotted
+    """
 
     __prelude__(args)
 
@@ -1019,13 +1050,14 @@ def main_hexbin(args):
         x.append(float(fields[args.x-1]))
         y.append(float(fields[args.y-1]))
 
-    plt.hexbin(x,y, gridsize=10, bins='log', cmap=plt.cm.YlGn)
-    plt.xlim(0,20)
+    bins = (args.bins, args.ybins) if args.ybins>0 else args.bins
+    plt.hexbin(x,y, gridsize=bins, bins='log', cmap=plt.cm.YlGn)
+    # plt.xlim(0,20)
     __core__(args)
 
 def add_std_options_table(psr):
 
-    psr.add_argument('table', help="data table", type = argparse.FileType('r'), default='-')
+    psr.add_argument('-t', '--table', help="data table", type = argparse.FileType('r'), default='-')
     psr.add_argument('--delim', default="\t", 
                      help="table delimiter [\\t]")
     psr.add_argument('--skipheader', action='store_true', help='skip header')
@@ -1091,16 +1123,20 @@ if __name__ == '__main__':
     psr_hexbin = subparsers.add_parser("hexbin", help=""" hexbin plot """)
     psr_hexbin.add_argument('-x', type=int, help="column of x (1-based)")
     psr_hexbin.add_argument('-y', type=int, help="column of y (1-based)")
+    psr_hexbin.add_argument('--bins', type=int, default=10, help='#bins along dimension')
+    psr_hexbin.add_argument('--ybins', type=int, default=-1, help='if specified, used as number of bins in the y-axis')
+    # psr_hexbin.add_argument('--
     add_std_options(psr_hexbin)
     psr_hexbin.set_defaults(func=main_hexbin)
 
     # boxplot
     psr_box = subparsers.add_parser("box", help="box plot with discrete x-value")
     psr_box.add_argument('-c', type=int, help="column of value to plot [required]")
-    psr_box.add_argument('--dim1', type=int, default=-1, help="column of dimention 1 category (1-based)")
-    psr_box.add_argument('--dim2', type=int, default=-1, help="column of dimention 2 category (1-based)")
+    psr_box.add_argument('-d', '--dim1', type=int, default=-1, help="column of dimention 1 category (1-based)")
+    psr_box.add_argument('-d2', '--dim2', type=int, default=-1, help="column of dimention 2 category (1-based)")
     psr_box.add_argument('--width', type=int, default=0.5, help="width of each boxplot [0.5]")
     psr_box.add_argument('--catsep', type=int, default=0.5, help="separation between categories [0.1]")
+    psr_box.add_argument('--inputraw', action='store_true', help='input format is raw "[1,2,3]" for column fields[args.c-1]')
     add_std_options(psr_box)
     psr_box.set_defaults(func=main_box)
 

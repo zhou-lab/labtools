@@ -3,6 +3,14 @@
 from __future__ import division # make sure division yields floating
 import sys, re
 import argparse
+import numpy as np
+
+def pipeprint(s):
+    try:
+        print s
+    except IOError:
+        sys.exit(1)
+        
 class Indices:
 
     def __init__(self):
@@ -514,16 +522,34 @@ def main_unique(args):
 def main_dedupfun(args):
 
     prev_key = None
+    funs = args.r.split(',')
+    vals = []
     for line in args.t:
         fields = line.strip().split(args.delim)
         key = fields[args.k-1]
-        if prev_key != key:
-            print('%s\t%s' % (str(prev_key), str(eval(args.r))))
-            vals = [key]
-
+        
+        if args.vt == 'float':
+            val = float(fields[args.v-1])
+        elif args.vt == 'int':
+            val = int(fields[args.v-1])
+            
+        if prev_key != key and prev_key is not None:
+            pipeprint('%s\t%s' % (str(prev_key), '\t'.join(
+                map(lambda x: str(eval(x, {'vals':vals,'np':np})), funs))))
+            vals = [val]
+        else:
+            vals.append(val)
         prev_key = key
 
-    print('%s\t%s' % (str(prev_key), str(eval(args.r))))
+    pipeprint('%s\t%s' % (str(prev_key), '\t'.join(
+        map(lambda x: str(eval(x, {'vals':vals,'np':np})), funs))))
+
+    try:
+        sys.stdout.flush()
+    except IOError:
+        sys.exit(1)
+    
+    return
 
 if __name__ == '__main__':
 
@@ -667,6 +693,7 @@ if __name__ == '__main__':
     parser_dupfun.add_argument('-k', type=int, required=True, help="column to dedup (1-based)")
     parser_dupfun.add_argument('-v', type=int, required=True, help="column to apply function (1-based)")
     parser_dupfun.add_argument('-r', default='np.mean(vals)', help='function to apply, will be evaled, argument is called "vals"')
+    parser_dupfun.add_argument('-vt', default='float', help='value type, default: float, option: int')
     parser_dupfun.add_argument('--delim', default="\t", help="table delimiter [\\t]")
     parser_dupfun.set_defaults(func=main_dedupfun)
 
