@@ -412,7 +412,20 @@ READ_NAME_REGEX=null INPUT=$output OUTPUT=$outputdups
 
 * COX regression
 
+qualitative covariate
+https://www.youtube.com/watch?v=xwhEcXaWkh0
+https://www.youtube.com/watch?v=UL1tjzhBwrw
+
 hmohiv.dat
+time status
+5  1
+6  0
+7  1
+
+status == 1 means dead at recorded time, status == 0 means alive last seen at recorded time
+see Surv for help
+The status indicator, normally 0=alive, 1=dead. Other choices are TRUE/FALSE (TRUE = death) or 1/2 (2=death).
+
 #+BEGIN_SRC R
 library(survival)
 cphb.drug = coxph(Surv(time, status)~drug, data=dat, method="beslow")
@@ -425,6 +438,76 @@ cphbex.drug = coxph(Surv(time, status)~drug, data=dat, method="exact") # the bes
 drug  0.8571  2.3564
 
 Interpretation
-the risk of drug 1 is lower than risk of drug 0
+the risk of drug 1 is 2.35 times higher than risk of drug 0
 
 gage = cut(dat$age, br=c(19,29,34,39,60), labels=c("[20-29]", "[30...))
+
+#+BEGIN_SRC R
+cphb.gage = coxph(Surv(time, status)~gage, data=dat, method="exact")
+#+END_SRC
+
+              coef  exp(coef)
+gage[30-34]  3.310  0.3021
+gage[35-39]  3.718  0.2689
+gage[40-54]  1.86   6.43
+
+age group 40-54 is 6.43 times higher risk than age group 20-30
+
+exp(coef) is called *hazard ratio*
+
+# change reference category
+gage30 = factor(gage, c("[30-34]", "[20-29]", "[35-39]", "[40-54]")
+
+The first is the reference category ("[30-34]")
+
+if you have k categories, you need k-1 dummy variables
+
+# continuous covariate
+cph.age = coxph(Surv(time, status)~age, data=dat, method="breslow")
+      coef  exp(coef)  se(coef)  z    p
+age   0.0814 1.08      0.0174 4.67  3e-6
+
+1.08 is the slope of additional year in age the increase in risk. (8% increase in risk each year)
+se(coef) stands for "standard error"
+
+summary(cph.age) gives the confidence intervals.
+
+confidence interval is for the *hazard ratio*
+     exp(-coef) 
+age  0.9218
+
+exp(-coef) means with additional year decrease there is 92.18% risk remaining.
+
+* QQPlot interpretation
+used for investigating normality assumption
+
+plot i-th ordered value against the i/(n+1) th quantile of the standard normal distribution
+or using (i-1/2)/n or (i-a)/(n+1-2a) with "a" between 0 and 1/2
+https://www.youtube.com/watch?v=X9_ISJ0YpGw
+
+qqnorm and qqline
+#+BEGIN_SRC R
+simn = rnorm(10000,0,2)
+simchi = rchisq(10000,6)
+simchi2 = -simchi
+simt = rt(10000,20)
+par(mfrow=c(2,2))
+hist(simn, main="Symmetric distribution", xlab="")
+qqnorm(simn)
+qqline(simn)
+... # 3 more plots
+#+END_SRC
+
+
+* MAplot
+https://www.youtube.com/watch?v=46-t2jOYsyY
+Bland-Altman plot
+Just a rotated xy-log scaled scatter plot
+
+* smooth-scatter
+
+* volcano plot
+inside
+https://www.youtube.com/watch?v=46-t2jOYsyY
+x negative log p-value
+y M value
