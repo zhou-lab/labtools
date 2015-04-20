@@ -6,6 +6,7 @@ import matplotlib.collections as mcolls
 import matplotlib.colorbar as mcolorbar
 import matplotlib.lines as mlines
 import numpy as np
+import wzcolors
 
 # def plot_heatmap(fig, dim, data, cmap=None):
 #     if cmap is None:
@@ -112,7 +113,7 @@ def colorshow_legend(l2c, (left,bottom,width,height), fig, fontsize=7,
     return ax
 
 def discrete_array_colorshow(data, dim, fig, orientation='horizontal',
-                             greyscale=False, greyscale_range=(0.1,0.9)):
+                             greyscale=False, greyscale_range=(0.1,0.9), level2color=None):
 
     n = len(data)
     if orientation == 'horizontal' or orientation == 'h':
@@ -128,8 +129,11 @@ def discrete_array_colorshow(data, dim, fig, orientation='horizontal',
 
     import wzcolors
     ax = fig.add_axes(dim, frameon=False)
-    colors, level2color = wzcolors.map_distinct_colors_hex(
-        data, other2grey=True, greyscale=greyscale, greyscale_range=greyscale_range)
+    if level2color is None:     # if level2color is not given
+        colors, level2color = wzcolors.map_distinct_colors_hex(
+            data, other2grey=True, greyscale=greyscale, greyscale_range=greyscale_range)
+    else:                       # if level2color is given
+        colors = [level2color[datum] if datum in level2color else '#ffffff' for datum in data]
     color2patches = {}
     for i, color in enumerate(colors):
         if color not in color2patches:
@@ -213,19 +217,25 @@ class WCbar(object):
         self.norm = None
         self.colormap = None
 
+    def __len__(self):
+
+        return 1
+
     def plot(self, dim, fig, orientation='horizontal',
              labelside='right', labelspacing=0.001, labelfontsize=5, labelfontweight='light',
-             annhei = None, annlft = None, annlen = 0.03, lineanno=None):
+             annhei = None, annlft = None, annlen = 0.03, lineanno=None, label2color=None, space=0):
 
         left, bottom, width, height = dim
         top = bottom + height
-        
+
+        if label2color is not None:
+            self.label2color = label2color
         if self.continuous:
             self.ax, self.norm, self.colormap = continuous_array_colorshow(
                 self.data, dim, fig, cmap=self.cmap)
         else:
             self.ax, self.label2color = discrete_array_colorshow(
-                self.data, dim, fig, orientation=orientation)
+                self.data, dim, fig, orientation=orientation, level2color=self.label2color)
 
         if lineanno == 'topleft':
             if annhei is None and annlft is None:
@@ -274,6 +284,92 @@ class WCbar(object):
         self.leghei = height
         return
 
+class WCbarGroup(object):
+
+    def __init__(self):
+
+        """ label2color is set at plot time """
+        self.wcbars = []
+        self.label2color = None
+        self.label2cbar = {}
+
+    def __len__(self):
+        
+        return len(self.wcbars)
+    
+    def add_cbar(self, data, label=None):
+
+        cbar = WCbar(data, label=label)
+        self.wcbars.append(cbar)
+        if label is not None:
+            self.label2cbar[label] = cbar
+
+
+    def finalize_label2color(self, **kwargs):
+
+        if self.label2color is None:
+            levels = set()
+            for cbar in self.wcbars:
+                levels |= set(cbar.data)
+            self.label2color = wzcolors.map_level2color(levels, **kwargs)
+            for cbar in self.wcbars:
+                cbar.label2color = self.label2color
+
+    def get(self, label):
+
+        if label in self.label2cbar:
+            return self.label2cbar[label]
+        else:
+            return None
+        
+    def plot(self, *args, **kwargs):
+        
+        """ plot all color bars """
+        self.finalize_label2color(**kwargs)
+        kwargs['label2color'] = self.label2color
+
+        space = kwargs['space'] if 'space' in kwargs else 0
+        if 'orientation' in kwargs and kwargs['orientation'] in ['v', 'vertical']:
+            left, bottom, width, height = args[0]
+            fig = args[1]
+            for i, cbar in enumerate(self.wcbars):
+                dim = (left + i*(width+space), bottom, width, height)
+                cbar.plot(dim, fig, **kwargs)
+
+    def plot_cbar(self, label, *args, **kwargs):
+        cbar = self.label2cbar[label]
+        self.finalize_label2color(**kwargs)
+        kwargs['label2color'] = self.label2color
+        cbar.plot(*args, **kwargs)
+
+        
+    def plot_legend(self, (left, bottom, width), fig, patchheight=0.015,
+                    continuous_height=0.1, title_fontsize=7):
+
+        # if self.continuous:
+        #     continuous_array_colorshow_legend(
+        #         self.norm, self.colormap, (left, bottom, width, continuous_height),
+        #         fig, title=self.label)
+        #     height = continuous_height
+        # else:
+        height = len(self.label2color)*patchheight
+        colorshow_legend(self.label2color, (left, bottom, width, height),
+                         fig) #, title=self.label, title_fontsize=title_fontsize)
+
+        self.leghei = height
+        return
+            
+
+class WCbarCollection():
+
+    def __init__(self, colls=[]):
+
+        self.colls = colls
+
+    def __len__(self):
+
+        return sum([len(coll) for coll in self.colls])
+    
 def scatter_matrix(frame, alpha=0.5, figsize=None, ax=None, grid=False,
                    diagonal='hist', marker='.', density_kwds=None,
                    hist_kwds=None, range_padding=0.05, rot=0, **kwds):
