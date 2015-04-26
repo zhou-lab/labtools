@@ -18,7 +18,7 @@ HOME=/Users/wandingzhou
 export PATH=~/bin:$PATH
 export SCREENRC=$HOME/wzlib/screenrc/screenrc_hp
 export PYTHONPATH=$HOME/wzlib/pyutils:$HOME/pythonlib/lib/python2.7/site-packages/:$HOME/pythonlib/Library/Python/2.7/site-packages/
-export AWKPATH=$HOME/wzlib/awk
+export AWKPATH=$HOME/wzlib/awkutils
 
 # % cpan
 # cpan> o conf makepl_arg INSTALL_BASE=/mydir/perl
@@ -54,6 +54,8 @@ function prompt {
   export PS1="$REDBOLD[\t]${SCREENTITLE}$GREY[$GREENBOLD\u@\h $YELLOWBOLD\w$GREY]\$ "
 
 }
+
+# export CDPATH=.:~:..:/tools
 
 prompt
 

@@ -70,23 +70,49 @@ def get_distinct_colors_hex(num_colors):
     return ['#%02x%02x%02x' % (int(r*256), int(g*256), int(b*256))
             for r,g,b in get_distinct_colors_rgb(num_colors)]
 
-def get_grey_scale_rgb(num_colors, greyscale_range=(0.1,0.9)):
+def get_grey_scale_rgb(num_colors, greyscale_range=None):
+    if greyscale_range is None:
+        greyscale_range = (0.1,0.9)
     darkest, lightest = greyscale_range
     if num_colors == 1:
         return [(lightest,lightest,lightest,1)]
     # print [(c,c,c,1.) for c in np.linspace(darkest,lightest,num_colors)]
     return [(c,c,c,1.) for c in np.linspace(darkest,lightest,num_colors)]
 
-def map_distinct_colors_hex(data, other2grey=False, greyscale=False, greyscale_range=(0.1,0.9)):
+def kwargs_or_none(kwargs, op):
+    if op in kwargs:
+        return kwargs[op]
+    else:
+        return None
 
+def kwargs_or_false(kwargs, op):
+    if op in kwargs:
+        return kwargs[op]
+    else:
+        return False
+
+def map_level2color(data, **kwargs):
+
+    """ kwargs: other2grey=False, greyscale=False, greyscale_range=(0.1,0.9)
+    """
     levels = set(data)
-    if greyscale:
-        colors = get_grey_scale_rgb(len(levels), greyscale_range=greyscale_range)
+    if 'greyscale' in kwargs and kwargs['greyscale']:
+        colors = get_grey_scale_rgb(len(levels), greyscale_range=kwargs_or_none(kwargs, 'greyscale_range'))
     else:
         colors = get_distinct_colors_hex(len(levels))
     level2color = dict(zip(levels, colors))
-    if other2grey and "other" in level2color:
+    if kwargs_or_false(kwargs, 'other2grey') and "other" in level2color:
         level2color["other"] = "#E6E6E6"
+
+    return level2color
+
+def map_distinct_colors_hex(data, **kwargs):
+
+    """ kwargs: other2grey=False, greyscale=False, greyscale_range=(0.1,0.9)
+    """
+
+    level2color = map_level2color(data, **kwargs)
+
     return ([level2color[datum] for datum in data], level2color)
 
 if __name__ == "__main__":

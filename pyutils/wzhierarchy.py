@@ -201,6 +201,60 @@ class Dendrogram():
 
         return axis
 
+class ClusterData():
+
+    pass
+
+def ez_good_row(df, decision='all'):
+
+    if decision == 'all':
+        return df.apply(lambda x: all(x.notnull()), axis=1)
+    elif decision == 'any':
+        return df.apply(lambda x: any(x.notnull()), axis=1)
+    
+def ez_cluster(df, fast=False, good_row=None):
+
+    import fastcluster
+    """ by column, the top """
+    d = ClusterData()
+    d.df = df
+    if good_row is not None:
+        d.df = d.df.loc[good_row,]
+    if fast:
+        d.Z_top = fastcluster.linkage(d.df.transpose().as_matrix(), method='ward', preserve_input=True)
+        d.Z_lft = fastcluster.linkage(d.df.as_matrix(), method='ward', preserve_input=True)
+
+    else:
+        d.Z_top = fastcluster.linkage(p_euclidean(d.df.transpose().as_matrix()),
+                                      method='ward', preserve_input=True)
+        d.Z_lft = fastcluster.linkage(p_euclidean(d.df.as_matrix()),
+                                      method='ward', preserve_input=True)
+
+    d.w_lft = np.apply_along_axis(np.nansum, 1, d.df)
+    d.D_lft = compute_dendrogram(d.Z_lft, d.w_lft)
+    d.w_top = np.apply_along_axis(np.nansum, 0, d.df)
+    d.D_top = compute_dendrogram(d.Z_top, d.w_top)
+    d.df = d.df.iloc[d.D_lft.leaforder,d.D_top.leaforder]
+
+    return d
+
+def ez_cluster_column(df, fast=False, good_row=None):
+
+    import fastcluster
+    d = ClusterData()
+    d.df = df
+    if good_row is not None:
+        d.df = d.df.loc[good_row,]
+    if fast:
+        d.Z_top = fastcluster.linkage(d.df.transpose().as_matrix(), method='ward', preserve_input=True)
+    else:
+        d.Z_top = fastcluster.linkage(p_euclidean(d.df.transpose().as_matrix()),
+                                      method='ward', preserve_input=True)
+    d.w_top = np.apply_along_axis(np.nansum, 0, d.df)
+    d.D_top = compute_dendrogram(d.Z_top, d.w_top)
+    d.df = d.df.iloc[:,d.D_top.leaforder]
+
+    return d
 
 
 # """

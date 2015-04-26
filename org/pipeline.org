@@ -511,3 +511,6 @@ inside
 https://www.youtube.com/watch?v=46-t2jOYsyY
 x negative log p-value
 y M value
+
+* PCA
+https://www.youtube.com/watch?v=F-nfsSq42ow

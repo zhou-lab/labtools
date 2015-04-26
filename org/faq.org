@@ -96,6 +96,9 @@ it sorts natural numbers within text
 see also vcf-sort which uses sort -V
 * unix
 ** other
+*** change default bash
+edit /etc/shells and make sure the shell you want to use is in that file
+chsh -s /usr/local/bin/bash
 *** how to remove blank lines
 grep -v "^$" file.txt
 sed '/^$/d' file.txt
@@ -417,6 +420,9 @@ The ^M that you are seeing is actually a CR or \r. If you want to test for carra
 dos2unix
 or
 tr '\r' '\n' < [file] > [output]
+
+*** this is a better solution
+tr -d "\015" <file1 
 ** ssh X11 tunneling
 ssh -X
 to make default, put in ~/.ssh/config
@@ -2832,6 +2838,94 @@ readelf -aW <binary> | c++filt
 :PROPERTIES:
 :VISIBILITY: children
 :END:
+** Bioconductor
+*** basics
+**** install bioconductor
+source("http://bioconductor.org/biocLite.R")
+biocLite()
+**** install bioconductor packages
+biocLite(c("GenomicFeatures", "AnnotationDbi"))
+**** upgrade installed package (require R version > 2.15)
+source("http://bioconductor.org/biocLite.R")
+biocLite('BioUpgrade')
+**** recompile installed package
+source("http://bioconductor.org/biocLite.R")
+pkgs <- rownames(installed.packages())
+biocLite(pkgs, type="source")
+*** methylumi
+**** tryout
+suppressPackageStartupMessages(library(methylumi,quietly=TRUE))
+samps <- read.table(system.file("extdata/samples.txt", package = "methylumi"),sep="\t",header=TRUE)
+mldat <- methylumiR(system.file('extdata/exampledata.samples.txt',package='methylumi'), qcfile=system.file('extdata/exampledata.controls.txt',package="methylumi"), sampleDescriptions=samps)
+
+md <- cmdscale(dist(t(exprs(mldat)[fData(mldat)$CHROMOSOME=='X',])),2)
+plot(md,pch=c('F','M')[pData(mldat)$Gender],col=c('red','blue')[pData(mldat)$Gender])
+
+# system.file find file relative to package installation
+**** assessor functions
+exprs(ob)
+betas(ob)
+pvals(ob)
+methylated(ob)
+unmethylated(ob)
+QCdata(ob)
+getHistory(ob)
+**** example - QC
+#+BEGIN_SRC R
+qcplot(mldat, 'FIRST HYBRIDIZATION')
+#+END_SRC
+**** example - normalization
+only for GoldenGate platform
+#+BEGIN_SRC R
+
+mldat.norm <- normalizeMethyLumiSet(mldat)
+# looks at the median intensities in the methylated and unmethylated channels at very low and high beta values and sets these medians equal.
+#+END_SRC
+
+**** example - test whether expression differs between males and females
+
+see "an introduction to methylumi package"
+
+#+BEGIN_SRC R
+
+library(limma)
+
+design_matrix <- model.matrix(~1+Gender, data=pData(mldat.norm))
+# pData returns the "phenotypic" data in a data.frame
+# "Gender" is a column in the returned data.frame
+# model.matrix creates the "design matrix" which was usually used for the linear regression analysis
+# In this case, however, the design matrix can be for limma (see limma paper for the definition of the design matrix, in brief, the rows are array experiments the columns are contrast coefficient)
+# the "1+" adds (which is by default on too, so one could just use model.matrix(~Gender) in principle) the intercept term into the design matrix. The intercept term is a column of 1's.
+
+fit <- lmFit(exprs(mldat), design_matrix)
+# raw fit
+
+fit <- eBayes(fit)
+# empirical Bayes smoothing
+# which estimates the prior from the raw fit, then estimate the posterior fit, then iterate.
+
+tt <- topTable(fit, coef=2, genelist=fData(mldat)[,c('SYMBOL', 'CHROMOSOME')], number=1000)
+# get the top differentially expressed genes
+
+x <- aggregate(tt$adj.P.Val, by=list(tt$CHROMOSOME), median)
+# split the genes by chromosome, compute the median adjusted P-value
+colnames(X) <- c('Chromosome', 'Median adjusted P-value')
+# set title
+
+library(xtable)
+xt <- xtable(x, label='tab:chromosomepvals', caption='The median adjusted P-value for each gene')
+digits(xt) <- 6
+print(xt, include.rownames=FALSE, align='cr')
+# print LaTeX table.
+#+END_SRC
+
+*** illuminaio
+*** Biobase
+
+exprs accesses expression from eSet class
+se.exprs access standard error of expression from eSet class
+
+fData retrieves features
 ** basics
 *** what is S3 scheme of method dispatching?
 S3 is a naming scheme of method dispatching (or method overload, or polymorphism or whatever you call it)
@@ -2853,6 +2947,70 @@ Notice that some of the methods have *s next to their name. That means that they
 find("acf")  #it's in the stats package
 stats:::print.acf
 #+END_SRC
+
+*** S4 class
+
+see http://www.cyclismo.org/tutorial/R/s4Classes.html
+
+S4 objects are created using setClass
+S4 methods are created using setGeneric + setMethod
+S4 data members (called 'slot's) are accessed from '@' instead of '$'
+is.object(a) tells whether a is an object
+isS4(a) tells whether a is an S4 object
+"contains" argument specify base class of inheritance
+"callNextMethod" is used to call the same version in the base class.
+
+other methods:
+slotNames(a)
+slotNames('MethyLumiSet')
+getSlots('MethyLumiSet') returns the types (search getSlots in the link for detail)
+getslot(a, 'slotname') == a@slotname
+
+"The basic idea is that if the name of a function has not been defined, the name must first be reserved using the setGeneric function."
+
+In setMethod, the first component of "signature" argument must be the same as the name of the class object. additional components can be different to allow overloading. (search overloading)
+
+validity function can be explicitly called through validObject(theObject);
+
+*** environment function
+
+http://adv-r.had.co.nz/Environments.html
+
+objects in the environment is like pointers in C.
+
+environments' members are accessed via e$member or e[ [member]] or get('member', envir=e)
+
+environment is like a list, but different in other ways:
+ + Every object in an environment has a unique name.
+ + The objects in an environment are not ordered (i.e., it doesn’t make sense to ask what the first object in an environment is).
+ + An environment has a parent.
+
+lexical scoping: if a name is not found in an environment, R will look in the parent environment.
+
+only empty environment does not have parent
+
+environment = frame + parent environment
+
+ls(e) list bindings in the environment, omitting names begin with '.'.
+ls(e, all.names=True) show all the names
+create a new binding like a list: e$a <- 1
+remove binding: rm('a', envir=e)
+check existence of binding: exists('x', envir=e)
+consider inherits: exists('x', envir, inherits=TRUE)
+
+where environment is defined?
+library(pryr)
+where('x')
+<environment: R_GlobalEnv>
+
+ + globalenv() interactive workspace
+ + baseenv() base environment, on top of emptyenv()
+ + emptyenv() empty environment, ultimate ancestor of all environments
+ + environment() current environment
+
+[environment loaded with "library"] => globalenv() => search path .. => baseenv() => emptyenv()
+
+The enclosing environment determines how the function finds values; the binding environments determine how we find the function.
 
 ** Data IO
 see R wiki for more options
@@ -3401,6 +3559,18 @@ for(i in 1:3){
 
 if something is a factor, then typing "something" will give levels information.Besides, typing "attributes(something)"will have "levels" option. So we can use levels(something)
 
+**** create label from factor
+
+> f <- factor(c('a','b','a','a','a'))
+> f
+[1] a b a a a
+Levels: a b
+> c('F','M')[f]
+[1] "F" "M" "F" "F" "F"
+
+This is useful when you want to create colors and label for plots, e.g.,
+plot(md,pch=c('F','M')[pData(mldat)$Gender],col=c('red','blue')[pData(mldat)$Gender])
+
 **** Ordered or unordered, represent categorical data
 > x ← factor(c(“yes”, “no”, “yes”, “no”, “yes”))
 > x
@@ -3443,7 +3613,6 @@ generate forty factor levels (each labeled as an integer), each level is repeate
 **** convert factors to numeric
 t3<-as.numeric(as.character(f))
 Or more efficiently, as.numberic(levels(f))[as.integer(f)]
-
 *** data frame
 heterogenous columns, as opposed to matrix.
 **** convert data frame to numeric matrix
@@ -4152,7 +4321,7 @@ printmessage <- function(x) {
 unclass()	remove the class attribute of an object
 *** set attributes
 attr(z,"dim")<-c(10,10)		treat z as a 10 by 10 matrix
-** Statistical tests
+** Statistics
 
 描述性统计量
 sum mean median var sd min max range quantile summary 
@@ -4177,6 +4346,14 @@ chisq.test(x[,2],p=dbinom(x[,1],5,0.5))
 
 Spearman's Correlation
 cor.test(method='spearman')
+
+*** cmdscale
+#+BEGIN_SRC R
+
+# classical multidimensional scaling
+md <- cmdscale(dist(t(exprs(mldat)[fData(mldat)$CHROMOSOME=='X',])),2)
+plot(md,pch=c('F','M')[pData(mldat)$Gender],col=c('red','blue')[pData(mldat)$Gender])
+#+END_SRC
 
 *** sample random variables
 set.seed
@@ -4287,16 +4464,85 @@ frequency count of discrete values
 Tabulate frequency counts
 table(d$numcc)
 *** linear regression:
-Before doing linear regression, one have to check if the factor attribute of the argument is removed or not first.
+
+Before doing linear regression, one have to check if the factor attribute of the argument is removed or not first. In other words, one need to make sure x is not a factor. Otherwise, it would become an ANOVA on with categories corresponding to different levels of x.
 fm<-lm(y~x,data=dummy)
 fit<-lm(rate~year)
 To get the interest rate in year 2015:	Note that one should use two square braces to get the number.
-fit$coefficients[[2]]*2015+fit$coefficients[[1]]
+#+BEGIN_SRC R
+fit$coefficients[[2]]*2015 + fit$coefficients[[1]]
+#+END_SRC
+
 residuals(fit)	the residuals of the fit. By definition is the difference between the each data point with the predicted value.
+
 abline(fit)	add fitted line onto the data plot.
 summary(fit)	can get the result of F-test.
 fm$call
 fm$coefficient: Intercept & x
+*** formula and design matrix
+a formula is something like: 
+#+BEGIN_SRC R
+log(Volume) ~ log(Height) + log(Girth)
+#+END_SRC
+when one supply a formula into a regression model, a function called "data.matrix" is automatically called to produce a design matrix.
+
+*** model.matrix (build design matrix)
+when one supply a formula, R automatically computes the design matrix. When doing so, R appends the intercept term, which is a column of 1's. One could suppress the intercept term by "y~0+x" or "y~x-1". All the character columns are converted to factors. Factors are then 'dummy-indexed', meaning they are splitted into levels(f)-1 variables and each variable has 0 or 1 binary values corresponding to whether the sample falls into the category or not.
+
+#+BEGIN_SRC R
+
+df
+# A B C
+# 1 2 3
+# ...
+
+model.matrix(C~log(B),df)
+# (intercept) log(B)
+# 1 0.693
+# 1 ...
+
+#+END_SRC
+
+or if a column is a factor
+
+#+BEGIN_SRC R
+> df <- data.frame(A=c('a','b','c'),B=c(1,2,3))
+> df
+  A B
+1 a 1
+2 b 2
+3 c 3
+
+> model.matrix(B~A,df)
+  (Intercept) Ab Ac
+1           1  0  0
+2           1  1  0
+3           1  0  1
+attr(,"assign")
+[1] 0 1 1
+attr(,"contrasts")
+attr(,"contrasts")$A
+[1] "contr.treatment"
+
+# the first column is intercept. Only two of the three levels of A is used. Aa is used as reference group. degree of freedom = levels(A)-1
+
+#+END_SRC
+
+*** model.frame
+
+extract columns and apply function
+#+BEGIN_SRC R
+df
+# A B C
+# 1 2 3
+# ...
+
+model.frame(log(B)~C,df)
+# log(B) C
+# 0.693 3
+# ...
+
+#+END_SRC
 
 ** Plotting
 graphics package
@@ -4371,10 +4617,6 @@ https://stat.ethz.ch/pipermail/r-help/2009-July/205922.html
      abline(0, 1, lty='dashed')
 **** title
      title(main = NULL, sub = NULL, xlab = NULL, ylab = NULL)
-**** par
-***** mfrow and mfcol
-      multiple subplots
-      par(mfrow=c(1,1))
 **** hist
 hist(w1$vals)
 hist(w1$vals,breaks=2)	breaks defines how many hists there are.
@@ -4482,8 +4724,7 @@ colors(): list all the colors available and their index
 pdf(file="my2.pdf")
 <do my plot,which won't display>
 dev.off()
-*** basic plotting
-add line using lines
+**** add line using lines
 x<-c(1,2,5,10,20,50,100)
 y<-sapply(x, log2)
 plot(d$numdiffcogs, d$entropy, log='x', xlab='alphabet size', ylab='entropy')
@@ -4492,9 +4733,9 @@ lines(x, y, lty='dashed')
 change label size relative to the plot
 use argument
 cex.lab = 1.5
-
-smoothScatter
-**** par change parameters of the plotting
+**** smoothScatter
+**** par
+change parameters of the plotting
 multiple subplots
 par(mfrow=c(2,1))
 
@@ -4505,6 +4746,11 @@ bottom, left, top, right
 xtick positions
 xaxp=c(0,136,8)
 start, end, number of ticks
+***** mfrow and mfcol
+multiple subplots
+par(mfrow=c(1,1))
+**** make x-axis label vertical
+par(las=2)
 
 **** boxplot
 boxplot() 带error bar的盒装图
@@ -4527,6 +4773,16 @@ head(environmental)
 xyplot(ozone ~ radiation, data=environmental)
 xyplot(ozone ~ radiation, data=environmental, main=”Ozone vs. Radiation”)
 
+#+BEGIN_SRC R
+xyplot(-log10(adj.P.Val)~CHROMOSOME, tt, ylab='-log10(Adjusted P-value)', main='P-values for probes\ndistinguishing males from females')
+# tt is the data.frame containing columns adj.P.Val and CHROMOSOME
+#+END_SRC
+
+*** convert R table to LaTeX table
+library(xtable)
+xt <- xtable(x, label="tab:chromosomepvals", caption="The median adjusted p-value ...")
+digits(xt) <- 6
+print(xt, include.rownames=FALSE, align='cr')
 ** data IO
 *** read.table
 **** commonly used arguments
@@ -4756,6 +5012,18 @@ mclapply(x, func)
 #+END_SRC
 
 * Python
+
+** pandas
+
+*** rpy2 interface
+http://rpy.sourceforge.net/rpy2/doc-2.5/html/overview.html
+
+*** convert pandas data frame to R
+import pandas,rpy,common as com
+r_dataframe = com.convert_to_r_dataframe(df)
+
+see
+http://pandas.pydata.org/pandas-docs/dev/r_interface.html
 ** difference between numpy.array and numpy.matrix
 numpy.matrix is strictly 2-d
 please use numpy.array most of the time
