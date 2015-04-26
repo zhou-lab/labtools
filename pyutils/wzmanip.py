@@ -100,6 +100,8 @@ def _build_map(args, index):
     for line in getattr(args, "t%d" % index):
         f = line.strip().split("\t")
         key = '\t'.join(c.extract(f)) if c else args_fc.format(f=f)
+        if args.caseinsensitive:
+            key = key.lower()
         if p:
             val = '\t'.join(p.extract(f))
         elif args_fp:
@@ -610,6 +612,7 @@ if __name__ == '__main__':
     parser_compare.add_argument('-np1', action='store_true', help='no print of table 1')
     parser_compare.add_argument('-np2', action='store_true', help='no print of table 2')
     parser_compare.add_argument('-np3', action='store_true', help='no print of table 3')
+    parser_compare.add_argument('--caseinsensitive', action='store_true', help='case insensitive')
     parser_compare.set_defaults(func=main_compare)
 
 
