@@ -439,6 +439,33 @@ curl -O -L http://sourceforge.net/...
 ** wget
 *** recursive download folder via ftp using wget
 wget -r ftp://yourfolder
+*** no host directory structure
+wget -nH 
+
+No options        -> ftp.xemacs.org/pub/xemacs/
+-nH               -> pub/xemacs/
+-nH --cut-dirs=1  -> xemacs/
+-nH --cut-dirs=2  -> .
+*** wget with regular expression
+#+BEGIN_SRC 
+-A acclist --accept acclist
+-R rejlist --reject rejlist
+     Specify comma-separated lists of file name suffixes or patterns to 
+     accept or reject. Note that if any of the wildcard characters, *, ?,
+     [ or ], appear in an element of acclist or rejlist, it will be 
+       treated as a pattern, rather than a suffix.
+       
+--accept-regex urlregex
+--reject-regex urlregex
+     Specify a regular expression to accept or reject the complete URL
+
+-np --no-parent
+#+END_SRC
+
+wget -r -np -A 'bar.*.tar.gz' http://url/dir/
+*** no creating directory
+-nd
+
 ** gnu parallel
 *** how to redirect inside parallel
 use quote "'>'"
@@ -448,6 +475,21 @@ find /data/largeS2/pl-bs/data/2015-01-27-bam-all/ -name *.bam | parallel --gnu -
 find . -type f | parallel 'mkdir -p ../Copy/{//}; rsync -a {} ../Copy/{}'
 or simply
 find . -type f | parallel cp -a {} .
+*** use perl expression in replacement string
+
+{= perl expression =} can be used as replacement string. The expression should modify $_. E.g. {= s/\.gz$// =} to remove .gz from the string. This makes replacement strings extremely flexible.
+
+Positional perl expressions (similar to {2}) are given as {=2 perl expression=} where 2 is the position.
+
+One small backwards incompatability: {1}_{2} will replace {2} with the empty string if there is only one argument. Previously {2} would have been left untouched.
+
+Replacement strings can be defined using --rpl. E.g. parallel --rpl '{.gz} s/\.gz$//' echo {.gz} ::: *.gz
+
+The parenthesis around {= perl expression =} can be changed with --parens.
+** pretty print columns using "pr"
+pr -t -e15 your_file | less
+-e15 replace tab stops to the next 15 spaces column
+
 ** gnu screen
 *** gnu screen set window title to be working directory
 http://unix.stackexchange.com/questions/28430/screen-status-bar-to-display-current-directory-for-zsh-bash-shell

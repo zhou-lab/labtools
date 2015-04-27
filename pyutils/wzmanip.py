@@ -448,7 +448,7 @@ def main_dupcompress(args):
                 k2v[k] = [v]
 
     for k, v in k2v.iteritems():
-        print '%s\t%d\t%s' % ('\t'.join(k), len(v), '\t'.join(v))
+        print '%s\t%d\t%s' % ('\t'.join(k), len(v), args.od.join(v))
 
 def div(denom, divid):
 
@@ -674,6 +674,7 @@ if __name__ == '__main__':
     parser_dupcompress.add_argument('-k', required=True, help="column to dedup (1-based)")
     parser_dupcompress.add_argument('-v', type=int, required=True, help="column to list (1-based)")
     parser_dupcompress.add_argument('--delim', default="\t", help="table delimiter [\\t]")
+    parser_dupcompress.add_argument('--od', default="\t", help="output delimiter of value fields [\\t]")
     parser_dupcompress.set_defaults(func=main_dupcompress)
 
     parser_nameawk = subparsers.add_parser('nameawk', help='behave like awk, but use column name')

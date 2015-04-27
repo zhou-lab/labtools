@@ -7,76 +7,18 @@ import matplotlib.colorbar as mcolorbar
 import matplotlib.lines as mlines
 import numpy as np
 import wzcolors
-
-# def plot_heatmap(fig, dim, data, cmap=None):
-#     if cmap is None:
-#         cmap = cm.jet
-#         cmap.set_bad('w', 1)
-#     ax = fig.add_axes(dim, frameon=False)
-#     ax.imshow(data, aspect='auto', origin='lower', cmap=cmap)
-#     ax.set_xticks([])
-#     ax.set_yticks([])
-
-#     return ax
-
-# def colorshow_legend(fig, (left,bottom,width), l2c, fontsize=8, patchheight=0.015, horizontalspace=0.05):
-
-#     n = len(l2c)
-#     ax = fig.add_axes((left, bottom, width, n*patchheight), frameon=False)
-#     ax.set_xlim(0,1)
-#     ax.set_ylim(0,n)
-#     levels, colors = zip(*l2c.items())
-#     for i, color in enumerate(colors):
-#         ax.add_patch(mpatches.Rectangle((0,i),1,1,facecolor=color,edgecolor='white'))
-#         ax.text(1+horizontalspace,i+0.5,str(levels[i]),verticalalignment="center", fontsize=fontsize, fontweight='light')
-#     # ax.set_yticks([i+0.5 for i in xrange(n)])
-#     # ax.set_yticklabels(levels, fontsize=fontsize, fontweight='light')
-#     # ax.yaxis.tick_right()
-#     ax.set_yticks([])
-#     ax.set_xticks([])
-
-#     return ax
-
-# def discrete_array_colorshow(fig, dim, data, orientation='horizontal'):
-
-#     n = len(data)
-#     if orientation == 'horizontal':
-#         beg = '(i,0)'
-#         xmax = n
-#         ymax = 1
-#     elif orientation == 'vertical':
-#         beg = '(0,i)'
-#         xmax = 1
-#         ymax = n
-#     else:
-#         raise Exception("unknown orientation")
-
-#     import wzcolors
-#     ax = fig.add_axes(dim, frameon=False)
-#     colors, level2color = wzcolors.map_distinct_colors_hex(data, other2grey=True)
-#     color2patches = {}
-#     for i, color in enumerate(colors):
-#         if color not in color2patches:
-#             color2patches[color] = []
-#         color2patches[color].append(mpatches.Rectangle(eval(beg),1,1))
-
-#     for color, patches in color2patches.iteritems():
-#         ax.add_collection(mcolls.PatchCollection(patches, facecolor=color, edgecolor='none'))
-
-#     ax.set_xlim(0,xmax)
-#     ax.set_ylim(0,ymax)
-#     ax.set_xticks([])
-#     ax.set_yticks([])
-
-#     return ax, level2color
+import os
 
 def plot_heatmap(data, dim=[0.1,0.1,0.85,0.85], fig=None, xlabels=None, ylabels=None, label_fontsize=8, cmap=None, interpolation=None):
+
+    # data = np.ma.array(data.as_matrix(), mask=data.isnull())
+    
     if cmap is None:
         cmap = cm.jet
-        cmap.set_bad('w', 1)
 
-        if fig is None:
-            fig = plt.figure()
+    cmap.set_bad('#E6E6E6', 1)
+    if fig is None:
+        fig = plt.figure()
             
     ax = fig.add_axes(dim, frameon=False)
     ax.imshow(data, aspect='auto', origin='lower', cmap=cmap, interpolation=interpolation)
@@ -133,7 +75,7 @@ def discrete_array_colorshow(data, dim, fig, orientation='horizontal',
         colors, level2color = wzcolors.map_distinct_colors_hex(
             data, other2grey=True, greyscale=greyscale, greyscale_range=greyscale_range)
     else:                       # if level2color is given
-        colors = [level2color[datum] if datum in level2color else '#ffffff' for datum in data]
+        colors = [level2color[datum] if datum in level2color else '#E6E6E6' for datum in data]
     color2patches = {}
     for i, color in enumerate(colors):
         if color not in color2patches:
@@ -155,8 +97,13 @@ def continuous_array_colorshow(data, dim=[0.1,0.1,0.85,0.85], fig=None, cmap='je
     dmin = min(data)
     dmax = max(data)
 
+    if cmap is None:
+        colormap = cm.jet
+    else:
+        colormap = cm.get_cmap(cmap)
+    colormap.set_bad('#E6E6E6', 1)
+    
     norm = mcolors.Normalize(vmin=dmin, vmax=dmax)
-    colormap = cm.get_cmap(cmap)
     data_mat = np.array(data)
     if orientation == 'horizontal' or orientation == 'h':
         data_mat.shape = (1, len(data))
@@ -200,7 +147,9 @@ def fig_add_line(fig, xcoor, ycoor, color='k', linewidth=.5):
 class WCbar(object):
 
     def __init__(self, data, continuous=False, label=None, cmap='jet',
-                 greyscale=False, greyscale_range=(0.1,0.9)):
+                 greyscale=False, greyscale_range=(0.1,0.9), labelside='r',
+                 labelspacing=0.001, labelfontsize=5, labelfontweight='light',
+                 annhei=None, annlft=None, annlen=0.03, lineanno=None, anntan=1):
 
         self.continuous = continuous
         self.label = label
@@ -217,19 +166,28 @@ class WCbar(object):
         self.norm = None
         self.colormap = None
 
+        # labels
+        self.labelside = labelside
+        self.labelspacing = labelspacing
+        self.labelfontsize = labelfontsize
+        self.labelfontweight = labelfontweight
+
+        # slanted annotation
+        self.lineanno = lineanno
+        self.annhei = annhei
+        self.annlft = annlft
+        self.annlen = annlen
+        self.anntan = anntan
+
     def __len__(self):
 
         return 1
 
-    def plot(self, dim, fig, orientation='horizontal',
-             labelside='right', labelspacing=0.001, labelfontsize=5, labelfontweight='light',
-             annhei = None, annlft = None, annlen = 0.03, lineanno=None, label2color=None, space=0):
+    def plot(self, dim, fig, orientation='horizontal'):
 
         left, bottom, width, height = dim
         top = bottom + height
 
-        if label2color is not None:
-            self.label2color = label2color
         if self.continuous:
             self.ax, self.norm, self.colormap = continuous_array_colorshow(
                 self.data, dim, fig, cmap=self.cmap)
@@ -237,33 +195,37 @@ class WCbar(object):
             self.ax, self.label2color = discrete_array_colorshow(
                 self.data, dim, fig, orientation=orientation, level2color=self.label2color)
 
-        if lineanno == 'topleft':
-            if annhei is None and annlft is None:
-                annlft = left - 0.05
-                annhei = top + 0.05
-            elif annhei is None:
-                annhei = top + (left + width/2.0 - annlft)
-            elif annlft is None:
-                annlft = left + width/2.0 - (annhei - top)
-                
+        if self.lineanno == 'topleft':
+            if self.annhei is None and self.annlft is None:
+                self.annlft = left - 0.05
+                self.annhei = top + 0.05
+            elif self.annhei is None:
+                self.annhei = top + (left + width / 2. - self.annlft) * self.anntan
+            elif self.annlft is None:
+                self.annlft = left + width / 2. - (self.annhei - top)
+
+            anno_lw = 0.5
             # slant line
-            fig_add_line(fig, [annlft, left+width/2.0], [annhei, top])
+            fig_add_line(fig, [self.annlft, left+width/2.], [self.annhei, top], linewidth=anno_lw)
             # horizontal line
-            fig_add_line(fig, [annlft-annlen, annlft], [annhei, annhei])
-            fig.text(annlft, annhei, self.label,
-                     fontsize = labelfontsize, fontweight = labelfontweight,
+            fig_add_line(fig, [self.annlft-self.annlen, self.annlft],
+                         [self.annhei, self.annhei], linewidth=anno_lw)
+            fig.text(self.annlft, self.annhei, self.label,
+                     fontsize = self.labelfontsize, fontweight = self.labelfontweight,
                      horizontalalignment='right', verticalalignment='bottom')
+
         elif self.label is not None:
-            if labelside == 'right' or labelside == 'r':
-                fig.text(left+width+labelspacing, bottom+height/2.0, self.label,
-                         fontsize=labelfontsize, fontweight=labelfontweight,
-                         horizontalalignment='left', verticalalignment='center')
-            elif labelside == 'left' or labelside == 'l':
-                fig.text(left-labelspacing, bottom+height/2.0, self.label,
-                         fontsize=labelfontsize, fontweight=labelfontweight,
-                         horizontalalignment='right', verticalalignment='center')
+            if self.labelside == 'right' or self.labelside == 'r':
+                fig.text(left + width + self.labelspacing,
+                         bottom + height / 2., self.label,
+                         fontsize = self.labelfontsize, fontweight = self.labelfontweight,
+                         horizontalalignment = 'left', verticalalignment = 'center')
+            elif self.labelside == 'left' or self.labelside == 'l':
+                fig.text(left - self.labelspacing, bottom + height / 2., self.label,
+                         fontsize = self.labelfontsize, fontweight = self.labelfontweight,
+                         horizontalalignment = 'right', verticalalignment = 'center')
             else:
-                raise Exception('Unacceptable labelside %s' % labelside)
+                raise Exception('Unacceptable labelside %s' % self.labelside)
 
 
         return
@@ -286,55 +248,84 @@ class WCbar(object):
 
 class WCbarGroup(object):
 
-    def __init__(self):
+    def __init__(self, title=None):
 
         """ label2color is set at plot time """
-        self.wcbars = []
+        self.cbars = []
         self.label2color = None
-        self.label2cbar = {}
+        self.uid2cbar = {}
+        self.title = title
+
+    def getcat(self, catid):
+        g2 = WCbarGroup(title=self.title)
+        g2.cbars = [c for c in self.cbars if c.cat==catid]
+        g2.label2color = self.label2color
+        return g2
 
     def __len__(self):
         
-        return len(self.wcbars)
+        return len(self.cbars)
     
-    def add_cbar(self, data, label=None):
+    def add_cbar(self, data, uid=None, cat=1, **kwargs):
 
-        cbar = WCbar(data, label=label)
-        self.wcbars.append(cbar)
-        if label is not None:
-            self.label2cbar[label] = cbar
-
+        cbar = WCbar(data, **kwargs)
+        self.cbars.append(cbar)
+        cbar.cat = cat
+        if uid is not None:
+            self.uid2cbar[uid] = cbar
 
     def finalize_label2color(self, **kwargs):
 
         if self.label2color is None:
             levels = set()
-            for cbar in self.wcbars:
+            for cbar in self.cbars:
                 levels |= set(cbar.data)
             self.label2color = wzcolors.map_level2color(levels, **kwargs)
-            for cbar in self.wcbars:
+            for cbar in self.cbars:
                 cbar.label2color = self.label2color
 
-    def get(self, label):
+    def finalize_sublabel2color(self, pg):
 
-        if label in self.label2cbar:
-            return self.label2cbar[label]
+        pdata = []
+        cdata = []
+        for pcbar, ccbar in zip(pg.cbars, self.cbars):
+            pdata.extend(pcbar.data)
+            cdata.extend(ccbar.data)
+
+        p2c = {}
+        for _c, _p in zip(cdata, pdata):
+            if _p in p2c:
+                p2c[_p].add(_c)
+            else:
+                p2c[_p] = set()
+
+        c2colors = wzcolors.map2sub_alpha(p2c, pg.label2color)
+        self.label2color = c2colors
+        for cbar in self.cbars:
+            cbar.label2color = c2colors
+        return
+
+
+    def get(self, uid):
+
+        if uid in self.uid2cbar:
+            return self.uid2cbar[uid]
         else:
             return None
         
-    def plot(self, *args, **kwargs):
+    # def plot(self, *args, **kwargs):
         
-        """ plot all color bars """
-        self.finalize_label2color(**kwargs)
-        kwargs['label2color'] = self.label2color
+    #     """ plot all color bars """
+    #     self.finalize_label2color(**kwargs)
+    #     kwargs['label2color'] = self.label2color
 
-        space = kwargs['space'] if 'space' in kwargs else 0
-        if 'orientation' in kwargs and kwargs['orientation'] in ['v', 'vertical']:
-            left, bottom, width, height = args[0]
-            fig = args[1]
-            for i, cbar in enumerate(self.wcbars):
-                dim = (left + i*(width+space), bottom, width, height)
-                cbar.plot(dim, fig, **kwargs)
+    #     space = kwargs['space'] if 'space' in kwargs else 0
+    #     if 'orientation' in kwargs and kwargs['orientation'] in ['v', 'vertical']:
+    #         left, bottom, width, height = args[0]
+    #         fig = args[1]
+    #         for i, cbar in enumerate(self.wcbars):
+    #             dim = (left + i*(width+space), bottom, width, height)
+    #             cbar.plot(dim, fig, **kwargs)
 
     def plot_cbar(self, label, *args, **kwargs):
         cbar = self.label2cbar[label]
@@ -342,7 +333,6 @@ class WCbarGroup(object):
         kwargs['label2color'] = self.label2color
         cbar.plot(*args, **kwargs)
 
-        
     def plot_legend(self, (left, bottom, width), fig, patchheight=0.015,
                     continuous_height=0.1, title_fontsize=7):
 
@@ -353,12 +343,11 @@ class WCbarGroup(object):
         #     height = continuous_height
         # else:
         height = len(self.label2color)*patchheight
-        colorshow_legend(self.label2color, (left, bottom, width, height),
-                         fig) #, title=self.label, title_fontsize=title_fontsize)
+
+        colorshow_legend(self.label2color, (left, bottom, width, height), fig, title=self.title)
 
         self.leghei = height
         return
-            
 
 class WCbarCollection():
 
@@ -369,7 +358,16 @@ class WCbarCollection():
     def __len__(self):
 
         return sum([len(coll) for coll in self.colls])
-    
+
+    def cbars(self):
+
+        for cb in self.colls:
+            if isinstance(cb, WCbarGroup):
+                for _cb in cb.cbars:
+                    yield _cb
+            elif isinstance(cb, WCbar):
+                yield cb
+
 def scatter_matrix(frame, alpha=0.5, figsize=None, ax=None, grid=False,
                    diagonal='hist', marker='.', density_kwds=None,
                    hist_kwds=None, range_padding=0.05, rot=0, **kwds):
@@ -506,3 +504,220 @@ def _label_axis(ax, kind='x', label='', position='top',
         ax.yaxis.set_ticks_position(position)
         ax.yaxis.set_label_position(position)
     return
+
+def normal_tumor_layout(cd_tumor, cd_normal=None, top_cbars=WCbarCollection(), left_cbars=WCbarCollection(),
+                        top_normal_cbars=WCbarCollection(),
+                        figwid=18, fighei=8, figfile="tmp.png", **kwargs):
+
+    fig = plt.figure(figsize=(figwid, fighei))
+    fig.patch.set_facecolor('white')
+
+    left_cbars = left_cbars
+    top_cbars = top_cbars
+    top_normal_cbars = top_normal_cbars
+    cd_tumor = cd_tumor
+    cd_normal = cd_normal
+
+    mar = 0.05
+    tdhei = 0.1                 # top dendro height
+    tdpad = 0.005
+    tduni = tdhei + tdpad
+
+    ldwid = 0.1                 # left dendro width
+    ldpad = 0.003
+    lduni = ldwid + ldpad
+
+    nmwid = 0.1 if cd_normal is not None else 0
+    nmpad = 0.003 if cd_normal is not None else 0
+
+    nmuni = nmwid + nmpad
+    lcwid = 0.01                # left colorbar width
+    lcpad = 0.001               # left colorbar spacing
+    lcuni = lcwid + lcpad       # left colorbar unit width
+
+    tchei = 0.02  # top colorbar height
+    if 'tcpad' in kwargs and kwargs['tcpad']:
+        tcpad = kwargs['tcpad']
+    else:
+        tcpad = 0.001 # top colorbar spacing
+    tcuni = tchei + tcpad       # top colorbar unit height
+
+    # print left_cbars, top_cbars
+    mawid = (1 - 2*mar - ldpad - ldwid - nmwid - 2*nmpad - ((len(left_cbars)-1)*lcpad if len(left_cbars)>1 else 0) - len(left_cbars)*lcwid)
+    mahei = (1 - 2*mar - tdpad - tdhei - ((len(top_cbars)-1)*lcpad if len(top_cbars)>1 else 0) - len(left_cbars)*lcwid)
+    maheipad = 0.001
+    maheiuni = mahei + maheipad
+
+    figfile = figfile
+
+    assert(mawid>0)
+    assert(mahei>0)
+
+    print "left dendro"
+    cd_tumor.D_lft.plot(fig, [mar, mar, ldwid, mahei], orientation="left")
+
+    print "left color"
+    lclft = mar+lduni
+    for i, cbar in enumerate(left_cbars.cbars()):
+        cbar.lineanno = 'topleft'
+        cbar.annlft = lclft
+        cbar.plot([lclft+i*lcuni, mar, lcwid, mahei], fig, orientation='v')
+
+    print "normal heatmap"
+    nmlft = lclft + len(left_cbars)*lcuni
+    if cd_normal is not None:
+        plot_heatmap(cd_normal.df, [nmlft, mar, nmwid, mahei], fig, interpolation='none')
+
+    print "heatmap"
+    malft = nmlft + nmuni
+    plot_heatmap(cd_tumor.df, [malft, mar, mawid, mahei], fig, interpolation='none')
+
+    print "top normal color"
+    tcbtm = mar + maheiuni
+    if top_normal_cbars.colls:
+        for i, top_normal_cbar in enumerate(top_normal_cbars.cbars()):
+            top_normal_cbar.plot([nmlft, tcbtm+i*tcuni, nmwid, tchei], fig)
+
+    print "top color"
+    if top_cbars.colls:
+        for i, cbar in enumerate(top_cbars.cbars()):
+            cbar.plot([malft, tcbtm+i*tcuni, mawid, tchei], fig)
+
+    print "top dendro"
+    tdbtm = tcbtm + len(top_cbars)*tcuni
+    cd_tumor.D_top.plot(fig, [malft, tdbtm, mawid, tdhei], orientation='top')
+
+    print "Saving.."
+    fig.savefig(figfile, bbox_inches='tight', dpi=150)
+
+    # plot legend separately
+    print 'Legend'
+    legfigwid = 10
+    legfighei = 8
+    legbtm = 0.1
+    leglft = 0.1
+    legpad = 1.0 / legfigwid
+    legwid = 0.6 / legfigwid
+    fig = plt.figure(figsize=(10,8))
+    for cbar in left_cbars.colls+top_cbars.colls:
+        cbar.plot_legend([leglft, legbtm, legwid], fig)
+        leglft += legwid + legpad
+    ff = os.path.splitext(figfile)
+    legfigfile = ff[0]+'_legend'+ff[1]
+    fig.savefig(legfigfile, bbox_inches='tight', dpi=150)
+    print 'Saving legend..'
+    print "Done."
+
+
+def normal_tumor_with_contrast_layout(cd_tumor, cd_normal=None, cd_tumor_contrast=None, cd_normal_contrast=None, top_cbars=[], left_cbars=[], left_cbars_contrast=[], top_normal_cbars=[], figwid=18, fighei=10, figfile="tmp.png", **kwargs):
+
+    fig = plt.figure(figsize=(figwid, fighei))
+    fig.patch.set_facecolor('white')
+
+    left_cbars = left_cbars
+    top_cbars = top_cbars
+    top_normal_cbars = top_normal_cbars
+    cd_tumor = cd_tumor
+    cd_normal = cd_normal
+
+    mar = 0.05
+    tdhei = 0.1                 # top dendro height
+    tdpad = 0.005
+    tduni = tdhei + tdpad
+
+    ldwid = 0.1                 # left dendro width
+    ldpad = 0.003
+    lduni = ldwid + ldpad
+
+    nmwid = 0.1
+    nmpad = 0.003
+
+    nmuni = nmwid + nmpad
+    lcwid = 0.01                # left colorbar width
+    lcpad = 0.001               # left colorbar spacing
+    lcuni = lcwid + lcpad       # left colorbar unit width
+
+    tchei = 0.02  # top colorbar height
+    if 'tcpad' in kwargs and kwargs['tcpad']:
+        tcpad = kwargs['tcpad']
+    else:
+        tcpad = 0.001 # top colorbar spacing
+    tcuni = tchei + tcpad       # top colorbar unit height
+
+    # print left_cbars, top_cbars
+    mawid = (1 - 2*mar - ldpad - ldwid - nmwid - 2*nmpad - ((len(left_cbars)-1)*lcpad if len(left_cbars)>1 else 0) - len(left_cbars)*lcwid)
+    mahei = (1 - 2*mar - tdpad - tdhei - ((len(top_cbars)-1)*lcpad if len(top_cbars)>1 else 0) - len(left_cbars)*lcwid)
+    mahei /= 2
+    maheipad = 0.001
+    maheiuni = mahei + maheipad
+
+    figfile = figfile
+
+    assert(mawid>0)
+    assert(mahei>0)
+
+    print 'left dendro contrast'
+    cd_tumor_contrast.D_lft.plot(fig, [mar, mar, ldwid, mahei], orientation='left')
+
+    print 'left color bars contrast'
+    lclft = mar+lduni
+    for i, cbar in enumerate(left_cbars_contrast.cbars()):
+        cbar.plot([lclft+i*lcuni, mar, lcwid, mahei], fig, orientation='v')
+
+    print 'normal heatmap contrast'
+    nmlft = lclft + len(left_cbars)*lcuni
+    plot_heatmap(cd_normal_contrast.df, [nmlft, mar, nmwid, mahei], fig, interpolation='none')
+
+    print 'tumor heatmap contrast'
+    malft = nmlft + nmuni
+    plot_heatmap(cd_tumor_contrast.df, [malft, mar, mawid, mahei], fig, interpolation='none')
+    
+    print "left dendro"
+    ldbtm = mar+maheiuni
+    cd_tumor.D_lft.plot(fig, [mar, ldbtm, ldwid, mahei], orientation="left")
+
+    print "left color"
+    for i, cbar in enumerate(left_cbars.cbars()):
+        cbar.lineanno = 'topleft'
+        cbar.annlft = lclft
+        cbar.plot([lclft+i*lcuni, ldbtm, lcwid, mahei], fig, orientation='v')
+
+    print "normal heatmap"
+    plot_heatmap(cd_normal.df, [nmlft, ldbtm, nmwid, mahei], fig, interpolation='none')
+
+    print "tumor heatmap"
+    plot_heatmap(cd_tumor.df, [malft, ldbtm, mawid, mahei], fig, interpolation='none')
+
+    print "top normal color"
+    tcbtm = ldbtm + maheiuni
+    for i, top_normal_cbar in enumerate(top_normal_cbars.cbars()):
+        top_normal_cbar.plot([nmlft, tcbtm+i*tcuni, nmwid, tchei], fig)
+
+    print "top color"
+    for i, cbar in enumerate(top_cbars.cbars()):
+        cbar.plot([malft, tcbtm+i*tcuni, mawid, tchei], fig)
+
+    print "top dendro"
+    tdbtm = tcbtm + len(top_cbars)*tcuni
+    cd_tumor.D_top.plot(fig, [malft, tdbtm, mawid, tdhei], orientation='top')
+
+    print "Saving.."
+    fig.savefig(figfile, bbox_inches='tight', dpi=150)
+
+    # plot legend separately
+    print 'Legend'
+    legfigwid = 10
+    legfighei = 8
+    legbtm = 0.1
+    leglft = 0.1
+    legpad = 1.0 / legfigwid
+    legwid = 0.6 / legfigwid
+    fig = plt.figure(figsize=(10,8))
+    for cbar in left_cbars.colls+top_cbars.colls:
+        cbar.plot_legend([leglft, legbtm, legwid], fig)
+        leglft += legwid + legpad
+    ff = os.path.splitext(figfile)
+    legfigfile = ff[0]+'_legend'+ff[1]
+    fig.savefig(legfigfile, bbox_inches='tight', dpi=150)
+    print 'Saving legend..'
+    print "Done."

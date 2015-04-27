@@ -23,6 +23,15 @@ function abs(value) {
     return (value<0?-value:value);
 }
 
+function minabs(a,b,  aa, ab) {
+    aa = abs(a);
+    ab = abs(b);
+    if (aa < ab)
+        return a;
+    else
+        return b;
+}
+
 function div(denom, divd) {
     return (divd == 0? "NA" : denom/divd);
 }
@@ -71,12 +80,14 @@ function aa3to1(string,    dic) {
 
 # join fields by specifying a range
 # for example, from $3 to $10, one can use joinr(3,10)
-function joinr(start, end,     result, i) {
+function joinr(start, end,    sep, result, i) {
 
+    if (sep == "")
+        sep = "\t"
     result = ""
     for (i=start; i<=end; ++i) {
 	if (i != start) {
-	    result = result "\t";
+	    result = result sep;
 	}
 	result = result $i;
     }
