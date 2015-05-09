@@ -4,6 +4,14 @@ function rev(string, x,i) {
 		return x
 }
 
+function count(string, c,    i, a, cnt) {
+    cnt = 0
+    for (i=0;i<n=split(string,a,"");i++)
+        if (a[i]==c)
+            cnt++
+    return cnt;
+}
+
 function max(a,b) {
 		if (a>b) 
 				return a;
