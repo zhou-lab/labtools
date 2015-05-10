@@ -9,53 +9,94 @@ import numpy as np
 import wzcolors
 import os
 
-def plot_heatmap(data, dim=[0.1,0.1,0.85,0.85], fig=None, xlabels=None, ylabels=None, label_fontsize=8, cmap=None, interpolation=None):
+"""
+low level plotting:
+* plot_heatmap_discrete
+* plot_heatmap
+* 
 
-    # data = np.ma.array(data.as_matrix(), mask=data.isnull())
-    
-    if cmap is None:
-        cmap = cm.jet
+high level plotting:
+* WZHmap
+* WZCbar
+* WZCbarGroup
+* WZCbarCollection
+"""
 
-    cmap.set_bad('#E6E6E6', 1)
+def plot_heatmap_discrete(data, dim=None, fig=None, xlabels=None, ylabels=None, label_fontsize=8, level2color=None):
+
+    """ plot heatmap for data frame with categorical value """
+
+    # set defaults
+    if dim is None:
+        dim = [0.1,0.1,0.85,0.85]
+
     if fig is None:
         fig = plt.figure()
-            
+        
+    # map levels to color
+    levels = sorted(list(set(data.values.flatten())))
+    if level2color is None:
+        colors = wzcolors.get_distinct_colors_rgb(len(levels))
+        level2color = dict(zip(levels, colors))
+    else:
+        colors = [level2color[level] for level in levels]
+    
+    cmap = mcolors.ListedColormap(colors)
+    bounds = np.arange(0.5, len(levels)+0.5, 1.0)
+    norm = mcolors.BoundaryNorm(bounds, cmap.N)
+    centers = [_+0.5 for _ in bounds]
+    level2center = dict(zip(levels, centers))
+
+    dataplot = data.applymap(lambda x: level2center[x])
+
+    ax = fig.add_axes(dim, frameon=False)
+    ax.imshow(dataplot, aspect='auto', origin='lower', cmap=cmap, interpolation='none')
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+    return ax, level2color
+
+def plot_heatmap(data, dim=None, fig=None, xlabels=None, ylabels=None, label_fontsize=8,
+                 axhlines=None, cmap=None, interpolation=None):
+
+    """ plot heatmap for data frame with continuous value """
+    
+    # data = np.ma.array(data.as_matrix(), mask=data.isnull())
+
+    # set defaults
+    if dim is None:
+        dim = [0.1,0.1,0.85,0.85]
+
+    if fig is None:
+        fig = plt.figure()
+        
+    if cmap is None:
+        cmap = cm.jet
+    if isinstance(cmap, str):
+        cmap = cm.get_cmap(cmap)
+    cmap.set_bad('#E6E6E6', 1)
+
     ax = fig.add_axes(dim, frameon=False)
     ax.imshow(data, aspect='auto', origin='lower', cmap=cmap, interpolation=interpolation)
 
+    # ax.imshow(data, extent=[0,data.shape[0],0,data.shape[1]], aspect='equal', cmap=cmap, interpolation=interpolation)
+    
+    if axhlines is not None:
+        for y in axhlines:
+            ax.axhline(y, color='w', lw=0.2)
+
+    # print ax.get_ylim()
+    # print data.shape[1]
+    # ax.set_ylim((0, data.shape[1]+1))
     ax.set_xticks([])
     ax.set_yticks([])
-    if xlabels is not None:
-        if type(xlabels) == bool:
-            xlabels = data.columns.format()
-        for i in xrange(data.shape[1]):
-            ax.text(i+0.2, -1, xlabels[i], rotation=90, horizontalalignment='center', verticalalignment='top', fontsize=label_fontsize)
 
-    return ax
+    return ax, cmap
 
-def colorshow_legend(l2c, (left,bottom,width,height), fig, fontsize=7,
-                     horizontalspace=0.05, title=None, title_fontsize=7):
-
-    n = len(l2c)
-    ax = fig.add_axes((left, bottom, width, height), frameon=False)
-    ax.set_xlim(0,1)
-    ax.set_ylim(0,n)
-    levels, colors = zip(*l2c.items())
-    for i, color in enumerate(colors):
-        ax.add_patch(mpatches.Rectangle((0,i),1,1,facecolor=color,edgecolor='white'))
-        ax.text(1+horizontalspace,i+0.5,str(levels[i]),verticalalignment="center", fontsize=fontsize, fontweight='light')
-    # ax.set_yticks([i+0.5 for i in xrange(n)])
-    # ax.set_yticklabels(levels, fontsize=fontsize, fontweight='light')
-    # ax.yaxis.tick_right()
-    ax.set_yticks([])
-    ax.set_xticks([])
-    if title:
-        ax.set_title(title, fontsize=title_fontsize)
-
-    return ax
-
-def discrete_array_colorshow(data, dim, fig, orientation='horizontal',
-                             greyscale=False, greyscale_range=(0.1,0.9), level2color=None):
+def discrete_colorshow(data, dim, fig, orientation='horizontal',
+                       greyscale=False, greyscale_range=(0.1,0.9), level2color=None):
+    
+    """ color bar of discrete values """
 
     n = len(data)
     if orientation == 'horizontal' or orientation == 'h':
@@ -92,8 +133,33 @@ def discrete_array_colorshow(data, dim, fig, orientation='horizontal',
 
     return ax, level2color
 
+def colorshow_legend(l2c, (left,bottom,width,height), fig, label_fontsize=7,
+                     horizontalspace=0.06, title=None, title_fontsize=7):
+
+    """ legend of discrete color bar """
+
+    n = len(l2c)
+    ax = fig.add_axes((left, bottom, width, height), frameon=False)
+    ax.set_xlim(0,1)
+    ax.set_ylim(0,n)
+    levels, colors = zip(*l2c.items())
+    for i, color in enumerate(colors):
+        ax.add_patch(mpatches.Rectangle((0,i),1,1,facecolor=color,edgecolor='white'))
+        ax.text(1+horizontalspace,i+0.5,str(levels[i]),verticalalignment="center", fontsize=label_fontsize, fontweight='light')
+    # ax.set_yticks([i+0.5 for i in xrange(n)])
+    # ax.set_yticklabels(levels, fontsize=fontsize, fontweight='light')
+    # ax.yaxis.tick_right()
+    ax.set_yticks([])
+    ax.set_xticks([])
+    if title:
+        ax.set_title(title, fontsize=title_fontsize)
+
+    return ax
+
 def continuous_array_colorshow(data, dim=[0.1,0.1,0.85,0.85], fig=None, cmap='jet', orientation='horizontal'):
 
+    """ color bar of continuous value """
+    
     dmin = min(data)
     dmax = max(data)
 
@@ -114,21 +180,21 @@ def continuous_array_colorshow(data, dim=[0.1,0.1,0.85,0.85], fig=None, cmap='je
         fig = plt.figure()
 
     ax = fig.add_axes(dim, frameon=False)
-    # ax.pcolor(data_mat, cmap=colormap, norm=norm)#, interpolation='none')
     ax.imshow(data_mat, cmap=colormap, aspect='auto', norm=norm, interpolation='none')
     ax.set_xticks([])
     ax.set_yticks([])
     
     return ax, norm, colormap
 
-def continuous_array_colorshow_legend(norm, colormap, dim=[0.1,0.1,0.85,0.85], fig=None, title=None, fontsize=7, title_fontsize=7):
+def continuous_colorshow_legend(norm, colormap, dim=[0.1,0.1,0.85,0.85], fig=None, title=None, fontsize=7, title_fontsize=7):
 
+    """ plot legend of color bar with continuous values """
     if fig == None:
         fig = plt.figure()
 
     ax = fig.add_axes(dim, frameon=False)
     cb = mcolorbar.ColorbarBase(ax, cmap=colormap, norm=norm)
-    
+
     cb.ax.tick_params(labelsize=fontsize)
     cb.outline.set_color('white')
     cb.outline.set_linewidth(2)
@@ -144,40 +210,202 @@ def fig_add_line(fig, xcoor, ycoor, color='k', linewidth=.5):
     fig.lines.append(mlines.Line2D(xcoor, ycoor, transform=fig.transFigure,
                                    figure=fig, color=color, linewidth=linewidth))
 
-class WCbar(object):
+class WZHmap():
 
-    def __init__(self, data, continuous=False, label=None, cmap='jet',
-                 greyscale=False, greyscale_range=(0.1,0.9), labelside='r',
-                 labelspacing=0.001, labelfontsize=5, labelfontweight='light',
-                 annhei=None, annlft=None, annlen=0.03, lineanno=None, anntan=1):
+    def __init__(self, data,
 
-        self.continuous = continuous
-        self.label = label
-        self.data = data
+                 continuous = False,
+
+                 # discrete heat map
+                 label2color = None,
+                 greyscale = False,
+                 greyscale_range = (0.1,0.9),
+
+                 # continuous heat map
+                 cmap = 'jet',
+                 norm = None,
+                 interpolation = None,
+                 
+                 # tick label on x axis
+                 xticklabels = None,
+                 xticklabel_fontsize = 5,
+                 
+                 # title
+                 label = None,
+                 labelside = 'r',
+                 labelspacing = 0.001,
+                 labelfontsize = 8,
+                 labelfontweight = 'light',
+
+                 # legend
+                 legend_title = None,
+                 legend_title_fontsize = 8,
+                 legend_label_fontsize = 8,
+             ):
+        
         self.ax = None
+        self.data = data
+        import inspect
+        ia = inspect.getargspec(WZHmap.__init__)
+        # print ia
+        for a in ia.args[-len(ia.defaults):]:
+            # print a, locals()[a]
+            setattr(self, a, locals()[a])
 
-        # for discrete color map
-        self.label2color = None
-        self.greyscale = greyscale
-        self.greyscale_range = greyscale_range
+        # print self.xticklabels
 
-        # for continuous color map
-        self.cmap = cmap
-        self.norm = None
-        self.colormap = None
+    def plot(self, dim=None, fig=None):
 
-        # labels
-        self.labelside = labelside
-        self.labelspacing = labelspacing
-        self.labelfontsize = labelfontsize
-        self.labelfontweight = labelfontweight
+        # heat map
+        if self.continuous:
+            self.ax, self.colormap = plot_heatmap(self.data, dim, fig)
+        else:
+            self.ax, self.label2color = plot_heatmap_discrete(self.data, dim, fig, level2color=self.label2color)
 
-        # slanted annotation
-        self.lineanno = lineanno
-        self.annhei = annhei
-        self.annlft = annlft
-        self.annlen = annlen
-        self.anntan = anntan
+        # xtick labels
+        if self.xticklabels is not None:
+            if type(self.xticklabels) == bool:
+                self.xticklabels = self.data.columns.format()
+            for i in xrange(self.data.shape[1]):
+                self.ax.text(i+0.2, -1, self.xticklabels[i], rotation=90, horizontalalignment='center',
+                             verticalalignment='top', fontsize=self.xticklabel_fontsize)
+
+    def plot_legend(self, dim=[0.1,0.1,0.03,0.4], fig=None, unitheight=0.015):
+
+        if fig is None:
+            fig = plt.figure()
+
+        kwargs = {}
+        if self.legend_title is not None:
+            kwargs['title'] = self.legend_title
+        if self.legend_title_fontsize is not None:
+            kwargs['title_fontsize'] = self.legend_title_fontsize
+        if self.legend_label_fontsize is not None:
+            kwargs['label_fontsize'] = self.legend_label_fontsize
+
+        if self.continuous:
+            continuous_colorshow_legend(None, self.colormap, dim, fig)
+        else:
+            dim[-1] = unitheight*len(self.label2color)
+            colorshow_legend(self.label2color, dim, fig, **kwargs)
+
+
+def text_reconcile(pos1, interval, error=0.01):
+    pos1 = sorted(pos1)
+    # first resolve interval
+    pos2 = [0] * len(pos1)
+    for j in xrange(len(pos1)):
+        if j == 0:
+            pos2[0] = pos1[0]
+            continue
+        if pos1[j] - pos2[j-1] < interval:
+            pos2[j] = pos2[j-1] + interval
+        else:
+            pos2[j] = pos1[j]
+        
+    concord = False
+    ccc = 0
+    # print 'pos1', pos1
+    # print 'pos2 initial', pos2
+    while not concord:
+        concord = True
+        
+        # left shifts
+        j = 0
+        while j < len(pos1):
+            group = [j]
+            while j < len(pos1)-1 and pos2[j+1] <= pos2[j]+interval:
+                j += 1
+                group.append(j)
+            j += 1
+            mean1 = np.mean([pos1[_] for _ in group])
+            mean2 = np.mean([pos2[_] for _ in group])
+            if mean1 < mean2: # need to left shift
+                delta_shift = mean2-mean1
+                if group[0] != 0:
+                    delta_shift = min(delta_shift, pos2[group[0]]-pos2[group[0]-1]-interval)
+                if delta_shift < error:
+                    continue
+                for _j in group: # shift the entire group left
+                    pos2[_j] -= delta_shift
+                    concord = False
+
+        #print 'left pos2', pos2
+        # right shifts
+        j = len(pos1)-1
+        while j >= 0:
+            group = [j]
+            while j > 0 and pos2[j-1]+interval >= pos2[j]:
+                j -= 1
+                group.append(j)
+            j -= 1
+            mean1 = np.mean([pos1[_] for _ in group])
+            mean2 = np.mean([pos2[_] for _ in group])
+            if mean1 > mean2: # need to right shift
+                delta_shift = mean1 - mean2
+                if group[-1] != len(pos1)-1:
+                    delta_shift = min(delta_shift, pos2[group[-1]+1]-pos2[group[-1]]-interval)
+                if delta_shift < error:
+                    continue
+                for _j in group:  # shift the entire group right
+                    pos2[_j] += delta_shift
+                    concord = False
+               
+        #print 'right pos2', pos2
+        ccc += 1
+        if ccc > 3:
+            break
+    return pos2
+
+class WZCbar(object):
+
+    def __init__(self, data,
+                 
+                 continuous=False,
+
+                 # discrete color bar
+                 label2color = None,
+                 greyscale = False,
+                 greyscale_range = (0.1,0.9),
+
+                 # continuous color bar
+                 cmap = 'jet',
+                 norm = None,
+
+                 # title
+                 title = None,
+                 title_side = 'r',
+                 title_spacing = 0.001,
+                 title_fontsize = 5,
+                 title_fontweight = 'light',
+
+                 # slanted annotation
+                 lineanno = None,
+                 annhei = None,
+                 annlft = None,
+                 annlen = 0.03,
+                 anntan = 1,
+
+                 # legend
+                 legend_title = None,
+                 legend_title_fontsize = 8,
+                 legend_label_fontsize = 8,
+
+                 # perpendicular tick label
+                 pticklabels = None,
+                 pticklabel_fontsize = 4,
+                 pticklabel_pad = 0.01,
+             ):
+
+        self.ax = None
+        self.data = data
+        import inspect
+        ia = inspect.getargspec(WZCbar.__init__)
+        for a in ia.args[-len(ia.defaults):]:
+            setattr(self, a, locals()[a])
+            
+        if self.legend_title is None:
+            self.legend_title = self.title
 
     def __len__(self):
 
@@ -192,10 +420,10 @@ class WCbar(object):
             self.ax, self.norm, self.colormap = continuous_array_colorshow(
                 self.data, dim, fig, cmap=self.cmap)
         else:
-            self.ax, self.label2color = discrete_array_colorshow(
+            self.ax, self.label2color = discrete_colorshow(
                 self.data, dim, fig, orientation=orientation, level2color=self.label2color)
 
-        if self.lineanno == 'topleft':
+        if self.lineanno == 'topleft' and self.title is not None:
             if self.annhei is None and self.annlft is None:
                 self.annlft = left - 0.05
                 self.annhei = top + 0.05
@@ -210,54 +438,101 @@ class WCbar(object):
             # horizontal line
             fig_add_line(fig, [self.annlft-self.annlen, self.annlft],
                          [self.annhei, self.annhei], linewidth=anno_lw)
-            fig.text(self.annlft, self.annhei, self.label,
-                     fontsize = self.labelfontsize, fontweight = self.labelfontweight,
+            fig.text(self.annlft, self.annhei, self.title,
+                     fontsize = self.title_fontsize, fontweight = self.title_fontweight,
                      horizontalalignment='right', verticalalignment='bottom')
 
-        elif self.label is not None:
-            if self.labelside == 'right' or self.labelside == 'r':
-                fig.text(left + width + self.labelspacing,
-                         bottom + height / 2., self.label,
-                         fontsize = self.labelfontsize, fontweight = self.labelfontweight,
+        elif self.title is not None:
+            if self.title_side == 'right' or self.title_side == 'r':
+                fig.text(left + width + self.title_spacing,
+                         bottom + height / 2., self.title,
+                         fontsize = self.title_fontsize, fontweight = self.title_fontweight,
                          horizontalalignment = 'left', verticalalignment = 'center')
-            elif self.labelside == 'left' or self.labelside == 'l':
-                fig.text(left - self.labelspacing, bottom + height / 2., self.label,
-                         fontsize = self.labelfontsize, fontweight = self.labelfontweight,
+            elif self.title_side == 'left' or self.title_side == 'l':
+                fig.text(left - self.title_spacing, bottom + height / 2., self.title,
+                         fontsize = self.title_fontsize, fontweight = self.title_fontweight,
                          horizontalalignment = 'right', verticalalignment = 'center')
             else:
-                raise Exception('Unacceptable labelside %s' % self.labelside)
+                raise Exception('Unacceptable title side %s' % self.title_side)
 
+        if self.pticklabels is not None:
+
+            pl_inds = [_[0] for _ in self.pticklabels]
+            pl_plots = text_reconcile(pl_inds, 10)
+            ax = fig.add_axes([left-self.pticklabel_pad, bottom, self.pticklabel_pad, height], frameon=False)
+            for _real, _plot in zip(pl_inds, pl_plots):
+                ax.plot([1.0,0.6,0.4,0.], [_real, _real, _plot, _plot], color='k', lw=0.5)
+            ax.set_ylim(0, len(self.data))
+            ax.set_xlim(0,1)
+            ax.set_yticks(pl_plots)
+            ax.xaxis.set_tick_params(direction='in',width=0)
+            ax.yaxis.set_tick_params(direction='in',width=0, pad=0)
+            ax.set_yticklabels([_[1] for _ in self.pticklabels], fontsize=self.pticklabel_fontsize)
+            ax.set_xticks([])
 
         return
 
-    def plot_legend(self, (left, bottom, width), fig, patchheight=0.015,
-                    continuous_height=0.1, title_fontsize=7):
+    def plot_legend(self, dim=[0.1,0.1,0.03,0.4], fig=None, unitheight=0.015):
+
+        """ plot legend of the color bar """
+
+        if fig is None:
+            fig = plt.figure()
+
+        kwargs = {}
+        if self.legend_title is not None:
+            kwargs['title'] = self.legend_title
+        if self.legend_title_fontsize is not None:
+            kwargs['title_fontsize'] = self.legend_title_fontsize
+        if self.legend_label_fontsize is not None:
+            kwargs['label_fontsize'] = self.legend_label_fontsize
 
         if self.continuous:
-            continuous_array_colorshow_legend(
-                self.norm, self.colormap, (left, bottom, width, continuous_height),
-                fig, title=self.label)
-            height = continuous_height
+            continuous_colorshow_legend(self.norm, self.colormap, dim, fig,
+                                        title = self.legend_title,
+                                        title_fontsize = self.legend_title_fontsize)
         else:
-            height = len(self.label2color)*patchheight
-            colorshow_legend(self.label2color, (left, bottom, width, height),
-                             fig, title=self.label, title_fontsize=title_fontsize)
+            dim[-1] = unitheight*len(self.label2color)
+            colorshow_legend(self.label2color, dim, fig, **kwargs)
 
-        self.leghei = height
         return
 
-class WCbarGroup(object):
+""" a group of color bars with the same color map """
+class WZCbarGroup(object):
 
-    def __init__(self, title=None):
+    def __init__(self,
+
+                 continuous = False,
+                 
+                 # title
+                 title = None,
+                 title_side = 'r',
+                 title_spacing = 0.001,
+                 title_fontsize = 5,
+                 title_fontweight = 'light',
+
+                 # legend
+                 legend_title = None,
+                 legend_title_fontsize = 8,
+                 legend_label_fontsize = 8,
+             ):
 
         """ label2color is set at plot time """
         self.cbars = []
         self.label2color = None
         self.uid2cbar = {}
-        self.title = title
+
+
+        import inspect
+        ia = inspect.getargspec(WZCbarGroup.__init__)
+        for a in ia.args[-len(ia.defaults):]:
+            setattr(self, a, locals()[a])
+            
+        if self.legend_title is None:
+            self.legend_title = self.title
 
     def getcat(self, catid):
-        g2 = WCbarGroup(title=self.title)
+        g2 = WZCbarGroup(title=self.title)
         g2.cbars = [c for c in self.cbars if c.cat==catid]
         g2.label2color = self.label2color
         return g2
@@ -268,7 +543,7 @@ class WCbarGroup(object):
     
     def add_cbar(self, data, uid=None, cat=1, **kwargs):
 
-        cbar = WCbar(data, **kwargs)
+        cbar = WZCbar(data, **kwargs)
         self.cbars.append(cbar)
         cbar.cat = cat
         if uid is not None:
@@ -333,23 +608,39 @@ class WCbarGroup(object):
         kwargs['label2color'] = self.label2color
         cbar.plot(*args, **kwargs)
 
-    def plot_legend(self, (left, bottom, width), fig, patchheight=0.015,
-                    continuous_height=0.1, title_fontsize=7):
+    def plot_legend(self, dim=[0.1,0.1,0.03,0.4], fig=None, unitheight=0.015):
 
-        # if self.continuous:
-        #     continuous_array_colorshow_legend(
-        #         self.norm, self.colormap, (left, bottom, width, continuous_height),
-        #         fig, title=self.label)
-        #     height = continuous_height
-        # else:
-        height = len(self.label2color)*patchheight
+        if fig is None:
+            fig = plt.figure()
 
-        colorshow_legend(self.label2color, (left, bottom, width, height), fig, title=self.title)
+        kwargs = {}
+        if self.legend_title is not None:
+            kwargs['title'] = self.legend_title
+        if self.legend_title_fontsize is not None:
+            kwargs['title_fontsize'] = self.legend_title_fontsize
+        if self.legend_label_fontsize is not None:
+            kwargs['label_fontsize'] = self.legend_label_fontsize
 
-        self.leghei = height
+        if self.continuous:
+            continuous_colorshow_legend(self.norm, self.colormap, dim, fig,
+                                        title = self.legend_title,
+                                        title_fontsize = self.legend_title_fontsize)
+        else:
+            dim[-1] = unitheight*len(self.label2color)
+            colorshow_legend(self.label2color, dim, fig, **kwargs)
+
+
+            
+        # height = len(self.label2color)*patchheight
+
+        # colorshow_legend(self.label2color, (left, bottom, width, height), fig, title=self.title)
+
+        # self.leghei = height
         return
 
-class WCbarCollection():
+class WZCbarCollection():
+
+    """ a collection of color bars or color bar groups """
 
     def __init__(self, colls=[]):
 
@@ -359,13 +650,16 @@ class WCbarCollection():
 
         return sum([len(coll) for coll in self.colls])
 
+    def add_cbar(self, cbar):
+        self.colls.append(cbar)
+
     def cbars(self):
 
         for cb in self.colls:
-            if isinstance(cb, WCbarGroup):
+            if isinstance(cb, WZCbarGroup):
                 for _cb in cb.cbars:
                     yield _cb
-            elif isinstance(cb, WCbar):
+            elif isinstance(cb, WZCbar):
                 yield cb
 
 def scatter_matrix(frame, alpha=0.5, figsize=None, ax=None, grid=False,
@@ -503,10 +797,11 @@ def _label_axis(ax, kind='x', label='', position='top',
         # ax.set_ylabel(a)
         ax.yaxis.set_ticks_position(position)
         ax.yaxis.set_label_position(position)
+        
     return
 
-def normal_tumor_layout(cd_tumor, cd_normal=None, top_cbars=WCbarCollection(), left_cbars=WCbarCollection(),
-                        top_normal_cbars=WCbarCollection(),
+def normal_tumor_layout(cd_tumor, cd_normal=None, top_cbars=WZCbarCollection(), left_cbars=WZCbarCollection(),
+                        top_normal_cbars=WZCbarCollection(), 
                         figwid=18, fighei=8, figfile="tmp.png", **kwargs):
 
     fig = plt.figure(figsize=(figwid, fighei))
@@ -528,7 +823,7 @@ def normal_tumor_layout(cd_tumor, cd_normal=None, top_cbars=WCbarCollection(), l
     lduni = ldwid + ldpad
 
     nmwid = 0.1 if cd_normal is not None else 0
-    nmpad = 0.003 if cd_normal is not None else 0
+    nmpad = 0.001 if cd_normal is not None else 0
 
     nmuni = nmwid + nmpad
     lcwid = 0.01                # left colorbar width
@@ -600,7 +895,7 @@ def normal_tumor_layout(cd_tumor, cd_normal=None, top_cbars=WCbarCollection(), l
     legwid = 0.6 / legfigwid
     fig = plt.figure(figsize=(10,8))
     for cbar in left_cbars.colls+top_cbars.colls:
-        cbar.plot_legend([leglft, legbtm, legwid], fig)
+        cbar.plot_legend([leglft, legbtm, legwid, 0.4], fig)
         leglft += legwid + legpad
     ff = os.path.splitext(figfile)
     legfigfile = ff[0]+'_legend'+ff[1]
@@ -609,7 +904,101 @@ def normal_tumor_layout(cd_tumor, cd_normal=None, top_cbars=WCbarCollection(), l
     print "Done."
 
 
-def normal_tumor_with_contrast_layout(cd_tumor, cd_normal=None, cd_tumor_contrast=None, cd_normal_contrast=None, top_cbars=[], left_cbars=[], left_cbars_contrast=[], top_normal_cbars=[], figwid=18, fighei=10, figfile="tmp.png", **kwargs):
+
+def normal_tumor_layout_simple(df_tumor, df_normal=None, top_cbars=WZCbarCollection(), left_cbars=WZCbarCollection(),
+                                 top_normal_cbars=WZCbarCollection(), tumor_axhlines=None, dpi=150,
+                                 figwid=18, fighei=8, figfile="tmp.png", **kwargs):
+
+    """ version without dendrogram """
+    fig = plt.figure(figsize=(figwid, fighei))
+    fig.patch.set_facecolor('white')
+
+    left_cbars = left_cbars
+    top_cbars = top_cbars
+    top_normal_cbars = top_normal_cbars
+
+    mar = 0.05
+
+    nmwid = 0.1 if df_normal is not None else 0
+    nmpad = 0.001 if df_normal is not None else 0
+
+    nmuni = nmwid + nmpad
+    lcwid = 0.01                # left colorbar width
+    lcpad = 0.001               # left colorbar spacing
+    lcuni = lcwid + lcpad       # left colorbar unit width
+
+    tchei = 0.02  # top colorbar height
+    if 'tcpad' in kwargs and kwargs['tcpad']:
+        tcpad = kwargs['tcpad']
+    else:
+        tcpad = 0.001 # top colorbar spacing
+    tcuni = tchei + tcpad       # top colorbar unit height
+
+    # print left_cbars, top_cbars
+    mawid = (1 - 2*mar - nmwid - 2*nmpad - ((len(left_cbars)-1)*lcpad if len(left_cbars)>1 else 0) - len(left_cbars)*lcwid)
+    mahei = (1 - 2*mar - ((len(top_cbars)-1)*lcpad if len(top_cbars)>1 else 0) - len(left_cbars)*lcwid)
+    maheipad = 0.001
+    maheiuni = mahei + maheipad
+
+    figfile = figfile
+
+    assert(mawid>0)
+    assert(mahei>0)
+
+    print "left color"
+    lclft = mar
+    for i, cbar in enumerate(left_cbars.cbars()):
+        cbar.lineanno = 'topleft'
+        cbar.annlft = lclft
+        cbar.plot([lclft+i*lcuni, mar, lcwid, mahei], fig, orientation='v')
+
+    print "normal heatmap"
+    nmlft = lclft + len(left_cbars)*lcuni
+    if df_normal is not None:
+        plot_heatmap(df_normal, [nmlft, mar, nmwid, mahei], fig, axhlines=tumor_axhlines, interpolation='none')
+
+    print "heatmap"
+    malft = nmlft + nmuni
+    plot_heatmap(df_tumor, [malft, mar, mawid, mahei], fig, axhlines=tumor_axhlines, interpolation='none')
+                 # interpolation='nearest')
+
+    print "top normal color"
+    tcbtm = mar + maheiuni
+    if top_normal_cbars.colls:
+        for i, top_normal_cbar in enumerate(top_normal_cbars.cbars()):
+            top_normal_cbar.plot([nmlft, tcbtm+i*tcuni, nmwid, tchei], fig)
+
+    print "top color"
+    if top_cbars.colls:
+        for i, cbar in enumerate(top_cbars.cbars()):
+            cbar.plot([malft, tcbtm+i*tcuni, mawid, tchei], fig)
+
+
+    print "Saving.."
+    fig.savefig(figfile, bbox_inches='tight', dpi=dpi)
+
+    # plot legend separately
+    print 'Legend'
+    legfigwid = 10
+    legfighei = 8
+    legbtm = 0.1
+    leglft = 0.1
+    legpad = 1.0 / legfigwid
+    legwid = 0.6 / legfigwid
+    fig = plt.figure(figsize=(10,8))
+    for cbar in left_cbars.colls+top_cbars.colls:
+        cbar.plot_legend([leglft, legbtm, legwid, 0.4], fig)
+        leglft += legwid + legpad
+    ff = os.path.splitext(figfile)
+    legfigfile = ff[0]+'_legend'+ff[1]
+    fig.savefig(legfigfile, bbox_inches='tight', dpi=150)
+    print 'Saving legend..'
+    print "Done."
+
+
+def normal_tumor_with_contrast_layout(cd_tumor, cd_normal=None, cd_tumor_contrast=None, cd_normal_contrast=None,
+                                      top_cbars=[], left_cbars=[], left_cbars_contrast=[], top_normal_cbars=[],
+                                      contrast_hei_ratio = 0.5, figwid=18, fighei=10, figfile="tmp.png", **kwargs):
 
     fig = plt.figure(figsize=(figwid, fighei))
     fig.patch.set_facecolor('white')
@@ -647,9 +1036,10 @@ def normal_tumor_with_contrast_layout(cd_tumor, cd_normal=None, cd_tumor_contras
     # print left_cbars, top_cbars
     mawid = (1 - 2*mar - ldpad - ldwid - nmwid - 2*nmpad - ((len(left_cbars)-1)*lcpad if len(left_cbars)>1 else 0) - len(left_cbars)*lcwid)
     mahei = (1 - 2*mar - tdpad - tdhei - ((len(top_cbars)-1)*lcpad if len(top_cbars)>1 else 0) - len(left_cbars)*lcwid)
-    mahei /= 2
+    # mahei /= 2
+    mahei_c = mahei * contrast_hei_ratio
+    mahei = mahei - mahei_c
     maheipad = 0.001
-    maheiuni = mahei + maheipad
 
     figfile = figfile
 
@@ -657,23 +1047,23 @@ def normal_tumor_with_contrast_layout(cd_tumor, cd_normal=None, cd_tumor_contras
     assert(mahei>0)
 
     print 'left dendro contrast'
-    cd_tumor_contrast.D_lft.plot(fig, [mar, mar, ldwid, mahei], orientation='left')
+    cd_tumor_contrast.D_lft.plot(fig, [mar, mar, ldwid, mahei_c], orientation='left')
 
     print 'left color bars contrast'
     lclft = mar+lduni
     for i, cbar in enumerate(left_cbars_contrast.cbars()):
-        cbar.plot([lclft+i*lcuni, mar, lcwid, mahei], fig, orientation='v')
+        cbar.plot([lclft+i*lcuni, mar, lcwid, mahei_c], fig, orientation='v')
 
     print 'normal heatmap contrast'
     nmlft = lclft + len(left_cbars)*lcuni
-    plot_heatmap(cd_normal_contrast.df, [nmlft, mar, nmwid, mahei], fig, interpolation='none')
+    plot_heatmap(cd_normal_contrast.df, [nmlft, mar, nmwid, mahei_c], fig, interpolation='none')
 
     print 'tumor heatmap contrast'
     malft = nmlft + nmuni
-    plot_heatmap(cd_tumor_contrast.df, [malft, mar, mawid, mahei], fig, interpolation='none')
+    plot_heatmap(cd_tumor_contrast.df, [malft, mar, mawid, mahei_c], fig, interpolation='none')
     
     print "left dendro"
-    ldbtm = mar+maheiuni
+    ldbtm = mar + mahei_c + maheipad
     cd_tumor.D_lft.plot(fig, [mar, ldbtm, ldwid, mahei], orientation="left")
 
     print "left color"
@@ -689,7 +1079,7 @@ def normal_tumor_with_contrast_layout(cd_tumor, cd_normal=None, cd_tumor_contras
     plot_heatmap(cd_tumor.df, [malft, ldbtm, mawid, mahei], fig, interpolation='none')
 
     print "top normal color"
-    tcbtm = ldbtm + maheiuni
+    tcbtm = ldbtm + mahei + maheipad
     for i, top_normal_cbar in enumerate(top_normal_cbars.cbars()):
         top_normal_cbar.plot([nmlft, tcbtm+i*tcuni, nmwid, tchei], fig)
 
@@ -714,10 +1104,11 @@ def normal_tumor_with_contrast_layout(cd_tumor, cd_normal=None, cd_tumor_contras
     legwid = 0.6 / legfigwid
     fig = plt.figure(figsize=(10,8))
     for cbar in left_cbars.colls+top_cbars.colls:
-        cbar.plot_legend([leglft, legbtm, legwid], fig)
+        cbar.plot_legend([leglft, legbtm, legwid, 0.4], fig)
         leglft += legwid + legpad
     ff = os.path.splitext(figfile)
     legfigfile = ff[0]+'_legend'+ff[1]
     fig.savefig(legfigfile, bbox_inches='tight', dpi=150)
     print 'Saving legend..'
     print "Done."
+

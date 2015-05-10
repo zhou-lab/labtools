@@ -1,6 +1,14 @@
 import numpy as np
 import itertools
 
+"""
+usage:
+ez_cluster(df)
+ez_cluster_row(df)
+ez_cluster_column(df)
+
+"""
+
 def p_euclidean(X):
     from numpy.linalg import norm
     m, n = X.shape
@@ -211,30 +219,59 @@ def ez_good_row(df, decision='all'):
         return df.apply(lambda x: all(x.notnull()), axis=1)
     elif decision == 'any':
         return df.apply(lambda x: any(x.notnull()), axis=1)
+
+
+def pdist_na(df, metric):
+
+    if metric == 'euclidean':
+        p = p_euclidean(df.transpose().as_matrix())
+    elif metric == 'hamming':
+        p = p_hamming(df.transpose().as_matrix())
+    else:
+        raise Exception('unknown metric %s' % metric)
+
+    return p
     
-def ez_cluster(df, fast=False, good_row=None):
+def ez_cluster(df, fast=False, good_row=None, categorical=False, metric='euclidean'):
+
+    """ with fast=True option, only consider probes with notnull in all samples """
 
     import fastcluster
-    """ by column, the top """
-    d = ClusterData()
-    d.df = df
+
     if good_row is not None:
-        d.df = d.df.loc[good_row,]
-    if fast:
-        d.Z_top = fastcluster.linkage(d.df.transpose().as_matrix(), method='ward', preserve_input=True)
-        d.Z_lft = fastcluster.linkage(d.df.as_matrix(), method='ward', preserve_input=True)
+        df = df.loc[good_row,]
 
+    if categorical:
+        if metric=='euclidean':
+            metric='hamming'
+        vals = sorted(list(set(df.values.flatten())))
+        inds = range(len(vals))
+        val2ind = dict(zip(vals, inds))
+        _df = df.applymap(lambda x: val2ind[x])
     else:
-        d.Z_top = fastcluster.linkage(p_euclidean(d.df.transpose().as_matrix()),
-                                      method='ward', preserve_input=True)
-        d.Z_lft = fastcluster.linkage(p_euclidean(d.df.as_matrix()),
-                                      method='ward', preserve_input=True)
+        _df = df
 
-    d.w_lft = np.apply_along_axis(np.nansum, 1, d.df)
+    d = ClusterData()
+    if fast:
+        d.Z_top = fastcluster.linkage(_df.transpose().as_matrix(), metric=metric, method='ward', preserve_input=True)
+        d.Z_lft = fastcluster.linkage(_df.as_matrix(), method='ward', metric=metric, preserve_input=True)
+    else:
+        p_top = pdist_na(_df.transpose(), metric)
+        d.Z_top = fastcluster.linkage(p_top, method='ward', preserve_input=True)
+        p_lft = pdist_na(_df, metric)
+        d.Z_lft = fastcluster.linkage(p_lft, method='ward', preserve_input=True)
+
+    if categorical:
+        d.w_lft = None
+    else:
+        d.w_lft = np.apply_along_axis(np.nansum, 1, _df)
     d.D_lft = compute_dendrogram(d.Z_lft, d.w_lft)
-    d.w_top = np.apply_along_axis(np.nansum, 0, d.df)
+    if categorical:
+        d.w_top = None
+    else:
+        d.w_top = np.apply_along_axis(np.nansum, 0, _df)
     d.D_top = compute_dendrogram(d.Z_top, d.w_top)
-    d.df = d.df.iloc[d.D_lft.leaforder,d.D_top.leaforder]
+    d.df = df.iloc[d.D_lft.leaforder,d.D_top.leaforder]
 
     return d
 

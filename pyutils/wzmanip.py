@@ -28,6 +28,15 @@ class Indices:
 
         return result
 
+    def has(self, ind):
+        for start,end in self.spans:
+            if end is None and ind >= start:
+                return True
+            if ind >= start and ind < end:
+                return True
+
+        return False
+
 def parse_indices(indstr):
     indices = Indices()
     if not indstr: return indices
@@ -448,7 +457,10 @@ def main_dupcompress(args):
                 k2v[k] = [v]
 
     for k, v in k2v.iteritems():
-        print '%s\t%d\t%s' % ('\t'.join(k), len(v), args.od.join(v))
+        if args.nc:
+            print '%s\t%s' % ('\t'.join(k), args.od.join(v))
+        else:
+            print '%s\t%d\t%s' % ('\t'.join(k), len(v), args.od.join(v))
 
 def div(denom, divid):
 
@@ -523,12 +535,14 @@ def main_unique(args):
 
 def main_dedupfun(args):
 
+    ind = parse_indices(args.k)
     prev_key = None
     funs = args.r.split(',')
     vals = []
     for line in args.t:
         fields = line.strip().split(args.delim)
-        key = fields[args.k-1]
+        key = tuple(ind.extract(fields))
+        # key = fields[args.k-1]
         
         if args.vt == 'float':
             val = float(fields[args.v-1])
@@ -536,14 +550,14 @@ def main_dedupfun(args):
             val = int(fields[args.v-1])
             
         if prev_key != key and prev_key is not None:
-            pipeprint('%s\t%s' % (str(prev_key), '\t'.join(
+            pipeprint('%s\t%s' % (args.delim.join(map(str,prev_key)), '\t'.join(
                 map(lambda x: str(eval(x, {'vals':vals,'np':np})), funs))))
             vals = [val]
         else:
             vals.append(val)
         prev_key = key
 
-    pipeprint('%s\t%s' % (str(prev_key), '\t'.join(
+    pipeprint('%s\t%s' % (args.delim.join(map(str,prev_key)), '\t'.join(
         map(lambda x: str(eval(x, {'vals':vals,'np':np})), funs))))
 
     try:
@@ -551,6 +565,31 @@ def main_dedupfun(args):
     except IOError:
         sys.exit(1)
     
+    return
+
+def main_replace(args):
+
+    k2v = []
+    for line in args.m:
+        fields = line.strip().split(args.delim)
+        key = fields[args.k-1]
+        val = fields[args.v-1]
+        k2v.append((key,val))
+
+    rind = parse_indices(args.r)
+    for line in args.t:
+        fields = line.strip().split(args.delim)
+        nf = []
+        for i, field in enumerate(fields):
+            if rind.has(i):
+                for k, v in k2v:
+                    if k == field:
+                        field = v
+                        break
+                    # field = field.replace(k, v)
+            nf.append(field)
+        print args.delim.join(nf)
+
     return
 
 if __name__ == '__main__':
@@ -669,14 +708,6 @@ if __name__ == '__main__':
     parser_dupmax.add_argument('--delim', default="\t", help="table delimiter [\\t]")
     parser_dupmax.set_defaults(func=main_dedupmax)
 
-    parser_dupcompress = subparsers.add_parser('dupcompress', help='remove dup in one column and list all value in another')
-    parser_dupcompress.add_argument('-t',type=argparse.FileType('r'), default='-')
-    parser_dupcompress.add_argument('-k', required=True, help="column to dedup (1-based)")
-    parser_dupcompress.add_argument('-v', type=int, required=True, help="column to list (1-based)")
-    parser_dupcompress.add_argument('--delim', default="\t", help="table delimiter [\\t]")
-    parser_dupcompress.add_argument('--od', default="\t", help="output delimiter of value fields [\\t]")
-    parser_dupcompress.set_defaults(func=main_dupcompress)
-
     parser_nameawk = subparsers.add_parser('nameawk', help='behave like awk, but use column name')
     parser_nameawk.add_argument('--delim', default="\t", help="table delimiter [\\t]")
     parser_nameawk.add_argument('table', help="data table", type = argparse.FileType('r'), default='-')
@@ -685,6 +716,15 @@ if __name__ == '__main__':
     parser_nameawk.add_argument('--silent', action='store_true', help='repress warning')
     parser_nameawk.set_defaults(func=main_nameawk)
 
+    parser_dupcompress = subparsers.add_parser('dupcompress', help='remove dup in one column and list all value in another')
+    parser_dupcompress.add_argument('-t',type=argparse.FileType('r'), default='-')
+    parser_dupcompress.add_argument('-k', required=True, help="column to dedup (1-based)")
+    parser_dupcompress.add_argument('-v', type=int, required=True, help="column to list (1-based)")
+    parser_dupcompress.add_argument('--nc', action="store_true", help="no print of count")
+    parser_dupcompress.add_argument('--delim', default="\t", help="table delimiter [\\t]")
+    parser_dupcompress.add_argument('--od', default="\t", help="output delimiter of value fields [\\t]")
+    parser_dupcompress.set_defaults(func=main_dupcompress)
+    
     parser_unique = subparsers.add_parser('unique', help='report only one version of a contiguous lines')
     parser_unique.add_argument('-k', type=int, help='column to unique')
     parser_unique.add_argument('-keep', default='first', help='{first, last}')
@@ -694,12 +734,21 @@ if __name__ == '__main__':
 
     parser_dupfun = subparsers.add_parser('dedupfun', help='dedup remove dup in one column by applying a function to another column')
     parser_dupfun.add_argument('-t',type=argparse.FileType('r'), default='-')
-    parser_dupfun.add_argument('-k', type=int, required=True, help="column to dedup (1-based)")
+    parser_dupfun.add_argument('-k', type=str, required=True, help="column to dedup (1-based)")
     parser_dupfun.add_argument('-v', type=int, required=True, help="column to apply function (1-based)")
-    parser_dupfun.add_argument('-r', default='np.mean(vals)', help='function to apply, will be evaled, argument is called "vals"')
+    parser_dupfun.add_argument('-r', default='np.mean(vals)', help='function to apply, will be evaled, argument is called "vals", default: mean')
     parser_dupfun.add_argument('-vt', default='float', help='value type, default: float, option: int')
     parser_dupfun.add_argument('--delim', default="\t", help="table delimiter [\\t]")
     parser_dupfun.set_defaults(func=main_dedupfun)
 
+    parser_replace = subparsers.add_parser('replace', help='replace a file by key value pair stored in another file')
+    parser_replace.add_argument('--delim', default="\t", help="table delimiter [\\t]")
+    parser_replace.add_argument('-m', type=argparse.FileType('r'), help='mapping file')
+    parser_replace.add_argument('-k', type=int, help='key in mapping file (default:1)', default=1)
+    parser_replace.add_argument('-v', type=int, help='value in mapping file (default:1)', default=1)
+    parser_replace.add_argument('-t', type=argparse.FileType('r'), help='target file', default='-')
+    parser_replace.add_argument('-r', help='replace columns (default: all columns)', default='-')
+    parser_replace.set_defaults(func=main_replace)
+    
     args = parser.parse_args()
     args.func(args)

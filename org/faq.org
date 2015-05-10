@@ -141,6 +141,107 @@ trim() {
 }
 #+END_SRC
 
+** lftp
+lftp
+> open -u name,password -p port site
+> open -u anonymous,ftpuser@adobe.com -p 21 ftp.adobe.com
+
+add site
+> site addip admin mewbies@127.0.0.1
+
+login a site
+> open ftp://ftp-trace.ncbi.nlm.nih.gov/sra/sra-instant/reads/ByStudy/sra/SRP%2FSRP032%2FSRP032967/SRR1029055/
+
+list files
+> ls
+
+open a http site
+> open http://gdac.broadinstitute.org/runs/analyses__2014_10_17/data/ESCA/20141017/
+
+disconnect from site
+> close
+
+disconnect and exit
+> exit
+or
+> quit
+or
+> bye
+
+issue shell commands
+> !mkdir downloads
+
+change to local directory
+> lcd downloads
+
+bookmark site
+> bookmark add adobe
+
+list all bookmarks
+> bookmark list
+
+download directory (quotes are necessary only containing space)
+> queue mirror "directory name"
+
+download file (quotes are necessary only containing space)
+> queue pget "my file"
+
+queue automatically starts
+
+view queued commands
+> queue
+Now executing: [2] mirror SRR1029056 -- 625M/18G (3%) 5.42 MiB/s
+Commands queued:
+ 1. mirror SRR1029055
+
+delete job number 1
+> queue -d 1
+
+delete entire queue
+> queue -d
+
+view jobs in waiting
+> jobs
+
+cancel a transfer
+> Ctrl+c
+
+resume download
+> mirror -c "directory name"
+> pget -c "file name"
+
+configuration
+~/.lftprc
+
+view default configuration
+> set -a
+
+skip file_id.diz, *.nfo and any directory and [
+> set mirror:exclude-regex ^.*file_id\.diz.*$\|^.*\.nfo.*$\[.*$
+one can put the above to .lftprc
+
+*** one liner
+upload a file (one liner)
+lftp -e "put /local/path/yourfile.mp4; bye' -u user,password ftp.foo.com
+
+download binary mode
+lftp -e 'set net:timeout 10; get yourfile.mp4; bye' -u user,password ftp.foo.com
+
+upload a directory (reverse mirror)
+lftp -e 'mirror -R /local/path/ /' -u user,password ftp.foo.com
+
+recursive down (mirror)
+lftp -e 'mirror / /local/path/' -u user,password ftp.foo.com
+
+recursive upload with regular expression
+lftp -e 'mirror -R -i "\.(html?|css|js)$" /local/path/ /' -u user,password ftp.foo.com
+
+non recursive upload
+lftp -e 'mirror -R -r -i "\.(html?|css|js)$" /local/path/ /' -u user,password ftp.foo.com
+
+*** special characters in username and password
+lftp -e 'put /local/path/yourfile.mp4; bye' -u user,password\!\! ftp.foo.com
+
 ** find
 *** let find -regex support [ [:digit:]]
 does not support POSIX character classes like [ [:digit:] ]
@@ -5054,6 +5155,10 @@ mclapply(x, func)
 #+END_SRC
 
 * Python
+** pip
+
+install to local directory
+pip install --user toolshed
 
 ** pandas
 
@@ -5066,6 +5171,14 @@ r_dataframe = com.convert_to_r_dataframe(df)
 
 see
 http://pandas.pydata.org/pandas-docs/dev/r_interface.html
+
+*** map in data frame
+applymap
+
+*** plot legend outside
+
+df.myCol.plot().legend(loc='center left', bbox_to_anchor=(1, 0.5))
+
 ** difference between numpy.array and numpy.matrix
 numpy.matrix is strictly 2-d
 please use numpy.array most of the time
@@ -8709,6 +8822,8 @@ Have fun!
 ** st
     hg st | awk '/\?/{print $2;}' | hg add
 * bash
+** reverse a file
+tail -r file
 ** how to loop over range of numbers                              :memorize:
 three expression for loop
 for (( EXP1; EXP2; EXP3 )); do command; done

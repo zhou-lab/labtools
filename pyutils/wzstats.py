@@ -5,6 +5,7 @@ import argparse
 import numpy as np
 import scipy.stats as stats
 import math
+import collections as colls
 
 class Indices:
 
@@ -125,11 +126,24 @@ def main_overlap(args):
     
     print '\n'.join(set1 & set2)
 
+def main_rowentropy(args):
+
+    """ compute entropy of each row """
+
+    indices = parse_indices(args.c)
+    output = parse_indices(args.o)
+
+    for line in args.table:
+        fields = line.strip().split(args.delim)
+        print '%s\t%1.2f' % (
+            '\t'.join(output.extract(fields)),
+            stats.entropy(colls.Counter(list(indices.extract(fields))).values()))
+        
+
 def add_std_options(psr):
 
     psr.add_argument('table', help="data table", type = argparse.FileType('r'), default='-')
-    psr.add_argument('--delim', default="\t", 
-                     help="table delimiter [\\t]")
+    psr.add_argument('--delim', default="\t", help="table delimiter [\\t]")
     psr.add_argument('--skipheader', action='store_true', help='skip header')
     psr.add_argument('-p', default=None, help="columns to be printed in the output, 1-based. E.g., -p 1,3,4 [None]")
 
@@ -159,6 +173,11 @@ if __name__ == '__main__':
     add_std_options(psr_Utest)
     psr_Utest.set_defaults(func=main_Utest)
 
+    p = subparsers.add_parser('rowentropy', help='compute entropy on each row')
+    p.add_argument('-c', default=None, help='columns to compute')
+    p.add_argument('-o', default='-', help='columns to output')
+    add_std_options(p)
+    p.set_defaults(func=main_rowentropy)
 
     args = parser.parse_args()
     args.func(args)
