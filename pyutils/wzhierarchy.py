@@ -238,6 +238,9 @@ def ez_cluster(df, fast=False, good_row=None, categorical=False, metric='euclide
 
     import fastcluster
 
+    if fast and good_row is None:
+        good_row = ez_good_row(df, decision='all')
+    
     if good_row is not None:
         df = df.loc[good_row,]
 
@@ -256,9 +259,9 @@ def ez_cluster(df, fast=False, good_row=None, categorical=False, metric='euclide
         d.Z_top = fastcluster.linkage(_df.transpose().as_matrix(), metric=metric, method='ward', preserve_input=True)
         d.Z_lft = fastcluster.linkage(_df.as_matrix(), method='ward', metric=metric, preserve_input=True)
     else:
-        p_top = pdist_na(_df.transpose(), metric)
+        p_top = pdist_na(_df, metric)
         d.Z_top = fastcluster.linkage(p_top, method='ward', preserve_input=True)
-        p_lft = pdist_na(_df, metric)
+        p_lft = pdist_na(_df.transpose(), metric)
         d.Z_lft = fastcluster.linkage(p_lft, method='ward', preserve_input=True)
 
     if categorical:
@@ -270,6 +273,7 @@ def ez_cluster(df, fast=False, good_row=None, categorical=False, metric='euclide
         d.w_top = None
     else:
         d.w_top = np.apply_along_axis(np.nansum, 0, _df)
+    # print d.w_top.shape, _df.shape, d.Z_top.shape, d.Z_lft.shape
     d.D_top = compute_dendrogram(d.Z_top, d.w_top)
     d.df = df.iloc[d.D_lft.leaforder,d.D_top.leaforder]
 

@@ -3765,12 +3765,14 @@ data.matrix
 #+BEGIN_SRC R
 na.omit(x)
 #+END_SRC
+
 **** remove rows with all values NA
 #+BEGIN_SRC R
 x[apply(x, 1, function(y) !all(is.na(y))),]
 or 
 x[rowSums(is.na(x))!=num_columns, ]
 #+END_SRC
+
 **** count the number of NAs in each row
 apply(x, 1, function(z) sum(is.na(z)))
 **** remove rows with more than 3 NAs
@@ -3802,6 +3804,7 @@ data[3]        <- NULL
 data[,3]       <- NULL
 data           <- subset(data, select=-size)
 #+END_SRC
+
 **** create a dataframe
 bubba<-data.frame(first=a second=b f=levels)
 **** add new column

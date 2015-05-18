@@ -214,7 +214,7 @@ class WZHmap():
 
     def __init__(self, data,
 
-                 continuous = False,
+                 continuous = True,
 
                  # discrete heat map
                  label2color = None,
@@ -229,6 +229,8 @@ class WZHmap():
                  # tick label on x axis
                  xticklabels = None,
                  xticklabel_fontsize = 5,
+                 xticklabel_side = 'bottom',
+                 xticklabel_rotat = 90,
                  
                  # title
                  label = None,
@@ -262,13 +264,18 @@ class WZHmap():
         else:
             self.ax, self.label2color = plot_heatmap_discrete(self.data, dim, fig, level2color=self.label2color)
 
+        height = self.data.shape[0]
         # xtick labels
         if self.xticklabels is not None:
             if type(self.xticklabels) == bool:
                 self.xticklabels = self.data.columns.format()
             for i in xrange(self.data.shape[1]):
-                self.ax.text(i+0.2, -1, self.xticklabels[i], rotation=90, horizontalalignment='center',
-                             verticalalignment='top', fontsize=self.xticklabel_fontsize)
+                if self.xticklabel_side in ['bottom', 'b']:
+                    self.ax.text(i, -1, self.xticklabels[i], rotation=self.xticklabel_rotat, horizontalalignment='left',
+                                 verticalalignment='top', fontsize=self.xticklabel_fontsize)
+                elif self.xticklabel_side in ['top', 't']:
+                    self.ax.text(i, height*1.01, self.xticklabels[i], rotation=self.xticklabel_rotat, horizontalalignment='left',
+                                 verticalalignment='bottom', fontsize=self.xticklabel_fontsize)
 
     def plot_legend(self, dim=[0.1,0.1,0.03,0.4], fig=None, unitheight=0.015):
 

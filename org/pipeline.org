@@ -1,5 +1,11 @@
 #+STARTUP: indent
 #+STARTUP: content
+* preprocess 450k
+** with minfi
+setwd("<your directory where data is>")
+raw.dat <- read.450k.exp(base = slide.folder, targets = files.table)  ### Import data
+norm.dat <- preprocessIllumina(raw.dat, bg.correct = TRUE, normalize = "controls") #### This would do the background correction, color bias removal, adjustment, and normalization
+dat.table <- getBeta(norm.dat)   ######## get the Beta values for analysis
 * MDA map2.sh pipeline
 Note 
 bwa merge -r infers read group from file name
