@@ -7241,6 +7241,116 @@ http://www.catonmat.net/blog/perl-one-liners-explained-part-five/
 http://www.catonmat.net/blog/perl-one-liners-explained-part-six/
 http://www.catonmat.net/blog/perl-one-liners-explained-part-seven/
 * Java Script
+** basic syntax
+*** switch
+#+BEGIN_SRC javascript
+switch (o) {
+   case 'option1':
+      console.log('seen option1');
+   case 'option2':
+      console.log('seen option2');
+   default:
+      console.log('non of above');
+}
+#+END_SRC
+
+*** function
+#+BEGIN_SRC javascript
+var multiply = function (x, y) {
+   return x * y;
+};
+#+END_SRC
+Note the ";" at the end. compare this with "def multiply(x,y)" python way and "int multiply(int x, int y)" the C way.
+*** object definition
+
+#+BEGIN_SRC javascript
+var myobj = {
+   age: 30,
+   country: "China"
+}
+
+or equivalently, 
+
+var myobj = new Object();
+myobj.name = 'Bob Smith';
+myobj.age = 30;
+#+END_SRC
+
+*** class definition
+class is defined as a "function" in JavaScript
+#+BEGIN_SRC javascript
+function Person(name, age) {
+    this.name = name;
+    this.age = age;
+}
+
+var bob = new Person('Bob Smith', 30);
+#+END_SRC
+
+class can have method defined to constructor
+#+BEGIN_SRC javascript
+function Rectange(height, width) {
+    this.height = height;
+    this.width = width;
+    this.calcArea = function() {
+        return this.height * this.width;
+    };
+};
+#+END_SRC
+
+*** object method definition
+#+BEGIN_SRC javascript
+
+var bob = new Object();
+bob.name = 'Bob Smith';
+bob.age = 30;
+bob.setAge = function(newAge) {
+    this.age = newAge;
+}
+
+bob.setAge(40);
+
+bob.getYearOfBirth = function () {
+   return 2014 - this.age;
+};
+
+#+END_SRC
+
+another example
+#+BEGIN_SRC javascript
+var square = new Object();
+square.sideLength = 6;
+square.calcPerimeter = function() {
+    return this.sideLength * 4;
+};
+// help us define an area method here
+square.calcArea = function() {
+    return this.sideLength * this.sideLength;
+};
+#+END_SRC
+
+*** accessing object properties
+There are 2 ways of accessing properties in Javascript.
+
+1. the dot notation
+var name = bob.name;
+
+2. the bracket notation
+var name = bob["name"];
+
+** string concatenation
+
+#+BEGIN_SRC javascript
+var name='Sally Bowles';
+console.log("sally's name " + name);
+#+END_SRC
+
+string concatenation works for non-string variables, e.g.,
+#+BEGIN_SRC javascript
+var age = 16;
+console.log("sally's age " + age);
+#+END_SRC
+
 ** confirm
 confirm('This is an example of using JS to create some interaction on a website. Click OK to continue!');
 ** prompt
@@ -7272,7 +7382,21 @@ console.log(i);
 }
 ** array
 var mixed = [34, "candy", "blue", 11];
-** loop over array
+*** create an array of people
+#+BEGIN_SRC javascript
+
+function Person (name, age) {
+    this.name = name;
+    this.age = age;
+}
+
+var family = new Array();
+family[0] = new Person('alice', 40);
+family[1] = new Person('bob', 42);
+family[2] = new Person('michelle', 8);
+#+END_SRC
+
+*** loop over array
 for (var i = 0; i < cities.length; i++) {
     console.log("I would like to visit " + cities[i]);
 }
