@@ -5158,10 +5158,32 @@ mclapply(x, func)
 #+END_SRC
 
 * Python
+
+** bokeh
+
+*** heatmap example
+
+from bokeh.charts import HeatMap, output_file, show
+from bokeh.sampledata.unemployment1948 import data
+
+# pandas magic
+# df = data[data.columns[:-2]]
+# df2 = df.set_index(df[df.columns[0]].astype(str))
+# df2.drop(df.columns[0], axis=1, inplace=True)
+# df3 = df2.transpose()
+
+output_file("2015_05_05_450_orphan_CpG_pmd_byseg_heatmap.html")
+
+hm = HeatMap(tumor_betas_pmd.iloc[1:100,1:100], title="categorical heatmap", width=800)
+show(hm)
+
 ** pip
 
 install to local directory
 pip install --user toolshed
+
+upgrade
+pip install --upgrade cutadapt
 
 ** pandas
 
