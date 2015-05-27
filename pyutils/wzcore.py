@@ -35,6 +35,10 @@ def reverse_complement(seq):
     
     return ''.join([complement(base) for base in reversed(seq)])
 
+def reverse(seq):
+
+    return ''.join(reversed(seq))
+
 def uniquify(seq):
 
     seq2 = []

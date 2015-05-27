@@ -7262,7 +7262,7 @@ http://www.catonmat.net/blog/perl-one-liners-explained-part-four/
 http://www.catonmat.net/blog/perl-one-liners-explained-part-five/
 http://www.catonmat.net/blog/perl-one-liners-explained-part-six/
 http://www.catonmat.net/blog/perl-one-liners-explained-part-seven/
-* Java Script
+* Javascript
 ** basic syntax
 *** switch
 #+BEGIN_SRC javascript

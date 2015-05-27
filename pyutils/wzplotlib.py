@@ -32,6 +32,9 @@ def plot_heatmap_discrete(data, dim=None, fig=None, xlabels=None, ylabels=None, 
 
     if fig is None:
         fig = plt.figure()
+
+    if isinstance(fig, tuple):
+        fig = plt.figure(figsize=fig)
         
     # map levels to color
     levels = sorted(list(set(data.values.flatten())))
@@ -50,7 +53,8 @@ def plot_heatmap_discrete(data, dim=None, fig=None, xlabels=None, ylabels=None, 
     dataplot = data.applymap(lambda x: level2center[x])
 
     ax = fig.add_axes(dim, frameon=False)
-    ax.imshow(dataplot, aspect='auto', origin='lower', cmap=cmap, interpolation='none')
+    ax.pcolor(data, cmap=cmap)
+    # ax.imshow(dataplot, aspect='auto', origin='lower', cmap=cmap, interpolation='none')
     ax.set_xticks([])
     ax.set_yticks([])
 
@@ -69,6 +73,9 @@ def plot_heatmap(data, dim=None, fig=None, xlabels=None, ylabels=None, label_fon
 
     if fig is None:
         fig = plt.figure()
+
+    if isinstance(fig, tuple):
+        fig = plt.figure(figsize=fig)
         
     if cmap is None:
         cmap = cm.jet
@@ -77,6 +84,7 @@ def plot_heatmap(data, dim=None, fig=None, xlabels=None, ylabels=None, label_fon
     cmap.set_bad('#E6E6E6', 1)
 
     ax = fig.add_axes(dim, frameon=False)
+    # ax.pcolor(data, cmap=cmap)
     ax.imshow(data, aspect='auto', origin='lower', cmap=cmap, interpolation=interpolation)
 
     # ax.imshow(data, extent=[0,data.shape[0],0,data.shape[1]], aspect='equal', cmap=cmap, interpolation=interpolation)
@@ -179,6 +187,10 @@ def continuous_array_colorshow(data, dim=[0.1,0.1,0.85,0.85], fig=None, cmap='je
     if fig == None:
         fig = plt.figure()
 
+    if isinstance(fig, tuple):
+        fig = plt.figure(figsize=fig)
+
+
     ax = fig.add_axes(dim, frameon=False)
     ax.imshow(data_mat, cmap=colormap, aspect='auto', norm=norm, interpolation='none')
     ax.set_xticks([])
@@ -191,6 +203,9 @@ def continuous_colorshow_legend(norm, colormap, dim=[0.1,0.1,0.85,0.85], fig=Non
     """ plot legend of color bar with continuous values """
     if fig == None:
         fig = plt.figure()
+
+    if isinstance(fig, tuple):
+        fig = plt.figure(figsize=fig)
 
     ax = fig.add_axes(dim, frameon=False)
     cb = mcolorbar.ColorbarBase(ax, cmap=colormap, norm=norm)
@@ -224,14 +239,16 @@ class WZHmap():
                  # continuous heat map
                  cmap = 'jet',
                  norm = None,
-                 interpolation = None,
+                 interpolation = 'none',
                  
                  # tick label on x axis
                  xticklabels = None,
                  xticklabel_fontsize = 5,
                  xticklabel_side = 'bottom',
                  xticklabel_rotat = 90,
-                 
+
+                 yticklabels = None,
+
                  # title
                  label = None,
                  labelside = 'r',
@@ -260,7 +277,7 @@ class WZHmap():
 
         # heat map
         if self.continuous:
-            self.ax, self.colormap = plot_heatmap(self.data, dim, fig)
+            self.ax, self.colormap = plot_heatmap(self.data, dim, fig, interpolation=self.interpolation)
         else:
             self.ax, self.label2color = plot_heatmap_discrete(self.data, dim, fig, level2color=self.label2color)
 
@@ -277,10 +294,19 @@ class WZHmap():
                     self.ax.text(i, height*1.01, self.xticklabels[i], rotation=self.xticklabel_rotat, horizontalalignment='left',
                                  verticalalignment='bottom', fontsize=self.xticklabel_fontsize)
 
+        if self.yticklabels is not None:
+            if type(self.yticklabels) == bool:
+                self.yticklabels = self.data.index.format()
+            for i in xrange(self.data.shape[0]):
+                self.ax.text(-1, i, self.yticklabels[i], horizontalalignment='right', fontsize=self.xticklabel_fontsize)
+
     def plot_legend(self, dim=[0.1,0.1,0.03,0.4], fig=None, unitheight=0.015):
 
         if fig is None:
             fig = plt.figure()
+
+        if isinstance(fig, tuple):
+            fig = plt.figure(figsize=fig)
 
         kwargs = {}
         if self.legend_title is not None:
@@ -486,6 +512,9 @@ class WZCbar(object):
         if fig is None:
             fig = plt.figure()
 
+        if isinstance(fig, tuple):
+            fig = plt.figure(figsize=fig)
+
         kwargs = {}
         if self.legend_title is not None:
             kwargs['title'] = self.legend_title
@@ -619,6 +648,9 @@ class WZCbarGroup(object):
 
         if fig is None:
             fig = plt.figure()
+
+        if isinstance(fig, tuple):
+            fig = plt.figure(figsize=fig)
 
         kwargs = {}
         if self.legend_title is not None:
@@ -1119,3 +1151,6 @@ def normal_tumor_with_contrast_layout(cd_tumor, cd_normal=None, cd_tumor_contras
     print 'Saving legend..'
     print "Done."
 
+
+def savefig(fn):
+    plt.savefig(fn, bbox_inches='tight', dpi=150)
