@@ -15,8 +15,8 @@ def clean_450k(df, probe_fn='/Users/wandingzhou/projects/hs-tcga/data/2015_03_05
     print "There are %d probes and %d samples" % df.shape
     return df
 
-
-def select_extreme(df, upthres=0.7,dwthres=0.3, kind='any', minsupp=1):
+""" select probes that are methylated in some samples and unmethylated in others """
+def polarized(df, upthres=0.7,dwthres=0.3, kind='any', minsupp=1):
 
     def _isvar(row):
         hi = (row > upthres).sum()
@@ -50,26 +50,37 @@ def select_std(df, topn=1000, std_thres=None):
 def dichotomize(df):
     pass
 
-def select_methylated(df, thres=0.8):
+def uniformly_methylated(df, thres=0.8):
 
     dfm = df[df.apply(lambda x: (x>thres).all())]
 
     print 'Selected %d methylated probes (>%1.3f) from %d samples' % (dfm.shape[0], thres, dfm.shape[1])
     return dfm
 
-def select_unmethylated(df, thres=0.2):
+def uniformly_unmethylated(df, thres=0.2):
 
     dfu = df[df.apply(lambda x: (x<thres).all())]
 
     print 'Selected %d methylated probes (<%1.3f) from %d samples' % (dfu.shape[0], thres, dfu.shape[1])
     return dfu
 
-class BloodTest:
+""" filter uniformly methylated and uniformly unmethylated probes """
+def filter_uniform(df, maxbeta=0.7, minbeta=0.3, maxsupp=0.9):
 
-    def __init__(self):
+    maxsuppn = float(df.shape[1]) * maxsupp
+    def _is_nonuniform(row):
+        return not (((row > maxbeta).sum() > maxsuppn) or ((row < minbeta).sum() > maxsuppn))
 
-        self.sample = 
+    dfv = df.apply(_is_nonuniform, axis=1)
+    print 'Filtered %d uniform probes from %d' % ((df.shape[0] - dfv.shape[0]), df.shape[0])
 
+    return dfv
+
+# class BloodTest:
+
+#     def __init__(self):
+
+#         self.sample = 
         
 def discretize(df, upthres=0.8, dwthres=0.2):
 

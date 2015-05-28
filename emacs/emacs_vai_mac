@@ -339,3 +339,7 @@ Then move to that line and indent according to mode"
 ;; helm
 (setq recentf-max-saved-items 1000)
 (global-set-key (kbd "M-r") 'helm-recentf)
+
+
+(global-set-key (kbd "<home>") 'beginning-of-line)
+(global-set-key (kbd "<end>") 'end-of-line)

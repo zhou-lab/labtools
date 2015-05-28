@@ -99,6 +99,17 @@ see also vcf-sort which uses sort -V
 *** change default bash
 edit /etc/shells and make sure the shell you want to use is in that file
 chsh -s /usr/local/bin/bash
+*** convert rows to columns
+**** paste -s -d, input_file (best)
+**** use tr
+tr "\n" "," < input_file
+and remove last comma
+tr "\n" ","  < input_file | sed 's/,$//'
+**** use xargs and sed
+xargs < infile | sed 's, ,\,,g'
+**** use awk
+awk 'BEGIN{FS="";ORS=","} {print}' test | sed 's/,$//'
+
 *** how to remove blank lines
 grep -v "^$" file.txt
 sed '/^$/d' file.txt
