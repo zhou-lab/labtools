@@ -592,11 +592,46 @@ def main_replace(args):
 
     return
 
+def main_concat(args):
+
+    """ concatenate data frames """
+
+    import pandas as pd
+    dfr = pd.DataFrame()
+    for f in args.f:
+        df = pd.read_table(f)
+        dfr = pd.concat([df,dfr], axis=args.a)
+
+    dfr.to_csv(args.o, sep='\t', index=False)
+
+def main_setcol(args):
+
+    """ set column """
+    import pandas as pd
+    df = pd.read_table(args.t)
+    args.e = args.e.replace('[', 'df["')
+    args.e = args.e.replace(']', '"]')
+    if args.e:
+        exec(args.e)
+    df.to_csv(args.o, sep='\t', index=False)
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Manipulate tables')
     subparsers = parser.add_subparsers()
 
+    parser_concat = subparsers.add_parser('concat', help='concatenate (regardless of the order of header')
+    parser_concat.add_argument('-f', nargs="*", help='input table')
+    parser_concat.add_argument('-o', help='output', default=sys.stdout)
+    parser_concat.add_argument('-a', help='axis', default=0)
+    parser_concat.set_defaults(func=main_concat)
+
+    parser_setcol = subparsers.add_parser('setcol', help='setcol')
+    parser_setcol.add_argument('-t', help="data table", type = argparse.FileType('r'), default='-')
+    parser_setcol.add_argument('-o', help='output', default=sys.stdout)
+    parser_setcol.add_argument('-e', help='expression (e.g., [colA]=[colB]+[colC]', default='')
+    parser_setcol.set_defaults(func=main_setcol)
+    
     parser_reorder = subparsers.add_parser("reorder", help="reorder columns in a table")
     parser_reorder.add_argument('table', help="data table", type = argparse.FileType('r'), default='-')
     parser_reorder.add_argument('--delim', default="\t", help="table delimiter [\\t]")
