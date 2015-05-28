@@ -102,12 +102,35 @@ function joinr(start, end,    sep, result, i) {
     return result
 }
 
-function join(array, start, end, sep,    result, i)
+function join(array, start, end, sep,  result, i)
 {
     if (sep == "")
        sep = " "
     else if (sep == SUBSEP) # magic value
        sep = ""
+
+    if (start == "")
+        start = 1
+    if (end == "")
+        end = length(array)
+    result = array[start]
+    for (i = start + 1; i <= end; i++)
+        result = result sep array[i]
+    return result
+}
+
+
+function joina(array, sep, start, end,    result, i)
+{
+    if (sep == "")
+       sep = " "
+    else if (sep == SUBSEP) # magic value
+       sep = ""
+
+    if (start == "")
+        start = 1
+    if (end == "")
+        end = length(array)
     result = array[start]
     for (i = start + 1; i <= end; i++)
         result = result sep array[i]
