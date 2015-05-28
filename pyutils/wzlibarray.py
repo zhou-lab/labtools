@@ -71,10 +71,17 @@ def filter_uniform(df, maxbeta=0.7, minbeta=0.3, maxsupp=0.9):
     def _is_nonuniform(row):
         return not (((row > maxbeta).sum() > maxsuppn) or ((row < minbeta).sum() > maxsuppn))
 
-    dfv = df.apply(_is_nonuniform, axis=1)
-    print 'Filtered %d uniform probes from %d' % ((df.shape[0] - dfv.shape[0]), df.shape[0])
+    dfv = df[df.apply(_is_nonuniform, axis=1)]
+    print 'Filtered %d uniform probes from %d' % (df.shape[0] - dfv.shape[0], df.shape[0])
 
     return dfv
+
+def split_tumor_normal(df):
+
+    dft = df.loc[:,df.columns.map(lambda x:x[13]=='0')]
+    dfn = df.loc[:,df.columns.map(lambda x:x[13]=='1')]
+
+    return dft, dfn
 
 # class BloodTest:
 
