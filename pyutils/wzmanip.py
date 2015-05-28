@@ -602,7 +602,7 @@ def main_concat(args):
         df = pd.read_table(f)
         dfr = pd.concat([df,dfr], axis=args.a)
 
-    dfr.to_csv(args.o, sep='\t', index=False)
+    dfr.to_csv(args.o, sep='\t', index=False, na_rep='NA')
 
 def main_setcol(args):
 
@@ -613,7 +613,7 @@ def main_setcol(args):
     args.e = args.e.replace(']', '"]')
     if args.e:
         exec(args.e)
-    df.to_csv(args.o, sep='\t', index=False)
+    df.to_csv(args.o, sep='\t', index=False, na_rep='NA')
 
 if __name__ == '__main__':
 
