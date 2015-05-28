@@ -152,10 +152,10 @@ function resplit(       a, l, i, j, b, k, BNF) # all are local variables
     # print "\n"
 }
 
-function repeat(str, n,    rep, i )
+function repeat(str, n, rep,    i )
 {
     split("",rep);
     for(i=1; i<=n; i++)
         rep[i] = str;
-    return rep
+    return
 }
