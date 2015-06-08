@@ -106,6 +106,7 @@ def discrete_colorshow(data, dim, fig, orientation='horizontal',
     
     """ color bar of discrete values """
 
+    print data[:10]
     n = len(data)
     if orientation == 'horizontal' or orientation == 'h':
         beg = '(i,0)'
@@ -142,7 +143,7 @@ def discrete_colorshow(data, dim, fig, orientation='horizontal',
     return ax, level2color
 
 def colorshow_legend(l2c, (left,bottom,width,height), fig, label_fontsize=7,
-                     horizontalspace=0.06, title=None, title_fontsize=7):
+                     horizontalspace=0.06, title=None, title_fontsize=7, alpha=1):
 
     """ legend of discrete color bar """
 
@@ -152,7 +153,7 @@ def colorshow_legend(l2c, (left,bottom,width,height), fig, label_fontsize=7,
     ax.set_ylim(0,n)
     levels, colors = zip(*l2c.items())
     for i, color in enumerate(colors):
-        ax.add_patch(mpatches.Rectangle((0,i),1,1,facecolor=color,edgecolor='white'))
+        ax.add_patch(mpatches.Rectangle((0,i),1,1,facecolor=color,edgecolor='white',alpha=alpha))
         ax.text(1+horizontalspace,i+0.5,str(levels[i]),verticalalignment="center", fontsize=label_fontsize, fontweight='light')
     # ax.set_yticks([i+0.5 for i in xrange(n)])
     # ax.set_yticklabels(levels, fontsize=fontsize, fontweight='light')
@@ -839,18 +840,137 @@ def _label_axis(ax, kind='x', label='', position='top',
         
     return
 
+def single_cluster_layout(cd, lcbs, tcbs, figwid=10, fighei=10, figfile='tmp.png', **kwargs):
+    """ 
+    lcbs : left color bars
+    tcbs : top color bars
+    """
+
+    single_hmap_layout(WZHmap(cd.df), lcbs, tcbs, td=cd.D_top, ld=cd.D_lft,
+                       figwid=figwid, fighei=fighei, figfile=figfile, **kwargs)
+    
+    return
+
+def single_hmap_layout(hmap, lcbs, tcbs, td=None, ld=None,
+                       figwid=10, fighei=10, figfile='tmp.png', **kwargs):
+    
+    fig = plt.figure(figsize=(figwid, fighei))
+    fig.patch.set_facecolor('white')
+
+    ## plot margin
+    mar = 0.05
+
+    ## top dendrogram
+    if ld is None:
+        tdhei = 0
+        tdpad = 0
+    else:
+        tdhei = 0.1
+        tdpad = 0.005
+    tduni = tdhei + tdpad
+
+    ## left dendrogram
+    if ld is None:
+        ldwid = 0
+        ldpad = 0
+    else:
+        ldwid = 0.1
+        ldpad = 0.003
+    lduni = ldwid + ldpad
+
+    ## left colorbar
+    lcwid = 0.01
+    lcpad = 0.001
+    lcuni = lcwid + lcpad
+    lcwid_all = len(lcbs) * lcwid + (((len(lcbs) - 1) * lcpad) if len(lcbs)>1 else 0)
+
+    ## top color bar
+    tchei = 0.02
+    tcpad = 0.001
+    tcuni = tchei + tcpad
+    tchei_all = len(tcbs) * tchei + (((len(tcbs) - 1) * tcpad) if len(tcbs)>1 else 0)
+
+    ## matrix
+    mawid = 1 - 2*mar - lduni - lcwid_all
+    mahei = 1 - 2*mar - tduni - tchei_all
+    maheipad = 0.001
+    maheiuni = mahei + maheipad
+
+    assert(mawid>0)
+    assert(mahei>0)
+
+    if ld is None:
+        print "left dendro"
+        ld.plot(fig, [mar, mar, ldwid, mahei], orientation="left")
+        lclft = mar + lduni
+    else:
+        lclft = mar
+
+    if len(lcbs) > 0:
+        print "left color"
+        for i, cbar in enumerate(left_cbars.cbars()):
+            cbar.lineanno = 'topleft'
+            cbar.annlft = lclft
+            cbar.plot([lclft+i*lcuni, mar, lcwid, mahei], fig, orientation='v')
+    nmlft = lclft + len(lcbs) * lcuni
+
+    print "normal heatmap"
+    nmlft = lclft + len(left_cbars)*lcuni
+    if cd_normal is not None:
+        plot_heatmap(cd_normal.df, [nmlft, mar, nmwid, mahei], fig, interpolation='none')
+
+    print "heatmap"
+    malft = nmlft + nmuni
+    plot_heatmap(cd_tumor.df, [malft, mar, mawid, mahei], fig, interpolation='none')
+
+    print "top normal color"
+    tcbtm = mar + maheiuni
+    if top_normal_cbars.colls:
+        for i, top_normal_cbar in enumerate(top_normal_cbars.cbars()):
+            top_normal_cbar.plot([nmlft, tcbtm+i*tcuni, nmwid, tchei], fig)
+
+    print "top color"
+    if top_cbars.colls:
+        for i, cbar in enumerate(top_cbars.cbars()):
+            cbar.plot([malft, tcbtm+i*tcuni, mawid, tchei], fig)
+
+    print "top dendro"
+    tdbtm = tcbtm + len(top_cbars)*tcuni
+    cd_tumor.D_top.plot(fig, [malft, tdbtm, mawid, tdhei], orientation='top')
+
+    print "Saving.."
+    fig.savefig(figfile, bbox_inches='tight', dpi=150)
+
+    # plot legend separately
+    print 'Legend'
+    legfigwid = 10
+    legfighei = 8
+    legbtm = 0.1
+    leglft = 0.1
+    legpad = 1.0 / legfigwid
+    legwid = 0.6 / legfigwid
+    fig = plt.figure(figsize=(10,8))
+    for cbar in left_cbars.colls+top_cbars.colls:
+        cbar.plot_legend([leglft, legbtm, legwid, 0.4], fig)
+        leglft += legwid + legpad
+    ff = os.path.splitext(figfile)
+    legfigfile = ff[0]+'_legend'+ff[1]
+    fig.savefig(legfigfile, bbox_inches='tight', dpi=150)
+    print 'Saving legend..'
+    print "Done."
+
+    return
+
+def double_hmap_layout():
+
+    return
+
 def normal_tumor_layout(cd_tumor, cd_normal=None, top_cbars=WZCbarCollection(), left_cbars=WZCbarCollection(),
                         top_normal_cbars=WZCbarCollection(), 
                         figwid=18, fighei=8, figfile="tmp.png", **kwargs):
 
     fig = plt.figure(figsize=(figwid, fighei))
     fig.patch.set_facecolor('white')
-
-    left_cbars = left_cbars
-    top_cbars = top_cbars
-    top_normal_cbars = top_normal_cbars
-    cd_tumor = cd_tumor
-    cd_normal = cd_normal
 
     mar = 0.05
     tdhei = 0.1                 # top dendro height
@@ -942,11 +1062,9 @@ def normal_tumor_layout(cd_tumor, cd_normal=None, top_cbars=WZCbarCollection(), 
     print 'Saving legend..'
     print "Done."
 
-
-
 def normal_tumor_layout_simple(df_tumor, df_normal=None, top_cbars=WZCbarCollection(), left_cbars=WZCbarCollection(),
-                                 top_normal_cbars=WZCbarCollection(), tumor_axhlines=None, dpi=150,
-                                 figwid=18, fighei=8, figfile="tmp.png", **kwargs):
+                               top_normal_cbars=WZCbarCollection(), tumor_axhlines=None, dpi=150,
+                               figwid=18, fighei=8, figfile="tmp.png", **kwargs):
 
     """ version without dendrogram """
     fig = plt.figure(figsize=(figwid, fighei))

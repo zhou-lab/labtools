@@ -1,3 +1,19 @@
+import inspect
+import sys
+
+def err_print(msg):
+    fn = inspect.stack()[1][3]
+    sys.stderr.write('[%s] %s\n' % (fn, str(msg)))
+
+def err_print_sig():
+
+    fn = inspect.stack()[1][3]
+    sys.stderr.write('[%s]' % (fn))
+
+def err_print_m(msg):
+
+    sys.stderr.write(msg)
+    sys.stderr.flush()
 
 def pd_print_n(x, n):
     import pandas as pd

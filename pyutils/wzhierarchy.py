@@ -211,7 +211,10 @@ class Dendrogram():
 
 class ClusterData():
 
-    pass
+    def __init__(self):
+
+        self.D_top = None
+        self.D_lft = None
 
 def ez_good_row(df, decision='all'):
 

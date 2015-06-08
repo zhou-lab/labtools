@@ -95,6 +95,21 @@ sort -V
 it sorts natural numbers within text
 see also vcf-sort which uses sort -V
 * unix
+** encryption and decryption using openssl
+
+encrypt:
+tar cz target_folder | openssl enc -aes-256-cbc -e > target.tar.gz.enc
+
+decrypt
+openssl aes-256-cbc -d -in out.tar.gz.enc -out decrypted.tar.gz
+
+decrypt:
+openssl aes-256-cbc -d -in target.tar.gz.enc | tar xz
+
+sidenote: zip encryption is not safe
+** using gpg for encryption
+gpg --encrypt out.tar.gz
+
 ** other
 *** change default bash
 edit /etc/shells and make sure the shell you want to use is in that file
@@ -3292,12 +3307,6 @@ sapply(names(t), function(x) paste(strwrap(x,width=40),collapse="\n"))
 class(x)
 in fact “class” is an attribute of x, see below.
 
-**** access R object's attributes
-R attributes can be accessed in two ways, suppose we have an attribute aaa
-attr(obj, “aaa”)
-or 
-aaa(obj)
-
 **** names()
 > x<-1:3
 > names(x) # no names by default
@@ -3336,8 +3345,13 @@ NaN is NA, but NA is not NaN.
 [1] FALSE FALSE  TRUE  TRUE FALSE
 > is.nan(x)
 [1] FALSE FALSE  TRUE FALSE FALSE
-***** omit NA in a data.frame
+***** omit all NA in a data.frame (this omit any row with at least 1 NA)
 na.omit(dat)
+***** omit rows with all NA in a data.frame
+
+df2 <- df[rowSums(is.na(df)) == 0,];
+cat(sprintf('Removed %d rows from %d.\n', dim(df)[1]-dim(df2)[1], dim(df)[1]));
+return(df2);
 
 ***** filter out NA - is.na
 > x<-c(1,2,NA,4,NA,5)
@@ -3357,10 +3371,45 @@ na.omit(dat)
 
 **** concatenate two string - paste
 paste("wan","ding")
+this would insert a " "
+
+paste0("wan", "ding")
+this results in "wanding"
+
+**** trim whitespace
+library(stringr)
+str_trim(string)
 **** substring
 substring:
 substring("wanding",1,3)
 gives "wan"
+*** attributes of an R object
+every R object can have attributes attached to it
+
+attributes are named list of R
+
+to list all attributes
+attributes(obj)
+
+to access a specific attributes
+attr(obj,'aaa')
+or
+aaa(obj)
+
+"class" is an attribute of obj
+
+structure() function returns a new object with modified attributes
+structure(1:10, my_attribute='This is a vector')
+
+By default, most attributes are lost when modifying a vector
+Attributes that are NOT lost:
+names
+dimensions
+class
+
+factors can be seen as vector with "level" attribute.
+
+
 *** vector
 numeric, character, integer are all vectors
 **** create a numeric vector - numeric()
@@ -4714,6 +4763,8 @@ the package lattrice package depend on
 grDevices package
 code for implementing graphics devices such as X11, PDF, PostScript, PNG, etc.
 
+*** histogram with y log
+barplot(hist(x, plot=F)$counts,log='y')
 *** quickly show a color vector
 pie(rep(1,n), col=jet.colors(n))
 barplot(seq(1:n), col=topo.colors(12))
@@ -4971,6 +5022,31 @@ args<-(commandArgs(TRUE))
 args
 "lalala"
 ** other
+*** time your code
+system.time(yourcodehere)
+*** how to create package
+http://cran.r-project.org/doc/contrib/Leisch-CreatingPackages.pdf
+
+to build the package tarball
+R CMD build
+
+to check the package tarball
+R CMD check
+
+ Edit the help file skeletons in 'man', possibly combining help files for multiple functions.
+ Edit the exports in 'NAMESPACE', and add necessary imports.
+ Put any C/C++/Fortran code in 'src'.
+ If you have compiled code, add a useDynLib() directive to 'NAMESPACE'.
+
+what "build and reload" in Rstudio do
+1. Unloads any existing version of the package (including shared libraries if necessary).
+2. Builds and installs the package using R CMD INSTALL.
+3. Restarts the underlying R session to ensure a clean environment for re-loading the package.
+4. Reloads the package in the new R session by executing the library function.
+
+*** set default packages that are loaded on start
+options(defaultPackages=c(getOption("defaultPackages"),
+       "mypackage1","mypackage2", ... [etc.]))
 *** type <- in Rstudio, emacs ESS
 RStudio ALT -
 emacs ESS SHIFT -
@@ -4979,6 +5055,7 @@ emacs ESS SHIFT -
 library(xtable)
 print(xtable(res), file="~/tab.tex", digits=2, floating=FALSE)
 #+END_SRC
+
 *** repress printing to console when a variable is not assigned
 *** Get working directory
 > getwd()
@@ -5215,6 +5292,8 @@ applymap
 
 df.myCol.plot().legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
+*** how to do string operation to index
+df[df.index.to_series().str.contains('LLChit')]
 ** difference between numpy.array and numpy.matrix
 numpy.matrix is strictly 2-d
 please use numpy.array most of the time
