@@ -38,7 +38,7 @@ function auto_setup_links() {
   flowcell=$(basename $rootdir); #H55TVBGXX
   samples=($(/bin/ls $rootdir/results/$flowcell)); # /data/sequencing/analysis/H5MW5BGXX/results/H5MW5BGXX/H5MW5BGXX_1_PL430BS1
   
-  [[ -d $basedir ]] || mkdir $basedir;
+  [[ -d $basedir ]] || mkdir -p $basedir;
   [[ -e $basedir/root ]] || ln -s $rootdir $basedir/root;
 
   genome="";
@@ -115,7 +115,12 @@ function methpipe_bwameth_bissnp() {
   fastq2=$3;
   reference=$4;
 
-  pbsgen "bwameth.py --reference $reference $fastq1 $fastq2 --prefix bam/$scode";
-  alnid=$(wzqsub 1 1);
-  
+  bamdir=$(pwd)"/bam";
+  [[ -d $bamdir ]] || mkdir -p $bamdir;
+
+  base=$(pwd);
+  pbsgen clean;
+  pbsgen one "cd $base; bwameth --reference $reference $fastq1 $fastq2 --prefix $bamdir/$scode"
+  jobid=$(wzqsub 1 1);
+  echo $jobid;
 }

@@ -213,7 +213,7 @@ class Default:
 
     def __init__(self):
 
-        self.pbsdir = "/home/wzhou1/pbs03"
+        self.pbsdir = "/home/wandingzhou/pbs"
         self.scriptdir = '%s/pbs/' % self.pbsdir
         self.stdoutdir = '%s/stdout/' % self.pbsdir
         self.stderrdir = '%s/stderr/' % self.pbsdir
