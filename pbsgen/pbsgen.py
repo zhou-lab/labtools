@@ -186,6 +186,7 @@ def pbsgen_main(setting, set_queue):
     parser_one.add_argument('command', help='command to run')
     parser_one.add_argument("-index", type=int, default=-1, help="index of next pbs script [inferred from existing file names]")
     add_default_settings(parser_one, setting)
+    parser_one.add_argument('-depend', help='dependency')
     parser_one.set_defaults(func=main_one)
 
     ###### batch #####
@@ -219,7 +220,6 @@ class Default:
         self.hour = 96
         self.ppn = 1
         self.memG = 2
-
 
 if __name__ == "__main__":
 
