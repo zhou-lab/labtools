@@ -4,8 +4,8 @@ if [ -f /etc/bashrc ]; then
 fi
 
 # load some environment
-if [ -f /home/wzhou/wzlib/other/pipeline_environment/vai1.sh ]; then
-   . /home/wzhou/wzlib/other/pipeline_environment/vai1.sh;
+if [ -f /home/wandingzhou/wzlib/other/pipeline_environment/vai1.sh ]; then
+   . /home/wandingzhou/wzlib/other/pipeline_environment/vai1.sh;
 fi
 
 alias ls='ls --color'
@@ -15,16 +15,16 @@ alias ll="ls -l"
 alias rf="readlink -f"
 alias parallel="parallel --gnu --progress"
 alias igv="~/tools/igv/IGV_2.3.40/igv.sh"
-alias sort="LC_ALL=C /home/wzhou/tools/coreutils/coreutils-8.23/src/sort"
 alias du="du -sh"
+# alias sort="LC_ALL=C /home/wandingzhou/tools/coreutils/coreutils-8.23/src/sort"
 
-export CC=/home/wzhou/tools/gcc/gcc-4.9.2/objdir/bin/gcc
+# export CC=/home/wandingzhou/tools/gcc/gcc-4.9.2/objdir/bin/gcc
 
 # PS1='\u@\h:\w\$ '
 
-HOME=/home/wzhou
+HOME=/home/wandingzhou
 
-export PATH=~/bin:$PATH
+export PATH=~/bin:/home/wandingzhou/.local/bin/:/home/pbs/bin/:$PATH
 export SCREENRC=$HOME/wzlib/screenrc/screenrc_hp
 export PYTHONPATH=$HOME/wzlib/pyutils:$HOME/pythonlib/lib/python2.7/site-packages/
 export AWKPATH=$HOME/wzlib/awkutils
@@ -32,13 +32,13 @@ export AWKPATH=$HOME/wzlib/awkutils
 # % cpan
 # cpan> o conf makepl_arg INSTALL_BASE=/mydir/perl
 # cpan> o conf commit
-# export PERL5LIB=/home/wzhou1/tools/perltools/lib/perl5:/home/wzhou1/tools/vcftools/vcftools_0.1.11/lib/perl5/site_perl:${PERL5LIB}
+# export PERL5LIB=/home/wandingzhou1/tools/perltools/lib/perl5:/home/wandingzhou1/tools/vcftools/vcftools_0.1.11/lib/perl5/site_perl:${PERL5LIB}
 
 alias scp='rsync -Pravdtze ssh'
 alias awk='$HOME/tools/awk4.01/gawk-4.01-install/bin/awk -F"\t" -v OFS="\t"'
 alias les="less -S"
 alias qsuball="find $HOME/htcpbs/ -type f | sort | xargs -I {} qsub {}"
-alias qdelall="qstat | grep wzhou | awk '{print $1}' | xargs -I {} qdel {}"
+alias qdelall="qstat | grep wandingzhou | awk '{print $1}' | xargs -I {} qdel {}"
 alias curl="curl -OL"
 
 function prompt {

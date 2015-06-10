@@ -46,17 +46,28 @@ class Job():
                 return batch_index
             batch_index += 1
 
-    def gen(self, batch_index):
+    def gen(self, batch_index, jobname=None, pbsname=None):
 
         if batch_index < 0:
             batch_index = self.next_index_auto()
 
-        self.jobname = self.jobroot+"_batch_%d" % batch_index
-        self.stdout = "%s/%s.stdout" % (self.stdoutdir, self.jobname)
-        self.stderr = "%s/%s.stderr" % (self.stderrdir, self.jobname)
+        if jobname is None:
+            self.jobname = self.jobroot+"_batch_%d" % batch_index
+        else:
+            self.jobname = jobname
+            
         self.time = "%d:00:00" % self.hour
         self.set_queue()
-        with open('%s/%s.pbs' % (self.pbs, self.jobname), 'w') as fout:
+        
+        if pbsname is None:
+            pbsname = '%s/%s.pbs' % (self.pbs, self.jobname)
+            self.stdout = "%s/%s.stdout" % (self.stdoutdir, self.jobname)
+            self.stderr = "%s/%s.stderr" % (self.stderrdir, self.jobname)
+        else:
+            self.stdout = "%s.stdout" % (pbsname,)
+            self.stderr = "%s.stderr" % (pbsname,)
+            
+        with open(pbsname, 'w') as fout:
             fout.write(template.format(self=self))
 
     def clean(self):
@@ -112,7 +123,7 @@ def main_one(args):
     job.commands = "echo `date`\n\n"
     job.commands += args.command
     job.commands += "\n\necho `date` Done.\n"
-    job.gen(int(args.index))
+    job.gen(int(args.index), jobname=args.name, pbsname=args.dest)
 
 def main_batch(args):
 
@@ -185,7 +196,9 @@ def pbsgen_main(setting, set_queue):
     parser_one = subparsers.add_parser("one", help="generate one pbs script")
     parser_one.add_argument('command', help='command to run')
     parser_one.add_argument("-index", type=int, default=-1, help="index of next pbs script [inferred from existing file names]")
+    parser_one.add_argument('-name', default=None, help='job name (if specified, obsolete index)')
     add_default_settings(parser_one, setting)
+    parser_one.add_argument('-dest', default=None, help='destination pbs file')
     parser_one.add_argument('-depend', help='dependency')
     parser_one.set_defaults(func=main_one)
 
