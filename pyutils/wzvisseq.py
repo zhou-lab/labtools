@@ -6,8 +6,8 @@ import faidx
 
 b2c = {
     'A': '\033[32m',
-    'G': '\033[33m',
-    'C': '\033[36m',
+    'G': '\033[33m',            # brown
+    'C': '\033[36m',            # cyan
     'T': '\033[31m',
     'N': '\033[34m',
 }
@@ -19,21 +19,23 @@ UNDERLINE = '\033[4m'
 
 def q2c(qual):
     if qual < 10:
-        return '\033[34m'
+        return '\033[34m'       # blue
     elif qual < 20:
-        return '\033[33m'
+        return '\033[32m'       # brown
     elif qual < 30:
-        return '\033[32m'
+        return '\033[33m'       # green
     else:
-        return '\033[37m'
+        return '\033[37m'       # white
 
 
 # bisulfite state
+# retention is shown in the same color, G: brown, C: cyan
 cC2C = b2c['C']
 cG2G = b2c['G']
-# conversions
+# conversions are shown in purple
 cC2T = '\033[35m'
 cG2A = '\033[35m'
+# SNVs are shown in white
 cSNV = '\033[37m'
 
 flank_len = 10
@@ -77,7 +79,12 @@ def qualprint(read, beg, end):
 def bsprint(read, beg, end, refseq, refbeg, mod=''):
     s = ''
     tag = dict(read.tags)
-    bsstate = tag['ZS'][0] if 'ZS' in tag else None
+    bsstate = None
+    if bsstate is None and 'ZS' in tag:
+        bsstate = tag['ZS'][0]
+    if bsstate is None and 'YD' in tag: # BWA-meth
+        bsstate = '+' if tag['YD'] == 'f' else '-'
+        
     for i, base in enumerate(read.seq[beg:end]):
         base = base.upper()
         rbase = refseq[refbeg+i].upper()

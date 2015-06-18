@@ -20,10 +20,11 @@ typedef struct {
   uint32_t max_retention;
   uint32_t min_read_len;
   uint8_t min_dist_end;
+  uint8_t min_mapq;
   uint8_t max_nm;
   uint8_t filter_secondary:1;
-  uint8_t plp_all:1;
-  uint8_t plp_print_all:1;
+  uint8_t filter_duplicate:1;
+  uint8_t verbose;
 } conf_t;
 
 typedef enum {BSS_RETENTION, BSS_CONVERSION, BSS_OTHER} bsstate_t;
@@ -99,6 +100,26 @@ uint32_t plp_cnt_retention(pileup_data_v *plp_data) {
   return cnt;
 }
 
+int get_bsstrand(bam1_t *b) {
+  uint8_t *s = bam_aux_get(b, "ZS");
+  if (s) {
+    s++;
+    if (*s == '+') return 0;
+    else if (*s == '-') return 1;
+  }
+
+  s = bam_aux_get(b, "YD");     /* bwa-meth flag */
+  if (s) {
+    s++;
+    if (*s == 'f') return 0;
+    else if (*s == 'r') return 1;
+  }
+
+  /* TODO : guess the bsstrand from nCT and nGA */
+
+  return -1;
+}
+
 char *plp_format(refseq_t *rs, char *chrm, uint32_t rpos, pileup_data_v *dv, conf_t *conf) {
   uint32_t i;
   kstring_t s;
@@ -106,6 +127,9 @@ char *plp_format(refseq_t *rs, char *chrm, uint32_t rpos, pileup_data_v *dv, con
   char rb = toupper(getbase_refseq(rs, rpos));
 
   ksprintf(&s, "%s\t%u\t%u\t%c", chrm, rpos, rpos, rb);
+
+  /* if BSW shows G->A or BSC shows C->T, then a SNP */
+
 
   /* context */
   char trinuc[3];
@@ -144,46 +168,70 @@ char *plp_format(refseq_t *rs, char *chrm, uint32_t rpos, pileup_data_v *dv, con
   }
   ksprintf(&s, "\t%d\t%d", cnt_retention, cnt_conversion);
 
-  /* retention */
-  kputc('\t', &s);
-  uint8_t nf = 0;
-  for (i=0; i<dv->size; ++i) {
-    pileup_data_t *d = ref_pileup_data_v(dv,i);
-    if ((!conf->plp_print_all) && d->bsstate != BSS_RETENTION) continue;
-    if (nf) kputc(',', &s);
-    else nf = 1;
-    kputuw(d->cnt_ret, &s);
-  }
+  /* additional information printed on verbose */
+  if (conf->verbose) {
 
-  kputc('\t', &s);
-  for (i=0; i<dv->size; ++i) {
-    pileup_data_t *d = ref_pileup_data_v(dv,i);
-    if ((!conf->plp_print_all) && d->bsstate != BSS_RETENTION) continue;
-    kputc(d->strand?'-':'+', &s);
-  }
-  
-  kputc('\t', &s);
-  nf = 0;
-  for (i=0; i<dv->size; ++i) {
-    pileup_data_t *d = ref_pileup_data_v(dv,i);
-    if ((!conf->plp_print_all) && d->bsstate != BSS_RETENTION) continue;
-    if (nf) kputc(',', &s);
-    else nf = 1;
-    kputuw(d->qpos, &s);
-  }
+    /* retention bases */
 
-  kputc('\t', &s);
-  for (i=0; i<dv->size; ++i) {
-    pileup_data_t *d = ref_pileup_data_v(dv,i);
-    if ((!conf->plp_print_all) && d->bsstate != BSS_RETENTION) continue;
-    kputc(d->qual+33, &s);
-  }
+    /* retention strands */
 
-  kputc('\t', &s);
-  for (i=0; i<dv->size; ++i) {
-    pileup_data_t *d = ref_pileup_data_v(dv,i);
-    if ((!conf->plp_print_all) && d->bsstate != BSS_RETENTION) continue;
-    kputc(d->bsstrand?'-':'+', &s);
+    /* retention position on reads */
+
+    /* retention counts */
+
+    /* retention quality */
+
+    /* conversion bases */
+
+    /* conversion strands */
+
+    /* conversion quality */
+
+    /* other bases */
+
+    /* other strands */
+
+    /* retention count, for diagnosing incomplete converted
+       reads from CpH sites and mitochondrial sites */
+    kputc('\t', &s);
+    uint8_t nf = 0;
+    for (i=0; i<dv->size; ++i) {
+      pileup_data_t *d = ref_pileup_data_v(dv,i);
+      if (nf) kputc(',', &s);
+      else nf = 1;
+      kputuw(d->cnt_ret, &s);
+    }
+
+    /* strand of read */
+    kputc('\t', &s);
+    for (i=0; i<dv->size; ++i) {
+      pileup_data_t *d = ref_pileup_data_v(dv,i);
+      kputc(d->strand?'-':'+', &s);
+    }
+
+    /* position on read */
+    kputc('\t', &s);
+    nf = 0;
+    for (i=0; i<dv->size; ++i) {
+      pileup_data_t *d = ref_pileup_data_v(dv,i);
+      if (nf) kputc(',', &s);
+      else nf = 1;
+      kputuw(d->qpos, &s);
+    }
+
+    /* base quality */
+    kputc('\t', &s);
+    for (i=0; i<dv->size; ++i) {
+      pileup_data_t *d = ref_pileup_data_v(dv,i);
+      kputc(d->qual+33, &s);
+    }
+
+    /* bsstrand, should be all + when C and all - when G */
+    kputc('\t', &s);
+    for (i=0; i<dv->size; ++i) {
+      pileup_data_t *d = ref_pileup_data_v(dv,i);
+      kputc(d->bsstrand?'-':'+', &s);
+    }
   }
 
   kputc('\n', &s);
@@ -196,9 +244,9 @@ char *plp_format(refseq_t *rs, char *chrm, uint32_t rpos, pileup_data_v *dv, con
 /* return -1 if abnormal (missing bsstrand) */
 int cnt_retention(refseq_t *rs, bam1_t *b) {
   int cnt = 0;
-  uint8_t *bsstrand = bam_aux_get(b, "ZS");
-  if (!bsstrand) return -1;
-  bsstrand++;
+
+  int bsstrand = get_bsstrand(b);
+  if (bsstrand < 0) return -1;
 
   bam1_core_t *c = &b->core;
   uint32_t rpos = c->pos+1, qpos = 0;
@@ -213,9 +261,13 @@ int cnt_retention(refseq_t *rs, bam1_t *b) {
       for (j=0; j<oplen; ++j) {
         rb = toupper(getbase_refseq(rs, rpos+j));
         qb = bscall(b, qpos+j);
-        if (bsstrand[0] == '+' && rb == 'C' && qb == 'C') cnt++;
-        else if (bsstrand[0] == '-' && rb == 'G' && qb == 'G') cnt++;
-        else continue;
+        if (bsstrand) {
+          if (rb == 'C' && qb == 'C')
+            cnt++;
+        } else {
+          if (rb == 'G' && qb == 'G')
+            cnt++;
+        }
       }
       rpos += oplen;
       qpos += oplen;
@@ -227,6 +279,9 @@ int cnt_retention(refseq_t *rs, bam1_t *b) {
       rpos += oplen;
       break;
     case BAM_CSOFT_CLIP:
+      qpos += oplen;
+      break;
+    case BAM_CHARD_CLIP:
       qpos += oplen;
       break;
     default:
@@ -263,15 +318,25 @@ void *process_func(void *data) {
     char qb, rb;
     while ((ret = bam_iter_read(in->x.bam, iter, b))>0) {
 
-      uint8_t *bsstrand = bam_aux_get(b, "ZS");
-      if (!bsstrand) continue;
-      bsstrand++;
+      /* uint8_t *bsstrand = bam_aux_get(b, "ZS"); */
+      /* if (!bsstrand) continue; */
+      /* bsstrand++; */
+
+      int bsstrand = get_bsstrand(b);
+      if (bsstrand < 0) continue;
 
       bam1_core_t *c = &b->core;
-
+      if (c->qual < conf->min_mapq) continue;
+      if (c->l_qseq < 0 || (unsigned) c->l_qseq < conf->min_read_len) continue;
+      if (conf->filter_secondary && c->flag & BAM_FSECONDARY) continue;
+      if (conf->filter_duplicate && c->flag & BAM_FDUP) continue;
+      if (conf->filter_qcfail && c->flag & BAM_FQCFAIL) continue;
+      
       uint32_t rpos = c->pos+1, qpos = 0;
       uint8_t *nm = bam_aux_get(b, "NM");
+      if (nm && bam_aux2i(nm)>conf->max_nm) continue;
       int cnt_ret = cnt_retention(rs, b);
+      if (cnt_ret < 0 || (unsigned) cnt_ret > conf->max_retention) continue;
 
       rpos = c->pos+1; qpos = 0;
       for (i=0; i<c->n_cigar; ++i) {
@@ -287,39 +352,21 @@ void *process_func(void *data) {
             pileup_data_v **plp_data_vec = plp->data+rpos+j-w.beg;
             if (!*plp_data_vec) *plp_data_vec = init_pileup_data_v(2);
             pileup_data_t *plp_data = next_ref_pileup_data_v(*plp_data_vec);
-            plp_data->base = qb;
+            plp_data->base = qb+1;
             plp_data->qual = bam1_qual(b)[qpos+j];
             plp_data->cnt_ret = (unsigned) cnt_ret;
             plp_data->strand = (c->flag&BAM_FREVERSE)?1:0;
             plp_data->qpos = qpos+j;
             plp_data->rlen = c->l_qseq;
-  
-            if (bsstrand[0] == '-') plp_data->bsstrand = 1;
-            else if (bsstrand[0] == '+') plp_data->bsstrand = 0;
-            else {
-              plp_data->bsstate = BSS_OTHER;
-              continue;
-            }
+            plp_data->bsstrand = (uint8_t) bsstrand;
 
-            if (c->l_qseq < 0 || (unsigned) c->l_qseq < conf->min_read_len) {
-              plp_data->bsstate = BSS_OTHER;
-              continue;
-            }
+            plp_data->rb = rb;
+            plp_data->qb = qb;
 
-            if (conf->filter_secondary && c->flag & BAM_FSECONDARY) {
-              plp_data->bsstate = BSS_OTHER;
-              continue;
-            }
-
-            if (nm && bam_aux2i(nm)>conf->max_nm) {
-              plp_data->bsstate = BSS_OTHER;
-              continue;
-            }
-
-            if (cnt_ret < 0 || (unsigned) cnt_ret > conf->max_retention) {
-              plp_data->bsstate = BSS_OTHER;
-              continue;
-            }
+            /*TODO remove bsstate and move the judgement to the write function 
+              add SNP distinguishment
+              add automatic strand inference based on high qual bases.
+             */
 
             if (rb == 'C' && !plp_data->bsstrand) {
               if (qb == 'C') plp_data->bsstate = BSS_RETENTION;
@@ -343,6 +390,9 @@ void *process_func(void *data) {
         case BAM_CSOFT_CLIP:
           qpos += oplen;
           break;
+        case BAM_CHARD_CLIP:
+          qpos += oplen;
+          break;
         default:
           fprintf(stderr, "Unknown cigar, %u\n", op);
           abort();
@@ -355,7 +405,6 @@ void *process_func(void *data) {
       rb = getbase_refseq(rs, j);
       pileup_data_v *plp_data = plp->data[j-w.beg];
       if (plp_data) {
-        if ((!conf->plp_all) && plp_cnt_retention(plp_data)<=0) continue;
         wqueue_put2(record, res->rq, plp_format(rs, chrm, j, plp_data, res->conf));
       }
     }
@@ -456,13 +505,14 @@ static int usage() {
   fprintf(stderr, "     -s        step of window dispatching [100000].\n");
   fprintf(stderr, "     -q        number of threads [3] recommend 20.\n");
   fprintf(stderr, "     -b        min base quality [10].\n");
+  fprintf(stderr, "     -m        minimum mapping quality [40].\n");
   fprintf(stderr, "     -t        max retention in a read [999999].\n");
   fprintf(stderr, "     -l        minimum read length [10].\n");
   fprintf(stderr, "     -e        minimum distance to end of a read [3].\n");
-  fprintf(stderr, "     -c        turn off filtering secondary mapping.\n");
-  fprintf(stderr, "     -n        maximum nm tag [2].\n");
-  fprintf(stderr, "     -a        print all reads. Default prints only retention reads in the appended pileup.\n");
-  fprintf(stderr, "     -d        prints only C/G with retention. Default prints all positions with coverage. \n");
+  fprintf(stderr, "     -c        NO filtering secondary mapping.\n");
+  fprintf(stderr, "     -u        NO filtering of duplicate.\n");
+  fprintf(stderr, "     -n        maximum NM tag [255].\n");
+  fprintf(stderr, "     -v        verbose (print additional info for diagnosis).\n");
   fprintf(stderr, "     -h        this help.\n");
   fprintf(stderr, "\n");
   return 1;
@@ -479,18 +529,19 @@ int main(int argc, char *argv[]) {
     .step = 100000,
     .n_threads = 3,
     .min_base_qual = 10,
+    .min_mapq = 40,
     .max_retention = 999999,
     .min_read_len = 10,
     .filter_secondary = 1,
-    .plp_all = 1,
-    .plp_print_all = 0,
+    .filter_duplicate = 1,
     .min_dist_end = 3,
-    .max_nm = 2,
+    .max_nm = 255,
+    .verbose = 0,
   };
 
 
   if (argc<2) return usage();
-  while ((c=getopt(argc, argv, "i:o:r:g:q:e:b:t:l:cadh"))>=0) {
+  while ((c=getopt(argc, argv, "i:o:r:g:q:e:b:t:n:m:l:cuvh"))>=0) {
     switch (c) {
     case 'i': infn = optarg; break;
     case 'r': reffn = optarg; break;
@@ -503,9 +554,10 @@ int main(int argc, char *argv[]) {
     case 'l': conf.min_read_len = atoi(optarg); break;
     case 'e': conf.min_dist_end = atoi(optarg); break;
     case 'c': conf.filter_secondary = 0; break;
-    case 'a': conf.plp_print_all = 1; break;
-    case 'd': conf.plp_all = 0; break;
+    case 'u': conf.filter_duplicate = 0; break;
+    case 'm': conf.min_mapq = atoi(optarg); break;
     case 'n': conf.max_nm = atoi(optarg); break;
+    case 'v': conf.verbose = 1; break;
     case 'h': return usage();
     default:
       fprintf(stderr, "[%s:%d] Unrecognized command: %c.\n", __func__, __LINE__, c);
