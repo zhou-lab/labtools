@@ -1,8 +1,10 @@
 #!/bin/bash
 
-export WZSEQ_REF_BASE=/home/uec-00/shared/production/genomes/
+export WZSEQ_REF_BASE=/data/reference #/home/uec-00/shared/production/genomes/
 export WZSEQ_REF_MM10=$WZSEQ_REF_BASE/mm10/mm10.fa
 export WZSEQ_REF=$WZSEQ_REF_MM10
+export WZSEQ_REF_CGIBED=$WZSEQ_REF_BASE/mm10/cpg_island/cpgIsland.bed
+export WZSEQ_REFVERSION=mm10
 
 ####### auto setup links ######
 
@@ -305,22 +307,22 @@ function methpipe_pileup() {
   [[ -z ${base+x} ]] && base=$(pwd)
   [[ -z ${reference+x} ]] && reference=$WZSEQ_REF
   
-  echo "Pileup reference: $reference"
+  echo "[$(date)] Pileup reference: $reference"
   [[ -d $base/pileup ]] || mkdir -p $base/pileup
   for bam in $base/data/bam/*.bam; do
     sample_code=$(basename $bam .bam);
-    echo "Pileing up $bam"
-    cmd="pileup_cytosine -r $reference -i $bam -o $base/pileup/$sample_code.pileup -q 10;"
+    echo "[$(date)] Pileing up $bam"
+    cmd="pileup_cytosine -r $reference -i $bam -q 10 | bgzip > $base/pileup/$sample_code.pileup.gz;"
 
     # for bsmap bam file, make sure use NM filter "-n 2".
     # for bwa-meth bam file, mapping quality filter is used by default.
-    [[ $verbose == true ]] && echo "$cmd"
+    [[ $verbose == true ]] && echo "[$(date)] $cmd"
     eval $cmd
     if [[ $? -ne 0 ]]; then
-      echo "Pileup failure"
+      echo "[$(date)] Pileup failure"
       return 1
     fi
-    echo "Done"
+    echo "[$(date)] Done"
   done
 
   # we need a relatively new gnu sort >= 8.23 that supports parallel sorting
@@ -328,43 +330,112 @@ function methpipe_pileup() {
   [[ -d $temp ]] || mkdir -p $temp
 
   # sort and index pileup file
-  for pileup in $base/pileup/*.pileup; do
-    echo "Sorting $pileup"
-    sort --parallel=10 -k1,1 -k2,2n -T $temp $pileup | bgzip > $pileup".gz"
-    gzcnt=$(zcat $pileup".gz" | wc -l)
-    rwcnt=$(cat $pileup | wc -l)
-    [[ $gzcnt -eq $rwcnt ]] && rm -f $pileup
-    tabix -p bed $pileup".gz"
-    echo "Done"
+  for pileup in $base/pileup/*.pileup.gz; do
+    echo "[$(date)] Indexing" $pileup
+    tabix -p bed $pileup
+    echo "[$(date)] Done"
   done
 
-  echo "All done"
+  echo "[$(date)] All done"
 
+}
+
+function decho() {
+  echo "[$(date)] "$@ >&2
 }
 
 function methpipe_diffmeth() {
 
-  base=$1
-  pileup1=$2                    # tumor
-  pileup2=$3                    # normal
-  contrast=$(basename $pileup1 .pileup.gz)"_vs_"$(basename $pileup2 .pileup.gz)
+  # usage: methpipe_diffmeth -t pileup1 -n pileup2 [-b base] [-c mincov]
+  local OPTARG OPTIND opt base pileup1 pileup2 mincov analysis
 
-  analysis=$base/analysis_diffmeth
+  while getopts "b:t:n:c:" opt; do
+    case $opt in
+      t) pileup1=$(readlink -f $OPTARG) ;;
+      n) pileup2=$(readlink -f $OPTARG) ;;
+      b) base=$(readlink -f $OPTARG) ;;
+      c) mincov=$OPTARG ;;
+      \?) echo "Invalid option: -$OPTARG" >&2; return 1;;
+      :) echo "Option -$OPTARG requires an argument." >&2; return 1;;
+    esac
+  done
+  
+  local max_hyper_len=500
+  local max_hypo_len=2000
+  local minhypercnt=6
+  local minhypocnt=6
+  
+  [[ -z ${base+x} ]] && base=$(pwd)
+  [[ -z ${mincov+x} ]] && mincov=3
+
+  analysis=$base/diffmeth
   [[ -d $analysis ]] || mkdir -p $analysis
-  
-  bedtools intersect -a <(zcat $pileup1 | awk '$7+$8>=3{print $1,$2-1,$3,$4,$5,$6,$7,$8}') -b <(zcat $pileup2 | awk '$7+$8>=3{print $1,$2-1,$3,$4,$5,$6,$7,$8}') -sorted -wo | awk -f wanding.awk -e '$5~/[ATCG]CG/{bt=$7/($7+$8); bn=$15/($15+$16); print joinr(1,16),bt,bn,bt-bn}' > $contrast.diff
+  local contrast=$analysis/$(basename $pileup1 .pileup.gz)"_vs_"$(basename $pileup2 .pileup.gz)
 
+  echo "[$(date)] Generating "$contrast.diff
+  bedtools intersect -a <(zcat $pileup1 | awk -v mincov=$mincov '$8!="."&&$9!="."&&$8+$9>=mincov{print $1,$2,$3,$4,$6,$7,$8,$9}') -b <(zcat $pileup2 | awk -v mincov=$mincov '$8!="."&&$9!="."&&$8+$9>=mincov{print $1,$2,$3,$4,$6,$7,$8,$9}') -sorted -wo | awk -f wanding.awk -e '$5~/[ATCG]CG/{bt=$7/($7+$8); bn=$15/($15+$16); print joinr(1,16),bt,bn,bt-bn}' > $contrast.diff
+  echo "[$(date)] Done"
+
+  echo "[$(date)] Plotting delta beta distribution"
+  echo "[$(date)] Generating "$contrast.diff.dist.png
+  cut -f19 $contrast.diff | wzplot hist -c 1 -o $contrast.diff.dist.png --xlabel "delta_beta" --ylabel "#CpG"
+  echo "[$(date)] Done"
+  
+  echo "[$(date)] Generating "$contrast.bw
+  cut -f1,2,3,19 $contrast.diff > $contrast.bedGraph
+  bedGraphToBigWig $contrast.bedGraph ~/genomes_link/mm10/mm10.fa.fai $contrast.bw
+  rm -f $contrast.bedGraph
+  echo "[$(date)] Done"
+  
+  echo "[$(date)] Generating "$contrast.diff.window
   perl -alne 'BEGIN{my @window; my @poses; my @chrs;}{if (scalar @window == 10) {$p1 = scalar grep {$_>0.3} @window; $n1 = scalar grep {$_<-0.3} @window; print $chrs[0]."\t".$poses[0]."\t".$poses[9]."\t".$p1."\t".$n1; shift(@window); shift(@poses); shift(@chrs);} if (scalar @window>0 && $chrs[scalar @chrs-1] ne $F[0]) {@window=();@chrs=();@poses=();} push(@window,$F[18]); push(@chrs, $F[0]); push(@poses, $F[1]);}' $contrast.diff > $contrast.diff.window
+  echo "[$(date)] Done"
 
-  # wzplot hist $contrast.diff.window -c 4 -o $contrast"_diff_hypermeth_windowsize_dist.png"
-  # wzplot hist $contrast.diff.window -c 5 -o $contrast"_diff_hypometh_beta_dist.png"
-  awk '{print $3-$2}' $contrast.diff.window | wzplot hist -c 1 -o $contrast"_diffmeth_windowsize_dist.png" --xlabel "window size (bp)" --ylabel "count"
+  local windowsizeplot=$contrast"_diffmeth_windowsize_dist.png"
+  echo "[$(date)] Plotting differential methylation window size distribution"
+  echo "[$(date)] Generating "$windowsizeplot
+  awk '{print $3-$2}' $contrast.diff.window | wzplot hist -c 1 -o $windowsizeplot --xlabel "window size (bp)" --ylabel "count"
+  echo "[$(date)] Done"
 
-  cut -f1,2,3,19 PL31115WGBS.diff > PL31115WGBS.bedGraph
-  bedGraphToBigWig PL31115WGBS.bedGraph ~/genomes_link/mm10/mm10.fa.fai PL31115WGBS.bw
+  decho "Plotting hyper-methylation window size distribution."
+  awk -v p=$minhypercnt '$4>p{print $3-$2}' $contrast.diff.window | wzplot hist -o $contrast"_diff_hyper_window_size_dist.png" --xlabel "window length" --ylabel "#windows" --xlog
 
-  cut -f19 PL31115WGBS.diff | wzplot hist -c 1 -o PL31115WGBS.diff.dist.png --xlabel "delta_beta" --ylabel "#CpG"
+  decho "Plotting hypo-methylation window size distribution."
+  awk -v p=$minhypocnt '$5>p{print $3-$2}' $contrast.diff.window | wzplot hist -o $contrast"_diff_hypo_window_size_dist.png" --xlabel "window length" --ylabel "#windows" --xlog
+
+  decho "Combining hyper-methylation segment."
+  awk -v m=$max_hyper_len -v p=$minhypercnt '(($3-$2)<m) && ($4>p)' $contrast.diff.window | bedtools merge -i - -c 4 -o count > $contrast.hyper.bed
+  decho "Combining hypo-methylation segment."
+  awk -v m=$max_hypo_len -v p=$minhypocnt '(($3-$2)<m) && ($5>p)' $contrast.diff.window | bedtools merge -i - -c 4 -o count > $contrast.hypo.bed
+
+  decho "Intersecting CpG Island."
   
+  bedtools intersect -a $contrast.hyper.bed -b $WZSEQ_REF_CGIBED > $contrast.hyper.cgi.bed
+  bedtools intersect -a $contrast.hypo.bed -b $WZSEQ_REF_CGIBED > $contrast.hypo.cgi.bed
+  decho "There are "$(wc -l $contrast.hyper.cgi.bed | cut -d" " -f1)" hyper-methylated CGIs and "$(wc -l $contrast.hypo.cgi.bed | cut -d" " -f1)" hypo-methylated CGIs."
+
+  decho "TransVar annotation."
+  awk '{print $1":"$2"_"$3}' $contrast.hyper.bed | transvar ganno -l - --refversion $WZSEQ_REFVERSION --ccds >$contrast.hyper.transvar
+  awk '{print $1":"$2"_"$3}' $contrast.hypo.bed | transvar ganno -l - --refversion $WZSEQ_REFVERSION --ccds >$contrast.hypo.transvar
+  
+  decho "All done"
+}
+
+function methpipe_cpgisland() {
+
+  local cgipileup
+  [[ $# -eq 1 ]] && base=$(readlink -f $1) || base=$(pwd)
+  [[ -d $base/cpgisland ]] || mkdir -p $base/cpgisland
+  for pileup in pileup/*.pileup.gz; do
+    decho "Averaging "$pileup
+    pileupname=$(basename $pileup .pileup.gz)
+    cgipileup=$base/cpgisland/$pileupname.cgi
+    # wzcpgisland.py methlevelaverage -p $pileup -c $WZSEQ_REF_CGIBED > $cgipileup.bed
+    decho "Plotting "$cgipileup.png
+    awk '$12!="NA"' $cgipileup.bed | wzplot hexbin -x 5 -y 12 --nolog --bins 20 -o $cgipileup.png --xlabel "CGI size" --ylabel "methlevelaverage"
+  done
+
+  decho 'Done'
 }
 
 ####### ChIP pipe ######
@@ -378,3 +449,4 @@ function chippipe_bcp() {
   BCP_HM -1 $targetbed -2 $inputbed -f 200 -w 200 -p 0.001 -3 $results
 
 }
+

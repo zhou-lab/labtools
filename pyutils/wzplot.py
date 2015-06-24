@@ -379,7 +379,7 @@ def _hist_oneplot(args):
                 facecolor=next(ccycle), alpha=args.alpha)
         plt.xticks(coords, locs)
     elif args.xlog:
-        bins=np.logspace(np.log10(min(data)), np.log10(max(data)), args.bins)
+        bins=np.logspace(np.log10(max(0.1, min(data))), np.log10(max(data)), args.bins)
         hts, locs = np.histogram(data, bins=bins)
         coords = range(1,len(locs))
         plt.bar(coords, hts, edgecolor='none', linewidth=0, width=0.90,
@@ -1051,7 +1051,13 @@ def main_hexbin(args):
         y.append(float(fields[args.y-1]))
 
     bins = (args.bins, args.ybins) if args.ybins>0 else args.bins
-    plt.hexbin(x,y, gridsize=bins, bins='log', cmap=plt.cm.YlGn)
+    if args.nolog:
+        plt.hexbin(x,y, gridsize=bins, cmap=plt.cm.YlGn)
+    else:
+        plt.hexbin(x,y, gridsize=bins, bins='log', cmap=plt.cm.YlGn)
+    if args.scatter:
+        plt.scatter(x,y,s=0.5,alpha=0.5,edgecolor='none')
+
     # plt.xlim(0,20)
     __core__(args)
 
@@ -1123,9 +1129,10 @@ if __name__ == '__main__':
     psr_hexbin = subparsers.add_parser("hexbin", help=""" hexbin plot """)
     psr_hexbin.add_argument('-x', type=int, help="column of x (1-based)")
     psr_hexbin.add_argument('-y', type=int, help="column of y (1-based)")
+    psr_hexbin.add_argument('--nolog', action='store_true')
     psr_hexbin.add_argument('--bins', type=int, default=10, help='#bins along dimension')
     psr_hexbin.add_argument('--ybins', type=int, default=-1, help='if specified, used as number of bins in the y-axis')
-    # psr_hexbin.add_argument('--
+    psr_hexbin.add_argument('--scatter', action='store_true', help='overlay scatter plot on top of hexbin')
     add_std_options(psr_hexbin)
     psr_hexbin.set_defaults(func=main_hexbin)
 
@@ -1153,7 +1160,7 @@ if __name__ == '__main__':
 
     # histogram
     psr_hist = subparsers.add_parser("hist", help=""" histogram """)
-    psr_hist.add_argument('-c', type=int, help="column to plot (1-based)")
+    psr_hist.add_argument('-c', type=int, default=1, help="column to plot (1-based)")
     psr_hist.add_argument('--bins', type=int,
                           default=20, help="number of bins [20]")
     psr_hist.add_argument('--cat', type=int, help="column to indicate category (1-based)")
