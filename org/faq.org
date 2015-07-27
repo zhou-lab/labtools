@@ -95,6 +95,12 @@ sort -V
 it sorts natural numbers within text
 see also vcf-sort which uses sort -V
 * unix
+** curl download http
+curl -s http://jaspar.genereg.net/html/DOWNLOAD/bed_files/ | grep href | grep '.bed' | sed 's/.*href="//' | sed 's/".*//' | while read file; do echo $file; curl -OL http://jaspar.genereg.net/html/DOWNLOAD/bed_files/$file; done
+
+-s is --silent, no output of error messge or progress
+-O use remote name
+-L follow indirect link
 ** encryption and decryption using openssl
 
 encrypt:
@@ -2499,6 +2505,7 @@ This Awk program appends the FNR - File Line Number predefined variable and a ta
  #+end_src
 This one works the same as the case that uses FNR except that it uses NR - Line Number variable, which does not get reset from file to file. It counts the input lines seen so far. For example, if it was called on the same two files with 10 and 12 lines, it would number the lines from 1 to 22 (10 + 12).
 * Sed
+** use sed -E to allow [ [:space:]] like character class
 ** basic concept
 *** the four spaces
 It was the four spaces of sed -- input stream, output stream, pattern space, hold buffer. Sed operates on input stream and produces an output stream. The lines from input stream are placed into the pattern space where they are modified. The hold buffer can be used for temporary storage. These four spaces changed the way I think about sed.
@@ -2539,6 +2546,8 @@ The "\1" is the first remembered pattern, and the "\2" is the second remembered 
 #+begin_src sh
 sed 's/\([a-z]*\).*/\1/'
 #+end_src
+** get a section without the first and last
+sed -n '1,/PATTERN1/d;/PATTERN2/q;p' < input
 ** show the second line of a file
 #+BEGIN_SRC sh
 sed -n '2p' myfile
@@ -9061,6 +9070,18 @@ Have fun!
 ** st
     hg st | awk '/\?/{print $2;}' | hg add
 * bash
+** variable substitution
+if aaa is set
+$ aaa='eee'
+$ echo ${aaa+x}
+x
+$ unset aaa
+$ echo ${aaa+x}
+[nothing here]
+
+There is also ${var:-x}, ${var:=x} etc.
+see http://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_06_02
+
 ** join array
 *** method1
 function join { local IFS="$1"; shift; echo "$*"; }

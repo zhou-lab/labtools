@@ -173,13 +173,21 @@ def map_level2color(data, **kwargs):
     kwargs: other2grey=False, greyscale=False, greyscale_range=(0.1,0.9)
     """
     levels = set([_ for _ in data if not isnan(_)])
-    if 'greyscale' in kwargs and kwargs['greyscale']:
+
+    if levels == set([True, False]):
+        levels = [True, False]
+        colors = ['r', '#A9F5BC']
+    elif 'greyscale' in kwargs and kwargs['greyscale']:
         colors = get_grey_scale_rgb(len(levels), greyscale_range=kwargs_or_none(kwargs, 'greyscale_range'))
     else:
         colors = get_distinct_colors_hex(len(levels))
+        
     level2color = dict(zip(levels, colors))
     if kwargs_or_false(kwargs, 'other2grey') and "other" in level2color:
         level2color["other"] = "#E6E6E6"
+
+    if kwargs_or_false(kwargs, 'other2grey') and 'NA' in level2color:
+        level2color['NA'] = "#E6E6E6"
 
     return level2color
 

@@ -216,6 +216,20 @@ class ClusterData():
         self.D_top = None
         self.D_lft = None
 
+    def lft_order(self):
+
+        if self.D_lft is None:
+            return None
+        else:
+            return self.D_lft.leaforder
+
+    def top_order(self):
+
+        if self.D_top is None:
+            return None
+        else:
+            return self.D_top.leaforder
+
 def ez_good_row(df, decision='all'):
 
     if decision == 'all':
@@ -316,3 +330,4 @@ def ez_cluster_row(df, fast=False):
     d.df = d.df.iloc[d.D_lft.leaforder,:]
 
     return d
+

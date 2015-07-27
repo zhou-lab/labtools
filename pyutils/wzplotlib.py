@@ -6,9 +6,13 @@ import matplotlib.collections as mcolls
 import matplotlib.colorbar as mcolorbar
 import matplotlib.lines as mlines
 import numpy as np
+import itertools
 import wzcolors
+import wzcore
 import os
+import pandas as pd
 
+reload(wzcolors)
 """
 low level plotting:
 * plot_heatmap_discrete
@@ -106,7 +110,6 @@ def discrete_colorshow(data, dim, fig, orientation='horizontal',
     
     """ color bar of discrete values """
 
-    print data[:10]
     n = len(data)
     if orientation == 'horizontal' or orientation == 'h':
         beg = '(i,0)'
@@ -212,8 +215,8 @@ def continuous_colorshow_legend(norm, colormap, dim=[0.1,0.1,0.85,0.85], fig=Non
     cb = mcolorbar.ColorbarBase(ax, cmap=colormap, norm=norm)
 
     cb.ax.tick_params(labelsize=fontsize)
-    cb.outline.set_color('white')
-    cb.outline.set_linewidth(2)
+    # cb.outline.set_color('white') # this would wipe out the plot
+    cb.outline.set_linewidth(0.2)
     # cb.dividers.set_color('white')
     # cb.dividers.set_linewidth(2)
     
@@ -249,6 +252,8 @@ class WZHmap():
                  xticklabel_rotat = 90,
 
                  yticklabels = None,
+                 yticklabel_fontsize = 5,
+                 yticklabel_side = 'l',
 
                  # title
                  label = None,
@@ -289,17 +294,17 @@ class WZHmap():
                 self.xticklabels = self.data.columns.format()
             for i in xrange(self.data.shape[1]):
                 if self.xticklabel_side in ['bottom', 'b']:
-                    self.ax.text(i, -1, self.xticklabels[i], rotation=self.xticklabel_rotat, horizontalalignment='left',
+                    self.ax.text(i, -1, self.xticklabels[i], rotation=self.xticklabel_rotat, horizontalalignment='center',
                                  verticalalignment='top', fontsize=self.xticklabel_fontsize)
                 elif self.xticklabel_side in ['top', 't']:
-                    self.ax.text(i, height*1.01, self.xticklabels[i], rotation=self.xticklabel_rotat, horizontalalignment='left',
+                    self.ax.text(i, height*1.01, self.xticklabels[i], rotation=self.xticklabel_rotat, horizontalalignment='center',
                                  verticalalignment='bottom', fontsize=self.xticklabel_fontsize)
 
         if self.yticklabels is not None:
             if type(self.yticklabels) == bool:
                 self.yticklabels = self.data.index.format()
             for i in xrange(self.data.shape[0]):
-                self.ax.text(-1, i, self.yticklabels[i], horizontalalignment='right', fontsize=self.xticklabel_fontsize)
+                self.ax.text(-1, i, self.yticklabels[i], horizontalalignment='right', fontsize=self.yticklabel_fontsize)
 
     def plot_legend(self, dim=[0.1,0.1,0.03,0.4], fig=None, unitheight=0.015):
 
@@ -318,7 +323,7 @@ class WZHmap():
             kwargs['label_fontsize'] = self.legend_label_fontsize
 
         if self.continuous:
-            continuous_colorshow_legend(None, self.colormap, dim, fig)
+            continuous_colorshow_legend(None, self.colormap, dim, fig, **kwargs)
         else:
             dim[-1] = unitheight*len(self.label2color)
             colorshow_legend(self.label2color, dim, fig, **kwargs)
@@ -408,9 +413,9 @@ class WZCbar(object):
 
                  # title
                  title = None,
-                 title_side = 'r',
+                 title_side = 'l',
                  title_spacing = 0.001,
-                 title_fontsize = 5,
+                 title_fontsize = 8,
                  title_fontweight = 'light',
 
                  # slanted annotation
@@ -432,7 +437,10 @@ class WZCbar(object):
              ):
 
         self.ax = None
-        self.data = data
+        if isinstance(data, pd.Series):
+            self.data = data
+        else:
+            self.data = pd.Series(data)
         import inspect
         ia = inspect.getargspec(WZCbar.__init__)
         for a in ia.args[-len(ia.defaults):]:
@@ -533,6 +541,15 @@ class WZCbar(object):
             colorshow_legend(self.label2color, dim, fig, **kwargs)
 
         return
+
+def cast_WZCbar(cbs):
+    _cbs = []
+    for cb in cbs:
+        if not isinstance(cb, WZCbar):
+            cb = WZCbar(cb)
+        _cbs.append(cb)
+    return _cbs
+
 
 """ a group of color bars with the same color map """
 class WZCbarGroup(object):
@@ -840,19 +857,82 @@ def _label_axis(ax, kind='x', label='', position='top',
         
     return
 
-def single_cluster_layout(cd, lcbs, tcbs, figwid=10, fighei=10, figfile='tmp.png', **kwargs):
-    """ 
-    lcbs : left color bars
-    tcbs : top color bars
-    """
+def cb_reorder_generic(cb, order):
 
-    single_hmap_layout(WZHmap(cd.df), lcbs, tcbs, td=cd.D_top, ld=cd.D_lft,
-                       figwid=figwid, fighei=fighei, figfile=figfile, **kwargs)
+    """ utility function for reorder data within color bar """
+
+    if isinstance(cb, WZCbar):
+        if order is not None:
+            cb.data = cb.data.iloc[order] # in-situ modification of cb
+    elif isinstance(cb, pd.Series):
+        if order is not None:
+            cb = cb.iloc[order]
+    else:
+        cb = pd.Series(cb)
+        if order is not None:
+            cb = cb.iloc[order]
+
+    return cb
+
+def hmap_cluster_generic(hmap, fast=True, mode='b'):
+
+    import wzhierarchy
+    if mode == 'b':
+        clustfun = wzhierarchy.ez_cluster
+    elif mode == 'r':
+        clustfun = wzhierarchy.ez_cluster_row
+    elif mode == 'c':
+        clustfun = wzhierarchy.ez_cluster_column
     
-    return
+    if isinstance(hmap, WZHmap):
+        cd = clustfun(hmap.data, fast=fast)
+        hmap.data = cd.df
+    elif isinstance(hmap, pd.DataFrame):
+        cd = clustfun(hmap, fast=fast)
+        hmap = WZHmap(cd.df)
+    else:                       # right now nothing different
+        cd = clustfun(hmap, fast=fast)
+        hmap = WZHmap(cd.df)
 
-def single_hmap_layout(hmap, lcbs, tcbs, td=None, ld=None,
-                       figwid=10, fighei=10, figfile='tmp.png', **kwargs):
+    return hmap, cd
+
+def subset_kwargs(kwargs, keys):
+
+    kwargs2 = {}
+    for key in keys:
+        if key in kwargs:
+            kwargs2[key] = kwargs[key]
+
+    return kwargs2
+
+def single_cluster_layout(hmap, lcbs=[], tcbs=[], fast=True, mode='b', **kwargs):
+
+    hmap, cd = hmap_cluster_generic(hmap, fast=fast, mode=mode)
+    if 'td' in kwargs and kwargs['td']:
+        kwargs['td'] = cd.D_top
+    single_hmap_layout(hmap,
+                       lcbs=[cb_reorder_generic(cb, cd.lft_order()) for cb in lcbs],
+                       tcbs=[cb_reorder_generic(cb, cd.top_order()) for cb in tcbs], **kwargs)
+
+def row_stack_layout(cbs, figwid=10, fighei=10, figfile=None,
+                     pad=0.002, hei=0.01,
+                     lft=0.05, btm=0.05, wid=0.9):
+
+    cbs = cast_WZCbar(cbs)
+    fig = plt.figure(figsize=(figwid, fighei))
+    for i, cb in enumerate(cbs):
+        cb.plot([lft, btm + i*(hei+pad), wid, hei], fig)
+
+    if figfile is not None:
+        wzcore.err_print("Saving to %s." % figfile)
+        fig.savefig(figfile, bbox_inches='tight', dpi=150)
+        
+def single_hmap_layout(hmap, lcbs=[], tcbs=[], td=None, ld=None,
+                       figwid=10, fighei=10, figfile=None,
+                       tdhei = 0.1, tdpad = 0.005, ldwid = 0.1, ldpad = 0.003,
+                       lcwid = 0.01, lcpad = 0.001, tchei = 0.02, tcpad = 0.001,
+                       maheipad = 0.001,
+                       **kwargs):
     
     fig = plt.figure(figsize=(figwid, fighei))
     fig.patch.set_facecolor('white')
@@ -861,107 +941,93 @@ def single_hmap_layout(hmap, lcbs, tcbs, td=None, ld=None,
     mar = 0.05
 
     ## top dendrogram
-    if ld is None:
-        tdhei = 0
-        tdpad = 0
-    else:
+    if td is None:
         tdhei = 0.1
-        tdpad = 0.005
+        tdpad = 0
     tduni = tdhei + tdpad
 
     ## left dendrogram
     if ld is None:
         ldwid = 0
         ldpad = 0
-    else:
-        ldwid = 0.1
-        ldpad = 0.003
     lduni = ldwid + ldpad
 
     ## left colorbar
-    lcwid = 0.01
-    lcpad = 0.001
     lcuni = lcwid + lcpad
     lcwid_all = len(lcbs) * lcwid + (((len(lcbs) - 1) * lcpad) if len(lcbs)>1 else 0)
 
     ## top color bar
-    tchei = 0.02
-    tcpad = 0.001
     tcuni = tchei + tcpad
     tchei_all = len(tcbs) * tchei + (((len(tcbs) - 1) * tcpad) if len(tcbs)>1 else 0)
 
     ## matrix
     mawid = 1 - 2*mar - lduni - lcwid_all
     mahei = 1 - 2*mar - tduni - tchei_all
-    maheipad = 0.001
     maheiuni = mahei + maheipad
 
     assert(mawid>0)
     assert(mahei>0)
 
-    if ld is None:
-        print "left dendro"
+    if ld is not None:
+        wzcore.err_print("left dendro")
         ld.plot(fig, [mar, mar, ldwid, mahei], orientation="left")
         lclft = mar + lduni
     else:
         lclft = mar
 
     if len(lcbs) > 0:
-        print "left color"
-        for i, cbar in enumerate(left_cbars.cbars()):
+        wzcore.err_print("left color")
+        lcb = cast_WZCbar(lcbs)
+        for i, cbar in enumerate(lcbs):
             cbar.lineanno = 'topleft'
             cbar.annlft = lclft
             cbar.plot([lclft+i*lcuni, mar, lcwid, mahei], fig, orientation='v')
-    nmlft = lclft + len(lcbs) * lcuni
+    malft = lclft + len(lcbs) * lcuni
 
-    print "normal heatmap"
-    nmlft = lclft + len(left_cbars)*lcuni
-    if cd_normal is not None:
-        plot_heatmap(cd_normal.df, [nmlft, mar, nmwid, mahei], fig, interpolation='none')
+    wzcore.err_print("heatmap")
+    if not isinstance(hmap, WZHmap):
+        hmap = WZHmap(hmap)
+    hmap.plot(dim=[malft, mar, mawid, mahei], fig=fig)
 
-    print "heatmap"
-    malft = nmlft + nmuni
-    plot_heatmap(cd_tumor.df, [malft, mar, mawid, mahei], fig, interpolation='none')
-
-    print "top normal color"
     tcbtm = mar + maheiuni
-    if top_normal_cbars.colls:
-        for i, top_normal_cbar in enumerate(top_normal_cbars.cbars()):
-            top_normal_cbar.plot([nmlft, tcbtm+i*tcuni, nmwid, tchei], fig)
 
-    print "top color"
-    if top_cbars.colls:
-        for i, cbar in enumerate(top_cbars.cbars()):
+    if len(tcbs) > 0:
+        wzcore.err_print("top color")
+        tcbs = cast_WZCbar(tcbs)
+        for i, cbar in enumerate(tcbs):
             cbar.plot([malft, tcbtm+i*tcuni, mawid, tchei], fig)
+        tdbtm = tcbtm + len(tcbs)*tcuni
+    else:
+        tdbtm = tcbtm
 
-    print "top dendro"
-    tdbtm = tcbtm + len(top_cbars)*tcuni
-    cd_tumor.D_top.plot(fig, [malft, tdbtm, mawid, tdhei], orientation='top')
+    if td is not None:
+        wzcore.err_print("top dendro")
+        td.plot(fig, [malft, tdbtm, mawid, tdhei], orientation='top')
 
-    print "Saving.."
-    fig.savefig(figfile, bbox_inches='tight', dpi=150)
+    if figfile is not None:
+        wzcore.err_print("Saving to %s." % figfile)
+        fig.savefig(figfile, bbox_inches='tight', dpi=150)
 
     # plot legend separately
-    print 'Legend'
-    legfigwid = 10
-    legfighei = 8
-    legbtm = 0.1
-    leglft = 0.1
-    legpad = 1.0 / legfigwid
-    legwid = 0.6 / legfigwid
-    fig = plt.figure(figsize=(10,8))
-    for cbar in left_cbars.colls+top_cbars.colls:
-        cbar.plot_legend([leglft, legbtm, legwid, 0.4], fig)
-        leglft += legwid + legpad
-    ff = os.path.splitext(figfile)
-    legfigfile = ff[0]+'_legend'+ff[1]
-    fig.savefig(legfigfile, bbox_inches='tight', dpi=150)
-    print 'Saving legend..'
-    print "Done."
+    if lcbs or tcbs and figfile is not None:
+        wzcore.err_print('Legend for color bars')
+        legfigwid = 10
+        legfighei = 8
+        legbtm = 0.1
+        leglft = 0.1
+        legpad = 1.0 / legfigwid
+        legwid = 0.6 / legfigwid
 
-    return
+        fig = plt.figure(figsize=(10,8))
+        for cbar in itertools.chain(lcbs, tcbs):
+            cbar.plot_legend([leglft, legbtm, legwid, 0.4], fig)
+            leglft += legwid + legpad
 
-def double_hmap_layout():
+        ff = os.path.splitext(figfile)
+        legfigfile = ff[0]+'_legend'+ff[1]
+        fig.savefig(legfigfile, bbox_inches='tight', dpi=150)
+        wzcore.err_print('Saving legend..')
+        wzcore.err_print("Done.")
 
     return
 
@@ -1272,3 +1338,43 @@ def normal_tumor_with_contrast_layout(cd_tumor, cd_normal=None, cd_tumor_contras
 
 def savefig(fn):
     plt.savefig(fn, bbox_inches='tight', dpi=150)
+
+def violin(data, colors, labels=None, bw=0.4, cut=2, gridsize=1000, poses=None, dwidth=0.5):
+    # res = plt.violinplot(data, showextrema=False, bw_method="silverman")
+    # res = plt.violinplot(data, showextrema=False, bw_method="scott")
+    # res = plt.violinplot(data, showextrema=False, bw_method=0.3)
+    # for i, r in enumerate(res['bodies']):
+    #     r.set_facecolor(colors[i])
+    #     r.set_edgecolor('none')
+    #     r.set_alpha(0.9)
+
+    ax = plt.gca()
+    from scipy.stats import gaussian_kde
+    supports = []
+    densities = []
+    max_dens = 0
+    for i, datum in enumerate(data):
+        kde = gaussian_kde(datum, bw)
+        bw2 = bw*np.std(datum, ddof=1)
+        support_min = np.min(datum) - bw2 * cut
+        support_max = np.max(datum) + bw2 * cut
+        support = np.linspace(support_min, support_max, gridsize)
+        density = kde.evaluate(support)
+        supports.append(support)
+        max_dens = max(np.max(density), max_dens)
+        densities.append(density)
+
+    for i, density in enumerate(densities):
+        density /= max_dens
+        grid = poses[i] if poses is not None else i+1
+        ax.fill_betweenx(supports[i], grid - density*dwidth, grid + density*dwidth, facecolor=colors[i], edgecolor="none")
+
+    if labels is not None:
+        plt.xticks(range(1,len(labels)+1), labels)
+
+    if poses is None:
+        plt.xlim(0, len(densities)+0.5)
+    else:
+        plt.xlim(min(poses)-0.5, max(poses)+0.5)
+
+

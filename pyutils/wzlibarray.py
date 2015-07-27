@@ -3,6 +3,13 @@ import numpy as np
 import wzcore
 # def cluster_sample_by_variable_probes(betas):
 
+def makedict(df, k, v):
+
+    d = df[v].copy()
+    d.index = df[k]
+    d = d.groupby(level=0).last()
+    return d
+
 def check_probe(probe, probe_fn='/Users/wandingzhou/projects/hs-tcga/data/2015_03_05_TCGA_450/GPL13534_HumanMethylation450_15017482_v.1.1.csv.gz'):
 
     fh = wzcore.opengz(probe_fn)
@@ -20,6 +27,13 @@ def check_probe(probe, probe_fn='/Users/wandingzhou/projects/hs-tcga/data/2015_0
                     print item[i]+':', field
     
     return
+
+def check_sample(sample):
+
+    Hui_annot = pd.read_csv('/Users/wandingzhou/projects/hs-tcga/data/2015_03_23_Hui_annotation/sampleAnnotSubWB20130619.tsv', index_col=1, error_bad_lines=False, sep='\t')
+
+    with pd.option_context('display.max_rows', 999):
+        print Hui_annot.loc[sample]
 
 def clean_450k(df, nahow='strong', probe_fn='/Users/wandingzhou/projects/hs-tcga/data/2015_03_05_TCGA_450/450k_probes', verbose=True):
 
@@ -51,7 +65,10 @@ def mask_snp_probes(df, mask_fn='/Users/wandingzhou/projects/hs-tcga/data/2015_0
     return
 
 def polarized(df, upthres=0.7,dwthres=0.3, kind='any', minsupp=1):
-    """ select probes that are methylated in some samples and unmethylated in others """
+    """ select probes that are methylated in some samples and unmethylated in others
+    "any" means more than minsupp probes have hypo and hyper meth
+    "all" all probes have either hypo or hyper meth
+    """
 
     def _isvar(row):
         hi = (row > upthres).sum()
@@ -178,56 +195,132 @@ def discretize(df, upthres=0.8, dwthres=0.2):
     df_bin = df_bin.applymap(_discretize)
     return df_bin
 
+def take_segment_mean(df, probe2seg, min_support=10):
 
-def data_load_WGBS_betas_common_PMD():
+    _df_seg = df.copy()
+    _df_seg['seg'] = probe2seg.loc[df.index]
+    _df_seg_gb = _df_seg.groupby('seg')
+    df_seg_count = _df_seg_gb.count().iloc[:,0]
+    df_seg_mean = _df_seg_gb.mean()[df_seg_count >= min_support]
+    wzcore.err_print('There are %d segments well supported.' % df_seg_mean.shape[0])
 
-    commons = pd.read_table('/Users/wandingzhou/projects/hs-tcga/2015_05_04_pmd/stringent_common_probes',sep='\t',header=None, index_col=3)
-    commons.rename(columns={5:'segments', 4:'MD',0:'chrm',1:'beg',2:'end'}, inplace=True)
+    return df_seg_mean
 
-    betas, cancer_types = data_load_WGBS_betas(commons.index)
-    return betas, cancer_types, commons
+class MutData():
 
-def data_load_WGBS_betas(probes=None):
+    def __init__(self):
 
-    WGBS_samples = ["BLCA", "BRCA", "COAD", "GBM", "LUAD", "LUSC", "READ", "STAD", "UCEC", 'LAML']
-    
-    return data_load_samples(WGBS_samples, probes)
+        self.sample2muts = {}
+        self.genes = set()
+        with open('/Users/wandingzhou/projects/hs-tcga/data/2015_06_17_TCGA_mutations/merged_maf') as fh:
+            for line in fh:
+                fields = line.strip().split()
+                if fields[2] in ['Silent', 'RNA']:
+                    continue
+                sample = fields[4][:12]
+                if sample not in self.sample2muts:
+                    self.sample2muts[sample] = []
+                mut = fields[1]
+                self.sample2muts[sample].append((mut, fields[2], fields[3]))
+                self.genes.add(mut)
 
-def data_load_pancan12(probes=None):
+        wzcore.err_print('Loaded %d genes and %d samples' % (len(self.genes), len(self.sample2muts)))
 
-    pancan12_samples = ['OV', 'BRCA', 'GBM', 'KIRC', 'LAML', 'COAD', 'READ', 'HNSC', 'LUAD', 'LUSC', 'BLCA', 'UCEC']
-    
-    return data_load_samples(pancan12_samples, probes)
+        return
 
-def data_load_samples(samples, probes=None):
+    def samples(self):
 
-    if not isinstance(samples, list):
-        samples = [samples]
+        return sample2muts.keys()
 
-    data_home = '/Users/wandingzhou/projects/hs-tcga/data/2015_03_05_TCGA_450/dat/'
-    _betases = []
-    cancer_types = pd.Series()
+    def mutstat(self, samples, gene, verbose=True):
 
-    wzcore.err_print_sig()
-    for cancer_type in samples:
-        wzcore.err_print_m(' '+cancer_type)
-        dat_fn = cancer_type+'.pkl'
-        cancer_type = dat_fn.strip('.pkl')
-        _betas = pd.read_pickle(data_home+'/'+dat_fn)
-        if probes is None:
-            _betases.append(_betas) # = pd.concat([betas, _betas], axis=1)
-        else:
-            _betases.append(_betas.loc[probes,])  # _betas = pd.concat([betas, _betas.loc[probes,]], axis=1)
-        cancer_types = cancer_types.append(pd.Series([cancer_type]*_betas.shape[1], index=_betas.columns))
+        t = []
+        cnt = 0
+        cnt1 = 0
+        if gene not in self.genes:
+            wzcore.err_print('Gene ID not identified %s' % gene)
+            return None
+        
+        for s in samples:
+            s = s[:12]
+            if s in self.sample2muts:
+                mut = False
+                for g, mt, mt1 in self.sample2muts[s]:
+                    if g == gene:
+                        mut = True
+                        cnt1 += 1
+                        break
+                t.append(mut)
+                cnt += 1
+            else:
+                t.append(np.nan)
 
-    betas = pd.concat(_betases, axis=1)
-    wzcore.err_print_m('\n')
+        if verbose:
+            wzcore.err_print('Identified info from %d/%d samples (%d muts).' % (cnt, len(samples), cnt1))
 
-    # some cell line sample belong to multiple cancer type, choose the last cancer
-    cancer_types = cancer_types.groupby(level=0).last()
-    wzcore.err_print('Loaded %d probes and %d samples' % betas.shape)
+        return pd.Series(t, index=samples)
 
-    return betas, cancer_types
+    def itergene(self, samples, min_muts=5, verbose=False):
+
+        for g in self.genes:
+            s = self.mutstat(samples, g, verbose=verbose)
+            if s is not None and s.sum() >= min_muts:
+                yield g, s
+
+    def associate_continuous(self, ts, prefix):
+
+        import scipy.stats as stats
+        self.ts = ts
+        self.pvals = []
+        self.foldcs = []
+        self.genes_select = []
+        for g, ss in self.itergene(ts.index):
+            U, pval = stats.mannwhitneyu(ts[ss == True],ts[ss == False])
+            foldc = (float(ts[ss == True].median()) / ts[ss == False].median())
+            self.pvals.append(-np.log2(pval))
+            self.foldcs.append(np.log2(foldc))
+            self.genes_select.append(g)
+            # if len(self.genes) > 100:
+            # break
+
+        import matplotlib.pyplot as plt
+        plt.figure()
+        plt.scatter(self.foldcs, self.pvals, edgecolor='none', alpha=0.5)
+        plt.xlabel('mutation / nonmutation')
+        plt.ylabel('p-value')
+        plt.savefig(prefix+'_volcano.png')
+
+        self.associate_continuous_outliers(prefix+'_outlier.png')
+
+    def associate_continuous_outliers(self, outlier_fn, fw=20.0, printn=10):
+        
+        balanced_up = [((pval+foldc*fw)/2.0,g,pval,foldc)
+                       for pval, foldc, g in zip(self.pvals, self.foldcs, self.genes_select)
+                       if (not pd.isnull(pval)) and (not pd.isnull(foldc))]
+        balanced_dw = [((pval-foldc*fw)/2.0,g,pval,foldc)
+                       for pval, foldc, g in zip(self.pvals, self.foldcs, self.genes_select)
+                       if (not pd.isnull(pval)) and (not pd.isnull(foldc))]
+
+        import wzplotlib
+
+        tss = self.ts.copy()
+        tss.sort()
+        cbs = [wzplotlib.WZCbar(tss, continuous=True)]
+        balanced_up.sort(reverse=True)
+        wzcore.err_print('upside:')
+        for i in xrange(min(printn, len(self.genes_select))):
+            b, g, pval, foldc = balanced_up[i]
+            cbs.append(wzplotlib.WZCbar(self.mutstat(tss.index, g, verbose=False)[tss.index], title=g+' [up]'))
+            wzcore.err_print('%s\tpval:%1.2f\tfoldc:%1.2f\tbalanced:%1.2f' % (g, pval, foldc, b))
+
+        balanced_dw.sort(reverse=True)
+        wzcore.err_print('\ndownside:')
+        for i in xrange(min(printn, len(self.genes_select))):
+            b, g, pval, foldc = balanced_dw[i]
+            cbs.append(wzplotlib.WZCbar(self.mutstat(tss.index, g, verbose=False)[tss.index], title=g+' [down]'))
+            wzcore.err_print('%s\tpval:%1.2f\tfoldc:%1.2f\tbalanced:%1.2f' % (g, pval, foldc, b))
+
+        wzplotlib.row_stack_layout(cbs, figfile=outlier_fn)
 
 def filter_by_purity(betas, min_purity=0.8, keep_normal=True):
 
@@ -380,3 +473,306 @@ def DMKSM_delta_scan(betas_t, betas_c, plot_fn):
     plt.xlabel('min delta')
     plt.ylabel('contamination estimate')
     plt.savefig(plot_fn)
+
+
+def associate_sample_continuous(df, s, mut=True, cnv=True):
+
+    cbs = [s]
+
+    if mut:
+        for iname, idat in df.iteritems():
+            if iname.startswith('mut_'):
+                cbs.append(idat[s.index])
+
+    if cnv:
+        for iname, idat in df.iteritems():
+            if iname.startswith('cnv_'):
+                cbs.append(idat[s.index])
+
+    wzplotlib.row_stack_layout(cbs)
+
+class ExpData():
+    
+    def __init__(self, genes=None):
+
+        self.rsems, self.cancer_types = data_load_rnaseq_all(genes=genes)
+
+    def _expstat(self, ts, dgene):
+        sample2v = {}
+        for sample, v in dgene.iteritems():
+            if not np.isnan(v):
+                sample2v[sample[:12]] = v
+        ts2v = {}
+        for sample, v in ts.iteritems():
+            if not np.isnan(v):
+                ts2v[sample[:12]] = v
+        _dgene = []
+        _ts = []
+        for s in sample2v:
+            if s in ts2v:
+                _dgene.append(sample2v[s])
+                _ts.append(ts2v[s])
+        return _dgene, _ts
+
+    def expstat(self, ts, gene):
+
+        return self._expstat(ts, self.rsems.loc[gene])
+
+    def itergene(self, ts):
+
+        for g, dgene in self.rsems.iterrows():
+            _dgene, _ts = self._expstat(ts, dgene)
+            yield g, _dgene, _ts
+        
+    def associate_continuous(self, ts, prefix):
+
+        import scipy.stats as stats
+        self.rhos = []
+        self.pvals = []
+        self.genes_select = []
+        self.ts = ts
+
+        for g, _dgene, _ts in self.itergene(ts):
+            rho, pval = stats.spearmanr(_dgene, _ts)
+            self.rhos.append(rho)
+            self.pvals.append(-np.log2(pval))
+            self.genes_select.append(g)
+            # if len(self.rhos) > 100:
+            # break
+        
+        import matplotlib.pyplot as plt
+        plt.figure()
+        plt.scatter(self.rhos, self.pvals, edgecolor='none', alpha=0.5)
+        plt.xlabel("spearman's rho")
+        plt.ylabel('p-value')
+        plt.savefig(prefix+'_volcano.png')
+
+        self.associate_continuous_outliers(prefix+'_outlier.png')
+
+    def associate_continuous_outliers(self, fn, fw=10, printn=10):
+
+        import matplotlib.pyplot as plt
+        plt.figure(figsize=(10,10))
+        plt.subplots_adjust(hspace=1)
+        
+        toplist = sorted(zip(self.pvals, self.rhos, self.genes_select), reverse=True)
+        n = min(printn, len(toplist))
+        for i in xrange(n):
+            pval, rho, gene = toplist[i]
+            wzcore.err_print('%s\tpval:%1.2f\trho:%1.2f' % (gene, pval, rho))
+            plt.subplot(5,2,i+1)
+            _dgene, _ts = self.expstat(self.ts, gene)
+            plt.scatter(np.log2(_dgene), _ts, edgecolor='none', alpha=0.5, s=4)
+            plt.xlabel('log2('+gene+' %1.2f)' % rho)
+
+        plt.savefig(fn, bbox_inches='tight')
+
+"""" data load subroutines """
+
+def data_load_tissue(source):
+
+    if source == 'Laird':
+        betas = pd.read_table('/Users/wandingzhou/projects/hs-tcga/data/2015_06_03_AML_normal_sorted/GSE49618_betas.tsv')
+        samples = pd.read_table('/Users/wandingzhou/projects/hs-tcga/data/2015_06_03_AML_normal_sorted/samples', index_col='barcode')
+        betas.columns = betas.columns.map(lambda x: 'blood_'+samples.loc[x.split('_')[0],'name'])
+
+    if source == 'Encode':
+        betas = pd.read_table('/Users/wandingzhou/projects/hs-tcga/2015_03_18_tumor_purity/GSE40699_ENCODE/GSE40699_betas.tsv')
+        samples = pd.read_table('/Users/wandingzhou/projects/hs-tcga/2015_03_18_tumor_purity/GSE40699_ENCODE/samples', index_col='barcode')
+        betas.columns = samples.loc[betas.columns.map(lambda x:x.split('_',2)[2]), 'short']+'_'+samples.loc[betas.columns.map(lambda x:x.split('_',2)[2]), 'cellline']
+
+    if source == 'Bonder':
+
+        betas = pd.read_table('/Users/wandingzhou/projects/hs-tcga/2015_03_18_tumor_purity/Bonder2014_BMCGenomics/GSE61454_severely_obsese/betas.tsv')
+        samples = pd.read_table('/Users/wandingzhou/projects/hs-tcga/2015_03_18_tumor_purity/Bonder2014_BMCGenomics/GSE61454_severely_obsese/samples',header=None,index_col=0,names=['barcode','sample'])
+        betas.columns = samples.loc[betas.columns.map(lambda x:x.split('_',1)[0]),'sample']+"_"+betas.columns.map(lambda x:x.split('_',1)[0])
+        betas = betas.loc[:,~betas.columns.map(lambda x:x.startswith('Liver'))] # exclude liver
+
+    if source == 'Slieker':
+        betas = pd.read_table('/Users/wandingzhou/projects/hs-tcga/2015_03_18_tumor_purity/GSE48472_Slieker_2013_EpigeneticsAndChromatin/betas.tsv')
+        samples = pd.read_table('/Users/wandingzhou/projects/hs-tcga/2015_03_18_tumor_purity/GSE48472_Slieker_2013_EpigeneticsAndChromatin/samples',header=None,index_col=0,names=['barcode','sample'])
+        betas.columns = samples.loc[betas.columns.map(lambda x:x.split('_',1)[0]),'sample']+"_"+betas.columns.map(lambda x:x.split('_',1)[0])
+
+    if source == 'Wong':
+        betas = pd.read_table('/Users/wandingzhou/projects/hs-tcga/data/2015_06_03_AlexWong_skin/AlexWong_skin_betas.tsv')
+        samples = pd.read_table('/Users/wandingzhou/projects/hs-tcga/data/2015_06_03_AlexWong_skin/samples', index_col='barcode')
+        betas.columns = 'skin_'+betas.columns.to_series()
+
+    if source == 'Lawlor1133':
+        betas = pd.read_table('/Users/wandingzhou/projects/hs-tcga/data/2015_06_03_Lawlor_tumor_lungfibroblast/s1133_betas.tsv')
+        names = pd.read_table('/Users/wandingzhou/projects/hs-tcga/data/2015_06_03_Lawlor_tumor_lungfibroblast/1133samples.csv.unix', index_col='Complete_Barcode', sep='\t')
+        betas.columns = names.loc[betas.columns,'GROUP_NAME']+'_'+betas.columns
+        
+    if source == 'Guintivano':
+        betas = pd.read_table('/Users/wandingzhou/projects/hs-tcga/2015_03_18_tumor_purity/GSE41826_Brain/betas.tsv')
+        mask_snp_probes(betas)
+        names = pd.read_table('/Users/wandingzhou/projects/hs-tcga/2015_03_18_tumor_purity/GSE41826_Brain/samples.csv',index_col='barcode')
+        betas.columns = 'brain_'+names.loc[betas.columns,'sample'].map(str)+'_'+betas.columns
+
+    if source == 'Wagner':
+        betas = pd.read_table('/Users/wandingzhou/projects/hs-tcga/2015_03_18_tumor_purity/GSE52025_Wagner_fibroblast/GSE52025_betas.tsv',sep='\t')
+        betas.columns = 'fibroblast_'+betas.columns.map(str)
+
+    if source == 'Reinus':
+        betas = pd.read_table('/Users/wandingzhou/projects/hs-tcga/data/2015_04_10_sorted_cell_population/blood_beta.tsv', sep='\t')
+        names = pd.read_table('/Users/wandingzhou/projects/hs-tcga/data/2015_04_10_sorted_cell_population/Sorted_Blood/sample_sheet_IDAT.csv.unix.tsv',index_col='barcode')
+        betas.columns = names.loc[betas.columns,'Type']+'-'+betas.columns
+        
+    wzcore.err_print("Loaded %d samples" % betas.shape[1])
+    
+    return betas
+
+def data_create_tissue_sample():
+    samples = pd.read_table('/Users/wandingzhou/projects/hs-tcga/2015_07_14_purity/2015_07_14_sample_select.txt', index_col="sample")
+    betas = pd.DataFrame()
+    for k, v in samples.sort('source').groupby('source'):
+        _betas = data_load_tissue(v['source'][0])
+        _betas2 = _betas[_betas.columns.intersection(v.index)]
+        betas = pd.concat([betas, _betas2], axis=1)
+        wzcore.err_print("From %s chose %d samples" % (v['source'][0], _betas2.shape[1]))
+
+    wzcore.err_print("Loaded %d samples" % betas.shape[1])
+
+    return betas, samples
+    
+
+def data_load_commonPMD(commonfn='/Users/wandingzhou/projects/hs-tcga/2015_05_04_pmd/stringent_common_probes'):
+
+    commons = pd.read_table(commonfn, sep='\t',header=None, index_col=3)
+    commons.rename(columns={5:'segments', 4:'MD',0:'chrm',1:'beg',2:'end'}, inplace=True)
+    seg2MD = makedict(commons, 'segments', 'MD')
+    return commons, seg2MD
+
+def data_load_WGBS_betas_common_PMD():
+
+    commons, seg2MD = data_load_commonPMD()
+
+    betas, cancer_types = data_load_WGBS_betas(commons.index)
+    return betas, cancer_types, commons, seg2MD
+
+def data_load_WGBS_betas(probes=None):
+
+    WGBS_samples = ["BLCA", "BRCA", "COAD", "GBM", "LUAD", "LUSC", "READ", "STAD", "UCEC", 'LAML']
+    
+    return data_load_samples(WGBS_samples, probes)
+
+def data_load_pancan12(probes=None):
+
+    pancan12_samples = ['OV', 'BRCA', 'GBM', 'KIRC', 'LAML', 'COAD', 'READ', 'HNSC', 'LUAD', 'LUSC', 'BLCA', 'UCEC']
+    
+    return data_load_samples(pancan12_samples, probes)
+
+def data_load_samples(samples, probes=None):
+
+    if not isinstance(samples, list):
+        samples = [samples]
+
+    data_home = '/Users/wandingzhou/projects/hs-tcga/data/2015_03_05_TCGA_450/dat/'
+    _betases = []
+    cancer_types = pd.Series()
+
+    wzcore.err_print_sig()
+    for cancer_type in samples:
+        wzcore.err_print_m(' '+cancer_type)
+        dat_fn = cancer_type+'.pkl'
+        _betas = pd.read_pickle(data_home+'/'+dat_fn)
+        if probes is None:
+            _betases.append(_betas) # = pd.concat([betas, _betas], axis=1)
+        else:
+            _betases.append(_betas.loc[probes,])  # _betas = pd.concat([betas, _betas.loc[probes,]], axis=1)
+        cancer_types = cancer_types.append(pd.Series([cancer_type]*_betas.shape[1], index=_betas.columns))
+
+    betas = pd.concat(_betases, axis=1)
+    wzcore.err_print_m('\n')
+
+    # some cell line sample belong to multiple cancer type, choose the last cancer
+    cancer_types = cancer_types.groupby(level=0).last()
+    wzcore.err_print('Loaded %d probes and %d samples' % betas.shape)
+
+    return betas, cancer_types
+
+def data_load_rnaseq_all(genes=None):
+
+    data_home = '/Users/wandingzhou/projects/hs-tcga/data/2015_04_30_TCGA_rnaseq/dat/'
+    import os
+    cancer_types = [pkl.strip('.pkl') for pkl in os.listdir(data_home)]
+    return data_load_rnaseq_samples(cancer_types, genes)
+
+def data_load_rnaseq_samples(_cancer_types, genes=None):
+
+    if not isinstance(_cancer_types, list):
+        _cancer_types = [_cancer_types]
+
+    data_home = '/Users/wandingzhou/projects/hs-tcga/data/2015_04_30_TCGA_rnaseq/dat/'
+    _rsems = []
+    cancer_types = pd.Series()
+    
+    wzcore.err_print_sig()
+    for cancer_type in _cancer_types:
+        wzcore.err_print_m(' '+cancer_type)
+        dat_fn = cancer_type+'.pkl'
+        _rsem = pd.read_pickle(data_home+'/'+dat_fn)
+        if genes is None:
+            _rsems.append(_rsem)
+        else:
+            _rsems.append(_rsem.loc[genes,])
+        cancer_types = cancer_types.append(pd.Series([cancer_type]*_rsem.shape[1], index=_rsem.columns))
+
+    rsems = pd.concat(_rsems, axis=1)
+    wzcore.err_print_m('\n')
+            
+    cancer_types = cancer_types.groupby(level=0).last()
+    wzcore.err_print('Loaded %d genes and %d samples' % rsems.shape)
+    
+    return rsems, cancer_types
+
+def probe_select1(betas, v, upq=0.75, loq=0.25, mindelta=0.1):
+
+    inind = betas.columns.isin(v.index)
+    _select1 = []
+    _select2 = []
+
+    hyperrows = []
+    hyporows = []
+    for i, row in betas.iterrows():
+        c = row[inind]
+        cb = row[~inind]
+        hyperrows.append((c.min()-cb.quantile(upq),i))
+        hyporows.append((cb.quantile(loq)-c.max(),i))
+
+    _select1 = [(i,j) for i,j in sorted(hyporows, reverse=True)[:100] if i>mindelta]
+    _select2 = [(i,j) for i,j in sorted(hyperrows, reverse=True)[:100] if i>mindelta]
+
+    wzcore.err_print("selected %d hypo and %d hyper probes." % (len(_select1), len(_select2)))
+
+    return list(set([j for i,j in _select1]) | set([j for i,j in _select2]))
+
+def probe_select_pairwise(betas, v1, v2, mindelta=0.5, upq=0.75, loq=0.25):
+
+    inind1 = betas.columns.isin(v1.index)
+    inind2 = betas.columns.isin(v2.index)
+
+    select1 = []
+    select2 = []
+    for i, row in betas.iterrows():
+        c1 = row[inind1]
+        c2 = row[inind2]
+        if c2.quantile(loq) - c1.quantile(upq) > mindelta: # hypo
+            select1.append(i)
+        if c1.quantile(loq) - c2.quantile(upq) > mindelta: # hyper
+            select2.append(i)
+
+    wzcore.err_print("selected %d hypo and %d hyper." % (len(select1), len(select2)))
+    return select1, select2
+
+def mark_alternate(series):
+    segmarks = []
+    prev = None
+    mark = True
+    for i, v in series.iteritems(): # uniseg['segments'][betas_uniseg_tumor.index].iteritems():
+        if v != prev:
+            mark = not mark
+            prev = v
+        segmarks.append(mark)
+
+    return segmarks

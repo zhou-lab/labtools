@@ -1007,7 +1007,7 @@ def main_pie(args):
         fracs.append(float(pair[args.frac-1]))
         labels.append(pair[args.label-1])
 
-    (fracs,labels) = zip(*sorted(zip(fracs,labels)))
+    (fracs,labels) = zip(*sorted(zip(fracs,labels), reverse=True))
     # cmap = plt.cm.prism
     # colors = cmap(np.linspace(0., 1., len(fracs)))
     pie_wedges = plt.pie(fracs, labeldistance=1.05,

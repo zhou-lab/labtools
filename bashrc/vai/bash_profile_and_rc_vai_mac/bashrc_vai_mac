@@ -11,6 +11,7 @@ alias rf="readlink -f"
 alias parallel="parallel --gnu --progress"
 alias sort="LC_ALL=C /Users/wandingzhou/tools/coreutils/coreutils-8.23/src/sort"
 alias hs="history | sed 's/^ *[0-9]* *//' | tail -r | less -S"
+alias wget='wget --no-check-certificate'
 
 PS1='\u@\h:\w\$ '
 
@@ -149,3 +150,6 @@ function gl {
   git commit -a -m "$message";
   git push;
 }
+
+PERL_MB_OPT="--install_base \"/Users/wandingzhou/perl5\""; export PERL_MB_OPT;
+PERL_MM_OPT="INSTALL_BASE=/Users/wandingzhou/perl5"; export PERL_MM_OPT;
