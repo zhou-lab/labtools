@@ -95,12 +95,18 @@ sort -V
 it sorts natural numbers within text
 see also vcf-sort which uses sort -V
 * unix
+** specify password to ssh/scp
+sed 's/.\///' temp | while read f; do sshpass -p "57_NwAC1" scp vai2:/data/largeS2/$f ${f//\//_}; echo $f; done
 ** curl download http
 curl -s http://jaspar.genereg.net/html/DOWNLOAD/bed_files/ | grep href | grep '.bed' | sed 's/.*href="//' | sed 's/".*//' | while read file; do echo $file; curl -OL http://jaspar.genereg.net/html/DOWNLOAD/bed_files/$file; done
 
 -s is --silent, no output of error messge or progress
 -O use remote name
 -L follow indirect link
+
+remember to quote the link when something weird happens
+for example
+curl -OL 'https://www.encodeproject.org/metadata/type=experiment&replicates.library.biosample.donor.organism.scientific_name=Mus%20musculus/metadata.tsv'
 ** encryption and decryption using openssl
 
 encrypt:

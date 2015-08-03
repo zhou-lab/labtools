@@ -905,7 +905,7 @@ def subset_kwargs(kwargs, keys):
 
     return kwargs2
 
-def single_cluster_layout(hmap, lcbs=[], tcbs=[], fast=True, mode='b', **kwargs):
+def single_cluster_layout(hmap, lcbs=[], tcbs=[], fast=True, returninfo=False, mode='b', **kwargs):
 
     hmap, cd = hmap_cluster_generic(hmap, fast=fast, mode=mode)
     if 'td' in kwargs and kwargs['td']:
@@ -913,6 +913,8 @@ def single_cluster_layout(hmap, lcbs=[], tcbs=[], fast=True, mode='b', **kwargs)
     single_hmap_layout(hmap,
                        lcbs=[cb_reorder_generic(cb, cd.lft_order()) for cb in lcbs],
                        tcbs=[cb_reorder_generic(cb, cd.top_order()) for cb in tcbs], **kwargs)
+    if returninfo:
+        return cd
 
 def row_stack_layout(cbs, figwid=10, fighei=10, figfile=None,
                      pad=0.002, hei=0.01,

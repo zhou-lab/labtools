@@ -687,6 +687,7 @@ def data_load_samples(samples, probes=None):
 
     # some cell line sample belong to multiple cancer type, choose the last cancer
     cancer_types = cancer_types.groupby(level=0).last()
+    betas = betas.groupby(level=0, axis=1).mean()
     wzcore.err_print('Loaded %d probes and %d samples' % betas.shape)
 
     return betas, cancer_types
