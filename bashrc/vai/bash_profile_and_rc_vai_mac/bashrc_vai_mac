@@ -19,7 +19,7 @@ HOME=/Users/wandingzhou
 
 export PATH=~/bin:$PATH
 export SCREENRC=$HOME/wzlib/screenrc/screenrc_hp
-export PYTHONPATH=$HOME/wzlib/pyutils:$HOME/pythonlib/lib/python2.7/site-packages/:$HOME/pythonlib/Library/Python/2.7/site-packages/
+export PYTHONPATH=$HOME/wzlib/pyutils:$HOME/pythonlib/lib/python2.7/site-packages/:$HOME/pythonlib/Library/Python/2.7/site-packages/:/usr/local/Cellar/pyqt/4.11.3/lib/python2.7/site-packages/:/System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/:$PYTHONPATH
 export AWKPATH=$HOME/wzlib/awkutils
 
 # % cpan

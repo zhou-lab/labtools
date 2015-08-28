@@ -453,16 +453,18 @@ def main_dedupmax(args):
 def main_dupcompress(args):
 
     ind = parse_indices(args.k)
+    val = parse_indices(args.v)
     k2v = {}
     for line in args.t:
         fields = line.strip().split(args.delim)
         k = tuple(ind.extract(fields))
-        if args.v <= len(fields):
-            v = fields[args.v-1]
-            if k in k2v:
-                if v not in k2v[k]: k2v[k].append(v)
-            else:
-                k2v[k] = [v]
+        v = args.od.join(val.extract(fields))
+        # if args.v <= len(fields):
+        # v = fields[args.v-1]
+        if k in k2v:
+            if v not in k2v[k]: k2v[k].append(v)
+        else:
+            k2v[k] = [v]
 
     for k, v in k2v.iteritems():
         if args.nc:
@@ -623,6 +625,28 @@ def main_setcol(args):
         exec(args.e)
     df.to_csv(args.o, sep='\t', index=False, na_rep='NA')
 
+def main_join(args):
+
+    k2fn2v = {}
+    for fn in args.i:
+        with open(fn) as fh:
+            for line in fh:
+                fields = line.strip('\n').split('\t')
+                k = fields[args.k-1]
+                v = fields[args.v-1]
+                if k not in k2fn2v:
+                    k2fn2v[k] = {}
+                k2fn2v[k][fn] = v
+
+    if args.u:
+        print '\t'.join(args.i)
+
+    if args.a:
+        print '\t'.join(args.a.split(','))
+
+    for k, fn2v in k2fn2v.iteritems():
+        print '%s\t%s' % (k, '\t'.join([fn2v[f] if f in fn2v else args.e for f in args.i]))
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Manipulate tables')
@@ -762,7 +786,7 @@ if __name__ == '__main__':
     parser_dupcompress = subparsers.add_parser('dupcompress', help='remove dup in one column and list all value in another')
     parser_dupcompress.add_argument('-t',type=argparse.FileType('r'), default='-')
     parser_dupcompress.add_argument('-k', required=True, help="column to dedup (1-based)")
-    parser_dupcompress.add_argument('-v', type=int, required=True, help="column to list (1-based)")
+    parser_dupcompress.add_argument('-v', required=True, help="column to list (1-based)")
     parser_dupcompress.add_argument('--nc', action="store_true", help="no print of count")
     parser_dupcompress.add_argument('--delim', default="\t", help="table delimiter [\\t]")
     parser_dupcompress.add_argument('--od', default="\t", help="output delimiter of value fields [\\t]")
@@ -792,6 +816,15 @@ if __name__ == '__main__':
     parser_replace.add_argument('-t', type=argparse.FileType('r'), help='target file', default='-')
     parser_replace.add_argument('-r', help='replace columns (default: all columns)', default='-')
     parser_replace.set_defaults(func=main_replace)
+
+    parser_join = subparsers.add_parser('join', help='join a bunch of files on common column')
+    parser_join.add_argument('-k', default=1, type=int, help='key field to join on')
+    parser_join.add_argument('-v', required=True, type=int, help='output field')
+    parser_join.add_argument('-i', nargs="*", help='input(s)')
+    parser_join.add_argument('-e', default='NA', help='empty default value')
+    parser_join.add_argument('-a', default=None, help='header string (None)')
+    parser_join.add_argument('-u', action='store_true', help='use file name as header (False)')
+    parser_join.set_defaults(func=main_join)
     
     args = parser.parse_args()
     args.func(args)

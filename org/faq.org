@@ -2,6 +2,33 @@
 #+STARTUP: indent
 #+TAGS: memorize(a) unknown(u)
 * bioinformatics
+** cram
+convert bam to cram
+samtools view -T yeast.fasta -C -o yeast.cram yeast.bam
+
+bwa mem yeast.fasta y1.fastq y2.fastq | \
+samtools sort -O bam -l 0 -T /tmp - | \
+samtools view -T yeast.fasta -C -o yeast.cram -
+
+samtools view yeast.cram
+
+bwa mem -R '@RG\tID:foo\tSM:bar\tLB:library1' yeast.fasta y1.fastq y2.fastq > yeast.sam
+
+samtools sort -O bam -T /tmp -l 0 -o yeast.bam yeast.sam
+
+samtools fixmate -O bam <lane.sam> <lane_fixmate.bam>
+
+java -Xmx2g -jar GenomeAnalysisTK.jar -T RealignerTargetCreator -R <ref.fa> -I <lane.bam> -o <lane.intervals> --known <bundle/b38/Mills1000G.b38.vcf>
+java -Xmx4g -jar GenomeAnalysisTK.jar -T IndelRealigner -R <ref.fa> -I <lane.bam> -targetIntervals <lane.intervals> --known <bundle/b38/Mills1000G.b38.vcf> -o <lane_realigned.bam>
+
+java -Xmx4g -jar GenomeAnalysisTK.jar -T BaseRecalibrator -R <ref.fa> -knownSites >bundle/b38/dbsnp_142.b38.vcf> -I <lane.bam> -o <lane_recal.table>
+java -Xmx2g -jar GenomeAnalysisTK.jar -T PrintReads -R <ref.fa> -I <lane.bam> --BSQR <lane_recal.table> -o <lane_recal.bam>
+
+java -Xmx2g -jar MarkDuplicates.jar VALIDATION_STRINGENCY=LENIENT INPUT=<lane_1.bam> INPUT=<lane_2.bam> INPUT=<lane_3.bam> OUTPUT=<library.bam>
+
+samtools merge <sample.bam> <library1.bam> <library2.bam> <library3.bam>
+samtools index <sample.bam>
+
 ** bedtools
 *** count GC content in a bed file/gff file
 bedtools nuc -fi hg19.fa -bed exons.bed
@@ -95,7 +122,20 @@ sort -V
 it sorts natural numbers within text
 see also vcf-sort which uses sort -V
 * unix
-** specify password to ssh/scp
+** join
+http://www.albany.edu/~ig4895/join.htm
+
+inner join
+join -1 2 -2 2 1.txt 2.txt
+
+left outer join
+join -a1 -1 2 -2 2 1.txt 2.txt
+
+outer join
+join -a1 -a2 -1 2 -2 2 -o 0 1.1 2.1 -e "0" 1.txt 2.txt
+** constantly watch command issued over time
+while true; do ls -l; sleep 5; done
+** specify password to ssh/scp without having to respond to prompt
 sed 's/.\///' temp | while read f; do sshpass -p "57_NwAC1" scp vai2:/data/largeS2/$f ${f//\//_}; echo $f; done
 ** curl download http
 curl -s http://jaspar.genereg.net/html/DOWNLOAD/bed_files/ | grep href | grep '.bed' | sed 's/.*href="//' | sed 's/".*//' | while read file; do echo $file; curl -OL http://jaspar.genereg.net/html/DOWNLOAD/bed_files/$file; done
@@ -2184,6 +2224,8 @@ TTL: time to live. this indicates the amount of time after which a package would
       Turn off/Disable IPv6 - http://ubuntuforums.org/showthread.php?t=6841 - Author mark
       Quit Having Network Manager asking for a Password to Connect to Known Wireless Networks - http://ubuntuforums.org/showthread.p...o+login&page=8 - Author Blueshift
 * AWK
+** strip whitespace
+gsub(/ +/, "", str)
 ** how to add commas and convert column to row
 # add commas and print in one line
 echo $(awk 'NR > 1{print line", "}{line=$0;}END{print $0" "}' file)
@@ -2213,6 +2255,16 @@ echo "-10" | awk '@include "awkfun"; {print $1, abs($1)}'
 *** gensub(regexp, replacement, how [, target])
 awk -v OFS="\t" '{$7=gensub(/([[:digit:].]*)%/, "\\1", 1, $7) / 100.0; print $0}' varscan_snp_cms46.overlap
 
+gensub() provides an additional feature that is not available in sub() or gsub(): the ability to specify components of a regexp in the replacement text. This is done by using parentheses in the regexp to mark the components and then specifying ‘\N’ in the replacement text, where N is a digit from 1 to 9. For example:
+
+$ gawk '
+> BEGIN {
+>      a = "abc def"
+>      b = gensub(/(.+) (.+)/, "\\2 \\1", "g", a)
+>      print b
+> }'
+-| def abc
+
 *** sub(regexp, replacement, [, target])
 search target which is treated as a string for the leftmost, longest substring matched by the regular expression regexp. Modify the entire string by replacing the matched text with replacement. The modified string becomes the new value of target. Return the number of substitutions made (zero or one). 
 
@@ -2226,6 +2278,8 @@ the character '&' is special, means the substring that matches regexp
 str = "daabaaa"
 sub(/a+/, "C&C", str)
 sets str to "dCaaCbaaa"
+*** gsub
+global sub, search for all patterns
 ** awk uses pipe and redirection in print                          :unknown:
 https://www.gnu.org/software/gawk/manual/html_node/Redirection.html
 print items > "output-file"
@@ -2628,6 +2682,8 @@ exclude ending pattern
 sed -n '/chrM/,/GL000207.1/{/GL000207.1/!p}' /scratch/bcb/wzhou1/reference/hs37d5/hs37d5.fa > hs37d5.fa.chrM
 * C
 ** gdb
+*** output "artificial" array
+p *array@10
 *** how to enable TUI
 gdb -tui
 or
@@ -5261,6 +5317,23 @@ mclapply(x, func)
 #+END_SRC
 
 * Python
+** pdb debugger
+python -m pdb yourprogram
+https://gimmebar-assets.s3.amazonaws.com/4fe38b76be0a5.html
+** setup ipython notebook on remote server
+
+start remote session
+ipython notebook --no-browser --port=7777
+
+setup ssh tunnel
+ssh -N -f -L localhost:8888:localhost:7777 username@dest.ination.com
+skipping -f leaves the tunnel in the foreground
+
+open localhost:8888
+
+close ssh tunnel
+ps aux | grep localhost:8888
+kill -15 <process_id>
 
 ** bokeh
 
@@ -9076,6 +9149,14 @@ Have fun!
 ** st
     hg st | awk '/\?/{print $2;}' | hg add
 * bash
+** check a string begins with some value
+if [ [ $a == "z*" ]] then; 
+
+if [ [ "$HOST" =~ ^user.* ]]; then
+    echo "yes"
+fi
+
+http://stackoverflow.com/questions/2172352/in-bash-how-can-i-check-if-a-string-begins-with-some-value
 ** variable substitution
 if aaa is set
 $ aaa='eee'
@@ -13139,3 +13220,10 @@ turn off line number
 
 mark current line
 V
+* arch
+** install
+on a mac OSX
+df -h # find out disk name
+diskutil unmountDisk /Volumes/wzusb
+sudo gdd bs=4M if=~/Downloads/archlinux-2015.08.01-dual.iso of=/dev/disk7s1 && sync
+diskutil eject /dev/disk7s1

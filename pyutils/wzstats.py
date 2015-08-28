@@ -6,6 +6,7 @@ import numpy as np
 import scipy.stats as stats
 import math
 import collections as colls
+import wzcore
 
 class Indices:
 
@@ -111,7 +112,19 @@ def main_basic(args):
     # print "max: %.2f" % max(vals)
     # print "min: %.2f" % min(vals)
 
+def main_rowstd(args):
+
+    """ do complex statistics on each row """
+
+    indices = parse_indices(args.c)
+    for line in args.table:
+        fields = line.strip('\n').split(args.delim)
+        vals = [float(_) for _ in indices.extract(fields) if _ != args.x]
+
+        print '%s\t%d\t%s' % ('\t'.join(fields), len(vals), '%1.3f' % np.std(vals) if len(vals)>1 else '-1')
+
 def main_overlap(args):
+
     """ find overlap of two list """
 
     set1 = set()
@@ -138,7 +151,32 @@ def main_rowentropy(args):
         print '%s\t%1.2f' % (
             '\t'.join(output.extract(fields)),
             stats.entropy(colls.Counter(list(indices.extract(fields))).values()))
-        
+
+def main_zscore(args):
+
+    """ compute Z-score for each row """
+    vals = []
+    fieldss = []
+    for line in args.table:
+        fields = line.strip('\n').split(args.delim)
+        fieldss.append(fields)
+        if args.x and eval(args.x):
+            vals.append(None)
+            v = None
+        else:
+            val = float(fields[args.c-1])
+            vals.append(val)
+            v = val
+
+    d = [v for v in vals if v]
+    vmean = np.mean(d)
+    vstd = np.std(d)
+    for i, val in enumerate(vals):
+        fields = fieldss[i]
+        if val is None:
+            print '%s\tNA' % ('\t'.join(fields), )
+        else:
+            print '%s\t%1.3f' % ('\t'.join(fields), (val - vmean) / vstd)
 
 def add_std_options(psr):
 
@@ -179,5 +217,20 @@ if __name__ == '__main__':
     add_std_options(p)
     p.set_defaults(func=main_rowentropy)
 
+    p = subparsers.add_parser('rowstd', help='compute statistics on each row')
+    p.add_argument('-c', required=True, help='columns to compute')
+    p.add_argument('-x', default=None, help='character to exclude, e.g., NA')
+    add_std_options(p)
+    p.set_defaults(func=main_rowstd)
+
+    p = subparsers.add_parser('zscore', help='calculate the Z-score for each row in the distribution of all rows')
+    p.add_argument('-c', type=int, help='column to compute')
+    p.add_argument('-x', default=None, help='exclusion criterion')
+    add_std_options(p)
+    p.set_defaults(func=main_zscore)
+
     args = parser.parse_args()
-    args.func(args)
+    try:
+        args.func(args)
+    except IOError as e:
+        sys.exit()
