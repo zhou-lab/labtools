@@ -92,7 +92,10 @@ def __core__(args, bbox_inches='tight'):
         ax = plt.gca()
         ax.set_ylim(top=args.ymax)
 
-    plt.savefig(args.outfig, bbox_inches=bbox_inches, dpi=args.dpi)
+    if args.outfig:
+        plt.savefig(args.outfig, bbox_inches=bbox_inches, dpi=args.dpi)
+    else:
+        plt.show()
 
 def main_scatter(args):
 
@@ -1075,6 +1078,23 @@ def main_hexbin(args):
     # plt.xlim(0,20)
     __core__(args)
 
+def main_dhist(args):
+
+    from collections import Counter
+    cs = []
+    for line in args.i:
+        fields = line.strip('\n').split('\t')
+        cs.append(fields[args.c-1])
+
+    cter = Counter(cs)
+    items = sorted(cter.iteritems(),key=lambda k:k[1],reverse=True)
+    names, vals = zip(*items)
+    ps = range(len(names))
+    plt.bar(ps, vals)
+    plt.xticks([_+0.5 for _ in ps], names, rotation=90)
+    __core__(args)
+
+
 def add_std_options_table(psr):
 
     psr.add_argument('-t', '--table', help="data table", type = argparse.FileType('r'), default='-')
@@ -1087,7 +1107,7 @@ def add_std_options_table(psr):
 
 def add_std_options_out(psr):
 
-    psr.add_argument('-o', dest='outfig', default="tmp.png",
+    psr.add_argument('-o', dest='outfig', default=None,
                      help='output figure file name [tmp.png]')
     psr.add_argument('--xlabel', help='x label')
     psr.add_argument('--ylabel', help='y label')
@@ -1184,6 +1204,12 @@ if __name__ == '__main__':
     psr_hist.add_argument('--xrange', default=None, help="range of x axes. E.g., (xmin, xmax)")
     add_std_options(psr_hist)
     psr_hist.set_defaults(func=main_hist)
+
+    parser_dhist = subparsers.add_parser('dhist', help='discrete histogram')
+    parser_dhist.add_argument('-i', type=argparse.FileType('r'), default='-', help='input table')
+    parser_dhist.add_argument('-c', type=int, default=1, help="column to plot (1-based)")
+    add_std_options(parser_dhist)
+    parser_dhist.set_defaults(func=main_dhist)
 
     ezhist_parsers = subparsers.add_parser('ezhist', help='easy histogram plots')
     ezhist_subparsers = ezhist_parsers.add_subparsers()

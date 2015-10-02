@@ -1,0 +1,6 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: zfpe
+# key: zfpe
+# binding: direct-keybinding
+# --
+fprintf(stderr, "$1\n"$2);

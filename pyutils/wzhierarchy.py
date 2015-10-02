@@ -251,7 +251,7 @@ def pdist_na(df, metric):
     
 def ez_cluster(df, fast=False, good_row=None, categorical=False, metric='euclidean'):
 
-    """ with fast=True option, only consider probes with notnull in all samples """
+    """ Warning!!! with fast=True option, only consider probes with notnull in all samples """
 
     import fastcluster
 
@@ -276,7 +276,7 @@ def ez_cluster(df, fast=False, good_row=None, categorical=False, metric='euclide
         d.Z_top = fastcluster.linkage(_df.transpose().as_matrix(), metric=metric, method='ward', preserve_input=True)
         d.Z_lft = fastcluster.linkage(_df.as_matrix(), method='ward', metric=metric, preserve_input=True)
     else:
-        p_top = pdist_na(_df, metric)
+        p_top = pdist_na(_df, metric) # pdist_na comes with a transpose
         d.Z_top = fastcluster.linkage(p_top, method='ward', preserve_input=True)
         p_lft = pdist_na(_df.transpose(), metric)
         d.Z_lft = fastcluster.linkage(p_lft, method='ward', preserve_input=True)

@@ -1,0 +1,7 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: ocase
+# key: ocase
+# binding: direct-keybinding
+# --
+
+case '$1': $2 break;

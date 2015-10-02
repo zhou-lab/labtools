@@ -1,0 +1,7 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: zconf
+# key: zconf
+# binding: direct-keybinding
+# --
+
+conf_t conf = {.verbose=0, $0};

@@ -1,0 +1,6 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: zfpo
+# key: zfpo
+# binding: direct-keybinding
+# --
+fprintf(stdout, "$1\n"$2);

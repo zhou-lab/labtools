@@ -1,0 +1,7 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: zoptp
+# key: zoptp
+# binding: direct-keybinding
+# --
+
+fprintf(stderr, "     -$1        $2.\n");

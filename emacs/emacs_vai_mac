@@ -22,9 +22,17 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 						)
 						auto-mode-alist)
 						
-(load-theme 'leuven t)
+(load-theme 'ample-zen t)
 
 (setq-default indent-tabs-mode nil)
+
+;; (setq yas-snippet-dirs
+;;       '~/emacs.d/.elpa/snippets/
+;;       )
+(yas-global-mode 1)
+;; need to link ~/emacs.d/snippets to ~/wzlib/emacs/emacs_linux/wanding-config/snippets
+;; (yas/load-directory "~/wzlib/emacs/emacs_linux/wanding-config/snippets/")
+;; (add-to-list 'yas-snippet-dirs "~/wzlib/emacs/emacs_linux/wanding-config/snippets")
 
 ;; (global-linum-mode t)
 
@@ -70,7 +78,10 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 
 (global-set-key (kbd "<f11>") 'dabbrev-expand)
 (global-set-key (kbd "<f9>") 'my-switch-to-other-buffer)
-(global-set-key (kbd "<f10>") 'list-buffers)
+(global-set-key (kbd "<f19>") 'my-switch-to-other-buffer)
+(global-set-key (kbd "<f9>") 'switch-to-buffer)
+(global-set-key (kbd "<f18>") 'switch-to-buffer)
+(global-set-key (kbd "<f10>") 'yas-reload-all)
 
 (setq sh-basic-offset 2
       sh-indentation 2)
@@ -331,8 +342,9 @@ Then move to that line and indent according to mode"
 ;;       backup-by-copying-when-linked t) ; Copy linked files, don't rename.
 
 (global-set-key (kbd "M-i") 'kill-whole-line)
-(global-set-key (kbd "<f8>") 'other-window)
-(global-set-key (kbd "<f7>") 'goto-line)
+(global-set-key (kbd "<f16>") 'other-window)
+(global-set-key (kbd "<f18>") 'delete-other-windows)
+(global-set-key (kbd "<clear>") 'goto-line)
 (global-set-key (kbd "M-<up>") 'move-line-upward)
 (global-set-key (kbd "M-<down>") 'move-line-downward)
 
@@ -357,3 +369,10 @@ Then move to that line and indent according to mode"
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  )
+
+
+(defun insert-file-name ()
+  "Insert the full path file name into the current buffer."
+  (interactive)
+  (insert (buffer-file-name (window-buffer (minibuffer-selected-window)))))
+(put 'upcase-region 'disabled nil)

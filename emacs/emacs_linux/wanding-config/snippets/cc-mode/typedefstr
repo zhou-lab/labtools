@@ -1,0 +1,9 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: tds
+# key: tds
+# binding: direct-keybinding
+# --
+
+typedef struct $1 {
+  $0;
+} $1;

@@ -17,7 +17,7 @@ PS1='\u@\h:\w\$ '
 
 HOME=/Users/wandingzhou
 
-export PATH=~/bin:$PATH
+export PATH=~/bin:~/tools/circos/current/bin:$PATH
 export SCREENRC=$HOME/wzlib/screenrc/screenrc_hp
 export PYTHONPATH=$HOME/wzlib/pyutils:$HOME/pythonlib/lib/python2.7/site-packages/:$HOME/pythonlib/Library/Python/2.7/site-packages/:/usr/local/Cellar/pyqt/4.11.3/lib/python2.7/site-packages/:/System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/:$PYTHONPATH
 export AWKPATH=$HOME/wzlib/awkutils
@@ -101,7 +101,7 @@ sum+=$column;} END{ave=sum/c; if((c%2)==1){median=a[int(c/2)];} else{median=(a[c
 -1]"\t25%: "a[c/4]"\t75%: "a[c/4*3]}'
 }
 
-alias qsubi='qsub -I -q medium -l nodes=1:ppn=1'
+alias qsubi='qsub -I -q default -l nodes=1:ppn=1'
 
 function dnarev {
   echo $1 | tr ATGC TACG | rev;
@@ -153,3 +153,11 @@ function gl {
 
 PERL_MB_OPT="--install_base \"/Users/wandingzhou/perl5\""; export PERL_MB_OPT;
 PERL_MM_OPT="INSTALL_BASE=/Users/wandingzhou/perl5"; export PERL_MM_OPT;
+
+function cntbed {
+ cut -f 1-3 $1 | sort | uniq | lc
+}
+
+function sortbed {
+sort -k1,1 -k2,2n $1
+}
