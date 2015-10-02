@@ -14,8 +14,9 @@ template="""
 #PBS -e {self.stderr}
 #PBS -o {self.stdout}
 #PBS -q {self.queue}
-#PBS -l nodes=1:ppn={self.ppn},walltime={self.time}
+#PBS -l nodes=1:ppn={self.ppn},mem={self.memG}gb,walltime={self.time}
 #PBS -V
+{self.depend}
 
 {self.commands}
         
@@ -30,8 +31,13 @@ class Job():
         self.jobroot    = "WandingJob"
         self.ppn        = args.ppn
         self.hour       = args.hour
+        self.memG       = args.memG
         self.stderrdir  = args.stderr
         self.stdoutdir  = args.stdout
+        if args.depend:
+            self.depend = '#PBS -W depend=afterany:{%s}' % args.depend
+        else:
+            self.depend = ''
         self.set_queue = types.MethodType(args.set_queue, self)
         if not os.path.exists(self.stdoutdir):
             raise Exception("stdout dir %s not existent" % self.stdoutdir)
@@ -199,7 +205,7 @@ def pbsgen_main(setting, set_queue):
     parser_one.add_argument('-name', default=None, help='job name (if specified, obsolete index)')
     add_default_settings(parser_one, setting)
     parser_one.add_argument('-dest', default=None, help='destination pbs file')
-    parser_one.add_argument('-depend', help='dependency')
+    parser_one.add_argument('-depend', default='', help='dependency')
     parser_one.set_defaults(func=main_one)
 
     ###### batch #####
