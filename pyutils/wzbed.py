@@ -1,6 +1,5 @@
 import pandas as pd
 
-
 def normalize_chrm(chrm):
 
     if chrm == '23' or chrm == 'chr23': chrm = 'X'
@@ -240,3 +239,4 @@ class Bed():
         bc.data = pd.DataFrame(bc_rowlist, columns=['chrm', 'beg', 'end'])
 
         return bc
+

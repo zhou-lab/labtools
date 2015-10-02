@@ -35,19 +35,19 @@ class RefGenome:
             self.faidx[chrom]=(slen,offset,blen,bytelen)
      
 
-    def fetch_chrmseq(self, chrom):
+    def fetch_chrmseq(self, chrom, uppercase=True):
 
         if not self.faidx.has_key(chrom):
             raise ValueError('Chromosome %s not found in reference' % chrom)
         slen,offset,blen,bytelen=self.faidx[chrom]
-        return self.fetch_sequence(chrom, 1, slen)
+        return self.fetch_sequence(chrom, 1, slen, uppercase=uppercase)
 
     # Function to fetch sequence from an indexed fasta
     # *chrom--Chromosome name (str)
     # *start--Start position (1-based) (int)
     # *end--End position (1-based) (int)
     # *keepN--Keep ambiguous bases in sequence (boolean)       
-    def fetch_sequence(self, chrom, start, end):
+    def fetch_sequence(self, chrom, start, end, uppercase=True):
 
         # Fetch a sequence from start to end in 1-based coordinates
         seq=""
@@ -75,7 +75,10 @@ class RefGenome:
             seq=seq+line
             
         #chomp off extra bases
-        return seq[:end-start].upper()
+        if uppercase:
+            return seq[:end-start].upper()
+        else:
+            return seq[:end-start]
         
     def __exit__(self, type, value, traceback):
         self.fasta_handle.close()

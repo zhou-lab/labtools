@@ -362,14 +362,28 @@ def _hist_oneplot(args):
             args.table.readline()
 
     data = []
+    dmax = None
+    dmin = None
     for i, line in enumerate(args.table):
         if i > args.maxline:
             break
         pair = line.strip().split(args.delim)
         if pair[args.c-1] == 'NA':
             continue
-        data.append(float(pair[args.c-1]))
+        d = float(pair[args.c-1])
 
+        if args.xmax and d > args.xmax:
+            continue
+
+        if args.xmin and d < args.xmin:
+            continue
+        
+        data.append(d)
+        
+        if dmax is None or dmax < d:
+            dmax = d
+        if dmin is None or dmin > d:
+            dmin = d
 
     if args.binseq:
         bins = map(int, args.binseq.split(','))
@@ -1007,7 +1021,7 @@ def main_pie(args):
         fracs.append(float(pair[args.frac-1]))
         labels.append(pair[args.label-1])
 
-    (fracs,labels) = zip(*sorted(zip(fracs,labels)))
+    (fracs,labels) = zip(*sorted(zip(fracs,labels), reverse=True))
     # cmap = plt.cm.prism
     # colors = cmap(np.linspace(0., 1., len(fracs)))
     pie_wedges = plt.pie(fracs, labeldistance=1.05,

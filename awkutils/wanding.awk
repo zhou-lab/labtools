@@ -102,6 +102,32 @@ function joinr(start, end,    sep, result, i) {
     return result
 }
 
+function minr(start,end,   first,result,i) {
+
+    first = 1
+    for (i=start; i<=end; ++i) {
+        if ($i == ".") continue
+        if (first || $i < result) {
+            result = $i
+            first = 0
+        }
+    }
+    return result;
+}
+
+function maxr(start,end,   first,result,i) {
+
+    first = 1
+    for (i=start; i<=end; ++i) {
+        if ($i == ".") continue
+        if (first || $i > result) {
+            result = $i
+            first = 0
+        }
+    }
+    return result;
+}
+
 function join(array, start, end, sep,  result, i)
 {
     if (sep == "")

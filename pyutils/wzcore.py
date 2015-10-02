@@ -1,6 +1,19 @@
 import inspect
 import sys
 
+def tprint(array, out=None):
+    if out is None:
+        out = sys.stdout
+
+    out.write('\t'.join(map(str, array))+'\n')
+
+def wprint(msg):
+
+    try:
+        print msg
+    except IOError as e:
+        sys.exit()
+
 def err_print(msg):
     fn = inspect.stack()[1][3]
     sys.stderr.write('[%s] %s\n' % (fn, str(msg)))

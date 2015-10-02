@@ -504,7 +504,6 @@ qqline(simn)
 ... # 3 more plots
 #+END_SRC
 
-
 * MAplot
 https://www.youtube.com/watch?v=46-t2jOYsyY
 Bland-Altman plot

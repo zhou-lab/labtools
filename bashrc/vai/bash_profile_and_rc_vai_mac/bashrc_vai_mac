@@ -11,6 +11,7 @@ alias rf="readlink -f"
 alias parallel="parallel --gnu --progress"
 alias sort="LC_ALL=C /Users/wandingzhou/tools/coreutils/coreutils-8.23/src/sort"
 alias hs="history | sed 's/^ *[0-9]* *//' | tail -r | less -S"
+alias wget='wget --no-check-certificate'
 
 PS1='\u@\h:\w\$ '
 
@@ -18,7 +19,7 @@ HOME=/Users/wandingzhou
 
 export PATH=~/bin:$PATH
 export SCREENRC=$HOME/wzlib/screenrc/screenrc_hp
-export PYTHONPATH=$HOME/wzlib/pyutils:$HOME/pythonlib/lib/python2.7/site-packages/:$HOME/pythonlib/Library/Python/2.7/site-packages/
+export PYTHONPATH=$HOME/wzlib/pyutils:$HOME/pythonlib/lib/python2.7/site-packages/:$HOME/pythonlib/Library/Python/2.7/site-packages/:/usr/local/Cellar/pyqt/4.11.3/lib/python2.7/site-packages/:/System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/:$PYTHONPATH
 export AWKPATH=$HOME/wzlib/awkutils
 
 # % cpan
@@ -149,3 +150,6 @@ function gl {
   git commit -a -m "$message";
   git push;
 }
+
+PERL_MB_OPT="--install_base \"/Users/wandingzhou/perl5\""; export PERL_MB_OPT;
+PERL_MM_OPT="INSTALL_BASE=/Users/wandingzhou/perl5"; export PERL_MM_OPT;
