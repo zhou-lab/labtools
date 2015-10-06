@@ -155,74 +155,73 @@ function auto_setup_links() {
   echo
 }
 
-###############
-### biscuit ###
-###############
+#########################################
+### Whole Genome Bisulfite Sequencing ###
+#########################################
 
-function biscuit_run() {
+##### alignment #####
 
-  local base
-  [[ $# -eq 1 ]] && base=$(readlink -f $1) || base=$(pwd)
-
-  biscuit_align $base
-  # capture dependencies
-  biscuit_fastqc $base
-  # biscuit_qualimap $base
-  biscuit_merge_methlevelaverages $base
-  biscuit_adaptor_c2t $base
-  
+# wgbs_biscuit_index_reference
+# run mm10generic to setup $WZ_BISCUIT_INDEX
+# use ~/pbs
+function wgbs_biscuit_index_reference {
+  base=$(pwd);
+  [[ -d ~/pbs ]] || mkdir ~/pbs
+  cmd="
+biscuit index $WZSEQ_BISCUIT_INDEX
+"
+  jobname="biscuit_index"
+  pbsfn=~/pbs/$jobname.pbs
+  pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 20 -ppn 1
+  [[ $1 == "do" ]] && qsub $pbsfn
 }
 
-function biscuit_adaptor() {
-
-  local base=$1;
-  
-  [[ -d adaptor ]] || mkdir adaptor;
-
-  parallel wzadaptor {} '>' adaptor/{/.}.txt ::: $base/root/*R1*.fastq.gz
-
-  for f in adaptor/*.txt; do
-    tail -2 $f | cut -d":" -f2 | cut -d" " -f2 | paste -s -d"\t" ;
-  done | awk 'BEGIN{print "adaptorC\tadaptorC2T"}{print $1,$2/$1}' > merged
-
-}
-
-function biscuit_merge_methlevelaverages() {
-  # usage: biscuit_merge_methlevelaverages data/methlevelaverage
-
-  local basedir=$1;
-  for f in $basedir/*.txt; do
-    sed -e 's/://g' -e 's/%//' $f | awk -f wanding.awk -e 'BEGIN{split("",k);split("",n);split("",v);}(length($0)>0){k[length(k)+1]=$1;n[length(n)+1]=$2;v[length(v)+1]=$3/100;}END{for(i=1;i<=length(k);++i){kn[i]=k[i]"n"};print(join(k,1,length(k),"\t")"\t"join(kn,1,length(kn),"\t"));print(join(v,1,length(v),"\t")"\t"join(n,1,length(n),"\t"))}' > ${f%.txt}.processed
-  done
-
-  wzmanip concat -f $basedir/*.processed | awk -f wanding.awk -e '{n=NF;print;}END{repeat("NA", n, rep); print joina(rep,"\t");}' > $basedir/merge;
-
-}
-
-function biscuit_align() {
-  # usage: requires base/samples
+function wgbs_biscuit_align {
+  # requires base/samples
   # format:
   # sample_code fastq1 fastq2
 
-  local base
-  [[ $# -eq 1 ]] && base=$(readlink -f $1) || base=$(pwd)
-  while read samplecode fastq1 fastq2 _junk_; do
-    biscuit_bwameth -b $base -s $samplecode -j jid_bwameth $base/fastq/$fastq1 $base/fastq/$fastq2
-    biscuit_mdup -j jid_mdup -d $jid_bwameth -i bam/$samplecode
-  done < $base/samples
+  base=$(pwd)
+  [[ -d bam ]] || mkdir bam
+  [[ -d pbs ]] || mkdir pbs
+  while read sname sread1 sread2; do
+    # while read samplecode fastq1 fastq2 _junk_; do
+    cmd="
+biscuit align $WZSEQ_BISCUIT_INDEX $base/fastq/$sread1 $base/fastq/$sread2 |samtools sort - $base/bam/${sname}
+samtools index $base/bam/${sname}.bam
+"
+    jobname="biscuit_align_$sname"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 250 -ppn 28
+    [[ $1 == "do" ]] && qsub $pbsfn
 
+    # biscuit_bwameth -b -s $samplecode -j jid_bwameth $base/fastq/$fastq1 $base/fastq/$fastq2
+    # biscuit_mdup -j jid_mdup -d $jid_bwameth -i bam/$samplecode
+  done < samples
+  return
 }
 
-function absolute_path() {
-  local in=$1
-  out=()
-  for x in $@; do
-    out+=($(readlink -f $x));
-  done
-  echo "${out[@]}"
+# function wgbs_biscuit_run {
+#   local base
+#   [[ $# -eq 1 ]] && base=$(readlink -f $1) || base=$(pwd)
+#   biscuit_align $base
+#   biscuit_merge_methlevelaverages $base
+#   biscuit_adaptor_c2t $base
+# }
+
+# bwameth index reference
+function wgbs_bwameth_index_reference {
+  [[ -d ~/pbs ]] || mkdir ~/pbs
+  cmd="
+bwameth.py index $WZSEQ_BWAMETH_INDEX
+"
+  jobname="bwameth_index"
+  pbsfn=~/pbs/$jobname.pbs
+  pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 20 -ppn 1
+  [[ $1 == "do" ]] && qsub $pbsfn
 }
 
-function biscuit_bwameth() {
+function wgbs_bwameth() {
 
   if [[ $# -eq 0 ]]; then
     echo "biscuit_bwameth -s HF5FGBGXX_1_PL150528WGBS2 R1.fastq.gz R2.fastq.gz"
@@ -271,6 +270,41 @@ function biscuit_bwameth() {
   fi
 }
 
+function wgbs_adaptor() {
+
+  local base=$1;
+  
+  [[ -d adaptor ]] || mkdir adaptor;
+
+  parallel wzadaptor {} '>' adaptor/{/.}.txt ::: $base/root/*R1*.fastq.gz
+
+  for f in adaptor/*.txt; do
+    tail -2 $f | cut -d":" -f2 | cut -d" " -f2 | paste -s -d"\t" ;
+  done | awk 'BEGIN{print "adaptorC\tadaptorC2T"}{print $1,$2/$1}' > merged
+
+}
+
+function wgbs_merge_methlevelaverages() {
+  # usage: biscuit_merge_methlevelaverages data/methlevelaverage
+
+  local basedir=$1;
+  for f in $basedir/*.txt; do
+    sed -e 's/://g' -e 's/%//' $f | awk -f wanding.awk -e 'BEGIN{split("",k);split("",n);split("",v);}(length($0)>0){k[length(k)+1]=$1;n[length(n)+1]=$2;v[length(v)+1]=$3/100;}END{for(i=1;i<=length(k);++i){kn[i]=k[i]"n"};print(join(k,1,length(k),"\t")"\t"join(kn,1,length(kn),"\t"));print(join(v,1,length(v),"\t")"\t"join(n,1,length(n),"\t"))}' > ${f%.txt}.processed
+  done
+
+  wzmanip concat -f $basedir/*.processed | awk -f wanding.awk -e '{n=NF;print;}END{repeat("NA", n, rep); print joina(rep,"\t");}' > $basedir/merge;
+
+}
+
+function absolute_path() {
+  local in=$1
+  out=()
+  for x in $@; do
+    out+=($(readlink -f $x));
+  done
+  echo "${out[@]}"
+}
+
 function biscuit_mdup() {
 
   if [[ $# -eq 0 ]]; then
@@ -311,39 +345,6 @@ function biscuit_mdup() {
     eval $jobid=$_jobid;
     echo "Submitted "$_jobid;
   fi
-}
-
-function biscuit_fastqc() {
-  # biscuit_qc <base_dir>
-
-  [[ $# -eq 1 ]] && base=$(readlink -f $1) || base=$(pwd);
-  fastqcdir=$base"/fastqc"
-  [[ -d $fastqcdir ]] || mkdir -p $fastqcdir
-  parallel "fastqc -f bam {} -o fastqcdir/" ::: $base/fastq/*.fastq.gz
-
-}
-
-function biscuit_mergebam() {
-  # biscuit_mergebam <base> merged.bam bam1 bam2...
-  
-  local base=$1
-  local dest=$2
-  shift 2
-
-  [[ -d $base/bam ]] || mkdir -p $base/bam
-
-  :>$base/bam/$dest.rg.txt
-  for x in $@; do
-    samtools view -H $x | grep '^@RG' >>$base/bam/$dest.rg.txt
-  done
-
-  samtools merge -h $base/bam/$dest.rg.txt $base/bam/$dest.bam $@
-  samtools index $base/bam/$dest.bam
-
-  rm -f $base/bam/$dest.rg.txt;
-  
-  echo "Done"
-  
 }
 
 function biscuit_pileup() {
@@ -494,9 +495,10 @@ function biscuit_cpgisland() {
 
   decho 'Done'
 }
-###############
-## ChIP pipe ##
-###############
+
+#######################
+## ChIP-seq pipeline ##
+#######################
 
 function chippipe_bcp() {
 
@@ -510,13 +512,10 @@ function chippipe_bcp() {
 
 ###########################
 ##### RNA-seq pipeline ####
-#
-# rnaseq_tophat2
-# rnaseq_cufflinks
-# rnaseq_cuffmerge <do>
-# rnaseq_cuffquant <do> # optional, necessary only when using new (>2.2) version.
-# rnaseq_cuffdiff
 ###########################
+
+# flowchat
+# rnaseq_tophat2 => rnaseq_cufflinks => rnaseq_cuffmerge => rnaseq_cuffquant (optional) => rnaseq_cuffdiff
 
 # rnaseq_tophat2
 function rnaseq_tophat2() {
@@ -814,9 +813,9 @@ rm -f $base/fastq/_${sread1}_tmp $base/fastq/_${sread2}_tmp
 
 }
 
-#############
-### other ###
-#############
+#####################
+### other utility ###
+#####################
 
 function wzseq_sra_to_fastq() {
   base=$(pwd);
@@ -837,6 +836,61 @@ fastq-dump --split-files $fn -O $base/fastq --gzip
   done
 }
 
+# wzseq_merge_fastq target1.fastq.gz source1.fq.gz,source2.fq.gz target2.fq.gz source3.fq.gz,source4.fq.gz ... <do>
+function wzseq_merge_fastq {
+  base=$(pwd)
+  [[ -d pbs ]] || mkdir pbs
+  until [[ -z $2 ]]; do
+    target=$1
+    sources=${2//,/ }
+    targetdir=$(dirname $target)
+    cmd="
+cd $base
+[[ -d $targetdir ]] || mkdir -p $targetdir
+zcat $sources | gzip -c > $target
+echo 'read count for '$target
+zcat $target | wc -l
+echo 
+for source in $sources; do 
+echo \$source
+zcat \$source | wc -l
+done
+"
+    jobname="merge_fastq_${target//\//_}"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 10 -ppn 1
+    [[ ${!#} == "do" ]] && qsub $pbsfn
+    shift 2
+  done
+}
+
+function wzseq_merge_bam {
+  # wzseq_mergebam merged.bam bam1 bam2...
+  # if $dest.rg.txt does not exist, will create by inferring from file name
+
+  base=$(pwd)
+  local dest=$1
+  shift
+
+  [[ -d $base/bam ]] || mkdir -p $base/bam
+
+  if [[ ! -s $base/bam/$dest.rg.txt ]]; then
+    :>$base/bam/$dest.rg.txt
+    for x in $@; do
+      samtools view -H $x | grep '^@RG' >>$base/bam/$dest.rg.txt
+    done
+  fi
+
+  samtools merge -h $base/bam/$dest.rg.txt $base/bam/$dest.bam $@
+  samtools index $base/bam/$dest.bam
+
+  rm -f $base/bam/$dest.rg.txt;
+  
+  echo "Done"
+  
+}
+
+
 # wzseq_index_flagstat_bam <do>
 function wzseq_index_flagstat_bam() {
   base=$(pwd);
@@ -853,6 +907,28 @@ samtools flagstat $fn > $fn.flagstat;
       pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 1 -memG 10 -ppn 1
       [[ $1 == "do" ]] && qsub $pbsfn
     done
+}
+
+function wzseq_fastqc() {
+  base=$(pwd);
+  [[ -d fastqc ]] || mkdir fastqc
+  [[ -d pbs ]] || mkdir pbs
+  for f in fastq/*.+(fastq|fq|fastq.gz|fq.gz); do
+    fn=$(readlink -f $f)
+    bfn=$(basename $f)
+    bfn=${bfn%.fastq.gz}
+    bfn=${bfn%.fastq}
+    bfn=${bfn%.fq.gz}
+    bfn=${bfn%.fq}
+    cmd="
+[[ -d $base/fastqc/$bfn ]] || mkdir -p $base/fastqc/$bfn
+fastqc -f fastq $fn -o $base/fastqc/$bfn
+"
+    jobname="fastqc_$bfn"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 5 -ppn 1
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done
 }
 
 # wzseq_qualimap <do>
