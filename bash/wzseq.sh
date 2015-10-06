@@ -514,12 +514,13 @@ function chippipe_bcp() {
 # rnaseq_tophat2
 # rnaseq_cufflinks
 # rnaseq_cuffmerge <do>
-# rnaseq_cuffquant <do>
+# rnaseq_cuffquant <do> # optional, necessary only when using new (>2.2) version.
+# rnaseq_cuffdiff
 ###########################
 
 # rnaseq_tophat2
 function rnaseq_tophat2() {
-  if [[ -z samples ]]; then
+  if [[ ! -s samples ]]; then
     echo "No [samples] file. Abort."
     return 1;
   fi
@@ -547,7 +548,7 @@ samtools flagstat $odir/accepted_hits.bam > $odir/accepted_hits.bam.flagstat
 
 # rnaseq_tophat2_firststrand samplefn
 function rnaseq_tophat2_firststrand() {
-  if [[ -z samples ]]; then
+  if [[ ! -s samples ]]; then
     echo "file: samples missing. Abort."
     return 1;
   fi
@@ -562,8 +563,9 @@ function rnaseq_tophat2_firststrand() {
 tophat2 -p 28 -G /primary/vari/genomicdata/genomes/hg19/tophat/Homo_sapiens/UCSC/hg19/Annotation/Genes/genes.gtf --library-type fr-firststrand -o $odir --no-novel-juncs ~/references/hg19/bowtie2/hg19 $sfile1 $sfile2
 samtools index $odir/accepted_hits.bam
 samtools flagstat $odir/accepted_hits.bam > $odir/accepted_hits.bam.flagstat
-ln -s $odir/accepted_hits.bam $base/bam/$sname.bam
-ln -s $odir/accepted_hits.bam.bai $base/bam/$sname.bam.bai
+cd $base/bam
+ln -s $sname/accepted_hits.bam $sname.bam
+ln -s $sname/accepted_hits.bam.bai $sname.bam.bai
 "
     jobname="tophat_$sname"
     pbsgen one "$cmd" -name $jobname -dest $base/pbs/$jobname.pbs -hour 24 -memG 250 -ppn 28
@@ -585,21 +587,20 @@ function rnaseq_cufflinks() {
   done
 }
 
-
 # rnaseq_cuffmerge <do>
 # require: cuffmerge, gtf_to_sam, cuffcompare
 #
-##### cuffmerge/assemblies.txt #########
+# example of cuffmerge/assemblies.txt
 # cufflinks/82_SL121326/transcripts.gtf
 # cufflinks/83_SL121327/transcripts.gtf
 # cufflinks/84_SL121328/transcripts.gtf
 # cufflinks/85_SL121329/transcripts.gtf
 # cufflinks/BC/transcripts.gtf
-########################################
 function rnaseq_cuffmerge() {
   [[ -d cuffmerge ]] || mkdir -p cuffmerge;
   base=$(pwd)
-  if [[ -z cuffmerge/assemblies.txt ]]; then
+  if [[ ! -s cuffmerge/assemblies.txt ]]; then
+    echo "cuffmerge/assemblies.txt nonexistent. Create new."
     :>cuffmerge/assemblies.txt
     for f in $base/cufflinks/*; do
       [[ -s $f/transcripts.gtf ]] && echo $f/transcripts.gtf >> cuffmerge/assemblies.txt;
@@ -619,9 +620,10 @@ cuffmerge -g $WZSEQ_GTF -s $WZSEQ_REFERENCE -p 10 $base/cuffmerge/assemblies.txt
 # cuffquant <do>
 function rnaseq_cuffquant() {
 
+  base=$(pwd)
   gtf=$(readlink -f cuffmerge/merged_asm/merged.gtf)
-  if [[ -z $gtf ]]; then
-    echo "cuffmerge/merged_asm/merged.gtf missing. Abort"
+  if [[ ! -s $gtf ]]; then
+    echo "cuffmerge/merged_asm/merged.gtf missing. fall back to $WZSEQ_GTF"
     return 1
   fi
 
@@ -629,7 +631,7 @@ function rnaseq_cuffquant() {
     fn=$(readlink -f $f)
     bf=$(basename $f .bam)
     cmd="
-cuffquant $WZSEQ_GTF $fn -o cuffmerge/cuffquant_$bf -p 8
+cuffquant $gtf $fn -o $base/cuffmerge/cuffquant_$bf -p 8 -q
 "
     jobname="cuffquant_$bf"
     pbsfn=$base/pbs/$jobname.pbs
@@ -638,36 +640,134 @@ cuffquant $WZSEQ_GTF $fn -o cuffmerge/cuffquant_$bf -p 8
   done
 }
 
-# cuffdiff
+# cuffdiff <do>
+# cuffdiff/sample_sheet file example:
+# cond1\tcond2\tbams1\tbams2
+# e.g.
+# aza     PBS     bam/aza.bam     bam/PBS.bam
+# for cuffdiff >2.2 bams can be replaced by cxb files.
+# bams1 and bams2 can be comma separated if containing multiple samples
 function rnaseq_cuffdiff() {
   base=$(pwd);
-  cond1=$1
-  cond2=$2
-  bams1=$(readlink -f $3)       # comma separated, if multiple
-  bams2=$(readlink -f $4)       # comma separated, if multiple
   [[ -d cuffdiff ]] || mkdir -p cuffdiff;
-  
-  # use merged gtf if available otherwise, use back-up gtf
-  gtf=$base/cuffmerge/merged_asm/merged.gtf
-  [[ -s $gtf ]] || gtf=$WZSEQ_GTF
-  
-  cmd="
-cuffdiff -o $base/cuffdiff/${cond1}_vs_${cond2} -q -b $WZSEQ_REFERENCE -p 28 -L $cond1,$cond2 -u $gtf $bams1 $bams2
+
+  if [[ ! -s cuffdiff/sample_sheet ]]; then
+    echo "file: cuffdiff/sample_sheet missing"
+    return 1
+  fi
+
+  while read cond1 cond2 bams1 bams2; do
+    # use merged gtf if available otherwise, use back-up gtf
+    gtf=$base/cuffmerge/merged_asm/merged.gtf
+    [[ -s $gtf ]] || gtf=$WZSEQ_GTF
+
+    cmd="
+cd $base
+cuffdiff -o $base/cuffdiff/${cond1}_vs_${cond2} -q -b $WZSEQ_REFERENCE -p 8 -L $cond1,$cond2 -u $gtf $bams1 $bams2
 "
-  jobname="cuffdiff_${cond1}_vs_${cond2}"
-  pbsgen one "$cmd" -name $jobname -dest $base/pbs/$jobname.pbs -hour 12 -memG 100 -ppn 28
+    jobname="cuffdiff_${cond1}_vs_${cond2}"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 8
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done < cuffdiff/sample_sheet
 }
 
-# cuffnorm
+# TODO: cuffnorm
 function rnaseq_cuffnorm() {
   return 1
 }
+
+# RSeQC
+# need to define WZSEQ_RSEQ_GENE_BED
+function rnaseq_rseqc() {
+  base=$(pwd);
+  [[ -d pbs ]] || mkdir pbs
+  for f in bam/*.bam; do
+    fn=$(readlink -f $f)
+    bfn=$(basename $f .bam)
+
+    cmd="
+cd $base
+
+# compute and plot SAM quality score
+echo `date` 'running read_quality.py ...' 1>&2
+read_quality.py -i $f -o rseqc/${bfn}_read_quality
+
+# computes nucleotide composition tables and make plots
+echo `date` 'running read_NVC.py ...' 1>&2
+read_NVC.py -i $f -o rseqc/${bfn}_nucleotide_composition
+
+# number of reads mapped to each genomic feature, CDS_Exons, 3'UTR_Exons, etc
+echo `date` 'running read_distribution.py ...' 1>&2
+read_distribution.py -i $fn -r $WZSEQ_RSEQC_GENE_BED >rseqc/${bfn}_read_distribution
+
+# 5'->3' gene coverage metrics for each sample (coverage uniformity)
+echo `date` 'running geneBody_coverage.py ...' 1>&2
+geneBody_coverage.py -i $fn -r $WZSEQ_RSEQC_GENE_BED -o rseqc/${bfn}_genebody_coverage
+"
+    jobname="rseqc_$bfn"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done
+
+}
+
+# subjunc, subread (if only differential gene expression is concerned, faster), here I
+# only use subjunc, which is supposed to be more optimal
+# need to build subread index first (for subjunc)
+# bin/subread-buildindex -o ~/references/hg19/subread/hg19 ~/references/hg19/hg19.fa
+# other options: -S fr -d <min_insert_size> -D <max_insert_size>
+function rnaseq_subjunc() {
+  base=$(pwd);
+  [[ -d pbs ]] || mkdir pbs
+  while read sname sread1 sread2; do
+    sfile1=$(readlink -f fastq/$sread1);
+    sfile2=$(readlink -f fastq/$sread2);
+    mkdir -p bam/${sname}_subjunc;
+    cmd="
+cd $base
+/primary/home/wanding.zhou/tools/subread/subread-1.4.6-p5-Linux-x86_64/bin/subjunc -T 28 -I 16 -i $WZSEQ_SUBREAD_INDEX -r fastq/$sread1 -R fastq/$sread2 --gzFASTQinput -o bam/${sname}_subjunc/$sname.bam --BAMoutput
+[[ -e bam/${sname}.bam ]] || ln -s ${sname}_subjunc/$sname.bam bam/${sname}.bam
+"
+    jobname="subjunc_${sname}"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done <samples
+}
+
+# TODO: featureCounts
+function rnaseq_featurecounts() {
+  base=$(pwd);
+  [[ -d pbs ]] || mkdir pbs
+  for f in bam/*.bam; do
+    fn=$(readlink -f $f)
+    bfn=$(basename $f .bam)
+    cmd="
+featureCounts -T 28 -t exon -g gene_id -a annotation.gtf -o featureCounts/$bfn_counts.txt $fn
+"
+    jobname="featurecounts_$bfn"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done
+
+}
+
+# TODO: limma
+
+# TODO: RSEM
+# ~/tools/rsem/rsem-1.2.22/rsem-prepare-reference
+# rsem-calculate-expression -p 20 --calc-ci --ci-memory 12294 --bowtie-chunkmbs 2000 --paired-end --bowtie-path $WZSEQ_BOWTIE1 --rsem-index RSEM
+
+# TODO: EBSeq
 
 # STAR
 # make a genome index first
 # STAR --runThreadN 28 --runMode genomeGenerate --genomeDir $WZSEQ_STAR_INDEX --genomeFastaFiles $WZSEQ_REFERENCE --sjdbGTFfile $WZSEQ_GTF --sjdbOverhang 49
 function rnaseq_star() {
-  if [[ -z samples ]]; then
+  if [[ ! -s samples ]]; then
     echo "file: samples missing. Abort"
     return 1
   fi
@@ -687,6 +787,33 @@ samtools index $base/bam/$sname/$snameAligned.sortedByCoord.out.bam
   done <samples
 }
 
+
+# mapsplice
+# input fastq must be uncompressed and with no space
+function rnaseq_mapsplice() {
+
+  if [[ ! -s samples ]]; then
+    echo "file: samples missing. Abort"
+    return 1
+  fi
+  base=$(pwd)
+  [[ -d bam ]] || mkdir bam
+  [[ -d pbs ]] || mkdir pbs
+  while read sname sread1 sread2; do
+    cmd="
+zcat $base/fastq/$sread1 | sed 's/ /_/g' >$base/fastq/_${sread1}_tmp
+zcat $base/fastq/$sread2 | sed 's/ /_/g' >$base/fastq/_${sread2}_tmp
+python /home/wanding.zhou/tools/mapsplice/MapSplice-v2.2.0/mapsplice.py -p 28 -o $base/bam/${sname}_mapsplice --bam -c $WZSEQ_BOWTIE1_INDEX -x $WZSEQ_BOWTIE1_INDEX/mm10 -1 $base/fastq/_${sread1}_tmp -2 $base/fastq/_${sread2}_tmp --gene-gtf $WZSEQ_GTF_ENSEMBL
+rm -f $base/fastq/_${sread1}_tmp $base/fastq/_${sread2}_tmp
+"
+    jobname="mapsplice_$sname"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 250 -ppn 28
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done <samples
+
+}
+
 #############
 ### other ###
 #############
@@ -697,10 +824,11 @@ function wzseq_sra_to_fastq() {
   [[ -d fastq ]] || mkdir fastq
   for f in sra/*.sra; do
     fn=$(readlink -f $f)
-    bfn=$(basename $f)
+    bfn=$(basename $f .sra)
+    # if you want to append 1/2 to read name use -I. But this
+    # usually causes trouble
     cmd="
-fastq-dump -I --split-files $fn -O $base/fastq
-gzip $base/fastq/*.fastq
+fastq-dump --split-files $fn -O $base/fastq --gzip
 "
     jobname="sra2fastq_$bfn"
     pbsfn=$base/pbs/$jobname.pbs
@@ -733,19 +861,48 @@ function wzseq_qualimap() {
   base=$(pwd);
   [[ -d qualimap ]] || mkdir -p qualimap
   qualimapdir=$base/qualimap
-  find bam -name *.bam |
-    while read f; do
-      [[ $f == *unmapped* ]] && continue
-      fn=$(readlink -f $f)
-      bfn=${f#bam/}
-      bfn=${bfn%.bam}
-      bfn=${bfn//\//_}
-      cmd="
+  for f in bam/*.bam; do
+    fn=$(readlink -f $f)
+    bfn=$(basename $f .bam)     # fn might be a symbolic link
+    cmd="
 qualimap --java-mem-size=10G bamqc -nt 10 -bam $fn -outdir $qualimapdir/$bfn -c
 "
-      jobname="qualimap_"${f//\//_}
-      pbsfn=$base/pbs/$jobname.pbs
-      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 1 -memG 50 -ppn 10
-      [[ $1 == "do" ]] && qsub $pbsfn
-    done
+    jobname="qualimap_"${f//\//_}
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 1 -memG 50 -ppn 10
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done
+}
+
+################
+# trim adaptor #
+################
+
+function wzseq_trimmomatic {
+  base=$(pwd);
+  [[ -d pbs ]] || mkdir pbs
+  if [[ ! -s samples ]]; then
+    echo "file: samples missing"
+    return 1;
+  fi
+  
+  [[ -d fastq/trimmed ]] || mkdir -p fastq/trimmed
+  [[ -d fastq/untrimmed ]] || mkdir -p fastq/untrimmed
+  while read sname sread1 sread2; do
+    sread1base=$(basename $sread1 .fastq.gz)
+    sread2base=$(basename $sread2 .fastq.gz)
+    cmd="
+java -jar /primary/home/wanding.zhou/tools/trimmomatic/Trimmomatic-0.33/trimmomatic-0.33.jar PE -phred33 $base/fastq/$sread1 $base/fastq/$sread2 $base/fastq/trimmed/$sread1 $base/fastq/trimmed/${sread1base}_unpaired.fastq.gz $base/fastq/trimmed/$sread2 $base/fastq/trimmed/${sread2base}_unpaired.fastq.gz ILLUMINACLIP:/primary/home/wanding.zhou/tools/trimmomatic/Trimmomatic-0.33/adapters/TruSeq3-PE.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36
+mv $base/fastq/$sread1 $base/fastq/untrimmed
+mv $base/fastq/$sread2 $base/fastq/untrimmed
+cd $base/fastq
+ln -s trimmed/$sread1 .
+ln -s trimmed/$sread2 .
+"
+    jobname="trimmomatic_$bfn"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done < samples
+
 }
