@@ -1,0 +1,6 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: zdv
+# key: zdv
+# binding: direct-keybinding
+# --
+DEFINE_VECTOR($1_v, $1_t)

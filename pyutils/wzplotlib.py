@@ -253,6 +253,7 @@ class WZHmap():
                  xticklabel_side = 'bottom',
                  xticklabel_rotat = 90,
 
+                 ytickposes = None,
                  yticklabels = None,
                  yticklabel_fontsize = 5,
                  yticklabel_side = 'l',
@@ -269,7 +270,7 @@ class WZHmap():
                  legend_title_fontsize = 8,
                  legend_label_fontsize = 8,
              ):
-        
+
         self.ax = None
         self.data = data
         import inspect
@@ -308,10 +309,13 @@ class WZHmap():
                                  verticalalignment='bottom', fontsize=self.xticklabel_fontsize)
 
         if self.yticklabels is not None:
+            if self.ytickposes is None:
+                self.ytickposes = range(self.data.shape[0])
             if type(self.yticklabels) == bool:
                 self.yticklabels = self.data.index.format()
-            for i in xrange(self.data.shape[0]):
-                self.ax.text(-1, i, self.yticklabels[i], horizontalalignment='right', fontsize=self.yticklabel_fontsize)
+
+            for i, pos in enumerate(self.ytickposes):
+                self.ax.text(-1, pos, self.yticklabels[i], horizontalalignment='right', fontsize=self.yticklabel_fontsize)
 
     def plot_legend(self, dim=[0.1,0.1,0.03,0.4], fig=None, unitheight=0.015):
 
@@ -903,6 +907,7 @@ def cbs_reorder_generic(cbs, order, index=False):
 def hmap_cluster_generic(hmap, fast=True, mode='b'):
 
     import wzhierarchy
+    reload(wzhierarchy)
     if mode == 'b':
         clustfun = wzhierarchy.ez_cluster
     elif mode == 'r':
@@ -933,14 +938,22 @@ def subset_kwargs(kwargs, keys):
 
     return kwargs2
 
-def single_cluster_layout(hmap, lcbs=[], tcbs=[], fast=True, returninfo=False, mode='b', **kwargs):
+def single_cluster_layout(hmap, lcbs=[], tcbs=[], ytickposes=None, yticklabels=None, fast=True, returninfo=False, mode='b', **kwargs):
 
     hmap, cd = hmap_cluster_generic(hmap, fast=fast, mode=mode)
+    if hmap.yticklabels is None and yticklabels is not None:
+        if ytickposes is None:
+            hmap.yticklabels = yticklabels if cd.lft_order() is None else [yticklabels[_] for _ in cd.lft_order()]
+        else:
+            hmap.ytickposes = ytickposes
+            hmap.yticklabels = yticklabels
+
     if 'td' in kwargs and kwargs['td']:
         kwargs['td'] = cd.D_top
     single_hmap_layout(hmap,
                        lcbs=cbs_reorder_generic(lcbs, cd.lft_order()),
-                       tcbs=cbs_reorder_generic(tcbs, cd.top_order()), **kwargs)
+                       tcbs=cbs_reorder_generic(tcbs, cd.top_order()),
+                       **kwargs)
     if returninfo:
         return cd
 
@@ -961,6 +974,8 @@ def single_hmap_layout(hm, lcbs=[], tcbs=[], td=None, ld=None,
                        figwid=10, fighei=10,
                        figfile=None,
                        mar = 0.05,
+                       yticklabels = None,
+                       xticklabels = None,
                        tdhei = 0.1, tdpad = 0.005,
                        ldwid = 0.1, ldpad = 0.003,
                        mawid = 0.6, # heatmap width
@@ -1016,7 +1031,7 @@ def single_hmap_layout(hm, lcbs=[], tcbs=[], td=None, ld=None,
 
     wzcore.err_print("heatmap")
     if not isinstance(hm, WZHmap):
-        hm = WZHmap(hm)
+        hm = WZHmap(hm, yticklabels=yticklabels, xticklabels=xticklabels)
     hm.plot(dim=[malft, mar, mawid, mahei], fig=fig)
 
     tcbtm = mar + maheiuni
@@ -1173,21 +1188,28 @@ def dual_hmap_layout(hm1, hm2, lcbs=[], tcbs1=[], tcbs2=[], figfile=None,
 def rowreorder(hm, order):
     hm.data = hm.data.iloc[order,:]
     return hm
-        
+
+def iloc1follow2(s1, s2):
+    """ generate list making s1 follow s2 """
+    l1 = s1.to_series().tolist()
+    return [l1.index(_) for _ in s2.tolist() if _ in l1]
+
 def dual_cluster_layout(hm1, hm2, lcbs=[], tcbs1=[], tcbs2=[], fast1=True, fast2=True, returninfo=False, td=None, rclust=2, roworder=None, **kwargs):
 
     """ hm2 is clustered both way and hm1 is clustered column-wise """
-
     if rclust == 2:             # cluster tumor
         hm1, cd1 = hmap_cluster_generic(hm1, fast=fast1, mode='c')
         hm2, cd2 = hmap_cluster_generic(hm2, fast=fast2, mode='b')
-        hm1 = rowreorder(hm1, cd2.lft_order())
-        lcbs = cbs_reorder_generic(lcbs, cd2.lft_order()),
+        # normal follows tumor
+        miloc = iloc1follow2(hm1.data.index, hm2.data.index) # when fast=True, cd.lft_order() is not right!!!
+        hm1 = rowreorder(hm1, miloc) # cd2.lft_order())
+        lcbs = cbs_reorder_generic(lcbs, miloc) # cd2.lft_order())
     elif rclust == 1:                       # cluster normal
         hm1, cd1 = hmap_cluster_generic(hm1, fast=fast1, mode='b')
         hm2, cd2 = hmap_cluster_generic(hm2, fast=fast2, mode='c')
-        hm2 = rowreorder(hm2, cd1.lft_order())
-        lcbs = cbs_reorder_generic(lcbs, cd1.lft_order()),
+        miloc = iloc1follow2(hm2.data.index, hm1.data.index) # tumor follows normal
+        hm2 = rowreorder(hm2, miloc)
+        lcbs = cbs_reorder_generic(lcbs, miloc)
     else:                       # cluster none
         hm1, cd1 = hmap_cluster_generic(hm1, fast=fast1, mode='b')
         hm2, cd2 = hmap_cluster_generic(hm2, fast=fast2, mode='c')

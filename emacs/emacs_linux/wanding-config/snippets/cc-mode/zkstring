@@ -1,0 +1,8 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: zks
+# key: zks
+# binding: direct-keybinding
+# --
+
+kstring_t $1;
+$1.l = $1.m = 0; $1.s = 0;

@@ -122,6 +122,8 @@ sort -V
 it sorts natural numbers within text
 see also vcf-sort which uses sort -V
 * unix
+** relink files
+find . -type l -lname '/primary/home/wandingzhou/*' | while read f; do ff=$(readlink $f); ln -nsf ${ff/wandingzhou/wanding.zhou} $f; done
 ** join
 http://www.albany.edu/~ig4895/join.htm
 
@@ -2688,6 +2690,9 @@ p *array@10
 gdb -tui
 or
 "C-x C-a" inside a session
+** lldb
+instead of gdb --args, one use "--". e.g.,
+lldb -- ~/tools/clinsek/clinsek/clinsek tcall -s clinvar_20140430.sites.uniq.T200.hs37.clean.hscan -r ~/references/hg19/hg19.fa -1 s1.fq -2 s2.fq -out test
 ** define bit array in macro
 define a bit array
 #define BITOP(a,b,op) ((a)[(size_t)(b)/(CHAR_BIT*sizeof *(a))] op ((size_t)1<<((size_t)(b)%(CHAR_BIT*sizeof *(a)))))
@@ -13186,6 +13191,30 @@ fink install bioperl-pm1546
 
 there would be a separate version of perl5.16.2 instead of the default perl
 
+** code sign GDB
+http://andresabino.com/2015/04/14/codesign-gdb-on-mac-os-x-yosemite-10-10-2/
+Mac OS X 10.10.2 does not come with gdb pre installed. It is available on homebrew:
+$ brew tap homebrew/dupes $ brew install gdb
+
+The binary is installed on /usr/local/bin
+
+When initializing gdb on a program (a.out) it will produce the following error:
+    Starting program: a.out
+    Unable to find Mach task port for process-id XXXXX: (os/kern) failure (0x5).
+     (please check gdb is codesigned - see taskgated(8))
+Start Keychain Access application (/Applications/Utilities/Keychain Access.app)
+
+This error occurs because OSX implements a pid access policy which requires a digital signature for binaries to access other processes pids. To enable gdb access to other processes, we must first code sign the binary. This signature depends on a particular certificate, which the user must create and register with the system.
+
+To create a code signing certificate, open the Keychain Access application. Choose menu Keychain Access -> Certificate Assistant -> Create a Certificate…
+
+Choose a name for the certificate (e.g., gdb-cert), set Identity Type to Self Signed Root, set Certificate Type to Code Signing and select the Let me override defaults. Click several times on Continue until you get to the Specify a Location For The Certificate screen, then set Keychain to System.
+
+Double click on the certificate, open Trust section, and set Code Signing to Always Trust. Exit Keychain Access application.
+
+Restart the taskagted service, and sign the binary.
+$ sudo killall taskgated
+$ codesign -fs gdb-cert /usr/local/bin/gdb
 * vim
 
 C-d half-page down

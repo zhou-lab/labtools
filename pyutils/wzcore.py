@@ -1,6 +1,9 @@
 import inspect
 import sys
 
+class WZData(object):
+    pass
+
 def tprint(array, out=None):
     if out is None:
         out = sys.stdout

@@ -1,0 +1,7 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: zfpm
+# key: zfpm
+# binding: direct-keybinding
+# --
+fprintf(stderr, "[%s:%d] $1\n", __func__, __LINE__$2);
+fflush(stderr);

@@ -35,6 +35,13 @@ def check_sample(sample):
     with pd.option_context('display.max_rows', 999):
         print Hui_annot.loc[sample]
 
+
+def remove_snps(df):
+
+    df = df[df.index.map(lambda x: not x.startswith('rs'))].copy()
+
+    return df
+
 def clean_450k(df, nahow='strong', probe_fn='/Users/wandingzhou/projects/hs-tcga/data/2015_03_05_TCGA_450/450k_probes', verbose=True):
 
     probe_loc = pd.read_table(probe_fn,index_col=3,header=None, names=['chrm','beg','end','gene'])
@@ -581,7 +588,7 @@ def data_load_tissue(source):
         samples = pd.read_table('/Users/wandingzhou/projects/hs-tcga/2015_03_18_tumor_purity/GSE40699_ENCODE/samples', index_col='barcode')
         betas.columns = samples.loc[betas.columns.map(lambda x:x.split('_',2)[2]), 'short']+'_'+samples.loc[betas.columns.map(lambda x:x.split('_',2)[2]), 'cellline']
 
-    if source == 'Bonder':
+    if source == 'Bonder':      # muscle and fat
 
         betas = pd.read_table('/Users/wandingzhou/projects/hs-tcga/2015_03_18_tumor_purity/Bonder2014_BMCGenomics/GSE61454_severely_obsese/betas.tsv')
         samples = pd.read_table('/Users/wandingzhou/projects/hs-tcga/2015_03_18_tumor_purity/Bonder2014_BMCGenomics/GSE61454_severely_obsese/samples',header=None,index_col=0,names=['barcode','sample'])
@@ -643,9 +650,9 @@ def data_load_commonPMD(commonfn='/Users/wandingzhou/projects/hs-tcga/2015_05_04
     seg2MD = makedict(commons, 'segments', 'MD')
     return commons, seg2MD
 
-def data_load_WGBS_betas_common_PMD():
+def data_load_WGBS_betas_common_PMD(commonfn='/Users/wandingzhou/projects/hs-tcga/2015_05_04_pmd/stringent_common_probes'):
 
-    commons, seg2MD = data_load_commonPMD()
+    commons, seg2MD = data_load_commonPMD(commonfn)
 
     betas, cancer_types = data_load_WGBS_betas(commons.index)
     return betas, cancer_types, commons, seg2MD

@@ -1,0 +1,27 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: opt
+# key: opt
+# binding: direct-keybinding
+# --
+
+
+int c;
+while ((c = getopt(argc, argv, "V:h")) >= 0) {
+  switch (c) {
+  case 'V': conf.verbose = atoi(optarg); break;
+  case 'h': {
+    fprintf(stderr, "\n");
+    fprintf(stderr, "Usage: $1 [options] $2 \n");
+    fprintf(stderr, "Input options:\n");
+    fprintf(stderr, "     -V INT    verbose level [%d].\n", conf.verbose);
+    fprintf(stderr, "     -h        this help.\n");
+    fprintf(stderr, "\n");
+    return 1;
+  }
+  default:
+    fprintf(stderr, "[%s:%d] Unrecognized command: %c.\n", __func__, __LINE__, c);
+    fflush(stderr);
+    exit(1);
+    break;
+  }
+}

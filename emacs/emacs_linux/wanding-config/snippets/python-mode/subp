@@ -1,0 +1,17 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: subp
+# key: subp
+# binding: direct-keybinding
+# --
+
+parser = argparse.ArgumentParser(description='$1')
+subparsers = parser.add_subparsers()
+
+$0
+
+args = parser.parse_args()
+args.func(args)
+try:
+    args.func(args)
+except IOError as e:
+    sys.exit()

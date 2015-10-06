@@ -10,5 +10,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os, sys, re
 from cPickle import load, dump
+import wzhierarchy
+import wzplotlib
+import pandas as pd
+import wzlibarray
+import wzcolors
+import itertools
+from wzcore import *
 
 $0

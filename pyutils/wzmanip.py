@@ -4,6 +4,7 @@ from __future__ import division # make sure division yields floating
 import sys, re
 import argparse
 import numpy as np
+from wzcore import *
 
 def pipeprint(s):
     try:
@@ -450,6 +451,40 @@ def main_dedupmax(args):
     for k, v in k2v.iteritems():
         print '\t'.join(v[1])
 
+
+def main_sample(args):
+
+    """ sample k record from each category specified in column c
+
+    Ex1: samples 1 record from each category as specified by column 3-5
+    >> wzmanip sample -k 1 -c 3-5 -t input
+
+    Ex2: sample 20 records from the whole file
+    >> wzmanip sample -k 20 -t input
+
+    """
+
+    import random
+    ind = parse_indices(args.c) if args.c is not None else None
+    k2v = {}
+    out = open(args.o, 'w') if args.o is not None else sys.stdout
+    for line in args.t:
+        fields = line.strip().split('\t')
+        k = tuple(ind.extract(fields)) if ind is not None else None
+        if k in k2v:
+            k2v[k].append(line)
+        else:
+            k2v[k] = [line]
+
+    for k,v in k2v.iteritems():
+        if args.k > len(v):
+            err_print('Category %s has only %d elements.' % (k,len(v)))
+            ak = len(v)
+        else:
+            ak = args.k
+        for l in random.sample(v, ak):
+            pipeprint(l.strip('\n'))
+
 def main_dupcompress(args):
 
     ind = parse_indices(args.k)
@@ -462,7 +497,8 @@ def main_dupcompress(args):
         # if args.v <= len(fields):
         # v = fields[args.v-1]
         if k in k2v:
-            if v not in k2v[k]: k2v[k].append(v)
+            if ((not args.uniq) or (v not in k2v[k])):
+                k2v[k].append(v)
         else:
             k2v[k] = [v]
 
@@ -471,6 +507,27 @@ def main_dupcompress(args):
             print '%s\t%s' % ('\t'.join(k), args.od.join(v))
         else:
             print '%s\t%d\t%s' % ('\t'.join(k), len(v), args.od.join(v))
+
+def main_number(args):
+
+    ind = parse_indices(args.k)
+    k2n = {}
+    n = 0
+    for line in args.t:
+        fields = line.strip().split('\t')
+        k = tuple(ind.extract(fields))
+        if args.across:
+            if k not in k2n:
+                n += 1
+                k2n[k] = 1
+        else:
+            if k in k2n:
+                n = k2n[k] + 1
+            else:
+                n = 1
+            k2n[k] = n
+
+        pipeprint('%s\t%d' % ('\t'.join(fields), n))
 
 def div(denom, divid):
 
@@ -545,6 +602,7 @@ def main_unique(args):
 
 def main_dedupfun(args):
 
+    # assuming file is sorted by key
     ind = parse_indices(args.k)
     prev_key = None
     funs = args.r.split(',')
@@ -787,6 +845,7 @@ if __name__ == '__main__':
     parser_dupcompress.add_argument('-t',type=argparse.FileType('r'), default='-')
     parser_dupcompress.add_argument('-k', required=True, help="column to dedup (1-based)")
     parser_dupcompress.add_argument('-v', required=True, help="column to list (1-based)")
+    parser_dupcompress.add_argument('--uniq', action='store_true', help='keep unique the values')
     parser_dupcompress.add_argument('--nc', action="store_true", help="no print of count")
     parser_dupcompress.add_argument('--delim', default="\t", help="table delimiter [\\t]")
     parser_dupcompress.add_argument('--od', default="\t", help="output delimiter of value fields [\\t]")
@@ -825,6 +884,19 @@ if __name__ == '__main__':
     parser_join.add_argument('-a', default=None, help='header string (None)')
     parser_join.add_argument('-u', action='store_true', help='use file name as header (False)')
     parser_join.set_defaults(func=main_join)
-    
+
+    parser_sample = subparsers.add_parser('sample', help='sample k record from each category specified in column c')
+    parser_sample.add_argument('-k', type=int, default=1, help='number of record to sample from each category (default 1)')
+    parser_sample.add_argument('-c', default=None, help='column to specify category. If None, sample from the whole file')
+    parser_sample.add_argument('-t', type=argparse.FileType('r'), help='target file', default='-')
+    parser_sample.add_argument('-o', default=None, help='output file (default stdout)')
+    parser_sample.set_defaults(func=main_sample)
+
+    parser_number = subparsers.add_parser('number', help='number items in the same category')
+    parser_number.add_argument('-k', default=None, required=True, help='column for category')
+    parser_number.add_argument('-t', type=argparse.FileType('r'), help='target file', default='-')
+    parser_number.add_argument('--across', action='store_true', help='number across category')
+    parser_number.set_defaults(func=main_number)
+
     args = parser.parse_args()
     args.func(args)
