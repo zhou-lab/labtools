@@ -159,7 +159,7 @@ function auto_setup_links() {
 ### Whole Genome Bisulfite Sequencing ###
 #########################################
 
-##### alignment #####
+##### biscuit ####
 
 # wgbs_biscuit_index_reference
 # run mm10generic to setup $WZ_BISCUIT_INDEX
@@ -177,8 +177,7 @@ biscuit index $WZSEQ_BISCUIT_INDEX
 }
 
 function wgbs_biscuit_align {
-  # requires base/samples
-  # format:
+  # requires base/samples with format:
   # sample_code fastq1 fastq2
 
   base=$(pwd)
@@ -187,8 +186,9 @@ function wgbs_biscuit_align {
   while read sname sread1 sread2; do
     # while read samplecode fastq1 fastq2 _junk_; do
     cmd="
-biscuit align $WZSEQ_BISCUIT_INDEX $base/fastq/$sread1 $base/fastq/$sread2 |samtools sort - $base/bam/${sname}
+biscuit align $WZSEQ_BISCUIT_INDEX -t 28 $base/fastq/$sread1 $base/fastq/$sread2 | samtools sort -T $base/bam/${sname} -O bam -o $base/bam/${sname}.bam
 samtools index $base/bam/${sname}.bam
+samtools flagstat $base/bam/${sname}.bam > $base/bam/${sname}.bam.flagstat
 "
     jobname="biscuit_align_$sname"
     pbsfn=$base/pbs/$jobname.pbs
@@ -201,15 +201,31 @@ samtools index $base/bam/${sname}.bam
   return
 }
 
-# function wgbs_biscuit_run {
-#   local base
-#   [[ $# -eq 1 ]] && base=$(readlink -f $1) || base=$(pwd)
-#   biscuit_align $base
-#   biscuit_merge_methlevelaverages $base
-#   biscuit_adaptor_c2t $base
-# }
+function wgbs_biscuit_align_lambdaphage {
+  # requires base/samples with format:
+  # sample_code fastq1 fastq2
 
-# bwameth index reference
+  base=$(pwd)
+  [[ -d bam ]] || mkdir bam
+  [[ -d pbs ]] || mkdir pbs
+  while read sname sread1 sread2; do
+    # while read samplecode fastq1 fastq2 _junk_; do
+    cmd="
+biscuit align $WZSEQ_BISCUIT_INDEX_LAMBDAPHAGE -t 28 $base/fastq/$sread1 $base/fastq/$sread2 | samtools view -h -F 0x4 - | samtools sort -T $base/bam/${sname} -O bam -o $base/bam/${sname}_lamdaphage.bam
+samtools index $base/bam/${sname}_lamdaphage.bam
+samtools flagstat $base/bam/${sname}_lamdaphage.bam > $base/bam/${sname}_lamdaphage.bam.flagstat
+"
+    jobname="biscuit_align_lambdaphage_$sname"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 250 -ppn 28
+    [[ $1 == "do" ]] && qsub $pbsfn
+
+  done < samples
+  return
+}
+
+#### BWA-meth #####
+
 function wgbs_bwameth_index_reference {
   [[ -d ~/pbs ]] || mkdir ~/pbs
   cmd="
@@ -223,51 +239,20 @@ bwameth.py index $WZSEQ_BWAMETH_INDEX
 
 function wgbs_bwameth() {
 
-  if [[ $# -eq 0 ]]; then
-    echo "biscuit_bwameth -s HF5FGBGXX_1_PL150528WGBS2 R1.fastq.gz R2.fastq.gz"
-    echo "PBS: biscuit_bwameth -s HF5FGBGXX_1_PL150528WGBS2 -j jid R1.fastq.gz R2.fastq.gz"
-    return 1
-  fi
-  
-  local OPTIND opt base reference sample_code jobid _jobid depend
-  while getopts "s:r:b:d:j:" opt; do
-    case $opt in
-      s) sample_code=$OPTARG ;;
-      r) reference=$(readlink -f $OPTARG) ;;
-      b) base=$(readlink -f $OPTARG) ;;
-      j) jobid=$OPTARG ;;
-      d) depend=$OPTARG ;;
-      \?) echo "Invalid option: -$OPTARG" >&2; return 1;;
-      :) echo "Option -$OPTARG requires an argument." >&2; return 1;;
-    esac
-  done
-
-  if [[ -z ${sample_code+x} ]]; then
-    echo "Please provide sample code via -s. Abort."
-    return 1;
-  fi
-  [[ -z ${reference+x} ]] && reference=$WZSEQ_REF;
-  [[ -z ${base+x} ]] && base=$(pwd);
-
-  shift $(( OPTIND - 1 ))
-
-  bamdir=$base"/bam";
-  [[ -d $bamdir ]] || mkdir -p $bamdir;
-
-  local fastqs=$(absolute_path $@)
-  cmds="bwameth --reference $reference $fastqs -t 20 --prefix $bamdir/$sample_code"
-  echo $cmds
-  if [[ -z ${jobid+x} ]]; then
-    $cmds;
-  else
-    pbsdir=$base/pbs
-    [[ -d $pbsdir ]] || mkdir -p $pbsdir
-    jobname=$sample_code"_bwameth"
-    pbsgen one "$cmds" -name $jobname -dest $pbsdir/$jobname -ppn 20 -memG 20
-    _jobid=$(qsub $pbsdir/$jobname);
-    eval $jobid=$_jobid;
-    echo "Submitted "$_jobid;
-  fi
+  base=$(pwd)
+  [[ -d bam ]] || mkdir bam
+  [[ -d pbs ]] || mkdir pbs
+  while read sname sread1 sread2; do
+    cmds="
+cd $base
+bwameth --reference $WZSEQ_BWAMETH_INDEX fastq/$sread1 fastq/$sread2 -t 28 --prefix bam/${sname}_bwameth
+samtools flagstat bam/${sname}_bwameth.bam > bam/${sname}_bwameth.bam.flagstat
+"
+    jobname="bwameth_$sname"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmds" -name $jobname -dest $pbsfn -hour 24 -ppn 28 -memG 250
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done < samples
 }
 
 function wgbs_adaptor() {
@@ -284,7 +269,7 @@ function wgbs_adaptor() {
 
 }
 
-function wgbs_merge_methlevelaverages() {
+function wgbs_merge_methlevelaverages {
   # usage: biscuit_merge_methlevelaverages data/methlevelaverage
 
   local basedir=$1;
@@ -296,16 +281,145 @@ function wgbs_merge_methlevelaverages() {
 
 }
 
-function absolute_path() {
-  local in=$1
-  out=()
-  for x in $@; do
-    out+=($(readlink -f $x));
-  done
-  echo "${out[@]}"
+#### bismark with bowtie1 ####
+
+function wgbs_bismark_bowtie1_prepare_reference {
+  base=$(pwd)
+  cmd="
+export PATH=~/tools/bismark/default:~/tools/bowtie1/default:$PATH
+bismark_genome_preparation --bowtie1 $WZSEQ_BISMARK_BT1_INDEX
+"
+  jobname="bismark_bt1_prepare_reference"
+  pbsfn=$base/pbs/$jobname.pbs
+  pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 10 -ppn 1
+  [[ $1 == "do" ]] && qsub $pbsfn
 }
 
-function biscuit_mdup() {
+function wgbs_bismark_bowtie1 {
+  base=$(pwd);
+  [[ -d pbs ]] || mkdir pbs
+  while read sname sread1 sread2; do
+    cmd="
+export PATH=~/tools/bismark/default:~/tools/bowtie1/default:$PATH
+cd $base
+bismark $WZSEQ_BISMARK_BT1_INDEX --chunkmbs 2000 -1 $base/fastq/$sread1 -2 $base/fastq/$sread2
+"
+    jobname="bismark_bt1_$sname"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 250 -ppn 28
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done < samples
+}
+
+#### bismark with bowtie2 ####
+
+function wgbs_bismark_bowtie2_prepare_reference {
+  base=$(pwd)
+  cmd="
+export PATH=~/tools/bismark/default:~/tools/bowtie2/default:$PATH
+bismark_genome_preparation --bowtie2 --verbose $WZSEQ_BISMARK_BT2_INDEX
+"
+  jobname="bismark_bt2_prepare_reference"
+  pbsfn=$base/pbs/$jobname.pbs
+  pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 10 -ppn 1
+  [[ $1 == "do" ]] && qsub $pbsfn
+}
+
+function wgbs_bismark_bowtie2 {
+  base=$(pwd);
+  [[ -d pbs ]] || mkdir pbs
+  while read sname sread1 sread2; do
+    base1=${sread1%.fastq.gz}
+    base2=${sread2%.fastq.gz}
+    base1=${base1%.fq.gz}
+    base2=${base2%.fq.gz}
+    cmd="
+export PATH=~/tools/bismark/default:~/tools/bowtie2/default:$PATH
+cd $base
+
+# trim reads
+# this produce fastq/${base1}_val_1* and fastq/${base2}_val_2*
+if [[ ! -d fastq/${sname}_trim_galore/ ]]; then
+  mkdir -p fastq/${sname}_trim_galore/
+  ~/software/trim_galore/default/trim_galore --paired fastq/$sread1 fastq/$sread2 -o fastq/${sname}_trim_galore/
+fi
+
+bismark $WZSEQ_BISMARK_BT2_INDEX --bowtie2 --chunkmbs 2000 -p 4 -o $base/bam/${sname}_bismark_bt2/ -1 $base/fastq/${sname}_trim_galore/${base1}_val_1* -2 $base/fastq/${sname}_trim_galore/${base2}_val_2 --temp_dir $base/bam/${sname}_bismark_bt2/*
+"
+    jobname="bismark_bt2_$sname"
+    pbsfn=$base/pbs/$jobname.pbs
+    # it seems that bismark with bowtie2 can never reach full potential of parallelization
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 60 -memG 50 -ppn 8
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done < samples
+}
+
+#### bsmap ####
+
+function wgbs_bsmap {
+  base=$(pwd);
+  [[ -d pbs ]] || mkdir pbs
+  while read sname sread1 sread2; do
+    cmd="
+cd $base
+~/tools/bsmap/default/bsmap -a fastq/$sread1 -b fastq/$sread2 -d $WZSEQ_BSMAP_INDEX -o bam/${sname}_bsmap_unsorted.bam -p 28 -s 16 -v 10 -q 2 -A AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT -A AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT
+samtools sort -O bam -o bam/${sname}_bsmap.bam -T bam/${sname}_bsmap.tmp bam/${sname}_bsmap_unsorted.bam
+rm -f bam/${sname}_bsmap_unsorted.bam
+samtools index bam/${sname}_bsmap.bam
+samtools flagstat bam/${sname}_bsmap.bam > bam/${sname}_bsmap.bam.flagstat
+"
+    jobname="bsmap_$sname"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 250 -ppn 28
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done < samples
+}
+
+#### rmapbs (doesn't allow gaps) ###
+# rmapbs -c hg18 -o Human_NHFF.mr Human_NHFF.fastq
+# rmapbs-pe -c hg18 -o Human_ESC.mr Human_ESC_1.fastq Human_ESC_2.fastq
+
+#### TODO bissnp ####
+
+#### picard mark duplicate ####
+
+# note that I use my own version of to-mr which is agnostic of input bam type
+# /home/wanding.zhou/software/methpipe/default/to-mr
+# ~/software/methpipe/default/to-mr -o methpipe/$bfn -m bsmap 
+# ~/software/methpipe/default/to-mr -o methpi bam/Undetermined_bismark_bt2/Undetermined_L000_R1_001_val_1.fq.gz_bismark_bt2_pe.bam -m bismark
+# ~/software/methpipe/default/to-mr -o methpi2 bam/Undetermined_bsmap.bam -m bsmap
+# duplicate-remover -S 
+function wgbs_methpipe {
+
+  base=$(pwd);
+  [[ -d pbs ]] || mkdir pbs
+  [[ -d methpipe ]] || mkdir methpipe
+  for f in bam/*.bam; do
+    fn=$(readlink -f $f)
+    bfn=$(basename $f .bam)
+    cmd="
+cd $base
+pybiscuit.py to_mr -i $fn -o methpipe/$bfn.mr
+LC_ALL=C sort -k1,1 -k2,2n -k3,3n -k6,6 -o methpipe/$bfn.mr.sorted_start methpipe/$bfn.mr
+~/software/methpipe/default/duplicate-remover -S methpipe/${bfn}_dremove_stat.txt -o methpipe/$bfn.mr.dremove methpipe/$bfn.mr.sorted_start
+~/software/methpipe/default/bsrate -c $WZSEQ_REFERENCE_SPLIT -o methpipe/$bfn.bsrate methpipe/$bfn.mr.dremove
+LC_ALL=C sort -k1,1 -k3,3n -k2,2n -k6,6 -o ${bfn}.mr.sorted_end_first methpipe/$bfn.mr.dremove
+
+# remove random contigs and haplotype
+grep -v '^chrUn\|random' Undetermined.mr.sorted_end_first > Undetermined.mr.sorted_end_first.norandom
+
+~/software/methpipe/default/methcounts -c $WZSEQ_REFERENCE_SPLIT -o $bfn.meth ${bfn}.mr.sorted_end_first
+~/software/methpipe/default/symmetric-cpgs -m -o $bfn.CpG.meth $bfn.meth
+~/software/methpipe/default/levels -o $bfn.levels $bfn.meth
+"
+    jobname="methpipe_$bfn"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done
+}
+
+function wgbs_picard_mdup {
 
   if [[ $# -eq 0 ]]; then
     echo "biscuit_mdup -i bam/H75J7BGXX_1_Undetermined.bam"
@@ -327,7 +441,7 @@ function biscuit_mdup() {
 
   [[ -z ${base+x} ]] && base=$(pwd);
   [[ -z ${depend+x} ]] && depend="" || depend="-depend "$depend;
-  
+
   bam2=${bam1%.bam}.mdup.bam
   duplog=${bam1%.bam}.mdup_metrics
   tmp=$base/tmp
@@ -347,59 +461,188 @@ function biscuit_mdup() {
   fi
 }
 
-function biscuit_pileup() {
+#### bisulfite analysis ####
 
-  local OPTIND opt base reference verbose
+function wgbs_biscuit_markdup {
 
-  verbose=false
-  while getopts "b:r:v" opt; do
-    case $opt in
-      r) reference=$(readlink -f $OPTARG) ;;
-      b) base=$(readlink -f $OPTARG) ;;
-      v) verbose=true ;;
-      \?) echo "Invalid option: -$OPTARG" >&2; return 1;;
-      :) echo "Option -$OPTARG requires an argument." >&2; return 1;;
-    esac
+  base=$(pwd);
+  [[ -d pbs ]] || mkdir pbs
+  [[ -d bam/before_mdup ]] || mkdir -p bam/before_mdup
+  for f in bam/*.bam; do
+    fn=$(readlink -f $f)
+    bfn=$(basename $f .bam)
+    cmd="
+cd $base
+biscuit markdup -q $fn bam/$bfn.mdup.bam 2>bam/$bfn.mdup.stats
+"
+    jobname="biscuit_markdup_$bfn"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 60 -memG 50 -ppn 5
+    [[ $1 == "do" ]] && qsub $pbsfn
   done
-
-  [[ -z ${base+x} ]] && base=$(pwd)
-  [[ -z ${reference+x} ]] && reference=$WZSEQ_REF
-  
-  echo "[$(date)] Pileup reference: $reference"
-  [[ -d $base/pileup ]] || mkdir -p $base/pileup
-  for bam in $base/data/bam/*.bam; do
-    sample_code=$(basename $bam .bam);
-    echo "[$(date)] Pileing up $bam"
-    cmd="pileup_cytosine -r $reference -i $bam -q 10 | bgzip > $base/pileup/$sample_code.pileup.gz;"
-
-    # for bsmap bam file, make sure use NM filter "-n 2".
-    # for bwa-meth bam file, mapping quality filter is used by default.
-    [[ $verbose == true ]] && echo "[$(date)] $cmd"
-    eval $cmd
-    if [[ $? -ne 0 ]]; then
-      echo "[$(date)] Pileup failure"
-      return 1
-    fi
-    echo "[$(date)] Done"
-  done
-
-  # we need a relatively new gnu sort >= 8.23 that supports parallel sorting
-  temp=$base/temp
-  [[ -d $temp ]] || mkdir -p $temp
-
-  # sort and index pileup file
-  for pileup in $base/pileup/*.pileup.gz; do
-    echo "[$(date)] Indexing" $pileup
-    tabix -p bed $pileup
-    echo "[$(date)] Done"
-  done
-
-  echo "[$(date)] All done"
-
 }
+
+function wgbs_biscuit_pileup() {
+
+  base=$(pwd);
+  [[ -d pbs ]] || mkdir pbs
+  [[ -d pileup ]] || mkdir pileup
+  for f in bam/*.bam; do
+    fn=$(readlink -f $f)
+    bfn=$(basename $f .bam)
+    cmd="
+cd $base
+biscuit pileup -r $WZSEQ_REFERENCE -i $fn -o pileup/$bfn.vcf -q 28
+bgzip pileup/$bfn.vcf
+tabix -p vcf pileup/$bfn.vcf.gz
+"
+    jobname="biscuit_pileup_$bfn"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 28
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done
+}
+
+function wgbs_biscuit_pileup_lambdaphage() {
+
+  base=$(pwd);
+  [[ -d pbs ]] || mkdir pbs
+  [[ -d pileup ]] || mkdir pileup
+  for f in bam/*.bam; do
+    fn=$(readlink -f $f)
+    bfn=$(basename $f .bam)
+    cmd="
+cd $base
+biscuit pileup -r $WZSEQ_REFERENCE_LAMBDAPHAGE -i $fn -o pileup/$bfn.vcf -q 28
+"
+    jobname="biscuit_pileup_$bfn"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 28
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done
+}
+
+#   local OPTIND opt base reference verbose
+
+#   verbose=false
+#   while getopts "b:r:v" opt; do
+#     case $opt in
+#       r) reference=$(readlink -f $OPTARG) ;;
+#       b) base=$(readlink -f $OPTARG) ;;
+#       v) verbose=true ;;
+#       \?) echo "Invalid option: -$OPTARG" >&2; return 1;;
+#       :) echo "Option -$OPTARG requires an argument." >&2; return 1;;
+#     esac
+#   done
+
+#   [[ -z ${base+x} ]] && base=$(pwd)
+#   [[ -z ${reference+x} ]] && reference=$WZSEQ_REF
+  
+#   echo "[$(date)] Pileup reference: $reference"
+#   [[ -d $base/pileup ]] || mkdir -p $base/pileup
+#   for bam in $base/data/bam/*.bam; do
+#     sample_code=$(basename $bam .bam);
+#     echo "[$(date)] Pileing up $bam"
+#     cmd="pileup_cytosine -r $reference -i $bam -q 10 | bgzip > $base/pileup/$sample_code.pileup.gz;"
+
+#     # for bsmap bam file, make sure use NM filter "-n 2".
+#     # for bwa-meth bam file, mapping quality filter is used by default.
+#     [[ $verbose == true ]] && echo "[$(date)] $cmd"
+#     eval $cmd
+#     if [[ $? -ne 0 ]]; then
+#       echo "[$(date)] Pileup failure"
+#       return 1
+#     fi
+#     echo "[$(date)] Done"
+#   done
+
+#   # we need a relatively new gnu sort >= 8.23 that supports parallel sorting
+#   temp=$base/temp
+#   [[ -d $temp ]] || mkdir -p $temp
+
+#   # sort and index pileup file
+#   for pileup in $base/pileup/*.pileup.gz; do
+#     echo "[$(date)] Indexing" $pileup
+#     tabix -p bed $pileup
+#     echo "[$(date)] Done"
+#   done
+
+#   echo "[$(date)] All done"
+
+# }
 
 function decho() {
   echo "[$(date)] "$@ >&2
+}
+
+function wgbs_vcf2tracks {
+
+  [[ -d tracks ]] || mkdir tracks
+  base=$(pwd)
+  [[ -d pbs ]] || mkdir pbs
+  for f in pileup/*.vcf.gz; do
+    fn=$(readlink -f $f)
+    bfn=$(basename $f .vcf.gz)
+    cmd="
+cd $base
+
+for pt in cg hcg gch; do
+
+  echo processing pileup type \$pt >&2
+
+  biscuit vcf2bed -t \${pt} pileup/${bfn}.vcf.gz | LC_ALL=C sort -k1,1 -k2,2n -T tracks > tracks/${bfn}.\${pt}.bedg
+  bedGraphToBigWig tracks/${bfn}.\${pt}.bedg ${WZSEQ_REFERENCE}.fai tracks/${bfn}.\${pt}.bw
+
+  for i in 100000,100k 100,100 1000,1k; do 
+    IFS=\",\"; set \$i; 
+    echo processing \$i >&2
+    bedtools makewindows -g ${WZSEQ_REFERENCE}.fai -w \$1 | LC_ALL=C sort -k1,1 -k2,2n -T tracks/ | bedtools intersect -a - -b tracks/${bfn}.\${pt}.bedg -wo | bedtools groupby -i - -g 1-3 -c 7 -o mean >tracks/${bfn}.\${pt}.window\$2.bedg;
+  
+    bedGraphToBigWig tracks/${bfn}.\${pt}.window\$2.bedg ${WZSEQ_REFERENCE}.fai tracks/${bfn}.\${pt}.window\$2.bw
+    # rm -f tracks/${bfn}.\${pt}.window\$2.bedg
+    unset IFS
+  done
+done
+"
+    jobname="wgbs_vcf2tracks_$bfn"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done
+
+}
+
+# obsolete make tracks from USC format beds
+function wgbs_methcallbed_to_tracks {
+
+  [[ -d tracks ]] || mkdir tracks;
+  base=$(pwd);
+  [[ -d pbs ]] || mkdir pbs
+  for f in bed/*.bed; do
+    fn=$(readlink -f $f)
+    bfn=$(basename $f .bed)
+    cmd="
+cd $base
+awk 'NR>1&&\$8>3{print \$1\"\t\"\$2\"\t\"\$3\"\t\"\$7}' $fn | LC_ALL=C sort -k1,1 -k2,2n -T tracks/ >tracks/${bfn}_cov3.bedg
+bedGraphToBigWig tracks/${bfn}_cov3.bedg ${WZSEQ_REFERENCE}.fai tracks/${bfn}_cov3.bw
+
+bedtools makewindows -g ${WZSEQ_REFERENCE}.fai -w 100000 | LC_ALL=C sort -k1,1 -k2,2n -T tracks/ | bedtools intersect -a - -b tracks/${bfn}_cov3.bedg -wo | bedtools groupby -i - -grp 1-3 -c 7 -o mean >tracks/${bfn}_cov3_window100k.bedg;
+bedGraphToBigWig tracks/${bfn}_cov3_window100k.bedg ${WZSEQ_REFERENCE}.fai tracks/${bfn}_cov3_window100k.bw
+rm -f tracks/${bfn}_cov3_window100k.bedg
+
+bedtools makewindows -g ${WZSEQ_REFERENCE}.fai -w 100 | LC_ALL=C sort -k1,1 -k2,2n -T tracks/ | bedtools intersect -a - -b tracks/${bfn}_cov3.bedg -sorted -wo | bedtools groupby -i - -grp 1-3 -c 7 -o mean >tracks/${bfn}_cov3_window100.bedg;
+bedGraphToBigWig tracks/${bfn}_cov3_window100.bedg ${WZSEQ_REFERENCE}.fai tracks/${bfn}_cov3_window100.bw
+rm -f tracks/${bfn}_cov3_window100.bedg
+
+bedtools makewindows -g ${WZSEQ_REFERENCE}.fai -w 1000 | LC_ALL=C sort -k1,1 -k2,2n -T tracks/ | bedtools intersect -a - -b tracks/${bfn}_cov3.bedg -sorted -wo | bedtools groupby -i - -grp 1-3 -c 7 -o mean >tracks/${bfn}_cov3_window1k.bedg;
+bedGraphToBigWig tracks/${bfn}_cov3_window1k.bedg ${WZSEQ_REFERENCE}.fai tracks/${bfn}_cov3_window1k.bw
+rm -f tracks/${bfn}_cov3_window1k.bedg
+"
+    jobname="methcallbed_to_tracks_$bfn"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done
 }
 
 function biscuit_diffmeth() {
@@ -500,14 +743,54 @@ function biscuit_cpgisland() {
 ## ChIP-seq pipeline ##
 #######################
 
-function chippipe_bcp() {
+function wzseq_bwa_aln_se {
+
+  base=$(pwd);
+  [[ -d pbs ]] || mkdir pbs
+  [[ -d bam ]] || mkdir bam;
+  while read sname sread _junk_; do
+    sfile=$(readlink -f fastq/$sread);
+    cmd="
+cd $base
+bwa aln -t 10 $WZSEQ_REFERENCE $sfile >bam/${sname}.sai
+bwa samse $WZSEQ_REFERENCE bam/${sname}.sai $sfile | samtools view -bS - | samtools sort -T $base/bam/$sname -O bam -o bam/${sname}.bam
+samtools index bam/${sname}.bam
+samtools flagstat bam/${sname}.bam > bam/${sname}.bam.flagstat
+rm -f bam/${sname}.sai
+"
+    jobname="bwa_aln_$sname"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 10
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done < samples
+}
+
+function chipseq_bcp() {
 
   [[ $# -eq 3 ]] || { echo "not enough arguments"; return 1; }
   targetbed=$1
   inputbed=$2
   results=$3
   BCP_HM -1 $targetbed -2 $inputbed -f 200 -w 200 -p 0.001 -3 $results
+}
 
+function chipseq_macs2 {
+  # need macs_config
+  [[ -s macs2 ]] || mkdir macs2
+  base=$(pwd);
+  [[ -d pbs ]] || mkdir pbs
+  while read sname tread cread do; do
+    tfile=$(readlink -f bam/$tread);
+    cfile=$(readlink -f bam/$cread);
+    cmd="
+cd $base
+macs2 callpeak -t $tfile -c $cfile -f BAM -g $WZSEQ_MACS_SHORT -n macs2/$sname -B
+"
+    jobname="macs2_$sname"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done < macs_config
 }
 
 ###########################
@@ -534,9 +817,13 @@ function rnaseq_tophat2() {
     # customize the following
     # default: no novel junction, 28 threads
     cmd="
+cd $base
 tophat2 -p 28 -G $WZSEQ_GTF --library-type fr-unstranded -o $odir --no-novel-juncs $WZSEQ_BOWTIE2_INDEX $sfile1 $sfile2
 samtools index $odir/accepted_hits.bam
 samtools flagstat $odir/accepted_hits.bam > $odir/accepted_hits.bam.flagstat
+cd $base/bam
+ln -s $sname/accepted_hits.bam $sname.bam
+ln -s $sname/accepted_hits.bam.bai $sname.bam.bai
 "
     jobname="tophat_$sname"
     pbsfn=$base/pbs/$jobname.pbs
@@ -578,7 +865,7 @@ function rnaseq_cufflinks() {
   for sample in bam/*.bam; do
     sample=$(basename $sample .bam)
     # [[ -s bam/$sample.bam ]] || continue
-    cmd="cufflinks -p 28 -g /primary/vari/genomicdata/genomes/hg19/tophat/Homo_sapiens/UCSC/hg19/Annotation/Genes/genes.gtf -o $base/cufflinks/$sample $base/bam/$sample.bam -q"
+    cmd="cufflinks -p 28 -g $WZSEQ_GTF -o $base/cufflinks/$sample $base/bam/$sample.bam -q"
     jobname="cufflinks_$sample"
     pbsfn=$base/pbs/$jobname.pbs
     pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 100 -ppn 28
@@ -680,6 +967,7 @@ function rnaseq_cuffnorm() {
 # need to define WZSEQ_RSEQ_GENE_BED
 function rnaseq_rseqc() {
   base=$(pwd);
+  [[ -d rseqc ]] || mkdir rseqc
   [[ -d pbs ]] || mkdir pbs
   for f in bam/*.bam; do
     fn=$(readlink -f $f)
@@ -736,8 +1024,22 @@ cd $base
   done <samples
 }
 
+function rnaseq_count_rmsk {
+  bam=$1
+  cmd=$(cat<<EOF
+cd $(pwd)
+bedtools coverage -a ~/references/hg19/annotation/rmsk.txt.bed -b bam/${bam}.bam -sorted -split -counts > repeatmasker/$bam.rmsk
+awk '{a[\$5]+=\$8;b[\$6]+=\$8;c[\$7]+=\$8}END{for(i in a){print "1\t"i"\t"a[i]}; for(i in b){print "2\t"i"\t"b[i]}; for(i in c){print "3\t"i"\t"c[i]}}' repeatmasker/${bam}.rmsk | sort -k1,1 -k2,2nr > repeatmasker/${bam}.rmsk.cat
+EOF
+     )
+
+  jobname="rmsk_${bam}"
+  pbsfn=pbs/$jobname.pbs
+  pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 2 -ppn 1
+}
+
 # TODO: featureCounts
-function rnaseq_featurecounts() {
+function rnaseq_featurecounts {
   base=$(pwd);
   [[ -d pbs ]] || mkdir pbs
   for f in bam/*.bam; do
@@ -745,6 +1047,8 @@ function rnaseq_featurecounts() {
     bfn=$(basename $f .bam)
     cmd="
 featureCounts -T 28 -t exon -g gene_id -a annotation.gtf -o featureCounts/$bfn_counts.txt $fn
+~/tools/subread/subread-1.4.6-p5-Linux-x86_64/bin/featureCounts -a repeatmasker/rmsk7.bed -F SAF -o repeatmasker/aza bam/aza.bam -T 28
+~/tools/subread/subread-1.4.6-p5-Linux-x86_64/bin/featureCounts -t exon -g gene_id -a ~/references/hg19/gtf/Homo_sapiens.GRCh37.75.gtf -o 1 bam/aza.bam
 "
     jobname="featurecounts_$bfn"
     pbsfn=$base/pbs/$jobname.pbs
@@ -753,6 +1057,10 @@ featureCounts -T 28 -t exon -g gene_id -a annotation.gtf -o featureCounts/$bfn_c
   done
 
 }
+
+# TODO: DESeq
+
+# TODO: MISO
 
 # TODO: limma
 
@@ -931,6 +1239,27 @@ fastqc -f fastq $fn -o $base/fastqc/$bfn
   done
 }
 
+function wzseq_bam_coverage {
+
+  base=$(pwd);
+  [[ -d tracks ]] || mkdir tracks
+  [[ -d pbs ]] || mkdir pbs
+  for f in bam/*.bam; do
+    fn=$(readlink -f $f)
+    bfn=$(basename $f .bam)
+    cmd="
+cd $base
+bedtools genomecov -ibam $fn -g ${WZSEQ_REFERENCE}.fai -bga -split | LC_ALL=C sort -k1,1 -k2,2n -T tracks/  >tracks/${bfn}.coverage.bedg
+bedGraphToBigWig tracks/${bfn}.coverage.bedg ${WZSEQ_REFERENCE}.fai tracks/${bfn}.coverage.bw
+rm -f tracks/${bfn}.coverage.bedg
+"
+    jobname="genomecov_$bfn"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done
+}
+
 # wzseq_qualimap <do>
 function wzseq_qualimap() {
   
@@ -981,4 +1310,17 @@ ln -s trimmed/$sread2 .
     [[ $1 == "do" ]] && qsub $pbsfn
   done < samples
 
+}
+
+##########
+# others #
+##########
+
+function absolute_path() {
+  local in=$1
+  out=()
+  for x in $@; do
+    out+=($(readlink -f $x));
+  done
+  echo "${out[@]}"
 }

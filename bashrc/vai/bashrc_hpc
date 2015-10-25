@@ -263,3 +263,8 @@ function gl {
   git push;
 }
 
+sortbed ()
+{
+    LC_ALL=C sort -k1,1 -k2,2n -T /secondary/projects/shen/tmp $1
+}
+export sortbed

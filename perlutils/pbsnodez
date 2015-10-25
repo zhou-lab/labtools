@@ -1,0 +1,75 @@
+#!/usr/bin/perl
+use Time::Local;
+use Term::ANSIColor;
+use Data::Dumper;
+
+
+$output = `pbsnodes`;
+$zstatout = `/primary/shared/production/software/zacks_usc_devel/zacks_PBS_Tools/zstat.pl all`;
+foreach my $line (split '\n', $zstatout)
+{
+	chomp $line;
+	$line =~ s/[\000-\037]\[(\d|;)+m//g;;
+	$line =~ s/^\s+//;
+	$line =~ s/\s+/|/g;
+	my @z = split(/\|/, $line);
+	$zstat{$z[0]} = [@z];
+}
+
+@nodes = split "\n\n", $output;
+
+foreach  $n (@nodes)
+{
+	my @lines = split "\n", $n;
+	$node = $lines[0];
+	chomp $node;
+	for $l (@lines)
+	{
+		if( $l =~ /\s*(\S*)\s+\=\s+(.+)$/)
+		{
+			$nodeprops{$node}{$1} = $2;
+
+		}
+	}
+
+}
+
+
+
+
+foreach $k (sort keys %nodeprops)
+{
+	my %nodejobs;
+	#my %detailedProps = map { $_ =~ /(.+)\=(.+)/,  2} split /\,/, $nodeprops{$k}{status};
+	my $cleanStatus = $nodeprops{$k}{status};
+	$cleanStatus =~ s/\(.+\)//g;
+	my %detailedProps = split /[,=]/, $cleanStatus;
+	
+	#print Dumper(%detailedProps);
+	$color = $nodeprops{$k}{jobs} =~ /s+/ ? "red" : "green";
+	print color($color) . "$k    " . color("reset");
+	print "$nodeprops{$k}{np}core\t";
+	$nodeprops{$k}{jobs} =~ s/\-\d+.master.cm.cluster//g;
+	$nodeprops{$k}{jobs} =~ s/.master.cm.cluster//g;
+	$nodeprops{$k}{jobs} =~ s/ //g;
+	for my $core ( split ",",$nodeprops{$k}{jobs})
+	{
+		my $jobNum = $core;
+		$jobNum =~ s/[\d-]+\///g;
+		my $coreNum = $core;
+		$coreNum =~ s/\/.+//;
+		$nodejobsCores{$jobNum} = $coreNum;
+	}
+	$nodeprops{$k}{jobs} =~ s/[\d-]+\///g;
+	$nodejobs{$_} ++  for split ",",$nodeprops{$k}{jobs};
+	print "[" . color("cyan") . "$_" . color("reset") . ":core#($nodejobsCores{$_}):" . color("yellow") . "$zstat{$_}[2]" . color("reset") . "]"  for  (keys %nodejobs);
+	print color("green") . "FREE" .  color("reset") if !%nodejobs && $nodeprops{$k}{state} ne "down";
+	print color("red") . "NODE IS OFFLINE" .  color("reset") if !%nodejobs && $nodeprops{$k}{state} eq "down";
+	print color("magenta") . "\tload=$detailedProps{loadave} Node is idle!" . color("reset") if %nodejobs && $detailedProps{loadave} < 0.02;  
+	print color("reset") . "\tload=$detailedProps{loadave}" . color("reset") if %nodejobs && $detailedProps{loadave} >= 0.02;  
+	#print "$_  = $detailedProps{$_}\n" for sort keys %detailedProps; 
+	print "\n";
+
+
+
+}
