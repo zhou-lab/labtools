@@ -482,25 +482,28 @@ biscuit markdup -q $fn bam/$bfn.mdup.bam 2>bam/$bfn.mdup.stats
   done
 }
 
+# wgbs_biscuit_pileup [-nome] do
 function wgbs_biscuit_pileup() {
 
   base=$(pwd);
   [[ -d pbs ]] || mkdir pbs
   [[ -d pileup ]] || mkdir pileup
+  [[ $1 == "-nome" ]] && nome="-N" || nome=""; # whether to pileup using the nomeseq mode
   for f in bam/*.bam; do
     fn=$(readlink -f $f)
     bfn=$(basename $f .bam)
     cmd="
 cd $base
-biscuit pileup -r $WZSEQ_REFERENCE -i $fn -o pileup/$bfn.vcf -q 28
+biscuit pileup -r $WZSEQ_REFERENCE $nome -i $fn -o pileup/$bfn.vcf -q 28
 bgzip pileup/$bfn.vcf
 tabix -p vcf pileup/$bfn.vcf.gz
 "
     jobname="biscuit_pileup_$bfn"
     pbsfn=$base/pbs/$jobname.pbs
     pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 28
-    [[ $1 == "do" ]] && qsub $pbsfn
+    [[ ${!#} == "do" ]] && qsub $pbsfn
   done
+
 }
 
 function wgbs_biscuit_pileup_lambdaphage() {
@@ -575,18 +578,20 @@ function decho() {
   echo "[$(date)] "$@ >&2
 }
 
+# wgbs_vcf2tracks [-nome] do
 function wgbs_vcf2tracks {
 
   [[ -d tracks ]] || mkdir tracks
   base=$(pwd)
   [[ -d pbs ]] || mkdir pbs
+  [[ $1 == "-nome" ]] && items=(hcg gch) || items=(cg)
   for f in pileup/*.vcf.gz; do
     fn=$(readlink -f $f)
     bfn=$(basename $f .vcf.gz)
     cmd="
 cd $base
 
-for pt in cg hcg gch; do
+for pt in ${items[@]}; do
 
   echo processing pileup type \$pt >&2
 
@@ -597,17 +602,17 @@ for pt in cg hcg gch; do
     IFS=\",\"; set \$i; 
     echo processing \$i >&2
     bedtools makewindows -g ${WZSEQ_REFERENCE}.fai -w \$1 | LC_ALL=C sort -k1,1 -k2,2n -T tracks/ | bedtools intersect -a - -b tracks/${bfn}.\${pt}.bedg -wo | bedtools groupby -i - -g 1-3 -c 7 -o mean >tracks/${bfn}.\${pt}.window\$2.bedg;
-  
+
     bedGraphToBigWig tracks/${bfn}.\${pt}.window\$2.bedg ${WZSEQ_REFERENCE}.fai tracks/${bfn}.\${pt}.window\$2.bw
-    # rm -f tracks/${bfn}.\${pt}.window\$2.bedg
+    rm -f tracks/${bfn}.\${pt}.window\$2.bedg
     unset IFS
   done
 done
 "
-    jobname="wgbs_vcf2tracks_$bfn"
+    jobname="vcf2tracks_$bfn"
     pbsfn=$base/pbs/$jobname.pbs
     pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
-    [[ $1 == "do" ]] && qsub $pbsfn
+    [[ ${!#} == "do" ]] && qsub $pbsfn
   done
 
 }
@@ -1274,7 +1279,7 @@ qualimap --java-mem-size=10G bamqc -nt 10 -bam $fn -outdir $qualimapdir/$bfn -c
 "
     jobname="qualimap_"${f//\//_}
     pbsfn=$base/pbs/$jobname.pbs
-    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 1 -memG 50 -ppn 10
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 50 -ppn 10
     [[ $1 == "do" ]] && qsub $pbsfn
   done
 }
