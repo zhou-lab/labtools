@@ -107,6 +107,8 @@ alias rf="readlink -f"
 alias parallel="parallel --gnu --progress"
 alias igv="~/tools/igv/IGV_2.3.60/igv.sh"
 alias du="du -sh"
+alias st="zstat"
+alias bs=". ~/.bashrc"
 # alias sort="LC_ALL=C /home/wandingzhou/tools/coreutils/coreutils-8.23/src/sort"
 
 # export CC=/home/wandingzhou/tools/gcc/gcc-4.9.2/objdir/bin/gcc
@@ -116,25 +118,37 @@ alias du="du -sh"
 HOME=/home/wanding.zhou
 
 alias wzseq=". $HOME/wzlib/bash/wzseq.sh"
+alias wzcore=". $HOME/wzlib/bash/wzcore.sh"
 alias mm10generic=". $HOME/wzlib/bash/wzseqsetups/mm10_generic.sh"
 alias hg19generic=". $HOME/wzlib/bash/wzseqsetups/hg19_generic.sh"
 
-export PATH=~/bin:/home/wanding.zhou/.local/bin/:/home/pbs/bin/:/primary/vari/software/valgrind/default/bin:/primary/shared/production/software/python/default/bin/:$PATH
 export SCREENRC=$HOME/wzlib/screenrc/screenrc_hp
 export PYTHONPATH=$HOME/wzlib/pyutils:$HOME/pythonlib/lib/python2.7/site-packages/
 export AWKPATH=$HOME/wzlib/awkutils
 
+# /home/wanding.zhou/tools/anaconda/anaconda/bin, instead put python as a symlink to that location
+export PATH=~/bin:~/pythonlib/bin::/primary/vari/software/UCSC_Browser_Tools/default/:/home/wanding.zhou/.local/bin/:/home/pbs/bin/:/primary/vari/software/valgrind/default/bin:/primary/shared/production/software/python/default/bin/:$HOME/.Renv/bin:$PATH
+eval "$(Renv init -)"
+
 # % cpan
 # cpan> o conf makepl_arg INSTALL_BASE=/mydir/perl
-# cpan> o conf commit
+# cpan> o conf commitlk
 # export PERL5LIB=/home/wandingzhou1/tools/perltools/lib/perl5:/home/wandingzhou1/tools/vcftools/vcftools_0.1.11/lib/perl5/site_perl:${PERL5LIB}
 
 alias scp='rsync -Pravdtze ssh'
-alias awk='$HOME/tools/awk4.01/gawk-4.01-install/bin/awk -F"\t" -v OFS="\t"'
+# alias awk='$HOME/tools/awk4.01/gawk-4.01-install/bin/awk -F"\t" -v OFS="\t"'
 alias les="less -S"
 alias qsuball="find $HOME/htcpbs/ -type f | sort | xargs -I {} qsub {}"
-alias qdelall="qstat | grep 'wanding.zhou' | awk '{print $1}' | xargs -I {} qdel {}"
-alias curl="curl -OL"
+alias rdf="readlink -f"
+alias qsubi='qsub -I -l nodes=1:ppn=1'
+alias qsubil='qsub -I -l nodes=1:ppn=28 -l walltime=24:00:00'
+
+function qdelall {
+   qstat | grep 'wanding.zhou' | awk '{split($1,a,".");print a[1]}' | xargs -I {} qdel {}
+}
+# alias curl="curl -OL"
+
+export PERL5LIB=$HOME/perl5/lib/perl5:$PERL5LIB
 
 function prompt {
   local BLACK="\[\033[0;30m\]"
@@ -198,8 +212,6 @@ sum+=$column;} END{ave=sum/c; if((c%2)==1){median=a[int(c/2)];} else{median=(a[c
 -1]"\t25%: "a[c/4]"\t75%: "a[c/4*3]}'
 }
 
-alias qsubi='qsub -I -l nodes=1:ppn=1'
-
 function dnarev {
   echo $1 | tr ATGC TACG | rev;
 }
@@ -251,5 +263,8 @@ function gl {
   git push;
 }
 
-# added by Anaconda 2.2.0 installer
-export PATH="/home/wanding.zhou/tools/anaconda/anaconda/bin:/primary/vari/software/UCSC_Browser_Tools/default/:$PATH"
+sortbed ()
+{
+    LC_ALL=C sort -k1,1 -k2,2n -T /secondary/projects/shen/tmp $1
+}
+export sortbed

@@ -15,7 +15,6 @@ template="""
 #PBS -o {self.stdout}
 #PBS -q {self.queue}
 #PBS -l nodes=1:ppn={self.ppn},mem={self.memG}gb,walltime={self.time}
-#PBS -V
 {self.depend}
 
 {self.commands}

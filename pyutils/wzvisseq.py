@@ -125,7 +125,7 @@ def bsprint(read, beg, end, refseq, refbeg, mod=''):
 
     return s
 
-def main(args):
+def main_bis(args):
 
     samfile=pysam.Samfile(args.bam)
     ref = faidx.RefGenome(args.ref)
@@ -212,16 +212,34 @@ def main(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-qname', required=True)
-    parser.add_argument('-reg')
-    parser.add_argument('-ref', required=True)
-    parser.add_argument('-bam', required=True)
-    parser.add_argument('-pqual', action='store_true', help='print quality information')
-    parser.add_argument('-pread', action='store_true', help="print read information")
-    parser.add_argument('-pbis', action='store_true', help="bisulfite sequencing highlight, magenta is bisulfite conversion")
-    parser.add_argument('-pair', default='12', help='[1,2,12]')
-    parser.set_defaults(func=main)
+
+    
+    parser = argparse.ArgumentParser(description='visualize sequence')
+    subparsers = parser.add_subparsers()
+
+    parser_bis = subparsers.add_parser('bis', help='visualize in terminal bisulfite read alignment')
+
+    parser_bis = argparse.ArgumentParser()
+    parser_bis.add_argument('-qname', required=True)
+    parser_bis.add_argument('-reg')
+    parser_bis.add_argument('-ref', required=True)
+    parser_bis.add_argument('-bam', required=True)
+    parser_bis.add_argument('-pqual', action='store_true', help='print quality information')
+    parser_bis.add_argument('-pread', action='store_true', help="print read information")
+    parser_bis.add_argument('-pbis', action='store_true', help="bisulfite sequencing highlight, magenta is bisulfite conversion")
+    parser_bis.add_argument('-pair', default='12', help='[1,2,12]')
+    parser_bis.set_defaults(func=main_bis)
+
+    parser_nome = subparsers.add_parser('nome', help='visualize nome-seq region')
+    parser_nome.add_argument('-reg')
+    parser_nome.add_argument('-bam', required=True, help='bam file')
+    parser_nome.add_argument('-gchpileup', required=True, help='GCH pileup')
+    parser_nome.add_argument('-o', required=True, help='output figure file name')
+    parser_nome.set_defaults(func=main_nome)
+
     args = parser.parse_args()
     args.func(args)
-
+    try:
+        args.func(args)
+    except IOError as e:
+        sys.exit()
