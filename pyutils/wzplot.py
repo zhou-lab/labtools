@@ -409,6 +409,7 @@ def _hist_oneplot(args):
             plt.xticks(coords, locs)
     else:
         plt.hist(data, bins=args.bins, log=args.log, linewidth=0, edgecolor='none', alpha=args.alpha, rwidth=0.9, facecolor=next(ccycle))
+        plt.xticks(rotation=args.xtlrotat)
 
     if not args.xlabel and args.skipheader:
         args.xlabel = headerline.strip().split(args.delim)[args.c-1]

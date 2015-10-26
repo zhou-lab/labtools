@@ -205,6 +205,8 @@ def discretize(df, upthres=0.8, dwthres=0.2):
 def take_segment_mean(df, probe2seg, min_support=10):
 
     _df_seg = df.copy()
+    if isinstance(_df_seg, pd.Series):
+        _df_seg = _df_seg.to_frame()
     _df_seg['seg'] = probe2seg.loc[df.index]
     _df_seg_gb = _df_seg.groupby('seg')
     df_seg_count = _df_seg_gb.count().iloc[:,0]

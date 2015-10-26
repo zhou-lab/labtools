@@ -893,7 +893,7 @@ if __name__ == '__main__':
     parser_sample.set_defaults(func=main_sample)
 
     parser_number = subparsers.add_parser('number', help='number items in the same category')
-    parser_number.add_argument('-k', default=None, required=True, help='column for category')
+    parser_number.add_argument('-k', default=None, help='column for category')
     parser_number.add_argument('-t', type=argparse.FileType('r'), help='target file', default='-')
     parser_number.add_argument('--across', action='store_true', help='number across category')
     parser_number.set_defaults(func=main_number)

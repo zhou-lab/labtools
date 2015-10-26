@@ -122,6 +122,8 @@ sort -V
 it sorts natural numbers within text
 see also vcf-sort which uses sort -V
 * unix
+** split
+for i in reads/*.txt; do split -a 3 -d -l 12000000 ${i} reads_split/$(basename $i); done
 ** relink files
 find . -type l -lname '/primary/home/wandingzhou/*' | while read f; do ff=$(readlink $f); ln -nsf ${ff/wandingzhou/wanding.zhou} $f; done
 ** join
@@ -604,6 +606,7 @@ tr '\r' '\n' < [file] > [output]
 
 *** this is a better solution
 tr -d "\015" <file1 
+tr "\015" "\n" <file1
 ** ssh X11 tunneling
 ssh -X
 to make default, put in ~/.ssh/config
@@ -621,6 +624,10 @@ curl -O -L http://sourceforge.net/...
 *** recursive download folder via ftp using wget
 wget -r ftp://yourfolder
 *** no host directory structure
+usually the downloaded stuff will be organized into hostname/dir1/dir2/...
+-nH means no host and leads to dir1/dir2
+--cut-dirs=2 means cut directory and leads to dir3/dir4
+
 wget -nH 
 
 No options        -> ftp.xemacs.org/pub/xemacs/
@@ -2567,6 +2574,11 @@ This Awk program appends the FNR - File Line Number predefined variable and a ta
  #+end_src
 This one works the same as the case that uses FNR except that it uses NR - Line Number variable, which does not get reset from file to file. It counts the input lines seen so far. For example, if it was called on the same two files with 10 and 12 lines, it would number the lines from 1 to 22 (10 + 12).
 * Sed
+** split merged fastq into 2 using 'first~step' pattern
+sed -ne '1~8{N;N;N;p}' *.fastq > *_1.fastq
+sed -ne '4~8{N;N;N;p}' *.fastq > *_2.fastq
+split merged fastq into 2
+1~8 means starting from the 1st line, stepping 8 lines, skipping 3 times and print
 ** use sed -E to allow [ [:space:]] like character class
 ** basic concept
 *** the four spaces
@@ -3083,6 +3095,13 @@ readelf -aW <binary> | c++filt
 :PROPERTIES:
 :VISIBILITY: children
 :END:
+** install R on cluster
+use Renv
+https://github.com/viking/Renv
+and follows the instruction
+do
+Renv rehash
+every time you install a new R binary
 ** Bioconductor
 *** basics
 **** install bioconductor
@@ -5368,6 +5387,8 @@ pip install --upgrade cutadapt
 
 ** pandas
 
+*** there is a difference in boolean masking for Series and boolean masking or DataFrame
+for DataFrame, NA will be used where the boolean value of the key is False
 *** rpy2 interface
 http://rpy.sourceforge.net/rpy2/doc-2.5/html/overview.html
 
@@ -7446,6 +7467,28 @@ http://www.catonmat.net/blog/perl-one-liners-explained-part-five/
 http://www.catonmat.net/blog/perl-one-liners-explained-part-six/
 http://www.catonmat.net/blog/perl-one-liners-explained-part-seven/
 * Javascript
+everything is a reference
+
+** javascript engine outside browser
+*** spidermonkey from mozilla
+js24 (for version 24 of Firefox)
+*** v8 from google
+*** nodejs
+*** JavaScriptCore (jsc) from WebKit
+*** usage
+$ cat foo.js 
+#!/usr/bin/js
+
+console.log("Hello, world!");
+$ ls -lAF /usr/bin/js /etc/alternatives/js /usr/bin/nodejs
+lrwxrwxrwx 1 root root      15 Jul 16 04:26 /etc/alternatives/js -> /usr/bin/nodejs*
+lrwxrwxrwx 1 root root      20 Jul 16 04:26 /usr/bin/js -> /etc/alternatives/js*
+-rwxr-xr-x 1 root root 1422004 Apr 28 20:31 /usr/bin/nodejs*
+$ chmod a+x foo.js 
+$ ./foo.js 
+Hello, world!
+$ js ./foo.js
+Hello, world!
 ** basic syntax
 *** switch
 #+BEGIN_SRC javascript
@@ -7464,8 +7507,16 @@ switch (o) {
 var multiply = function (x, y) {
    return x * y;
 };
+//Note the ";" at the end. compare this with "def multiply(x,y)" python way and "int multiply(int x, int y)" the C way.
+// or
+function multiply(x,y) {
+   return x * y;
+}
+//Note the absence of ";"
 #+END_SRC
-Note the ";" at the end. compare this with "def multiply(x,y)" python way and "int multiply(int x, int y)" the C way.
+Any function without an explicit return is going to return "undefined"
+
+The difference between assigning an anonymous function to a function and defining a function with the same name is that one can assign variable to another function.
 *** object definition
 
 #+BEGIN_SRC javascript
@@ -7474,15 +7525,22 @@ var myobj = {
    country: "China"
 }
 
-or equivalently, 
+// or equivalently, 
 
 var myobj = new Object();
 myobj.name = 'Bob Smith';
 myobj.age = 30;
+
+var me = new Object();
+me.name = "waa";
+me["age"] = 30;
+var newArray = [[1,2,3],[1,2],[{a:4}]];
+
+// JavaScript object is like a dictionary (Python) or hash (Perl)
 #+END_SRC
 
 *** class definition
-class is defined as a "function" in JavaScript
+class is defined as a "function" in JavaScript!!!
 #+BEGIN_SRC javascript
 function Person(name, age) {
     this.name = name;
@@ -7504,8 +7562,24 @@ function Rectange(height, width) {
 #+END_SRC
 
 *** object method definition
-#+BEGIN_SRC javascript
 
+#+BEGIN_SRC javascript
+var Bucky = {
+  printFirstName: function(){
+    console.log("My name is Bucky");
+    console.log(this === Bucky);
+  }
+};
+// to call
+Bucky.printFirstName();
+
+function doSomethingWorthless() {
+  console.log(this === global); // default "this" is global
+}
+doSomethingWorthless()
+#+END_SRC
+
+#+BEGIN_SRC javascript
 var bob = new Object();
 bob.name = 'Bob Smith';
 bob.age = 30;
@@ -7518,7 +7592,6 @@ bob.setAge(40);
 bob.getYearOfBirth = function () {
    return 2014 - this.age;
 };
-
 #+END_SRC
 
 another example
@@ -7534,6 +7607,42 @@ square.calcArea = function() {
 };
 #+END_SRC
 
+*** define class method and class object using "prototype"
+#+BEGIN_SRC javascript
+
+function User() {
+  this.name = "";
+  this.life = 100;
+  this.giveLife = function giveLife(targetPlayer) {
+    targetPlayer.life += 1;
+    console.log(this.name + " gave 1 life to "+targetPlayer.name);
+  }
+}
+
+var Bucky = new User();
+var Wendy = new User();
+Bucky.name = "Bucky";
+Wendy.name = "Wendy";
+
+Bucky.giveLife(Wendy);
+console.log("Bucky: "+Bucky.life);
+console.log("Wendy: "+Wendy.life);
+
+// You can add functions to all objects
+User.prototype.uppercut = function uppercut(targetPlayer) {
+  targetPlayer.life -= 3;
+  console.log(this.name + " just uppercutted "+targetPlayer.name);
+};
+
+Wendy.uppercut(Bucky);
+
+// You can add properties to all objects
+User.prototype.magic = 60;
+
+console.log(Bucky.magic);
+console.log(Wendy.magic);
+
+#+END_SRC
 *** accessing object properties
 There are 2 ways of accessing properties in Javascript.
 
@@ -7543,6 +7652,61 @@ var name = bob.name;
 2. the bracket notation
 var name = bob["name"];
 
+*** setTimeout()
+is not pausing the program, is setting schedule.
+
+** module import/export
+
+modules imported are shared, multiple "require" results in the same import
+
+movies.js
+#+BEGIN_SRC javascript
+function func_a() {
+  console.log("a");
+}
+function func_b() {
+  console.log("b");
+}
+module.exports.var_a = func_a;
+#+END_SRC
+
+app.js
+#+BEGIN_SRC javascript
+var movies = require("./movies"); // no ".js" suffix
+movies.var_a();
+#+END_SRC
+
+*** another way
+since every file has 
+module.exports = {}
+in the top implicitly
+
+so one can also do
+#+BEGIN_SRC javascript
+module.exports = {
+
+  func_a: function(){
+     console.log("a");
+  }, // note the , instead of ;
+  favMovie: "theMatrix",
+};
+#+END_SRC
+
+*** make a non-shared "object factory"
+movies.js
+#+BEGIN_SRC javascript
+module.exports = function() {
+  return{
+    favMovie: ""
+  };
+};
+#+END_SRC
+
+emily.js
+#+BEGIN_SRC javascript
+var movies = require('./movies');
+var emilyMovies = movies();
+#+END_SRC
 ** string concatenation
 
 #+BEGIN_SRC javascript
@@ -7620,16 +7784,12 @@ var isEven = function(number) {
       return false;
   }
 };
-** JavaScript object is like a dictionary (Python) or hash (Perl)
-var me = {
-    name: "dfdsf",
-    age: 30
-};
-** create object
-var me = new Object();
-me.name = "waa";
-me["age"] = 30;
-var newArray = [[1,2,3],[1,2],[{a:4}]];
+** == vs ===
+console.log(19=='19'); //true
+console.log(19==='19'); //false
+
+== compare only values
+=== compare values and types
 * jquery
 fadeIn, fadeOut, fadeTo, mouseenter,
 ** $(this)
@@ -9154,6 +9314,15 @@ Have fun!
 ** st
     hg st | awk '/\?/{print $2;}' | hg add
 * bash
+** last element in an array
+
+# require modern bash
+${array[-1]}
+# for older bash
+${a[@]:-1}
+
+${array[${#array[@]}-1]}
+
 ** check a string begins with some value
 if [ [ $a == "z*" ]] then; 
 

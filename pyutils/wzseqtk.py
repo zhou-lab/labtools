@@ -161,9 +161,18 @@ def main_internal(args):
     for seq_record in SeqIO.parse(args.i, "fasta"):
         
         seq = seq_record.seq.upper()
-        for i in xrange(args.l, len(seq)-args.l-2):
+        # for i in xrange(args.l, len(seq)-args.l-2):
+        for i in xrange(len(seq)-2):
+            if args.strict:
+                if (len(seq[max(0,i-args.l):i]) != args.l or len(seq[i+2:i+args.l+2]) != args.l):
+                    continue
+            elif len(seq[max(0,i-args.l):i]) != args.l and len(seq[i+2:i+args.l+2]) != args.l:
+                continue
             if seq[i:i+2] == 'CG':
-                print '\t'.join(map(str, [".",i,i+2, '|'.join(seq_record.description.split()), seq[i-args.l:i]+'['+seq[i:i+2]+']'+seq[i+2:i+args.l+2]]))
+                if args.nobrackets:
+                    print '\t'.join(map(str, [".",i,i+2, '|'.join(seq_record.description.split()), seq[max(0,i-args.l):i+args.l+2]]))
+                else:
+                    print '\t'.join(map(str, [".",i,i+2, '|'.join(seq_record.description.split()), seq[max(0,i-args.l):i]+'['+seq[i:i+2]+']'+seq[i+2:i+args.l+2]]))
 
 def main_filter(args):
 
@@ -224,6 +233,7 @@ def main_consensus(args):
             seq.append(consensus[i])
         else:
             if seq and len(seq) > args.l:
+                # [the index of concensus sequence]_[start of concensus sequence column]
                 print '>%sconsensus%d_%d' % (args.p, k,j)
                 print wrap(''.join(seq))
                 k += 1
@@ -256,6 +266,8 @@ if __name__ == '__main__':
     psr_internal = subparsers.add_parser('internal', help=""" internal CpG """)
     psr_internal.add_argument('-l', default=50, type=int, help='flanking length (50bp)')
     psr_internal.add_argument('-i', type=argparse.FileType('r'), default='-', help='sequence in fasta')
+    psr_internal.add_argument('--nobrackets', action='store_true', help='no output of brackets around CpG')
+    psr_internal.add_argument('--strict', action='store_true', help='require length on both flanking regions')
     psr_internal.set_defaults(func=main_internal)
 
     psr_filter = subparsers.add_parser('filter', help=""" filter fasta sequence based on keyword in description""")

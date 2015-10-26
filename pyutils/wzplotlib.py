@@ -65,7 +65,7 @@ def plot_heatmap_discrete(data, dim=None, fig=None, xlabels=None, ylabels=None, 
     return ax, level2color
 
 def plot_heatmap(data, dim=None, fig=None, xlabels=None, ylabels=None, label_fontsize=8,
-                 axhlines=None, cmap=None, interpolation=None):
+                 axhlines=None, cmap=None, interpolation=None, dmin=None, dmax=None):
 
     """ plot heatmap for data frame with continuous value """
     
@@ -89,7 +89,8 @@ def plot_heatmap(data, dim=None, fig=None, xlabels=None, ylabels=None, label_fon
 
     ax = fig.add_axes(dim, frameon=False)
     # ax.pcolor(data, cmap=cmap)
-    ax.imshow(data, aspect='auto', origin='lower', cmap=cmap, interpolation=interpolation)
+    norm = mcolors.Normalize(vmin=dmin, vmax=dmax)
+    ax.imshow(data, aspect='auto', origin='lower', cmap=cmap, norm=norm, interpolation=interpolation)
 
     # ax.imshow(data, extent=[0,data.shape[0],0,data.shape[1]], aspect='equal', cmap=cmap, interpolation=interpolation)
     
@@ -103,11 +104,11 @@ def plot_heatmap(data, dim=None, fig=None, xlabels=None, ylabels=None, label_fon
     ax.set_xticks([])
     ax.set_yticks([])
 
-    return ax, cmap
+    return ax, cmap, norm
 
 def discrete_colorshow(data, dim, fig, orientation='horizontal',
-                       greyscale=False, greyscale_range=(0.1,0.9), level2color=None):
-    
+                       greyscale=False, greyscale_range=(0.1,0.9), level2color=None, dmin=None, dmax=None):
+
     """ color bar of discrete values """
 
     n = len(data)
@@ -204,7 +205,7 @@ def continuous_array_colorshow(data, dim=[0.1,0.1,0.85,0.85], fig=None, cmap='je
     
     return ax, norm, colormap
 
-def continuous_colorshow_legend(norm, colormap, dim=[0.1,0.1,0.85,0.85], fig=None, title=None, fontsize=7, title_fontsize=7):
+def continuous_colorshow_legend(norm, colormap, dim=[0.1,0.1,0.85,0.85], fig=None, title=None, fontsize=7, title_fontsize=7, label_fontsize=7):
 
     """ plot legend of color bar with continuous values """
     if fig == None:
@@ -282,11 +283,11 @@ class WZHmap():
 
         # print self.xticklabels
 
-    def plot(self, dim=None, fig=None):
+    def plot(self, dim=None, fig=None, dmin=None, dmax=None, cmap='Jet'):
 
         # heat map
         if self.continuous:
-            self.ax, self.colormap = plot_heatmap(self.data, dim, fig, interpolation=self.interpolation)
+            self.ax, self.colormap, self.norm = plot_heatmap(self.data, dim, fig, dmin=dmin, dmax=dmax, interpolation=self.interpolation, cmap=cmap)
         else:
             if self.label2color is not None:
                 levels = sorted(list(set(self.data.values.flatten())))
@@ -334,7 +335,7 @@ class WZHmap():
             kwargs['label_fontsize'] = self.legend_label_fontsize
 
         if self.continuous:
-            continuous_colorshow_legend(None, self.colormap, dim, fig, **kwargs)
+            continuous_colorshow_legend(self.norm, self.colormap, dim, fig, **kwargs)
         else:
             dim[-1] = unitheight*len(self.label2color)
             colorshow_legend(self.label2color, dim, fig, **kwargs)
@@ -1541,6 +1542,7 @@ def savefig(fn):
     plt.savefig(fn, bbox_inches='tight', dpi=150)
 
 def violin(data, colors=None, labels=None, bw=0.4, cut=2, gridsize=1000, poses=None, dwidth=0.5):
+    # data must be [pd.Series/[],]
     # res = plt.violinplot(data, showextrema=False, bw_method="silverman")
     # res = plt.violinplot(data, showextrema=False, bw_method="scott")
     # res = plt.violinplot(data, showextrema=False, bw_method=0.3)
