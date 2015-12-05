@@ -602,7 +602,8 @@ def main_unique(args):
 
 def main_dedupfun(args):
 
-    # assuming file is sorted by key
+    """ assuming file is sorted by key """
+    
     ind = parse_indices(args.k)
     prev_key = None
     funs = args.r.split(',')
@@ -611,22 +612,37 @@ def main_dedupfun(args):
         fields = line.strip().split(args.delim)
         key = tuple(ind.extract(fields))
         # key = fields[args.k-1]
-        
-        if args.vt == 'float':
-            val = float(fields[args.v-1])
+
+        rawval = fields[args.v-1]
+
+        if args.skip and rawval == args.skip:
+            val = None
+        elif args.vt == 'float':
+            val = float(rawval)
         elif args.vt == 'int':
-            val = int(fields[args.v-1])
+            val = int(rawval)
             
         if prev_key != key and prev_key is not None:
-            pipeprint('%s\t%s' % (args.delim.join(map(str,prev_key)), '\t'.join(
-                map(lambda x: str(eval(x, {'vals':vals,'np':np})), funs))))
+
+            computeval = [_ for _ in vals if _ is not None]
+            if computeval:
+                pipeprint('%s\t%s' % (args.delim.join(map(str,prev_key)), '\t'.join(
+                    map(lambda x: str(eval(x, {'vals':vals,'np':np})), funs))))
+            else:
+                pipeprint('%s\t%s' % (args.delim.join(map(str,prev_key)), '\t'.join(["NA"]*len(funs))))
+
             vals = [val]
         else:
             vals.append(val)
         prev_key = key
 
-    pipeprint('%s\t%s' % (args.delim.join(map(str,prev_key)), '\t'.join(
-        map(lambda x: str(eval(x, {'vals':vals,'np':np})), funs))))
+    # last key
+    computeval = [_ for _ in vals if _ is not None]
+    if computeval:
+        pipeprint('%s\t%s' % (args.delim.join(map(str,prev_key)), '\t'.join(
+            map(lambda x: str(eval(x, {'vals':vals,'np':np})), funs))))
+    else:
+        pipeprint('%s\t%s' % (args.delim.join(map(str,prev_key)), '\t'.join(["NA"]*len(funs))))
 
     try:
         sys.stdout.flush()
@@ -864,6 +880,8 @@ if __name__ == '__main__':
     parser_dupfun.add_argument('-v', type=int, required=True, help="column to apply function (1-based)")
     parser_dupfun.add_argument('-r', default='np.mean(vals)', help='function to apply, will be evaled, argument is called "vals", default: mean')
     parser_dupfun.add_argument('-vt', default='float', help='value type, default: float, option: int')
+    parser_dupfun.add_argument('--skip', default=None, help="field values to be considered as exceptions and won't be included in calculation")
+    parser_dupfun.add_argument('--skipvalue', default='NA', help='field value to plu in the exception (default: "NA")')
     parser_dupfun.add_argument('--delim', default="\t", help="table delimiter [\\t]")
     parser_dupfun.set_defaults(func=main_dedupfun)
 

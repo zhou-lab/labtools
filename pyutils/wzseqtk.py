@@ -132,6 +132,59 @@ def main_comp(args):
     print 'G:%d' % seq.count('G')
     print 'CG:%d' % seq.count('CG')
 
+def main_runningcomp(args):
+
+    """ export local composition at every base """
+
+    def compute_comp(seq):
+        return (seq.count('C'), seq.count('G'), len(seq)-seq.count('N'), seq.count('CG'))
+    
+    import faidx
+    genome = faidx.RefGenome(args.i)
+    out = open(args.o, 'w') if args.o is not None else sys.stdout
+    for chrm in genome.faidx:
+        if args.v:
+            err_print(chrm)
+        gseq = genome.fetch_chrmseq(chrm).upper()
+        if len(gseq) <= args.k*2:
+            continue
+        c,g,n,cg = compute_comp(gseq[:args.k*2])
+        for i in xrange(len(gseq)-args.k*2):
+            b1 = gseq[i]
+            b2 = gseq[i+args.k*2]
+            if b1 == 'N':
+                pass
+            elif b1 == 'C':
+                n -= 1
+                c -= 1
+                if gseq[i+1] == 'G':
+                    cg -= 1
+            elif b1 == 'G':
+                n -= 1
+                g -= 1
+            elif b1 == 'A' or b1 == 'T':
+                n -= 1
+            else:
+                raise Exception("Unknown base: %s" % b1)
+            
+            if b2 == 'N':
+                pass
+            elif b2 == 'C':
+                n += 1
+                c += 1
+            elif b2 == 'G':
+                n += 1
+                g += 1
+                if gseq[i+args.k*2-1] == 'C':
+                    cg += 1
+            elif b2 == 'A' or b2 == 'T':
+                n += 1
+            else:
+                raise Exception('Unknown base: %s' % b2)
+
+            if i%args.s == 0:
+                out.write("%s\t%d\t%d\t%d\t%d\t%d\t%d\n" % (chrm, i+args.k-1, i+args.k, c, g, cg, n))
+
 def main_orphan(args):
 
     import faidx
@@ -285,6 +338,15 @@ if __name__ == '__main__':
     psr_consensus.add_argument('-s', type=float, default=0.8, help='min support [0.8]')
     psr_consensus.add_argument('-l', type=int, default=20, help='min length [20]')
     psr_consensus.set_defaults(func=main_consensus)
+
+    
+    parser_runningcomp = subparsers.add_parser('runningcomp', help='compute running composition')
+    parser_runningcomp.add_argument('-i', required=True, help='genomic sequence format in fasta')
+    parser_runningcomp.add_argument('-k', type=int, default=1000, help='flanking length')
+    parser_runningcomp.add_argument('-s', type=int, default=100, help='step size')
+    parser_runningcomp.add_argument('-v', action='store_true', help='print status')
+    parser_runningcomp.add_argument('-o', help='output', default=None)
+    parser_runningcomp.set_defaults(func=main_runningcomp)
 
     args = parser.parse_args()
     try:

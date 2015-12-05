@@ -2,6 +2,33 @@
 #+STARTUP: indent
 #+TAGS: memorize(a) unknown(u)
 * bioinformatics
+** circos
+> cd example
+
+# run.out will contain debug report
+# image files are circos.png and circos.svg
+> ./run
+
+# explicitly specify configuration file
+> ../bin/circos -conf etc/circos.conf
+# with more debugging
+> ../bin/circos -conf etc/circos.conf -debug_group summary,io,timer
+# with all debugging
+> ../bin/circos -conf etc/circos.conf -debug_group _all
+# silently
+> ../bin/circos -conf etc/circos.conf -silent
+
+bin/circos -conf etc/circos.conf 
+           -outputdir /path/to/your/output/directory 
+           -outputfile yourimage.png
+
+circos -param karyotype=myfile.txt ...
+circos -param image/radius=500p
+circos -param ideogram/show=no
+
+undefine parameter
+circos -param chromosomes=undef
+
 ** cram
 convert bam to cram
 samtools view -T yeast.fasta -C -o yeast.cram yeast.bam
@@ -603,6 +630,10 @@ The ^M that you are seeing is actually a CR or \r. If you want to test for carra
 dos2unix
 or
 tr '\r' '\n' < [file] > [output]
+
+replace ^M with 
+control v and then control M
+sed "s/^M//g"
 
 *** this is a better solution
 tr -d "\015" <file1 
@@ -3275,7 +3306,10 @@ where('x')
 [environment loaded with "library"] => globalenv() => search path .. => baseenv() => emptyenv()
 
 The enclosing environment determines how the function finds values; the binding environments determine how we find the function.
-
+*** string regular expression
+fetch pattern
+txt <- "aaa12xxx"
+regmatches(txt,regexpr("[0-9]+",txt))
 ** Data IO
 see R wiki for more options
 http://en.wikibooks.org/wiki/R_Programming/Importing_and_exporting_data
@@ -5037,6 +5071,8 @@ change label size relative to the plot
 use argument
 cex.lab = 1.5
 **** smoothScatter
+**** change to 1 row
+par(mfrow=c(1,1))
 **** par
 change parameters of the plotting
 multiple subplots
@@ -5066,6 +5102,8 @@ labels on x-axis
 another way to boxplot against some factor
 boxplot(envcnt ~ gltrunc12, data=d, xlab='number of gains and losses')
 
+**** vioplot
+do.call(vioplot,c(unname(a), col='red', names=list(names(a))))
 *** lattice plotting
 library(lattice)
 package ? Lattice
@@ -5080,6 +5118,34 @@ xyplot(ozone ~ radiation, data=environmental, main=”Ozone vs. Radiation”)
 xyplot(-log10(adj.P.Val)~CHROMOSOME, tt, ylab='-log10(Adjusted P-value)', main='P-values for probes\ndistinguishing males from females')
 # tt is the data.frame containing columns adj.P.Val and CHROMOSOME
 #+END_SRC
+
+*** ggplot2
+
+**** scatter plot
+qplot(x, y, data=dataframe)
+color category based on "colorcolumn"
+qplot(x, y, data=dataframe, color=colorcolumn)
+color category based on "shapecolumn"
+qplot(x, y, data=dataframe, color=shapecolumn)
+
+add LOESS
+qplot(x, y, data=dataframe, geom=c("point","smooth"))
+use linear regression instead of LOESS
+qplot(x, y, data=df, geom=c("point","smooth"), method="lm")
+
+**** histogram
+qplot(x, data=df, fill=colorcolumn)
+"fill" defines a 3rd category that defines the color
+
+**** subplot in "facets"
+data are first divided by certain column into row and column of the subplots
+qplot(x, y, data=df, facets=.~facetcolumncolumn)
+qplot(x, y, data=df, facets=facetrowcolumn~., binwidth=2)
+
+**** density plot
+qplot(x, data=maacs, geom="density")
+further split by colorcolumn
+qplot(x, data=df, geom="density", color="colorcolumn") # this results in n curves each corresponding to an alphabet found in colorcolumn
 
 *** convert R table to LaTeX table
 library(xtable)

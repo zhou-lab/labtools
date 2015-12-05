@@ -207,3 +207,10 @@ function repeat(str, n, rep,    i )
         rep[i] = str;
     return
 }
+
+function repeats( str, n,    rep, i )
+{
+    for( ; i<n; i++ )
+        rep = rep str   
+    return rep
+}

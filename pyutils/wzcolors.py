@@ -180,7 +180,8 @@ def map_level2color(data, **kwargs):
     elif 'greyscale' in kwargs and kwargs['greyscale']:
         colors = get_grey_scale_rgb(len(levels), greyscale_range=kwargs_or_none(kwargs, 'greyscale_range'))
     else:
-        colors = get_distinct_colors_hex(len(levels))
+        # colors = get_distinct_colors_hex(len(levels))
+        colors = getncolors(len(levels))
         
     level2color = dict(zip(levels, colors))
     if kwargs_or_false(kwargs, 'other2grey') and "other" in level2color:
@@ -211,10 +212,16 @@ def map_distinct_colors_hex(data, **kwargs):
 color_curation = {
 
     'IndianRed'
-
-
-
 }
+
+def getncolors(n, cm='jet'):
+
+    import matplotlib.cm as cmx
+    import matplotlib.colors as mcolors
+    cmo = cmx.get_cmap(cm) 
+    cNorm  = mcolors.Normalize(vmin=0, vmax=n-1)
+    scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmo)
+    return [scalarMap.to_rgba(_) for _ in xrange(n)]
 
 if __name__ == "__main__":
     # print(list(itertools.islice(gethtmlcolors(), 1,100)))

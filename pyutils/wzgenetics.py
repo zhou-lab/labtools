@@ -1,83 +1,238 @@
 import wzcore
 import faidx
 
+refgenomehg19 = faidx.RefGenome('/Users/wandingzhou/references/hg19/hg19.fa')
+
 class GeneticElement(object):
 
-    def __init__(self, flank=1000):
-        self.flank = flank
+    def __init__(self, flank=1000, flank1=None, flank2=None):
+        self.flank1 = flank     # upstream (gene order)
+        self.flank2 = flank     # downstream (gene order)
+        if flank1:
+            self.flank1 = flank1
+        if flank2:
+            self.flank2 = flank2
         
     def __len__(self):
         return self.end - self.beg
     
     def __repr__(self):
         
-        return '<%s: %d bp>' % (self.alutype, self.__len__())
-    
-    def cgcnt(self):
-        return self.seq().count('CG')
-    
-    def cgdensity(self):
-        return float(self.cgcnt()) / float(self.__len__())
+        return '<Element: %s:%d-%d>' % (self.chrm, self.beg, self.end)
 
-    def seq(self):
-        return self.area[self.flank:self.flank+len(self)]
+    def rep_coord(self):
 
-    def area_cgdensities(self, step=20, window=100):
+        return '%s:%d-%d' % (self.chrm, self.beg, self.end)
+
+    def seq_beg(self):
+        """ note that beg, end, seq_beg(), seq_end() are all in reference coordinates """
+        if self.strand == '+':
+            return self.beg-self.flank1
+        else:
+            return int(round(self.end-self.flank2))
+        
+    def seq_end(self):
+        """ note that beg, end, seq_beg(), seq_end() are all in reference coordinates """
+        if self.strand == '+':
+            return int(round(self.beg+self.flank2))
+        else:
+            return self.end + self.flank1
+
+    def ownseq(self):
+        return self.seq[self.flank1:self.flank1+len(self)]
+
+    def cpgcnt(self):
+        return self.ownseq().count('CG')
+    
+    def cpgdensity(self):
+        return float(self.cpgcnt()) / float(self.__len__())
+
+    def upstream(self,l):
+        return self.seq[self.flank1-l:self.flank1]
+
+    def dwstream(self,l):
+        return self.seq[self.flank1+len(self):self.flank1+len(self)+l]
+    
+    def flanking_cpgdensity(self, flank=1000):
+
+        if flank>=self.flank1 or flank+len(self)>=self.flank2:
+            raise Exception('need to get larger sequence')
+
+        seq_up = self.upstream(flank)
+        seq_dw = self.dwstream(flank)
+        if len(seq_up) + len(seq_dw) > 0:
+            return float(seq_up.count('CG') + seq_dw.count('CG')) / (len(seq_up)+len(seq_dw))
+        else:
+            return np.nan
+
+    def area_cpgdensities(self, step=50, window=100, area_flank1=1000, area_flank2=1300):
 
         cgd = []
-        for start in xrange(0, len(self.area)-window, step):
-            cgd.append(self.area[start:start+window].count('CG'))
+        window_begs = []
+        for start in xrange(self.flank1-area_flank1, self.flank1+area_flank2-window, step):
+            window_begs.append(start-self.flank1)
+            cgd.append(self.seq[start:start+window].count('CG'))
         
-        return cgd
+        return window_begs, cgd
 
-class Alu(GeneticElement):
+class TE(GeneticElement):
 
     def __init__(self, flank=1000):
+        super(TE, self).__init__(flank=flank)
+        self.seq = None
+        self.tetype = 'RepElement'
 
-        super(Alu, self).__init__(flank=flank)
+    def __repr__(self):
+        return '<%s: %s:%d-%d>' % (self.tetype, self.chrm, self.beg, self.end)
 
-    def area_beg(self):
+    def load_seq(self, refgenome=refgenomehg19, flank=1000, flank1=None, flank2=None):
+        self.flank1 = flank1 if flank1 else flank
+        self.flank2 = flank2 if flank2 else flank
+
         if self.strand == '+':
-            return self.beg - self.flank
+            self.seq = refgenome.fetch_sequence(self.chrm, self.seq_beg(), self.seq_end()).upper()
         else:
-            return int(round(self.end-1.5*self.flank))
+            self.seq = wzcore.reverse_complement(refgenome.fetch_sequence(self.chrm, self.seq_beg(), self.seq_end()).upper())
+
+        if len(self.seq) != self.seq_end()-self.seq_beg()+1:
+            self.seq = None    # set to None if sequence retrieval error
+
+    def get_microenv(self, d=100):
+
+        """
+        self.rmskbed must be tabix indexed, still this takes 14hr to load all TE environment
+        this is pretty slow
+        """
         
-    def area_end(self):
-        if self.strand == '+':
-            return int(round(self.beg+1.5*self.flank))
-        else:
-            return self.end + self.flank
+        import tabix
+        te_fh = tabix.open(self.rmskbed)
 
-def load_alu_and_seqs():
+        self.upstream = []
+        winend = self.beg
+        beg = self.beg
+        while True:
+            hits = list(te_fh.query(self.chrm, winend-1000, winend))
+            winend -= 1000
+            disconnected = False if hits else True
+            for fields in reversed(hits):
+                _chrm, _beg, _end, _strand, _tetype, _tetype2, _tetype3 = fields
+                te = TE()
+                te.chrm = _chrm
+                te.beg = int(_beg)
+                te.end = int(_end)
+                te.strand = _strand
+                te.tetype = _tetype
+                te.tetype2 = _tetype2
+                te.tetype3 = _tetype3
+                te.dist = te.end - beg
+                if -te.dist > d:
+                    disconnected = True
+                    break
+                beg = te.beg
+                self.upstream.append(te)
+                
+            if disconnected:
+                break
+
+        self.downstream = []
+        winbeg = self.end+1
+        end = self.end+1
+        while True:
+            hits = list(te_fh.query(self.chrm, winbeg, winbeg+1000))
+            winbeg += 1000
+            disconnected = False if hits else True
+            for fields in hits:
+                _chrm, _beg, _end, _strand, _tetype, _tetype2, _tetype3 = fields
+                te = TE()
+                te.chrm = _chrm
+                te.beg = int(_beg)
+                te.end = int(_end)
+                te.strand = _strand
+                te.tetype = _tetype
+                te.tetype2 = _tetype2
+                te.tetype3 = _tetype3
+                te.dist = te.beg - end
+                if te.dist > d:
+                    disconnected = True
+                    break
+                end = te.end
+                self.downstream.append(te)
+
+            if disconnected:
+                break
+
+def _te_load_seqs(refgenome, te):
+
+    if te.strand == '+':
+        te.seq = refgenome.fetch_sequence(te.chrm, te.seq_beg(), te.seq_end()).upper()
+    else:
+        te.seq = wzcore.reverse_complement(refgenome.fetch_sequence(te.chrm, te.seq_beg(), te.seq_end()).upper())
+    if len(te.seq) != te.seq_end()-te.seq_beg()+1:
+        raise IndexError()
+
+def load_te_and_seqs(rmskbed='/Users/wandingzhou/projects/pj-mm/2015-04-23-alu/rmsk.bed.gz',
+                     load_seq=False, tetype=None, tetype2=None, tetype3=None):
 
     refgenome = faidx.RefGenome('/Users/wandingzhou/references/hg19/hg19.fa')
-    alus = {}
+    tes = {}
     wzcore.err_print_sig()
-    for i,line in enumerate(wzcore.opengz('/Users/wandingzhou/projects/pj-mm/2015-04-23-alu/alu.bed.gz')):
+    for i,line in enumerate(wzcore.opengz(rmskbed)):
         if i%100000 == 0:
             wzcore.err_print_m(' %d' % i)
 
         fields = line.strip().split('\t')
-        alu = Alu()
-        alu.chrm = fields[0]
-        if alu.chrm.find('_')>0:
+        te = TE()
+        te.chrm = fields[0]
+        if te.chrm.find('_')>0:
             continue
-        alu.beg = int(fields[1])
-        alu.end = int(fields[2])
-        alu.strand = fields[3]
-        alu.alutype = fields[4]
-        try:
-            if alu.strand == '+':
-                alu.area = refgenome.fetch_sequence(alu.chrm, alu.area_beg(), alu.area_end()).upper()
-            else:
-                alu.area = wzcore.reverse(refgenome.fetch_sequence(alu.chrm, alu.area_beg(), alu.area_end()).upper())
-        except IndexError:      # Alu at chromosome boundaries, ignore
+        te.beg = int(fields[1])
+        te.end = int(fields[2])
+        te.rmskbed = rmskbed
+        te.strand = fields[3]
+        te.tetype = fields[4]
+        te.tetype2 = fields[5]
+        te.tetype3 = fields[6]
+
+        if tetype is not None and te.tetype != tetype:
             continue
-        alus[(alu.chrm,alu.beg,alu.end)] = alu
+
+        if tetype2 is not None and te.tetype2 != tetype2:
+            continue
+
+        if tetype3 is not None and te.tetype3 != tetype3:
+            continue
+        
+        if load_seq:
+            try:
+                _te_load_seqs(refgenome, te)
+            except IndexError:      # TE at chromosome boundaries, ignore
+                # te.seq == None
+                pass
+
+        tes[(te.chrm,te.beg,te.end)] = te
 
     wzcore.err_print_m('\n')
-    wzcore.err_print('Loaded %d Alus' % len(alus))
-    return alus
+    wzcore.err_print('Loaded %d TEs' % len(tes))
+    return tes
+
+def te_load_seqs(tes):
+
+    refgenome = faidx.RefGenome('/Users/wandingzhou/references/hg19/hg19.fa')
+
+    tes2 = {}
+    if isinstance(tes, dict):
+        it = tes.itervalues()
+    else:
+        it = iter(tes)
+    for te in it:
+        try:
+            _te_load_seqs(refgenome, te)
+        except IndexError:      # TE at chromosome boundaries, ignore
+            continue
+
+        tes2[(te.chrm,te.beg,te.end)] = te
+
+    return tes2
 
 class CGI(GeneticElement):
 
@@ -89,10 +244,10 @@ class CGI(GeneticElement):
         
         return '<CGI %s: %d bp>' % (self.cgitype, self.__len__())
     
-    def area_beg(self):
+    def seq_beg(self):
         return self.beg - self.flank
         
-    def area_end(self):
+    def seq_end(self):
         return int(round(self.beg+1.5*self.flank))
 
 def load_cgi_and_seqs():
@@ -106,21 +261,22 @@ def load_cgi_and_seqs():
         cgi.beg = int(fields[1])
         cgi.end = int(fields[2])
         cgi.cgitype = fields[3]
-        cgi.area = refgenome.fetch_sequence(cgi.chrm, cgi.area_beg(), cgi.area_end()).upper()
+        cgi.seq = refgenome.fetch_sequence(cgi.chrm, cgi.seq_beg(), cgi.seq_end()).upper()
         cgis.append(cgi)
         
     wzcore.err_print('Loaded %d CGIs' % len(cgis))
     return cgis
 
-def load_tss_and_seqs():
+def load_tss_and_seqs(tssfn='/Users/wandingzhou/projects/pj-mm/2015-04-23-alu/hg19_mRNA_tss', cgifn='/Users/wandingzhou/projects/pj-mm/2015-04-23-alu/hg19_mRNA_tss_1k1k_cgi_uniq'):
 
     import pandas as pd
-    tss_table = pd.read_table('/Users/wandingzhou/projects/pj-mm/2015-04-23-alu/hg19_mRNA_tss', header=None)
+    tss_table = pd.read_table(tssfn, header=None)
     tss_table.columns = ['chrm','tss','strand','gene','_cnt','transname']
     tss_table.index = tss_table['chrm']+":"+tss_table['tss'].map(str)
     tss_table = tss_table.groupby(level=0).first()
-    cgi_anno = pd.read_table('/Users/wandingzhou/projects/pj-mm/2015-04-23-alu/hg19_mRNA_tss_1k1k_cgi_uniq',sep='\t', index_col='chrmpos')
-    tss_table['cgi'] = cgi_anno.loc[tss_table.index, 'CGI']
+    if cgifn is not None:
+        cgi_anno = pd.read_table(cgifn,sep='\t', index_col='chrmpos')
+        tss_table['cgi'] = cgi_anno.loc[tss_table.index, 'CGI']
 
     return tss_table
 
@@ -142,7 +298,16 @@ def tss_load_te_state(tss_table, usetype=1):
         # if j%1000 ==0:
         #     print j
         chrm, tss, strand, gene, _cnt, transnames, cgi = fields1
-        _poses = [np.nan]*len(poses)
+        chrm = fields1[0]
+        tss = fields1[1]
+        strand = fields1[2]
+        gene = fields1[3]
+        _cnt = fields1[4]
+        transnames = fields1[5]
+        if len(fields1)>6:
+            cgi = fields1[6]
+        
+        _poses = ['NA']*len(poses)
         if strand == "+":
             d1 = d_upstream
             d2 = d_downstream

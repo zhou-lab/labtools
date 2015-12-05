@@ -43,13 +43,13 @@ def pd_print_full(x):
     print(x)
     pd.reset_option('display.max_rows')
 
-def opengz(fn):
+def opengz(fn,m='r'):
     
     if fn.endswith('.gz'):
         import gzip
-        fh = gzip.open(fn)
+        fh = gzip.open(fn,m)
     else:
-        fh = open(fn)
+        fh = open(fn,m)
 
     return fh
 
@@ -84,3 +84,23 @@ def uniquify(seq):
             item2ind[i] += 1
 
     return seq2
+
+def mode(l, dmin=None, dmax=None, bw=None, bins=100):
+
+    import numpy as np
+    minl = np.min(l)
+    maxl = np.max(l)
+    from scipy.stats import gaussian_kde
+    if dmin is None:
+        dmin = np.min(l)
+    if dmax is None:
+        dmax = np.max(l)
+    if bw is None:
+        bw = (dmax - dmin) / 20.
+
+    kde = gaussian_kde(l, bw)
+
+    support = np.linspace(dmin, dmax, bins)
+    density = kde.evaluate(support)
+
+    return support, density

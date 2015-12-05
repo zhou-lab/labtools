@@ -59,8 +59,14 @@ def plot_heatmap_discrete(data, dim=None, fig=None, xlabels=None, ylabels=None, 
     ax = fig.add_axes(dim, frameon=False)
     # ax.pcolor(data, cmap=cmap)
     ax.imshow(dataplot, aspect='auto', origin='lower', cmap=cmap, interpolation='none')
+
+    if ylabels is None:
+        ax.set_yticks([])
+    else:
+        ax.set_yticks(range(len(ylabels)))
+        ax.set_yticklabels(ylabels, fontname='Arial Narrow')
+
     ax.set_xticks([])
-    ax.set_yticks([])
 
     return ax, level2color
 
@@ -68,7 +74,7 @@ def plot_heatmap(data, dim=None, fig=None, xlabels=None, ylabels=None, label_fon
                  axhlines=None, cmap=None, interpolation=None, dmin=None, dmax=None):
 
     """ plot heatmap for data frame with continuous value """
-    
+
     # data = np.ma.array(data.as_matrix(), mask=data.isnull())
 
     # set defaults
@@ -124,6 +130,7 @@ def discrete_colorshow(data, dim, fig, orientation='horizontal',
         raise Exception("unknown orientation")
 
     import wzcolors
+    # reload(wzcolors)
     ax = fig.add_axes(dim, frameon=False)
     if level2color is None:     # if level2color is not given
         colors, level2color = wzcolors.map_distinct_colors_hex(
@@ -250,15 +257,23 @@ class WZHmap():
                  
                  # tick label on x axis
                  xticklabels = None,
+                 xticklabel_space = 1,
                  xticklabel_fontsize = 5,
                  xticklabel_side = 'bottom',
                  xticklabel_rotat = 90,
+                 xticklabel_pad=0.1,
 
                  ytickposes = None,
                  yticklabels = None,
+                 yticklabel_space = 1,
                  yticklabel_fontsize = 5,
                  yticklabel_side = 'l',
+                 yticklabel_pad=0.1,
 
+                 # data min max
+                 dmin = None,
+                 dmax = None,
+                 
                  # title
                  label = None,
                  labelside = 'r',
@@ -283,11 +298,16 @@ class WZHmap():
 
         # print self.xticklabels
 
-    def plot(self, dim=None, fig=None, dmin=None, dmax=None, cmap='Jet'):
+    def plot(self, dim=None, fig=None, dmin=None, dmax=None):
+
+        if self.dmin is None:
+            self.dmin = dmin
+        if self.dmax is None:
+            self.dmax = dmax
 
         # heat map
         if self.continuous:
-            self.ax, self.colormap, self.norm = plot_heatmap(self.data, dim, fig, dmin=dmin, dmax=dmax, interpolation=self.interpolation, cmap=cmap)
+            self.ax, self.colormap, self.norm = plot_heatmap(self.data, dim, fig, dmin=self.dmin, dmax=self.dmax, interpolation=self.interpolation, cmap=self.cmap)
         else:
             if self.label2color is not None:
                 levels = sorted(list(set(self.data.values.flatten())))
@@ -302,12 +322,12 @@ class WZHmap():
             if type(self.xticklabels) == bool:
                 self.xticklabels = self.data.columns.format()
             for i in xrange(self.data.shape[1]):
+                if i%self.xticklabel_space != 0:
+                    continue
                 if self.xticklabel_side in ['bottom', 'b']:
-                    self.ax.text(i, -1, self.xticklabels[i], rotation=self.xticklabel_rotat, horizontalalignment='center',
-                                 verticalalignment='top', fontsize=self.xticklabel_fontsize)
+                    self.ax.text(i, -self.xticklabel_pad, self.xticklabels[i], rotation=self.xticklabel_rotat, horizontalalignment='center', verticalalignment='top', fontsize=self.xticklabel_fontsize)
                 elif self.xticklabel_side in ['top', 't']:
-                    self.ax.text(i, height*1.01, self.xticklabels[i], rotation=self.xticklabel_rotat, horizontalalignment='center',
-                                 verticalalignment='bottom', fontsize=self.xticklabel_fontsize)
+                    self.ax.text(i, height+self.xticklabel_pad, self.xticklabels[i], rotation=self.xticklabel_rotat, horizontalalignment='center', verticalalignment='bottom', fontsize=self.xticklabel_fontsize)
 
         if self.yticklabels is not None:
             if self.ytickposes is None:
@@ -315,8 +335,12 @@ class WZHmap():
             if type(self.yticklabels) == bool:
                 self.yticklabels = self.data.index.format()
 
-            for i, pos in enumerate(self.ytickposes):
-                self.ax.text(-1, pos, self.yticklabels[i], horizontalalignment='right', fontsize=self.yticklabel_fontsize)
+            if self.yticklabel_side in ['left', 'l']:
+                for i, pos in enumerate(self.ytickposes):
+                    self.ax.text(-self.yticklabel_pad, pos-0.3, self.yticklabels[i], horizontalalignment='right', fontsize=self.yticklabel_fontsize, fontname='Arial Narrow')
+            elif self.yticklabel_side in ['right', 'r']:
+                for i, pos in enumerate(self.ytickposes):
+                    self.ax.text(self.data.shape[1]+self.yticklabel_pad, pos-0.3, self.yticklabels[i], horizontalalignment='left', fontsize=self.yticklabel_fontsize, fontname='Arial Narrow')
 
     def plot_legend(self, dim=[0.1,0.1,0.03,0.4], fig=None, unitheight=0.015):
 
@@ -340,7 +364,9 @@ class WZHmap():
             dim[-1] = unitheight*len(self.label2color)
             colorshow_legend(self.label2color, dim, fig, **kwargs)
 
-
+    def save(self, fn):
+        plt.savefig(fn, bbox_inches='tight', dpi=150)
+            
 def text_reconcile(pos1, interval, error=0.01):
     pos1 = sorted(pos1)
     # first resolve interval
@@ -951,6 +977,7 @@ def single_cluster_layout(hmap, lcbs=[], tcbs=[], ytickposes=None, yticklabels=N
 
     if 'td' in kwargs and kwargs['td']:
         kwargs['td'] = cd.D_top
+
     single_hmap_layout(hmap,
                        lcbs=cbs_reorder_generic(lcbs, cd.lft_order()),
                        tcbs=cbs_reorder_generic(tcbs, cd.top_order()),
@@ -977,6 +1004,9 @@ def single_hmap_layout(hm, lcbs=[], tcbs=[], td=None, ld=None,
                        mar = 0.05,
                        yticklabels = None,
                        xticklabels = None,
+                       dmin = None,
+                       dmax = None,
+                       cmap = 'jet',
                        tdhei = 0.1, tdpad = 0.005,
                        ldwid = 0.1, ldpad = 0.003,
                        mawid = 0.6, # heatmap width
@@ -1025,14 +1055,14 @@ def single_hmap_layout(hm, lcbs=[], tcbs=[], td=None, ld=None,
         wzcore.err_print("left color")
         lcbs = cast_WZCbar(lcbs)
         for i, cbar in enumerate(lcbs):
-            cbar.lineanno = 'topleft'
+            # cbar.lineanno = 'topleft'
             cbar.annlft = lclft
             cbar.plot([lclft+i*lcuni, mar, lcwid, mahei], fig, orientation='v')
     malft = lclft + len(lcbs) * lcuni
 
     wzcore.err_print("heatmap")
     if not isinstance(hm, WZHmap):
-        hm = WZHmap(hm, yticklabels=yticklabels, xticklabels=xticklabels)
+        hm = WZHmap(hm, yticklabels=yticklabels, xticklabels=xticklabels, dmin=dmin, dmax=dmax, cmap=cmap)
     hm.plot(dim=[malft, mar, mawid, mahei], fig=fig)
 
     tcbtm = mar + maheiuni
@@ -1052,10 +1082,10 @@ def single_hmap_layout(hm, lcbs=[], tcbs=[], td=None, ld=None,
 
     if figfile is not None:
         wzcore.err_print("Saving to %s." % figfile)
-        fig.savefig(figfile, bbox_inches='tight', dpi=150)
+        fig.savefig(figfile, bbox_inches='tight', dpi=350)
 
     # plot legend separately
-    if lcbs or tcbs and figfile is not None:
+    if (lcbs or tcbs) and figfile is not None:
         wzcore.err_print('Legend for color bars')
         legfigwid = 10
         legfighei = 8
@@ -1583,3 +1613,66 @@ def violin(data, colors=None, labels=None, bw=0.4, cut=2, gridsize=1000, poses=N
         plt.xlim(min(poses)-0.5, max(poses)+0.5)
 
 
+def boxplot(data, figsize=(8,5), labels=None, figfn=None,
+            labelrotation=45, plotmean=False, alternatingcolor=False, title=None, xlabel=None, ylabel=None):
+
+    from matplotlib.patches import Polygon
+    
+    plt.figure(figsize=figsize)
+
+    ax = plt.gca()
+    
+    bp = plt.boxplot(data, labels=None, notch=0, sym='+', vert=1, whis=1.5)
+    plt.setp(bp['boxes'], color='black')
+    plt.setp(bp['whiskers'], color='black')
+    plt.setp(bp['fliers'], color='red', marker='+')
+
+    ax.yaxis.grid(True, linestyle='-', which='major', color='lightgrey', alpha=0.5)
+
+    ax.set_axisbelow(True)
+    if title:
+        ax.set_title(title)
+    if xlabel:
+        ax.set_xlabel(xlabel)
+    if ylabel:
+        ax.set_ylabel(ylabel)
+
+    if alternatingcolor:
+        boxColors = ['darkkhaki', 'royalblue']
+        numDists = len(data)/2
+        numBoxes = numDists*2
+        medians = list(range(numBoxes))
+        for i in range(numBoxes):
+            box = bp['boxes'][i]
+            boxX = []
+            boxY = []
+            for j in range(5):
+                boxX.append(box.get_xdata()[j])
+                boxY.append(box.get_ydata()[j])
+            boxCoords = list(zip(boxX, boxY))
+            # Alternate between Dark Khaki and Royal Blue
+            k = i % 2
+            boxPolygon = Polygon(boxCoords, facecolor=boxColors[k])
+            ax.add_patch(boxPolygon)
+            # Now draw the median lines back over what we just filled in
+            med = bp['medians'][i]
+            medianX = []
+            medianY = []
+            for j in range(2):
+                medianX.append(med.get_xdata()[j])
+                medianY.append(med.get_ydata()[j])
+                plt.plot(medianX, medianY, 'k')
+                medians[i] = medianY[0]
+            # Finally, overplot the sample averages, with horizontal alignment
+            # in the center of each box
+            if plotmean:
+                plt.plot([np.average(med.get_xdata())], [np.average(data[i])], color='w', marker='*', markeredgecolor='k')
+
+        ax.set_xlim(0.5, numBoxes+0.5)
+
+    if labels:
+        ax.set_xticks([_+0.5 for _ in xrange(len(labels))])
+        ax.set_xticklabels(labels, rotation=labelrotation, ha='center')
+
+    if figfn:
+        plt.savefig(figfn, bbox_inches='tight', dpi=200)

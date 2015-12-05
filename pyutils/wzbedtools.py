@@ -17,7 +17,18 @@ class Bed1(object):
     def __repr__(self):
         return '\t'.join([self.chrm, str(self.beg), str(self.end)] + self.fields)
 
+    def dup(self):
+
+        d = Bed1()
+        d.chrm = self.chrm
+        d.beg  = self.beg
+        d.end  = self.end
+        d.fields = self.fields[:]
+
+        return d
+    
 def subtract(a, b):
+    """ this will return [] if subtract to nothing """
     beg_max = max(a.beg, b.beg)
     end_min = min(a.end, b.end)
     if a.end < b.beg or b.end < a.beg: # a, b non-overlap
@@ -89,7 +100,9 @@ def update_b1s(a, bbed, b1s):
 
 def main_subtract(args):
 
-    """ subtract A by B but appending original record of A """
+    """ subtract A by B but appending original record of A
+    both A and B are sorted
+    """
 
     a = Bed(args.a)
     b = Bed(args.b)
@@ -98,20 +111,28 @@ def main_subtract(args):
     while True:
         if a.nxt is None:
             break
-        a1 = a.nxt
-        b1s = update_b1s(a1, b, b1s)
+        a1 = a.nxt.dup()
+        b1s = update_b1s(a1, b, b1s) # element to be subtracted
         a1s = [a1]
-        for b1 in b1s:
+        for b1 in b1s:          # subtract each element
             _a1s = []
             for _a1 in a1s:
                 _a1s.extend(subtract(_a1, b1))
             a1s = _a1s
+            # print len(_a1s)
 
-        for a1 in a1s:
-            if args.v:
-                print '%s\t%s' % (a1, ','.join(['%d-%d' % (b1.beg,b1.end) for b1 in b1s]))
-            else:
-                print a1
+        if args.c:
+            cnts=0
+            for a1 in a1s:
+                cnts+=a1.end-a1.beg
+            print "%s\t%d" % ('\t'.join(a.nxt.fields), cnts)
+        else:
+            for a1 in a1s:
+                if args.v:
+                    # report all the elements subtracted
+                    print '%s\t%s' % (a1, ','.join(['%d-%d' % (b1.beg,b1.end) for b1 in b1s]))
+                else:
+                    print a1
         a.read1()
 
 def main_merge(args):
@@ -155,7 +176,7 @@ def main_sample(args):
         print line
 
 def main_space(args):
-    """ calculate space distance between (sorted) bed file recordds """
+    """ calculate space distance between (sorted) bed file records """
     p = None
     pc = None
     a = Bed(args.i)
@@ -190,7 +211,7 @@ def main_einclude(args):
                 break
         if isnew:
             included.append(a.nxt)
-            if len(included) >= args.n:
+            if args.n > 0 and len(included) >= args.n:
                 break
         a.read1()
 
@@ -203,9 +224,9 @@ if __name__ == "__main__":
     subparsers = parser.add_subparsers()
 
     parser_subtract = subparsers.add_parser('subtract', help='subtract A by B, append original record of A')
-    parser_subtract.add_argument('-t', help="data table", type = argparse.FileType('r'), default='-')
     parser_subtract.add_argument('-a', required=True, type=argparse.FileType('r'), help='file to subtract from')
     parser_subtract.add_argument('-b', required=True, type=argparse.FileType('r'), help='file to subtract')
+    parser_subtract.add_argument('-c', action='store_true', help='report base count only')
     parser_subtract.add_argument('-v', action='store_true', help='verbose')
     parser_subtract.set_defaults(func=main_subtract)
 
@@ -224,11 +245,10 @@ if __name__ == "__main__":
     parser_space.add_argument('-i', type=argparse.FileType('r'), default='-', help='input bed file')
     parser_space.add_argument('-o', help='output', default=sys.stdout)
     parser_space.set_defaults(func=main_space)
-
     
     parser_einclude = subparsers.add_parser('einclude', help='sequential even include')
     parser_einclude.add_argument('-i', type=argparse.FileType('r'), default='-', help='input table')
-    parser_einclude.add_argument('-n', type=int, required=True, help='number of inclusion')
+    parser_einclude.add_argument('-n', type=int, default=-1, help='number of inclusion (-1 for infinity)')
     parser_einclude.add_argument('-d', type=int, default=100, help='spacing (100bp)')
     parser_einclude.add_argument('-o', help='output', default=sys.stdout)
     parser_einclude.set_defaults(func=main_einclude)

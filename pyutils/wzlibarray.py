@@ -202,7 +202,7 @@ def discretize(df, upthres=0.8, dwthres=0.2):
     df_bin = df_bin.applymap(_discretize)
     return df_bin
 
-def take_segment_mean(df, probe2seg, min_support=10):
+def take_segment_mean(df, probe2seg, min_support=10, quiet=False):
 
     _df_seg = df.copy()
     if isinstance(_df_seg, pd.Series):
@@ -211,7 +211,8 @@ def take_segment_mean(df, probe2seg, min_support=10):
     _df_seg_gb = _df_seg.groupby('seg')
     df_seg_count = _df_seg_gb.count().iloc[:,0]
     df_seg_mean = _df_seg_gb.mean()[df_seg_count >= min_support]
-    wzcore.err_print('There are %d segments well supported.' % df_seg_mean.shape[0])
+    if not quiet:
+        wzcore.err_print('There are %d segments well supported.' % df_seg_mean.shape[0])
 
     return df_seg_mean
 
@@ -622,7 +623,7 @@ def data_load_tissue(source):
         betas = pd.read_table('/Users/wandingzhou/projects/hs-tcga/2015_03_18_tumor_purity/GSE52025_Wagner_fibroblast/GSE52025_betas.tsv',sep='\t')
         betas.columns = 'fibroblast_'+betas.columns.map(str)
 
-    if source == 'Reinus':
+    if source == 'Reinus':      # blood
         betas = pd.read_table('/Users/wandingzhou/projects/hs-tcga/data/2015_04_10_sorted_cell_population/blood_beta.tsv', sep='\t')
         names = pd.read_table('/Users/wandingzhou/projects/hs-tcga/data/2015_04_10_sorted_cell_population/Sorted_Blood/sample_sheet_IDAT.csv.unix.tsv',index_col='barcode')
         betas.columns = names.loc[betas.columns,'Type']+'-'+betas.columns
@@ -645,17 +646,19 @@ def data_create_tissue_sample():
     return betas, samples
     
 
-def data_load_commonPMD(commonfn='/Users/wandingzhou/projects/hs-tcga/2015_05_04_pmd/stringent_common_probes'):
+def data_load_commonPMD(commonfn='/Users/wandingzhou/projects/hs-tcga/2015_10_12_Huy_segments/common_probes'):
+    # commonfn='/Users/wandingzhou/projects/hs-tcga/2015_05_04_pmd/stringent_common_probes'):
 
     commons = pd.read_table(commonfn, sep='\t',header=None, index_col=3)
-    commons.rename(columns={5:'segments', 4:'MD',0:'chrm',1:'beg',2:'end'}, inplace=True)
-    seg2MD = makedict(commons, 'segments', 'MD')
+    commons.rename(columns={5:'domain', 4:'domaintype', 0:'chrm',1:'beg',2:'end'},
+                   inplace=True)
+    seg2MD = makedict(commons, 'domain', 'domaintype')
     return commons, seg2MD
 
-def data_load_WGBS_betas_common_PMD(commonfn='/Users/wandingzhou/projects/hs-tcga/2015_05_04_pmd/stringent_common_probes'):
+def data_load_WGBS_betas_common_PMD(commonfn='/Users/wandingzhou/projects/hs-tcga/2015_10_12_Huy_segments/common_probes'):
+    # commonfn='/Users/wandingzhou/projects/hs-tcga/2015_05_04_pmd/stringent_common_probes'):
 
     commons, seg2MD = data_load_commonPMD(commonfn)
-
     betas, cancer_types = data_load_WGBS_betas(commons.index)
     return betas, cancer_types, commons, seg2MD
 

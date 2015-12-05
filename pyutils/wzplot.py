@@ -48,7 +48,7 @@ def parse_indices(indstr):
     return indices
 
 
-colorcycle = ['DarkSlateGray', 'Brown', 'Burlywood', 'DarkSlateBlue', 'yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'y', 'k', 'c', 'g']
+colorcycle = ['k', 'DarkSlateGray', 'Brown', 'Burlywood', 'DarkSlateBlue', 'yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'y', 'k', 'c', 'g']
 ccycle = itertools.cycle(colorcycle)
 mpl.rcParams['axes.color_cycle'] = colorcycle
 
@@ -405,9 +405,9 @@ def _hist_oneplot(args):
         if len(coords)>8:
             inds = map(int, np.linspace(0, len(coords)-1, 8))
             inds = sorted(set(inds))
-            plt.xticks([coords[_] for _ in inds], [int(locs[_]) for _ in inds])
+            plt.xticks([coords[_] for _ in inds], [int(locs[_]) for _ in inds], rotation=args.xtlrotat)
         else:
-            plt.xticks(coords, locs)
+            plt.xticks(coords, locs, rotation=args.xtlrotat)
     else:
         plt.hist(data, bins=args.bins, log=args.log, linewidth=0, edgecolor='none', alpha=args.alpha, rwidth=0.9, facecolor=next(ccycle))
         plt.xticks(rotation=args.xtlrotat)
