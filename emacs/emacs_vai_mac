@@ -23,7 +23,8 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 						auto-mode-alist)
 						
 ;; (load-theme 'ample-zen t)
-(load-theme 'tsdh-light t)
+;; (load-theme 'tsdh-light t)
+(load-theme 'leuven t)
 
 (setq-default indent-tabs-mode nil)
 

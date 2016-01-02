@@ -1,0 +1,22 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: zreadf
+# key: zreadf
+# binding: direct-keybinding
+# --
+kstring_t line;
+line.l = line.m = 0; line.s = 0;
+
+FILE *fh = open(argv[1],"r");
+while (1) {
+  int c=fgetc($1);
+  if (c=='\n' || c==EOF) {
+    $0
+    line.l = 0;
+    if (c==EOF) {
+      break;
+    }
+  } else {
+    kputc(c, &line);
+  }
+  free(line.s);
+}

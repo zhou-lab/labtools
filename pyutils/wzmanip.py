@@ -437,10 +437,12 @@ def main_classify(args):
 
 def main_dedupmax(args):
 
+    k_ind = parse_indices(args.k)
     k2v = {}
     for line in args.t:
         fields = line.strip().split(args.delim)
-        k = fields[args.k-1]
+        # k = fields[args.k-1]
+        k = tuple(k_ind.extract(fields))
         v = (float(fields[args.v-1]), fields)
         if k in k2v:
             if k2v[k][0] < v[0]:
@@ -482,7 +484,7 @@ def main_sample(args):
             ak = len(v)
         else:
             ak = args.k
-        for l in random.sample(v, ak):
+        for l in set(random.sample(v, ak)):
             pipeprint(l.strip('\n'))
 
 def main_dupcompress(args):
@@ -843,7 +845,7 @@ if __name__ == '__main__':
 
     parser_dupmax = subparsers.add_parser("dedupmax", help="remove dup in one column by maxing a column")
     parser_dupmax.add_argument('-t',type=argparse.FileType('r'), default='-')
-    parser_dupmax.add_argument('-k', type=int, required=True, help="column to dedup (1-based)")
+    parser_dupmax.add_argument('-k', default=None, required=True, help="column to dedup (1-based), e.g., 1,3,5")
     parser_dupmax.add_argument('-v', type=int, required=True, help="column to maximize (1-based)")
     parser_dupmax.add_argument('-rk', action='store_true', help="no output of key")
     parser_dupmax.add_argument('--delim', default="\t", help="table delimiter [\\t]")

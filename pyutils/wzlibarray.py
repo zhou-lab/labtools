@@ -332,6 +332,7 @@ class MutData():
 
         wzplotlib.row_stack_layout(cbs, figfile=outlier_fn)
 
+
 def filter_by_purity(betas, min_purity=0.8, keep_normal=True):
 
     Hui_annot = pd.read_csv('/Users/wandingzhou/projects/hs-tcga/data/2015_03_23_Hui_annotation/sampleAnnotSubWB20130619.tsv', index_col=1, error_bad_lines=False, sep='\t')

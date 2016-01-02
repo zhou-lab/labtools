@@ -50,9 +50,10 @@ data.load.blood <- function() {
 
 split.tumor.normal <- function(df) {
   r <- list();
-  r$tumor <- df[,substring(colnames(df),14,14)=='0'];
-  r$normal <- df[,substring(colnames(df),14,14)=='1'];
-  r$cellline <- df[,substring(colnames(df),14,14)=='2'];
+  # as.matrix prevent reduction of matrix to array
+  r$tumor <- as.matrix(df[,substring(colnames(df),14,14)=='0']);
+  r$normal <- as.matrix(df[,substring(colnames(df),14,14)=='1']);
+  r$cellline <- as.matrix(df[,substring(colnames(df),14,14)=='2']);
   return(r);
 }
 

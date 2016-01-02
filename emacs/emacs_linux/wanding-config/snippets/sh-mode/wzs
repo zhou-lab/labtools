@@ -1,0 +1,18 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: wzs
+# key: wzs
+# binding: direct-keybinding
+# --
+base=$(pwd);
+[[ -d pbs ]] || mkdir pbs
+for f in $1/*.$1; do
+  fn=$(readlink -f $f)
+  bfn=$(basename $f .$1)
+  cmd="
+$0
+"
+  jobname="$3_$bfn"
+  pbsfn=$base/pbs/$jobname.pbs
+  pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
+  [[ \$1 == "do" ]] && qsub $pbsfn
+done

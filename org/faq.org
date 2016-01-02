@@ -3133,6 +3133,15 @@ and follows the instruction
 do
 Renv rehash
 every time you install a new R binary
+*** example: add R3.0.2
+wget https://cran.cnr.berkeley.edu/src/base/R-3/R-3.0.2.tar.gz
+./configure --prefix=/home/wanding.zhou/.Renv/versions/3.0.2
+export JAVA_HOME=/primary/vari/software/java/jdk1.7.0_40 # somehow the java home is not correctly setup
+make
+make install
+
+# switch R version
+Renv shell 3.2.2
 ** Bioconductor
 *** basics
 **** install bioconductor
@@ -3310,6 +3319,24 @@ The enclosing environment determines how the function finds values; the binding 
 fetch pattern
 txt <- "aaa12xxx"
 regmatches(txt,regexpr("[0-9]+",txt))
+*** peek into an object using "str", "class" and "typeof"
+**** to figure out what an object is using "str" (short for "structure" NOT for "string")
+str()
+**** to figure out the elementary type an object is built based on (most likely a list) using "typeof"
+mod <- lm(mpg~wt, data=mtcars)
+> typeof(mod)
+#> [1] "list"
+
+# for example, data.frame is a S3-structure, 
+#+BEGIN_SRC R
+typeof(df)
+#> [1] "list"
+class(df)
+#> [1] "data.frame"
+is.data.frame(df)
+#> [1] TRUE
+#+END_SRC
+**** "class" is an attribute, class() essentially display that attribute
 ** Data IO
 see R wiki for more options
 http://en.wikibooks.org/wiki/R_Programming/Importing_and_exporting_data
@@ -3538,25 +3565,26 @@ class
 
 factors can be seen as vector with "level" attribute.
 
-
 *** vector
 numeric, character, integer are all vectors
-**** create a numeric vector - numeric()
-e<-numeric()		create an empty numeric vector
-**** create a character vector - character()
-as.character(z)	convert to character
-**** create an integer vector - integer()
-as.integer(z)	convert to integer
-**** create empty vector
-list of empty character string vector is listed as character(0) and the empty numeric vector as numeric(0)
+**** sort a vector
+x <- c("b","c","a")
+order(x)
+#> [1] 3 1 2
+x[order(x)]
+#> [1] "a" "b" "c"
 **** take absolute value
+abs()
+or
 y[y<0]<- -y[y<0]
-has the same effect as y<- abs(y)
 **** repeat
 c(2,3)[rep(c(2,1),times=2)] gives 3 2 3 2
-y <- rep(x,times=5)
-y<- rep(x,each=5)
 
+rep(1:3,times=5)
+#> [1] 1 2 3 1 2 3 1 2 3 1 2 3 1 2 3
+
+rep(1:3,each=5)
+#> [1] 1 1 1 1 1 2 2 2 2 2 3 3 3 3 3
 **** how to create X1, Y2, X3, Y4 ... quickly
 labs<-paste(c("X","Y"),1:10,sep"")
 == c("X1", "Y2", "X3", "Y4", "X5", "Y6", "X7", "Y8", "X9", "Y10")
@@ -3642,144 +3670,72 @@ ma=match(cats, names(t))
 rev(vec)
 **** get index of an element in a vector
 which(vector == element_value)
-*** matrix
-**** make a matrix
-> m ← matrix(nrow=2, ncol=3)
-initialized to “NA”
-> m ← matrix(1:6, nrow=2, ncol=3)
-> m
-     [,1] [,2] [,3]
-[1,]    1    3    5
-[2,]    2    4    6
-matrix initialization is “column first” or “columnwise”
-> m ← 1:10
-> dim(m) ← c(2,5)
-> m
-     [,1] [,2] [,3] [,4] [,5]
-[1,]    1    3    5    7    9
-[2,]    2    4    6    8   10
+**** create a numeric vector - numeric()
+e<-numeric()		create an empty numeric vector
+**** create a character vector - character()
+as.character(z)	convert to character
+**** create an integer vector - integer()
+as.integer(z)	convert to integer
+**** create empty vector
+list of empty character string vector is listed as character(0) and the empty numeric vector as numeric(0)
+*** factor (factor is a special vector with attribute "levels" and "class")
 
-**** create a matrix
-diag(v) gives a diagonal matrix with elements of the vector as the diagonal entries.
-diag(M) gives the vector of main diagonal entries of M.
-diag(k) gives a k by k identity matrix
-**** create a matrix by concatenation
-cbind(arg_1,arg_2,arg_3,...) forms matrices by binding together matrices horizontally, or column-wise.
-rbind(arg_1,arg_2,arg_3,...) forms matrices by binding together matrices vertically, or row-wise.
-**** matrix multiplication
-"*" normal multiplication
-"%*%" matrix multiplication
+if something is a factor, then typing "something" will give levels information.Besides, typing "attributes(something)"will have "levels" option. So we can use levels(something)
 
-**** matrix transposition
-t() matrix transposition
+**** create label from factor
 
-**** cross product two vector
-crossprod(x,y)==t(x)%*%y
-**** dimension of a matrix
-> dim(m)
-[1] 2 5
+> f <- factor(c('a','b','a','a','a'))
+> f
+[1] a b a a a
+Levels: a b
+> c('F','M')[f]
+[1] "F" "M" "F" "F" "F"
 
-**** remove a column/row of a matrix
-d[,-5] deletes column 5
-mat[-3,] remove the 3rd row of the matrix
-t[-1,] remove the first row
+This is useful when you want to create colors and label for plots, e.g.,
+plot(md,pch=c('F','M')[pData(mldat)$Gender],col=c('red','blue')[pData(mldat)$Gender])
 
-**** remove several rows
-df[-(416:472), ]
+**** Ordered or unordered, represent categorical data
+> x ← factor(c(“yes”, “no”, “yes”, “no”, “yes”))
+> x
+[1] yes no  yes no  yes
+Levels: no yes
 
-**** Sort a data frame by a certain column
-sortd=d[with(d, order(-ratio)),]
+**** "table" - frequency count of factor levels
+> table(x)
+x
+ no yes
+ 2   3
 
-**** view attributes of objects, e.g., names, dimnames, dimensions, class, length are all attributes.
-> attributes(m)
-$dim
-[1] 2 3
+**** see the underlying representation of the factor (really an integer vector)
+> unclass(x)
+[1] 2 1 2 1 2
+attr(,"levels")
+[1] "no"  "yes"
+> attr(x,'levels')
+[1] "no"  "yes"
 
-**** cbind and rbind
-> x ← 1:3
-> y ← 10:12
-> cbind(x,y)
-     x  y
-[1,] 1 10
-[2,] 2 11
-[3,] 3 12
-> rbind(x,y) 
-  [,1] [,2] [,3]
-x    1    2    3
-y   10   11   12
+**** make something a factor:
+something<-factor(something)
 
-**** add two columns rowwise using cbind
-ctbl = cbind(tbl[,"Freq"], tbl[,"None"] + tbl[,"Some"])
+**** setup baseline level
+setup the baseline level, the baseline level would be the first level that is encountered in the “levels” option, otherwise it is determined by the alphabetic order.
+> x<-factor(c("yes","no", "yes", "no"), levels=c("yes","no"))
+> x
+[1] yes no  yes no 
+Levels: yes no
+if levels is not specified, “no” is before “yes” because “n” is before “y” in the alphabetic order.
+> y<-factor(c("yes","no", "yes", "no"))
+> y
+[1] yes no yes no 
+Levels: no yes
 
-**** matrix with dimnames (row names, column names)
-> m<-matrix(1:4, nrow=2,ncol=2)
-> dimnames(m)<-list(c('a','b'),c('c','d'))
-> m
-  c d
-a 1 3
-b 2 4
+**** generate factor levels
+> f<-gl(40,10)
+generate forty factor levels (each labeled as an integer), each level is repeated 10 times.
 
-**** get or set the names of rows and columns
-rownames(matrix)
-colnames(matrix)
-
-can also use dimnames(matrix),where
-"rownames()" is equivalent to "dimnames(matrix)[ [1] ]"
-"colnames()" is equivalent to "dimnames(matrix)[ [2] ]"
-actually [[]] can be substituted by []
-dimnames() is built for high dimensional matrix e.g. 3,4...
-
-colnames(data)<-c('Apple','Orange')
-colnames(data)<-"Q"
-
-**** build matrix by column
-matrix <- cbind(column1 = 3, column2 = c(4:1,2:5))
-
-**** apply on rows/columns
-col.sums <- apply(matrix,2,sum)
-row.sums <- apply(matrix,1,sum)
-
-**** use sweep to normalize data
-
-#+BEGIN_SRC R
-x <- sweep(x, 2, rowMeans(x, na.rm = na.rm))
-sx <- apply(x, 1, sd, na.rm = na.rm)
-x <- sweep(x, 1, sx, "/")
-#+END_SRC
-
-**** subset a matrix
-> x<-matrix(1:6,2,3)
-> x[1,2]
-[1] 3
-> x[2,1]
-[1] 2
-> x[1,]
-[1] 1 3 5
-> x[,2]
-[1] 3 4
-
-by default when a matrix is subsetted, one get a vector instead of a matrix, if one wants a submatrix, specify drop=FALSE
-> x[1,]
-[1] 1 3 5
-> x[1,,drop=FALSE]
-     [,1] [,2] [,3]
-[1,]    1    3    5
-
-**** vectorized operations
-> x <- matrix(1:4, 2, 2); y <- matrix(rep(10, 4), 2, 2) 
-> x * y ## element-wise multiplication 
-   [,1] [,2] 
-[1,] 10 30 
-[2,] 20 40 
-> x / y 
-   [,1] [,2] 
-[1,] 0.1 0.3 
-[2,] 0.2 0.4 
-> x %*% y ## true matrix multiplication 
-   [,1] [,2] 
-[1,] 40 40 
-[2,] 60 60
-
+**** convert factors to numeric
+t3<-as.numeric(as.character(f))
+Or more efficiently, as.numberic(levels(f))[as.integer(f)]
 *** list
 List can mix objects of different types
 > x ← list(1, “a”, TRUE, 1+4i)
@@ -3886,65 +3842,141 @@ List <- list()
 for(i in 1:3){
   List[as.character(i)] <- list(sample(1:3))
 }
+*** matrix (matrix is a special case of "array" which is by itself vector with attribute "dim"). "array"s are in fact nd-arrays.
+**** make a matrix
+> m ← matrix(nrow=2, ncol=3)
+initialized to “NA”
+> m ← matrix(1:6, nrow=2, ncol=3)
+> m
+     [,1] [,2] [,3]
+[1,]    1    3    5
+[2,]    2    4    6
+matrix initialization is “column first” or “columnwise”
+> m ← 1:10
+> dim(m) ← c(2,5)
+> m
+     [,1] [,2] [,3] [,4] [,5]
+[1,]    1    3    5    7    9
+[2,]    2    4    6    8   10
 
-*** factor
+**** create a matrix
+diag(v) gives a diagonal matrix with elements of the vector as the diagonal entries.
+diag(M) gives the vector of main diagonal entries of M.
+diag(k) gives a k by k identity matrix
+**** create a matrix by concatenation
+cbind(arg_1,arg_2,arg_3,...) forms matrices by binding together matrices horizontally, or column-wise.
+rbind(arg_1,arg_2,arg_3,...) forms matrices by binding together matrices vertically, or row-wise.
+**** matrix multiplication
+"*" normal multiplication
+"%*%" matrix multiplication
 
-if something is a factor, then typing "something" will give levels information.Besides, typing "attributes(something)"will have "levels" option. So we can use levels(something)
+**** matrix transposition
+t() matrix transposition
 
-**** create label from factor
+**** cross product two vector
+crossprod(x,y)==t(x)%*%y
+**** dimension of a matrix
+> dim(m)
+[1] 2 5
 
-> f <- factor(c('a','b','a','a','a'))
-> f
-[1] a b a a a
-Levels: a b
-> c('F','M')[f]
-[1] "F" "M" "F" "F" "F"
+**** remove a column/row of a matrix
+d[,-5] deletes column 5
+mat[-3,] remove the 3rd row of the matrix
+t[-1,] remove the first row
 
-This is useful when you want to create colors and label for plots, e.g.,
-plot(md,pch=c('F','M')[pData(mldat)$Gender],col=c('red','blue')[pData(mldat)$Gender])
+**** remove several rows
+df[-(416:472), ]
 
-**** Ordered or unordered, represent categorical data
-> x ← factor(c(“yes”, “no”, “yes”, “no”, “yes”))
-> x
-[1] yes no  yes no  yes
-Levels: no yes
+**** view attributes of objects, e.g., names, dimnames, dimensions, class, length are all attributes.
+> attributes(m)
+$dim
+[1] 2 3
 
-**** frequency count of factor levels
-> table(x)
-x
- no yes
- 2   3
+**** cbind and rbind
+> x ← 1:3
+> y ← 10:12
+> cbind(x,y)
+     x  y
+[1,] 1 10
+[2,] 2 11
+[3,] 3 12
+> rbind(x,y) 
+  [,1] [,2] [,3]
+x    1    2    3
+y   10   11   12
 
-**** see the underlying representation of the factor (really an integer vector)
-> unclass(x)
-[1] 2 1 2 1 2
-attr(,"levels")
-[1] "no"  "yes"
-> attr(x,'levels')
-[1] "no"  "yes"
+**** add two columns rowwise using cbind
+ctbl = cbind(tbl[,"Freq"], tbl[,"None"] + tbl[,"Some"])
 
-**** make something a factor:
-something<-factor(something)
+**** matrix with dimnames (row names, column names)
+> m<-matrix(1:4, nrow=2,ncol=2)
+> dimnames(m)<-list(c('a','b'),c('c','d'))
+> m
+  c d
+a 1 3
+b 2 4
 
-**** setup baseline level
-setup the baseline level, the baseline level would be the first level that is encountered in the “levels” option, otherwise it is determined by the alphabetic order.
-> x<-factor(c("yes","no", "yes", "no"), levels=c("yes","no"))
-> x
-[1] yes no  yes no 
-Levels: yes no
-if levels is not specified, “no” is before “yes” because “n” is before “y” in the alphabetic order.
-> y<-factor(c("yes","no", "yes", "no"))
-> y
-[1] yes no yes no 
-Levels: no yes
+**** get or set the names of rows and columns
+rownames(matrix)
+colnames(matrix)
 
-**** generate factor levels
-> f<-gl(40,10)
-generate forty factor levels (each labeled as an integer), each level is repeated 10 times.
+can also use dimnames(matrix),where
+"rownames()" is equivalent to "dimnames(matrix)[ [1] ]"
+"colnames()" is equivalent to "dimnames(matrix)[ [2] ]"
+actually [[]] can be substituted by []
+dimnames() is built for high dimensional matrix e.g. 3,4...
 
-**** convert factors to numeric
-t3<-as.numeric(as.character(f))
-Or more efficiently, as.numberic(levels(f))[as.integer(f)]
+colnames(data)<-c('Apple','Orange')
+colnames(data)<-"Q"
+
+**** build matrix by column
+matrix <- cbind(column1 = 3, column2 = c(4:1,2:5))
+
+**** apply on rows/columns
+col.sums <- apply(matrix,2,sum)
+row.sums <- apply(matrix,1,sum)
+
+**** use sweep to normalize data
+
+#+BEGIN_SRC R
+x <- sweep(x, 2, rowMeans(x, na.rm = na.rm))
+sx <- apply(x, 1, sd, na.rm = na.rm)
+x <- sweep(x, 1, sx, "/")
+#+END_SRC
+
+**** subset a matrix
+> x<-matrix(1:6,2,3)
+> x[1,2]
+[1] 3
+> x[2,1]
+[1] 2
+> x[1,]
+[1] 1 3 5
+> x[,2]
+[1] 3 4
+
+by default when a matrix is subsetted, one get a vector instead of a matrix, if one wants a submatrix, specify drop=FALSE
+> x[1,]
+[1] 1 3 5
+> x[1,,drop=FALSE]
+     [,1] [,2] [,3]
+[1,]    1    3    5
+
+**** vectorized operations
+> x <- matrix(1:4, 2, 2); y <- matrix(rep(10, 4), 2, 2) 
+> x * y ## element-wise multiplication 
+   [,1] [,2] 
+[1,] 10 30 
+[2,] 20 40 
+> x / y 
+   [,1] [,2] 
+[1,] 0.1 0.3 
+[2,] 0.2 0.4 
+> x %*% y ## true matrix multiplication 
+   [,1] [,2] 
+[1,] 40 40 
+[2,] 60 60
+
 *** data frame
 heterogenous columns, as opposed to matrix.
 **** convert data frame to numeric matrix
@@ -3999,6 +4031,10 @@ bubba<-data.frame(first=a second=b f=levels)
 **** add new column
 >saida["MY_NEW_COLUMN"] <- NA # That creates the new column named "MY_NEW_COLUMN" filled with "NA"
 >saida$MY_NEW_COLUMN <- saida$C - saida$D  # As an example, the new column receives the result of C - D
+or
+cbind(df, data.frame(z=3:1))
+**** add a new row
+rbind(df, data.frame(column1=10, column2="z"))
 **** rownames (or row.names) and colnames
 **** rename column of data frame
 names(d)[4]='ratio'
@@ -4118,12 +4154,14 @@ df[sample(1:nrow(df), 10),]
 or
 df[sample(seq(1:nrow(df)), 10),]
 
-**** Build contigency table
+**** build contigency table
 table(vec)
 table(vec,vec2) 2-d contingency table(matrix)
 
 **** merge two data frame on common column
 merge(probes.sampled, sampledata, by.x="pname", by.y="Composite Element REF")
+**** sort a data frame by a certain column
+sortd=d[with(d, order(-ratio)),]
 *** data.table - contingency table
 **** table - create table from vector
 a<-c("Sometimes","Sometimes","Never","Always","Always","Sometime","Sometimes","Never")
@@ -4538,12 +4576,14 @@ function (x, na.rm = FALSE)
 > sd(na.rm = FALSE, mydata)
 
 *** lazy evaluation
-f ← function(a, b) {
+
+#+BEGIN_SRC R
+f <- function(a, b) {
 	a^2
 }
 f(2) # function call OK!
 
-f ← function(a, b) {
+f <- function(a, b) {
 	print(a)
 	print(b)
 }
@@ -4554,6 +4594,7 @@ f(45) # function call Error!
 myplot ← function(x, y, type=”l”, …) {
 	plot(x, y, type = type, …)
 }
+#+END_SRC
 
 *** generic function
 > mean
@@ -4652,7 +4693,7 @@ printmessage <- function(x) {
 }
 
 “print” function will return the string it prints
-** object
+** object-oriented programming
 unclass()	remove the class attribute of an object
 *** set attributes
 attr(z,"dim")<-c(10,10)		treat z as a 10 by 10 matrix
@@ -5158,23 +5199,23 @@ print(xt, include.rownames=FALSE, align='cr')
 ***** file
 ***** header
 ***** sep
-       default to space
+default to space
 ***** colClasses=c("character", "integer", "numeric")
-       this may speed the data import
-       e.g., colClasses=”numeric”
+this may speed the data import
+e.g., colClasses=”numeric”
 ***** nrows
 ***** comment.char
-       default to “#”, set comment.char=”” if there are no commented lines in your file.
+default to “#”, set comment.char=”” if there are no commented lines in your file.
 ***** skip
-       the number of lines to skip from the beginning
+the number of lines to skip from the beginning
 ***** stringsAsFactors
-       hould character variables be coded as factors?
+hould character variables be coded as factors?
 **** read.table("clipboard")
-      Read table from clipboard
-      read.table(“clipboard”)
-      One can copy a region in Excel then use this command to import to R.
+Read table from clipboard
+read.table(“clipboard”)
+One can copy a region in Excel then use this command to import to R.
 **** handle large data
-      d.full=read.table('/home/wanding/sync/project_HGT/data2/2013_02_04_eval2alen.tab', header=T, comment.char="", colClasses=c("character", "integer", "numeric"), stringsAsFactors=F)
+d.full=read.table('/home/wanding/sync/project_HGT/data2/2013_02_04_eval2alen.tab', header=T, comment.char="", colClasses=c("character", "integer", "numeric"), stringsAsFactors=F)
 ** scripting
 *** Old style: R CMD BATCH --args my_arg
 *** New style: ./script.R my_arg
@@ -5182,10 +5223,7 @@ print(xt, include.rownames=FALSE, align='cr')
 args<-(commandArgs(TRUE))
 args
 "lalala"
-** other
-*** time your code
-system.time(yourcodehere)
-*** how to create package
+** packaging
 http://cran.r-project.org/doc/contrib/Leisch-CreatingPackages.pdf
 
 to build the package tarball
@@ -5205,124 +5243,7 @@ what "build and reload" in Rstudio do
 3. Restarts the underlying R session to ensure a clean environment for re-loading the package.
 4. Reloads the package in the new R session by executing the library function.
 
-*** set default packages that are loaded on start
-options(defaultPackages=c(getOption("defaultPackages"),
-       "mypackage1","mypackage2", ... [etc.]))
-*** type <- in Rstudio, emacs ESS
-RStudio ALT -
-emacs ESS SHIFT -
-*** convert to LaTeX table
-#+BEGIN_SRC R
-library(xtable)
-print(xtable(res), file="~/tab.tex", digits=2, floating=FALSE)
-#+END_SRC
-
-*** repress printing to console when a variable is not assigned
-*** Get working directory
-> getwd()
-
-*** list file in the working directory
-> dir()
-
-*** list object in the work space
-> ls()
-
-*** look for help
-?chisq.test
-
-*** display the internal structure of an R object using str
-diagnostic function and alternative to “summary”
-> str(str)
-function (object, ...)
-> str(lm)
-function (formula, data, subset, weights, na.action, method = "qr", 
-    model = TRUE, x = FALSE, y = FALSE, qr = TRUE, singular.ok = TRUE, 
-    contrasts = NULL, offset, ...)  
-> str(ls)
-function (name, pos = -1, envir = as.environment(pos), all.names = FALSE, 
-    pattern)  
-> x<-rnorm(100,2,4)
-> summary(x)
-   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
--6.0210 -0.6476  2.0160  2.1340  4.5160 14.4300 
-> str(x)
- num [1:100] -0.61 3.586 2.446 -0.265 2.366 …
-
-*** Scoping rules
-to see the search paths (and their priorities). The global environment (or the user's workspace) is always the first on the search list and base package is always the last.
-> search()
- [1] ".GlobalEnv"        "tools:rstudio"     "package:stats"    
- [4] "package:graphics"  "package:grDevices" "package:utils"    
- [7] "package:datasets"  "package:methods"   "Autoloads"        
-[10] "package:base"   
-library() put the package to the second position of the search list
-> library(lattice)
-> search()
- [1] ".GlobalEnv"        "package:lattice"   "tools:rstudio"    
- [4] "package:stats"     "package:graphics"  "package:grDevices"
- [7] "package:utils"     "package:datasets"  "package:methods"  
-[10] "Autoloads"         "package:base"    
-function and non-function are separated. One can have a function c and a object called c simultaneously.
-
-*** Lexical scoping
-the values of free variables are searched for in the environment in which the function was defined.
-A function + an environment = a closure or function closure.
-Keep looking back in the search list.
-> f<-function(x) {x*x}
-> environment(f)
-<environment: R_GlobalEnv>
-> parent.env(environment(f))
-<environment: package:lattice>
-attr(,"name")
-[1] "package:lattice"
-attr(,"path")
-[1] "/usr/lib/R/library/lattice"
-
-*** free variables are searched in the parent closure
-> make.power <- function(n) {pow <-function(x) {x^n}; pow}
-> cube <- make.power(3)
-> square <- make.power(2)
-> cube(3)
-[1] 27
-> square(3)
-[1] 9
-> ls(environment(cube))
-[1] "n"   "pow"
-> get('n',environment(cube))
-[1] 3
-> ls(environment(square))
-[1] "n"   "pow"
-> get('n',environment(square))
-[1] 2
-
-*** debugging tools
-Message, warning, error, condition
-condition: a generic concept for indicating that something unexpected can occur; programmers can create their own conditions.
-Warning
->log(-1)
-[1] NaN
-Warning message: 
-In log(-1) : NaNs produced 
-
-*** traceback
-prints out the function call stack, does nothing if there's no error
-> mean(x)
-Error in mean(x) : object 'x' not found
-> traceback()
-1: mean(x)
-or
-> lm(y~x)
-Error in eval(expr, envir, enclos) : object 'y' not found
-> traceback()
-7: eval(expr, envir, enclos)
-6: eval(predvars, data, env)
-5: model.frame.default(formula = y ~ x, drop.unused.levels = TRUE)
-4: model.frame(formula = y ~ x, drop.unused.levels = TRUE)
-3: eval(expr, envir, enclos)
-2: eval(mf, parent.frame())
-1: lm(y ~ x)
-
-*** debug
+** debug
 flag a function for “debug” mode which allows you to step through execution of a function one line a time
 n: next line
 Q: quit
@@ -5344,9 +5265,96 @@ debug: ret.x <- x
 Browse[2]> n
 debug: ret.y <- y
 
-*** browser
+# what's Browse?
 suspend the execution of a function wherever it is called and puts the function in debug mode
 the browser is just like your R work space (interactive shell)
+
+Message, warning, error, condition
+condition: a generic concept for indicating that something unexpected can occur; programmers can create their own conditions.
+Warning
+>log(-1)
+[1] NaN
+Warning message: 
+In log(-1) : NaNs produced 
+
+*** traceback() 
+prints out the function call stack, does nothing if there's no error
+> mean(x)
+Error in mean(x) : object 'x' not found
+> traceback()
+1: mean(x)
+or
+> lm(y~x)
+Error in eval(expr, envir, enclos) : object 'y' not found
+> traceback()
+7: eval(expr, envir, enclos)
+6: eval(predvars, data, env)
+5: model.frame.default(formula = y ~ x, drop.unused.levels = TRUE)
+4: model.frame(formula = y ~ x, drop.unused.levels = TRUE)
+3: eval(expr, envir, enclos)
+2: eval(mf, parent.frame())
+1: lm(y ~ x)
+
+** other
+*** parallel
+#+BEGIN_SRC R
+mclapply(x, func)
+
+#+END_SRC
+*** display the internal structure of an R object using "str"
+diagnostic function and alternative to “summary”
+> str(str)
+function (object, ...)
+> str(lm)
+function (formula, data, subset, weights, na.action, method = "qr", 
+    model = TRUE, x = FALSE, y = FALSE, qr = TRUE, singular.ok = TRUE, 
+    contrasts = NULL, offset, ...)  
+> str(ls)
+function (name, pos = -1, envir = as.environment(pos), all.names = FALSE, 
+    pattern)  
+> x<-rnorm(100,2,4)
+> summary(x)
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+-6.0210 -0.6476  2.0160  2.1340  4.5160 14.4300 
+> str(x)
+ num [1:100] -0.61 3.586 2.446 -0.265 2.366 …
+*** time your code
+system.time(yourcodehere)
+
+*** search order of object/function name (Scoping rules)
+to see the search paths (and their priorities). The global environment (or the user's workspace) is always the first on the search list and base package is always the last.
+> search()
+ [1] ".GlobalEnv"        "tools:rstudio"     "package:stats"    
+ [4] "package:graphics"  "package:grDevices" "package:utils"    
+ [7] "package:datasets"  "package:methods"   "Autoloads"        
+[10] "package:base"   
+library() put the package to the second position of the search list
+> library(lattice)
+> search()
+ [1] ".GlobalEnv"        "package:lattice"   "tools:rstudio"    
+ [4] "package:stats"     "package:graphics"  "package:grDevices"
+ [7] "package:utils"     "package:datasets"  "package:methods"  
+[10] "Autoloads"         "package:base"    
+function and non-function are separated. One can have a function c and a object called c simultaneously.
+*** Lexical scoping
+the values of free variables are searched for in the environment in which the function was defined.
+A function + an environment = a closure or function closure.
+Keep looking back in the search list.
+#+BEGIN_SRC R
+> f<-function(x) {x*x}
+> environment(f)
+<environment: R_GlobalEnv>
+> parent.env(environment(f))
+<environment: package:lattice>
+attr(,"name")
+[1] "package:lattice"
+attr(,"path")
+[1] "/usr/lib/R/library/lattice"
+#+END_SRC
+
+*** set default packages that are loaded on start
+options(defaultPackages=c(getOption("defaultPackages"),
+       "mypackage1","mypackage2", ... [etc.]))
 
 *** recover
 allows you to modify the error behavior so that you can browse the function call stack
@@ -5367,6 +5375,50 @@ Selection: 1
 select a level in the call stack to see around, in this case, read.csv, for example. The control is handed over to browse.
 Called from: top level 
 Browse[1]> Q
+*** convert to LaTeX table
+#+BEGIN_SRC R
+library(xtable)
+print(xtable(res), file="~/tab.tex", digits=2, floating=FALSE)
+#+END_SRC
+
+*** list file in the working directory
+> dir()
+*** list files in current dir
+list.files(directory_name)
+list.files(pattern=".pairs")	list all the files satisfying some pattern in the current directory.
+file.show(filepath)	display the file indicated in the filepath
+*** list object in the work space
+> ls()
+
+*** set library path
+To change libPath temporarily:
+.libPaths(c("/usr/lib/R/library","/usr/share/R/library"))
+
+permanently add the library path:
+in ~/.Renviron add R_LIBS="home/wan/lib/R"
+
+*** free variables are searched in the parent closure
+> make.power <- function(n) {pow <-function(x) {x^n}; pow}
+> cube <- make.power(3)
+> square <- make.power(2)
+> cube(3)
+[1] 27
+> square(3)
+[1] 9
+> ls(environment(cube))
+[1] "n"   "pow"
+> get('n',environment(cube))
+[1] 3
+> ls(environment(square))
+[1] "n"   "pow"
+> get('n',environment(square))
+[1] 2
+
+*** use html help
+options(htmlhelp=FALSE)
+*** type <- in Rstudio, emacs ESS
+RStudio ALT -
+emacs ESS SHIFT -
 
 *** edit spreadsheet manually
 x <- edit(data.frame()) # Starts empty GUI spreadsheet editor for manual data entry
@@ -5374,7 +5426,7 @@ x <- edit(x) # Opens existing data frame (table) 'x' in GUI spreadsheet editor.
 x <- scan(w="c") # Lets you enter values from the keyboard or by copy&paste and assigns them to vector 'x'.
 *** get help
 example(topic)
-
+?chisq.test
 ?help.search("chi-square")	fuzzy-match search for chi-square
 help.search(igraph)	to search for topic in documents
 help("[[")
@@ -5384,27 +5436,9 @@ vignette("sandwich")	## a brief introduction to the package sandwich
 attach(data1)	使data1的列自动储入，无须data1$...
 *** clear workspace
 rm(list=ls())
-*** change directory
+*** change directory, get working directory
 getwd()
 setwd(dir)
-
-*** set library path
-To change libPath temporarily:
-.libPaths(c("/usr/lib/R/library","/usr/share/R/library"))
-
-permanently add the library path:
-in ~/.Renviron add R_LIBS="home/wan/lib/R"
-
-*** use html help
-options(htmlhelp=FALSE)
-*** list files in current dir
-list.files(pattern=".pairs")	list all the files satisfying some pattern in the current directory.
-file.show(filepath)	display the file indicated in the filepath
-** parallel
-#+BEGIN_SRC R
-mclapply(x, func)
-
-#+END_SRC
 
 * Python
 ** pdb debugger

@@ -1,0 +1,6 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: sort
+# key: sort
+# binding: direct-keybinding
+# --
+LC_ALL=C sort -k1,1 -k2,2n -T 

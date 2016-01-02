@@ -1571,7 +1571,7 @@ def normal_tumor_with_contrast_layout(cd_tumor, cd_normal=None, cd_tumor_contras
 def savefig(fn):
     plt.savefig(fn, bbox_inches='tight', dpi=150)
 
-def violin(data, colors=None, labels=None, bw=0.4, cut=2, gridsize=1000, poses=None, dwidth=0.5):
+def violin(data, colors=None, labels=None, bw=0.4, cut=2, gridsize=1000, poses=None, dwidth=0.5, dmin=None, dmax=None):
     # data must be [pd.Series/[],]
     # res = plt.violinplot(data, showextrema=False, bw_method="silverman")
     # res = plt.violinplot(data, showextrema=False, bw_method="scott")
@@ -1589,8 +1589,8 @@ def violin(data, colors=None, labels=None, bw=0.4, cut=2, gridsize=1000, poses=N
     for i, datum in enumerate(data):
         kde = gaussian_kde(datum, bw)
         bw2 = bw*np.std(datum, ddof=1)
-        support_min = np.min(datum) - bw2 * cut
-        support_max = np.max(datum) + bw2 * cut
+        support_min = (np.min(datum) - bw2 * cut) if dmin is None else dmin
+        support_max = (np.max(datum) + bw2 * cut) if dmax is None else dmax
         support = np.linspace(support_min, support_max, gridsize)
         density = kde.evaluate(support)
         supports.append(support)
@@ -1613,7 +1613,7 @@ def violin(data, colors=None, labels=None, bw=0.4, cut=2, gridsize=1000, poses=N
         plt.xlim(min(poses)-0.5, max(poses)+0.5)
 
 
-def boxplot(data, figsize=(8,5), labels=None, figfn=None,
+def boxplot(data, figsize=(8,5), labels=None, figfn=None, alpha=0.7, outlier=True,
             labelrotation=45, plotmean=False, alternatingcolor=False, title=None, xlabel=None, ylabel=None):
 
     from matplotlib.patches import Polygon
@@ -1622,12 +1622,12 @@ def boxplot(data, figsize=(8,5), labels=None, figfn=None,
 
     ax = plt.gca()
     
-    bp = plt.boxplot(data, labels=None, notch=0, sym='+', vert=1, whis=1.5)
+    bp = plt.boxplot(data, labels=None, notch=0, sym='+', vert=1, whis=1.5, showfliers=outlier)
     plt.setp(bp['boxes'], color='black')
     plt.setp(bp['whiskers'], color='black')
     plt.setp(bp['fliers'], color='red', marker='+')
 
-    ax.yaxis.grid(True, linestyle='-', which='major', color='lightgrey', alpha=0.5)
+    # ax.yaxis.grid(True, linestyle='-', which='major', color='lightgrey', alpha=0.5)
 
     ax.set_axisbelow(True)
     if title:
@@ -1652,7 +1652,7 @@ def boxplot(data, figsize=(8,5), labels=None, figfn=None,
             boxCoords = list(zip(boxX, boxY))
             # Alternate between Dark Khaki and Royal Blue
             k = i % 2
-            boxPolygon = Polygon(boxCoords, facecolor=boxColors[k])
+            boxPolygon = Polygon(boxCoords, facecolor=boxColors[k], alpha=alpha)
             ax.add_patch(boxPolygon)
             # Now draw the median lines back over what we just filled in
             med = bp['medians'][i]
@@ -1671,7 +1671,7 @@ def boxplot(data, figsize=(8,5), labels=None, figfn=None,
         ax.set_xlim(0.5, numBoxes+0.5)
 
     if labels:
-        ax.set_xticks([_+0.5 for _ in xrange(len(labels))])
+        ax.set_xticks([_+1 for _ in xrange(len(labels))])
         ax.set_xticklabels(labels, rotation=labelrotation, ha='center')
 
     if figfn:

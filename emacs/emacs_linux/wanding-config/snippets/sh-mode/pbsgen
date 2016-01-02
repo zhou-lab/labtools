@@ -1,0 +1,12 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: pbsg
+# key: pbsg
+# binding: direct-keybinding
+# --
+cmd="
+$0
+"
+jobname="$1"
+pbsfn=$base/pbs/$jobname.pbs
+pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour ${2:12} -memG ${3:10} -ppn ${4:1}
+[[ \$1 == "do" ]] && qsub $pbsfn
