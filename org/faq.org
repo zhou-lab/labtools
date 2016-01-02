@@ -5301,6 +5301,7 @@ Error in eval(expr, envir, enclos) : object 'y' not found
 mclapply(x, func)
 
 #+END_SRC
+
 *** display the internal structure of an R object using "str"
 diagnostic function and alternative to “summary”
 > str(str)

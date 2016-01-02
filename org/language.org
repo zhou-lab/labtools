@@ -1,29 +1,32 @@
 #+STARTUP: indent
 #+TAGS: memorize(a)
 
-* russian
-осень
-дождь
 * words and sentences
-Where would I have got it from?
+
+Where would I have got it from? Why would I have known it?
 
 Don't come any closer!
 
 I don't intend on wasting it.
 
-Where do you think you are going?
-What do you think you are doing?
+Where do you think you are going? What do you think you are doing? What makes you think that ...
 
-Last but foremost, our IHM approach lends itself in a straightforward manner to hypothesis  generation.
-what am I to do with these?
+Last but foremost, our IHM approach lends itself in a straightforward manner to hypothesis generation.
+
+What am I to do with these?
+
 It's a sensitive matter and Richard's asked for complete discretion.
-He's just shown he's willing to act of his own accord.
-My life was lent to me for on intent.
+
 I will honor your wish.
+
 I know this doesn't please you.
+
 The reader is cautioned that this nomenclature connotes neither the size nor functional characterization of these genomic elements
+HERE
 We can work on this first, meanwhile we can work on the technical contents.
+
 Right now, there isn't much of a limit on interactive jobs.
+
 To restate this: what is the probability distribution of the different coverage values on a set after X randomly, independently selected elements of the set?
 
 I'm not surprised that somebody orchestrating such a large illegal endeavor like The Pirate Bay had a built-in contingency plan for when he was arrested. I am a little surprised that the police would let him use his own phone though.
@@ -41,10 +44,20 @@ It wouldn't be nearly as expensive or invasive and gains a lot of ground in the 
 
 Absolutely brilliant! Now a toast to Peter Sunde as I watch the new episode of Game of Thrones.
 
-This is so James fucking Bond.
-
 There is a special place in hell for these people (assuming you believe in that sort of thing).
 
+Never forget that the lowest bidder made your weapon.
+
+The easiest way is always mined.
+
+The important things are always simple. The simple things are always hard.
+
+If the enemy is in range, so are you.
+
+Anything you do can get you shot, including doing nothing.
+
+** If it's stupid but it works, it's not stupid
+** Don't look conspicuous - it draws fire.
 ** come about, race on,
 My mind raced on: Was this a laboratory model of human helplessness, one that could be used to understand how it comes about
 ** how ... operate in cell
@@ -74,9 +87,9 @@ what afflicted those dogs
 ** our method will be advantageous
 ** not the solution to the problem, xxx is the problem
 In this case, government is not the solution to the problem. Government is the problem.
-** a conceptual extension of xxx to xxx :memorize:
+** a conceptual extension of xxx to xxx 
 The method developed here is a conceptual extension of this concept to the SFS
-** any specifics coming out of xxx     :memorize:
+** any specifics coming out of xxx
 but I don't remember any specifics coming out of it.
 ** in this regard,
 ** obstruct the advance of xxx
@@ -481,4 +494,7 @@ Even today, in some parts of China, it is common practice for a man to seek just
 2. But the elder mage's health was taxed by the rigors of the journey.
 
 1. Wesnoth seems to be slipping inexorably into chaos, as marauding orcs pour south across the Great River, and mysterious and deadly creatures roam the night.
+* russian
+осень
+дождь
 

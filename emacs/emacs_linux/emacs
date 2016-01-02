@@ -48,9 +48,9 @@
 (cua-mode t)
 
 ;; thesaurus
-(setq synonyms-file "~/.emacs.d/wanding-config/mthes10/mthesaur.txt")
-(setq synonyms-cache-file "~/.emacs.d/wanding-config/mthes10/mthesaur.txt.cache")
-(require 'synonyms)
+;; (setq synonyms-file "~/.emacs.d/wanding-config/mthes10/mthesaur.txt")
+;; (setq synonyms-cache-file "~/.emacs.d/wanding-config/mthes10/mthesaur.txt.cache")
+;; (require 'synonyms)
 
 ;; move page by page
 ;; (require 'pager)
@@ -177,7 +177,7 @@
  ;; If there is more than one, they won't work right.
  '(ansi-color-names-vector ["#3f3f3f" "#cc9393" "#7f9f7f" "#f0dfaf" "#8cd0d3" "#dc8cc3" "#93e0e3" "#dcdccc"])
  '(ansi-term-color-vector ["#3f3f3f" "#cc9393" "#7f9f7f" "#f0dfaf" "#8cd0d3" "#dc8cc3" "#93e0e3" "#dcdccc"])
- '(custom-safe-themes (quote ("ed81411169b1b3e3d4cfc39b09d68ea13e0ff7708dc5b9d0bedb319e071968ad" "2b5aa66b7d5be41b18cc67f3286ae664134b95ccc4a86c9339c886dfd736132d" "329719e6eb36a4e60bd8d5978d3c4610cf7e31e174df5c04cf425f0282052689" "04dd0236a367865e591927a3810f178e8d33c372ad5bfef48b5ce90d4b476481" "7fa9dc3948765d7cf3d7a289e40039c2c64abf0fad5c616453b263b601532493" "2fd1c7f994649d9f879521c4634bd8eddae866db9ff50269a9127b9f93b4e582" "628278136f88aa1a151bb2d6c8a86bf2b7631fbea5f0f76cba2a0079cd910f7d" "4cf3221feff536e2b3385209e9b9dc4c2e0818a69a1cdb4b522756bcdf4e00a4" "27470eddcaeb3507eca2760710cc7c43f1b53854372592a3afa008268bcf7a75" default)))
+ '(custom-safe-themes (quote ("9e1e2e7590c2f443c09a3f6240a05ada53f06566a6873c37eeae10d13dc372c9" "ed81411169b1b3e3d4cfc39b09d68ea13e0ff7708dc5b9d0bedb319e071968ad" "2b5aa66b7d5be41b18cc67f3286ae664134b95ccc4a86c9339c886dfd736132d" "329719e6eb36a4e60bd8d5978d3c4610cf7e31e174df5c04cf425f0282052689" "04dd0236a367865e591927a3810f178e8d33c372ad5bfef48b5ce90d4b476481" "7fa9dc3948765d7cf3d7a289e40039c2c64abf0fad5c616453b263b601532493" "2fd1c7f994649d9f879521c4634bd8eddae866db9ff50269a9127b9f93b4e582" "628278136f88aa1a151bb2d6c8a86bf2b7631fbea5f0f76cba2a0079cd910f7d" "4cf3221feff536e2b3385209e9b9dc4c2e0818a69a1cdb4b522756bcdf4e00a4" "27470eddcaeb3507eca2760710cc7c43f1b53854372592a3afa008268bcf7a75" default)))
  '(fci-rule-color "#383838")
  '(org-agenda-files (quote ("/home/wanding/wzlib/org"))))
 (custom-set-faces
