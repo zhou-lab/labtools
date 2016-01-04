@@ -3122,6 +3122,7 @@ gdb -q myfile 查看.o文件的内存映像
 #+BEGIN_SRC 
 readelf -aW <binary> | c++filt
 #+END_SRC
+
 * R
 :PROPERTIES:
 :VISIBILITY: children
@@ -3178,10 +3179,10 @@ getHistory(ob)
 #+BEGIN_SRC R
 qcplot(mldat, 'FIRST HYBRIDIZATION')
 #+END_SRC
+
 **** example - normalization
 only for GoldenGate platform
 #+BEGIN_SRC R
-
 mldat.norm <- normalizeMethyLumiSet(mldat)
 # looks at the median intensities in the methylated and unmethylated channels at very low and high beta values and sets these medians equal.
 #+END_SRC
@@ -3231,12 +3232,46 @@ se.exprs access standard error of expression from eSet class
 
 fData retrieves features
 ** basics
-*** what is S3 scheme of method dispatching?
+*** R is a functional programming language
+meaning that arguments to functions are assumed to be immutable (RC below is a violation). "Side effects" should be minimized.
+*** attributes of an R object
+every R object can have attributes attached to it
+
+attributes are named list of R
+
+to list all attributes
+attributes(obj)
+
+to access a specific attributes
+attr(obj,'aaa')
+or
+aaa(obj)
+
+"class" is an attribute of obj
+
+structure() function returns a new object with modified attributes
+structure(1:10, my_attribute='This is a vector')
+
+By default, most attributes are lost when modifying a vector
+Attributes that are NOT lost:
+names
+dimensions
+class
+
+factors can be seen as vector with "level" attribute.
+
+*** S3, S4, Reference Class (RC)
+S3 and S4 are "generic" function based. methods belong to function and are called depending on class of the argument. S4 is more formal than S3.
+RC is newest OO system in R. it's message-passing based. similar to C++, Java etc.
+*** S3 class
 S3 is a naming scheme of method dispatching (or method overload, or polymorphism or whatever you call it)
 
 S3 method means one have different method instantiation when applied to different S3 classes.
 
 it works by:
+replacing the function f by f.a when the first argument to f is an object of class "a". i.e.,
+f.A(other_args) === f(a, other_args) # and a is of class "A"
+
 setting the return value of a call to method "glm" to be "glm"
 print.glm is the specific version of print when it applies to object of class "glm"
 
@@ -3252,7 +3287,69 @@ find("acf")  #it's in the stats package
 stats:::print.acf
 #+END_SRC
 
+unclass()	remove the class attribute of an object
+# set attributes
+attr(z,"dim")<-c(10,10)		treat z as a 10 by 10 matrix
+
+**** define S3 class
+All you need in defining a S3 class object is to add the "class" attribute by
+foo <- structure(list(), class="Foo")
+or
+foo <- list()
+class(foo) <- "Foo"
+
+the "class" attribute can be a vector, for example glm object is of class c("glm", "lm")
+meaning that object is a glm class object which is also inherited from lm class. The vector describe 
+the object from most specific (leftmost) to the least specific (rightmost).
+**** determine the class of an object using "inherits"
+inherits(foo, "Foo")
+#> [1] TRUE
+
+**** constructor of the class objects
+Most built-in S3 class has an constructor function of the same name as the class name:
+Foo <- function(x) {
+ if (!is.numeric(x)) stop("X must be numeric")
+ structure(list(x), class="foo")
+}
+
+**** declare an S3 "generic" function and its instantiations (called "method" in R)
+# Use "UseMethod" to declare a "generic"
+f <- function(x) UseMethod("f")
+
+# instantiation, must follow the correct naming scheme "generic.class"
+f.a <- function(x) "Class a" # this just return the character array "Class a" of length 1
+
+a <- structure(list(), class="a")
+class(a)
+#> [1] "a"
+f(a)
+#> [1] Class a"
+
+**** add a method to existing generic, e.g., "mean"
+
+mean.a <- function(x) "a"
+mean(a)
+#> [1] "a"
+
+**** how methods are dispatched along the class hierarchy?
+
+f <- function(x) UseMethod("f")
+f.a <- function(x) "Class a"
+f.default <- function(x) "Unknown class"
+
+f(structure(list(), class="a"))
+#> [1] "Class a"
+
+# no method for class b, so use method for class a
+f(structure(list(), class=c("b","a")))
+#> [1] "Class a"
+
+f(structure(list(), class="c"))
+#> [1] "Unknown class"
+
 *** S4 class
+
+Note that similar to S3 class, S4 class method still belongs to function, instead of class.
 
 see http://www.cyclismo.org/tutorial/R/s4Classes.html
 
@@ -3276,25 +3373,163 @@ In setMethod, the first component of "signature" argument must be the same as th
 
 validity function can be explicitly called through validObject(theObject);
 
-*** environment function
+**** declare S4 class using "setClass"
+
+setClass("Person", slots=list(name="character", age="numeric"))
+# "contains" implements inheritance.
+setClass("Employee", slots=list(boss="Person"), contains="Person")
+
+alice <- new("Person", name="Alice", age=40)
+john <- new("Employee", name="John", age=20, boss=alice)
+
+**** access slots
+
+alice@age
+or
+slot(john, "boss")
+
+**** S4 can inherit S3 or base type
+
+If S4 objects contain S3 class or base type, it will have a special .Data slot
+
+setClass("RangedNumeric", contains="numeric",slots=list(min="numeric",max="numeric"))
+rn <- new("RangedNumeric",1:10,min=1,max=10)
+rn@min
+#> [1] 1
+rn@.Data
+#> [1] 1 2 3 4 5 6 7 8 9 10
+
+**** create generics and methods
+
+again, generic is by definition a "generialized method".
+
+# use existing generic "union"
+setGeneric("union")
+#> [1] "union"
+setMethod("union", c(x="data.frame", y="data.frame"), function(x,y) {unique(rbind(x,y))})
+#> [1] "union"
+
+# create new generic "MyGeneric"
+setGeneric("MyGeneric", function(x) {
+  standardGeneric("MyGeneric")
+})
+
+find which method gets called given the specification of a generic call
+# from methods: takes generic name and class names
+selectMethod("nobs", list("mle"))
+
+#> Method Definition:
+
+function (object, ...) 
+if ("nobs" %in% slotNames(object)) object@nobs else NA_integer_
+<bytecode: 0x4801a30>
+<environment: namespace:stats4>
+
+Signatures:
+        object
+target  "mle" 
+defined "mle" 
+
+**** more information
+vignette("Intro2Matrix",package="Matrix")
+google bioconductor S4
+*** Reference Class
+RC methods belong to objects, not functions
+RC objects are mutable, the usual R copy-on-modify semantics do not apply. (this is how the "Reference" comes in the name!)
+
+is(x, "refClass") tells whether an object is a refClass
+
+**** define class and class object
+
+fields(accessed through $) are equivalents of slots in S4(accessed through @)
+
+Account <- setRefClass("Account", fields=list(balance="numeric"))
+
+a <- Account$new(balance=100)
+a
+#> Reference class object of class "Account"
+a$balance
+#> [1] 100
+a$balance <- 200
+a$balance
+#> [1] 200
+
+**** RC behaves like a Reference
+
+b <- a
+b$balance
+#> [1] 200
+a$balance <- 0
+b$balance
+#> [1] 0
+
+**** use $copy() to copy
+
+c <- a$copy()
+c$balance
+#> [1] 0
+a$balance <- 100
+c$balance
+#> [1] 0
+
+**** access member fields in member function using "<<-" (deep binding)
+
+Account <- setRefClass("Account", fields=list(balance="numeric"),
+  methods = list(
+    withdraw = function(x) {
+     balance <<- balance - x
+    },
+    deposit = function(x) {
+      balance <<- balance + x
+    }
+  )
+)
+
+# usage
+a <- Account$new(balance=100)
+a$deposit(100)
+a$balance
+#> [1] 200
+
+**** inheritance
+
+NoOverdraft <- setRefClass("NoOverdraft",
+  contains = "Account",
+  methods = list(
+    withdraw = function(x) {
+      if (balance < x) stop("Not enough money")
+      balance <<- balance - x
+    }
+  )
+)
+
+accountJohn <- NoOverdraft$new(balance=100)
+accountJohn$deposit(50)
+accountJohn$balance
+#> [1] 150
+accountJohn$withdraw(200)
+#> Error in accountJohn$withdraw(200): Not enough money
+
+One can call parent methods by callSuper(...)
+
+*** Group Generics
+?S4groupGeneric
+?Methods
+*** environment
 
 http://adv-r.had.co.nz/Environments.html
 
-objects in the environment is like pointers in C.
-
-environments' members are accessed via e$member or e[ [member]] or get('member', envir=e)
-
 environment is like a list, but different in other ways:
+ + reference semantics (objects in the environment is like pointers in C.)
  + Every object in an environment has a unique name.
  + The objects in an environment are not ordered (i.e., it doesn’t make sense to ask what the first object in an environment is).
  + An environment has a parent.
 
-lexical scoping: if a name is not found in an environment, R will look in the parent environment.
-
-only empty environment does not have parent
+environments' members are accessed via e$member or e[ [member]] or get('member', envir=e)
 
 environment = frame + parent environment
 
+e <- new.env() creates a new environment
 ls(e) list bindings in the environment, omitting names begin with '.'.
 ls(e, all.names=True) show all the names
 create a new binding like a list: e$a <- 1
@@ -3302,23 +3537,272 @@ remove binding: rm('a', envir=e)
 check existence of binding: exists('x', envir=e)
 consider inherits: exists('x', envir, inherits=TRUE)
 
-where environment is defined?
-library(pryr)
-where('x')
-<environment: R_GlobalEnv>
-
  + globalenv() interactive workspace
  + baseenv() base environment, on top of emptyenv()
- + emptyenv() empty environment, ultimate ancestor of all environments
+ + emptyenv() empty environment, ultimate ancestor of all environments only empty environment does not have parent
  + environment() current environment
 
-[environment loaded with "library"] => globalenv() => search path .. => baseenv() => emptyenv()
+globalenv() => [environment loaded with "library"] => search path .. => baseenv() => emptyenv()
 
 The enclosing environment determines how the function finds values; the binding environments determine how we find the function.
-*** string regular expression
-fetch pattern
-txt <- "aaa12xxx"
-regmatches(txt,regexpr("[0-9]+",txt))
+
+**** manipulate environment
+
+e <- new.env()
+e$a <- FALSE
+e$b <- "a"
+e$d <- 1:3
+
+multiple name can point to the same object
+e$a <- $d
+
+names in an environment are like pointers, object with no name bound goes to gabbage collector.
+
+get parent environment
+e <- new.env()
+# the default parent provided by new.env() is environment from
+# which it is called - in this case that's the global environment
+parent.env(e)
+#> <environment: R_GlobalEnv>
+ls(e)
+#> character(0)
+
+e$a <- 1
+e$b <- 2
+ls(e)
+#> [1] "a" "b"
+e$a
+#> [1] 1
+
+str(e)
+#> <environment: 0x7ff93eea0d>
+ls.str(e)
+#> a: num 1
+#> b: num 2
+
+get name from environment and their ancestors..
+get("c", envir=e)
+Note that e$c and e[ [c]] only searches the current environment. 
+
+**** delete binding from environment "rm()"
+# in list you can set the name to NULL, but for environment, you have remove the binding using rm()
+e$a <- 1
+e$a <- NULL
+ls(e)
+#> [1] "a"
+
+rm("a", envir=e)
+ls(e)
+#> character(0)
+
+**** determine name exists "exists"
+x <- 10
+exists("x", envir=e)
+#> [1] TRUE
+exists("x", envir=e, inherits = FALSE)
+#> [1] FALSE
+
+**** compare environment "identical()" (DONT USE ==)
+identical(globalenv(), environment())
+#> [1] TRUE
+globalenv() == environment()
+#> Error in globalenv() == environment(): comparison (1) is possible only for atomic and list types.
+**** lexical scoping (R) vs dynamic scoping (elisp etc.)
+lexical scoping: if a name is not found in an environment, R will look in the parent (enclosing) environment (not from the calling environment).
+def2: lexical scoping looks up symbol values based on how functions were nested when they were created, no how they are nested when they are called.
+
+the values of free variables are searched for in the environment in which the function was defined.
+A function + an environment = a closure or function closure.
+Keep looking back in the search list.
+#+BEGIN_SRC R
+> f<-function(x) {x*x}
+> environment(f)
+<environment: R_GlobalEnv>
+> parent.env(environment(f))
+<environment: package:lattice>
+attr(,"name")
+[1] "package:lattice"
+attr(,"path")
+[1] "/usr/lib/R/library/lattice"
+#+END_SRC
+
+**** find which environment a name is defined (pryr::where())
+#+BEGIN_SRC R
+
+library(pryr)
+x <- 5
+where("x")
+#> <environment: R_GlobalEnv>
+where("mean")
+#> <environment: base>
+
+where <- function(name, env=parent.frame()) {
+  if (identical(env, emptyenv())) {
+    # Base case
+    stop("Can't find ", name, call. = FALSE)
+  } else if (exists(name, envir = env, inherits = FALSE)) {
+    # Success case
+    env
+  } else {
+    # Recursive case
+    where(name, parent.env(env))
+  }
+}
+
+# implemented using iteration
+is_empty <- function(x) identical(x, emptyenv())
+where2 <- function(..., env = parent.frame()) {
+  while (!is_empty(env)) {
+    if (success) {
+      # success case
+      return ()
+    }
+    # inspect parent
+    env <- parent.env(env)
+  }
+# base case
+}
+
+#+END_SRC
+
+**** function environments
+1. enclosing environment : the environment when function gets executed it can see. (given by environment())
+2. binding environment : the environment where the function itself is defined, can have many
+3. execution environment : the ephermeral environment that stores the temporary variable when the function is called. This environment usually is the child of enclosing environment.
+4. calling environment : the environment from which the function is called
+
+Note the difference between parent.frame() and environment(), the previous returns the calling environment, the latter returns the enclosing environment (the real parent)
+
+binding environment can be different from enclosing environment, e.g.,
+e <- new.env()
+e$g <- function() 1
+binding environment is e and enclosing environment is GlobalEnv.
+
+Enclosing environment determines how the function finds values; the binding environment determine how we find the function.
+
+execution environment is destroyed every time function finishes, unless the function returns another function and the execution environment becomes the enclosing environment of the returned function, e.g.,
+#+BEGIN_SRC R
+# plus is a function factory
+plus <- function(x) {
+  function(y) x+y
+}
+plus_one <- plus(1)
+# both below are GlobalEnv
+identical(parent.env(environment(plus_one)), environment(plus))
+#> [1] TRUE
+#+END_SRC
+
+see the difference between calling environment (returned by parent.frame()) and enclosing environment (returned by environment())
+#+BEGIN_SRC R
+f2 <- function() {
+  x <- 10
+  function() {
+    def <- get("x", environment())
+    cll <- get("x", environment())
+    list(defined=def, called=cll)
+  }
+}
+g2 <- f2()
+x <- 20
+str(g2())
+#> List of 2
+#>  $ defined : num 10
+#>  $ called : num 20
+#+END_SRC
+
+**** search order of names (scoping rules) "search()"
+to see the search paths (and their priorities). The global environment (or the user's workspace) is always the first on the search list and base package is always the last.
+> search()
+ [1] ".GlobalEnv"        "tools:rstudio"     "package:stats"    
+ [4] "package:graphics"  "package:grDevices" "package:utils"    
+ [7] "package:datasets"  "package:methods"   "Autoloads"        
+[10] "package:base"   
+library() put the package to the second position of the search list
+> library(lattice)
+> search()
+ [1] ".GlobalEnv"        "package:lattice"   "tools:rstudio"    
+ [4] "package:stats"     "package:graphics"  "package:grDevices"
+ [7] "package:utils"     "package:datasets"  "package:methods"  
+[10] "Autoloads"         "package:base"    
+function and non-function are separated. One can have a function c and a object called c simultaneously.
+
+retrieve environment by name
+as.environment("package:stats")
+#> <environment: package:stats>
+
+**** package environment
+Every package has 2 environments associated with it : the package environment and the namespace environment.
+namespace defines internal names
+package defines publically accessible names
+
+**** deep binding <<-
+name <<- value
+equivalent to
+assign("name", value, inherits = TRUE)
+
+walks up the parent (enclosing) environments
+#+BEGIN_SRC R
+x <- 0
+f <- function() {
+  x <<- 1
+}
+f()
+x
+#> [1] 1
+#+END_SRC
+
+**** explicit environment
+modify <- function(x) {
+  x$a <- 2
+  invisible()
+}
+
+# when applied to list, nothing changed
+x_l <- list()
+x_l$a <- 1
+modify(x_l)
+x_l$a
+#> [1] 1
+
+# when applied to environment, original copy is modified
+x_e <- new.env()
+x_e$a <- 1
+modify(x_e)
+x_e$a
+#> [1] 2
+
+**** create a new environment and make sure it does NOT inherit anything
+
+use new.env(parent=emptyenv())
+
+x <- 1
+e1 <- new.env()
+get("x", envir = e1)
+#> [1] 1
+
+e2 <- new.env(parent = emptyenv())
+get("x", envir = e2)
+#> Error in get("x", envir = e2): object 'x' not found
+
+**** package state using environment
+
+my_env <-new.env(parent=emptyenv())
+my_env$a <- 1
+get_a <- function() {
+  my_env$a
+}
+
+# return the old value from setter function is a good practice because it makes it easier to reset the previous value in conjunction with on.exit()
+set_a <- function(value) {
+  old <- my_env$a
+  my_env$a <- value
+  invisible(old)
+}
+
+**** delayed binding %<d-% or delayedAssign()
+omitted
+**** active binding %<a-% or makeActiveBinding()
+omitted
 *** peek into an object using "str", "class" and "typeof"
 **** to figure out what an object is using "str" (short for "structure" NOT for "string")
 str()
@@ -3376,7 +3860,6 @@ read and  write R code files, contain the metadata from R, possibly for multiple
 sink("/home/wanding/myfile.csv")
 datafile
 sink()
-完成
 
 *** write.table
 write.table(datafile,file="/home/wanding/myfile.csv")
@@ -3447,6 +3930,10 @@ Levels: (1,5] (5,10] (10,15]
 [1] 1-5     5 to 10 1-5     1-5     5 to 10 10~15   10~15   10~15   <NA>   
 Levels: 1-5 5 to 10 10~15
 
+**** string regular expression
+fetch pattern
+txt <- "aaa12xxx"
+regmatches(txt,regexpr("[0-9]+",txt))
 **** assign()
 assign("x", function(arguments)) # Has the same effect, but uses the assignment function instead of the assignment operator.
 x<-function(arguments)
@@ -3539,32 +4026,6 @@ str_trim(string)
 substring:
 substring("wanding",1,3)
 gives "wan"
-*** attributes of an R object
-every R object can have attributes attached to it
-
-attributes are named list of R
-
-to list all attributes
-attributes(obj)
-
-to access a specific attributes
-attr(obj,'aaa')
-or
-aaa(obj)
-
-"class" is an attribute of obj
-
-structure() function returns a new object with modified attributes
-structure(1:10, my_attribute='This is a vector')
-
-By default, most attributes are lost when modifying a vector
-Attributes that are NOT lost:
-names
-dimensions
-class
-
-factors can be seen as vector with "level" attribute.
-
 *** vector
 numeric, character, integer are all vectors
 **** sort a vector
@@ -3595,7 +4056,7 @@ x[-c(1,2,3)]	删掉第1，2，3个元素
 **** how to generate (1,1,1,2,2,2,3,3,3) from (1,2,3)
 > rep(c("g1","g2","g3"),times=c(1,3,4))
 [1] "g1" "g2" "g2" "g2" "g3" "g3" "g3" "g3"
-**** Createpr an empty vector
+**** create an empty vector
 x ← vector(“numeric”, length=10)
 vector elements are initialized to 0.0
 logical vector
@@ -4559,8 +5020,116 @@ is equivalent to
 list(noise(1,1,2), noise(2,2,2), noise(3,3,2), noise(4,4,2),noise(5,5,2))
 
 ** Functions
-*** see all formal arguments of a function
-formals
+
+3 major components of a function are
+1. formals
+2. body
+3. environment
+
+f <- function(x) x^2
+f
+#> function(x) x^2
+
+formals(f)
+#> $x
+body(f)
+#> x^2
+environment(f)
+#> <environment: R_GlobalEnv>
+
+# for many base function
+attr(f, "srcref") return the source code
+
+# for primitive functions all 3 components are NULL
+sum
+#> function (..., na.rm = FALSE) .Primitive("sum")
+formals(sum)
+#> NULL
+body(sum)
+#> NULL
+environment(sum)
+#> NULL
+*** lexical scoping (see environment section)
+one comment: R is aware of whether a symbol desired is a function or a variable.
+#+BEGIN_SRC R
+n <- function(x) x / 2
+o <- function() {
+  n <- 10
+  n(n)
+}
+o()
+#> [1] 5
+rm(n, o)
+#+END_SRC
+
+**** lexical scoping can be "dynamic"
+lexical scoping determines where to look for values, not when
+f <- function() x
+x <- 15
+f()
+#> [1] 15
+
+x <- 20
+f()
+#> [1] 20
+
+**** find external dependencies of a function
+
+f <- function() x+1
+codetools::findGlobals(f)
+#> [1] "+" "x"
+
+*** operators are all functions
+All the following are equivalent operator expression and function expression
+` (the backtick) is for referringn to functions or variables that have otherwise reserved or illegal names.
+
+x <- 10; y <-5
+x + y
+#> [1] 15
+`+`(x, y)
+#> [1] 15
+
+for (i in 1:2) print(i)
+#> [1] 1
+#> [1] 2
+`for`(i, 1:2, print(i))
+#> [1] 1
+#> [2] 2
+
+if (i==1) print("yes!") else print("no.")
+#> [1] "no."
+`if`(i==1, print("yes!"), print("no."))
+#> [1] "no."
+
+x[3]
+#> [1] NA
+`[`(x,3)
+#> [1] NA
+
+{print(1); print(2); print(3) }
+#> [1] 1
+#> [1] 2
+#> [1] 3
+`{`(print(1), print(2), print(3))
+#> [1] 1
+#> [1] 2
+#> [1] 3
+
+**** use operator as functions in constructs such as sapply
+sapply(1:5, `+`, 3)
+#> [1] 4 5 6 7 8
+sapply(1:5, "+", 3)
+#> [1] 4 5 6 7 8
+
+There is a difference between `+` and "+". `+` refers to the operator function itself with backtick to escape the reserved name. "+" is the name of that function which also works since sapply can take both operator and its name. (see match.fun() in body(sapply).
+
+example, take 2nd element from each element in the list
+x <- list(1:3, 4:9, 10:12)
+sapply(x, "[", 2)
+#> [1] 2 5 11
+# equivalent to
+sapply(x, function(x) x[2])
+#> [1] 2 5 11
 
 *** check out what arguments are needed
 args(function)
@@ -4666,6 +5235,12 @@ fixing mu = 1
 > y<-sapply(x,nLL)
 > plot(x,exp(-(y-min(y))),type="l")
 
+**** capture "..." in function definition
+f <- function(...) {
+  names(list(...))
+}
+f(a=1,b=2)
+#> [1] "a" "b"
 *** anonymous function
 suppose we have x
 > x<-list(a=matrix(1:4,2,2),b=matrix(1:6,3,2))
@@ -4693,10 +5268,134 @@ printmessage <- function(x) {
 }
 
 “print” function will return the string it prints
-** object-oriented programming
-unclass()	remove the class attribute of an object
-*** set attributes
-attr(z,"dim")<-c(10,10)		treat z as a 10 by 10 matrix
+*** call a function given arguments in a list using "do.call"
+
+args <- list(1:10, na.rm = TRUE)
+do.call(mean, list(1:10, na.rm = TRUE))
+#> [1] 5.5
+# Equivalent to
+mean(1:10, na.rm = TRUE)
+#> [1] 5.5
+
+*** default and missing argument
+f <- function(a=1,b=2) {
+ c(a,b)
+}
+f(
+#> [1] 1 2
+
+Since arguments are evaluated lazily, default value can be dependent on other values
+g <- function(a=1, b=a*2) {
+  c(a,b)
+}
+g()
+#> [1] 1 2
+g(10)
+#> [1] 10 20
+
+or dependent on local variables created within the function
+h <- function(a=1, b=d) {
+  d <- (a+1)^2
+  c(a,b)
+}
+h()
+#> [1] 1 4
+h(10)
+#>[1] 10 121
+
+test whether an argument is supplied using "missing()"
+i <- function(a, b) {
+ c(missing(a), missing(b))
+}
+i()
+#> [1] TRUE FALSE
+i(a=1)
+#> [1] FALSE TRUE
+i(b=2)
+#> [1] TRUE FALSE
+i(1,2)
+#> [1] FALSE FALSE
+One can also set default value to NULL and use is.null to determine missing argument.
+
+*** argument evaluation is lazy
+f <- function(x) {
+ 10
+}
+f(stop("This is an error!"))
+#>[1] 10
+
+one can force evaluation using "force"
+f <- function(x) {
+  force(x)
+  10
+}
+f(stop("This is an error!"))
+#> Error in force(x): This is an error.
+
+default can depend on the current environment
+f <- function(x=ls()) {
+  a <- 1
+  x
+}
+
+# ls() is evaluated inside f
+f()
+#> [1] "a" "x"
+
+# ls() evaluated in global environment
+f(ls())
+#>  [1] "add"   "adders" "adders2" "args" "f"
+#>  [6] "funs"  "g"      "h"       "i"    "objs"
+#> [11] "x"     "y"
+
+*** make sure one override lazy evaluation when using closure
+
+# without force
+add <- function(x) {
+  function(y) x+y
+}
+adders <- lapply(1:10, add)
+adders[ [1]](10)
+#> [1] 20
+adders[ [10]](10)
+#> [1] 20
+
+# with force
+add <- function(x) {
+  force(x) # equivalent to just "x", since force(x) <- function(x) x
+  function(y) x+y
+}
+adders2 <- lapply(1:10, add)
+adders2[ [1]](10)
+#> [1] 11
+adders2[ [10]](10)
+#> [1] 20
+
+*** infix function e.g., %in%
+every infix function must be flanked by % on both sides
+predefined: %%, %*%, %/%, %in%, %o%, %x%
+
+# define a new infix function (note the special backtick "`")
+`%+%` <- function(a,b) paste0(a,b)
+"new" %+% " string"
+#> [1] "new string"
+`%+%`("new", " string")
+#> [1] "new string"
+
+escape special charactersinthe string used to defined the function, but not when you call it.
+`%/\\%` <- function(a,b) paste(a,b)
+"a" %/\% "b"
+#> [1] "a b"
+
+`%-%` <- function(a,b) paste0("(", a, " %-% ", b, ")")
+"a" %-% "b" %-% "c"
+#> [1] "((a %-% b) %-% c)"
+
+**** a useful infix function %||%
+"%||%" <- function(a,b) if (!is.null(a)) a else b
+function_that_might_return_null() %||% default value
+
+
 ** Statistics
 
 描述性统计量
@@ -5321,37 +6020,6 @@ function (name, pos = -1, envir = as.environment(pos), all.names = FALSE,
  num [1:100] -0.61 3.586 2.446 -0.265 2.366 …
 *** time your code
 system.time(yourcodehere)
-
-*** search order of object/function name (Scoping rules)
-to see the search paths (and their priorities). The global environment (or the user's workspace) is always the first on the search list and base package is always the last.
-> search()
- [1] ".GlobalEnv"        "tools:rstudio"     "package:stats"    
- [4] "package:graphics"  "package:grDevices" "package:utils"    
- [7] "package:datasets"  "package:methods"   "Autoloads"        
-[10] "package:base"   
-library() put the package to the second position of the search list
-> library(lattice)
-> search()
- [1] ".GlobalEnv"        "package:lattice"   "tools:rstudio"    
- [4] "package:stats"     "package:graphics"  "package:grDevices"
- [7] "package:utils"     "package:datasets"  "package:methods"  
-[10] "Autoloads"         "package:base"    
-function and non-function are separated. One can have a function c and a object called c simultaneously.
-*** Lexical scoping
-the values of free variables are searched for in the environment in which the function was defined.
-A function + an environment = a closure or function closure.
-Keep looking back in the search list.
-#+BEGIN_SRC R
-> f<-function(x) {x*x}
-> environment(f)
-<environment: R_GlobalEnv>
-> parent.env(environment(f))
-<environment: package:lattice>
-attr(,"name")
-[1] "package:lattice"
-attr(,"path")
-[1] "/usr/lib/R/library/lattice"
-#+END_SRC
 
 *** set default packages that are loaded on start
 options(defaultPackages=c(getOption("defaultPackages"),
