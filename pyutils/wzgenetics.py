@@ -280,15 +280,13 @@ def load_tss_and_seqs(tssfn='/Users/wandingzhou/projects/pj-mm/2015-04-23-alu/hg
 
     return tss_table
 
-def tss_load_te_state(tss_table, usetype=1):
+def tss_load_te_state(tss_table, usetype=1, d_upstream=2500, d_downstream=2500):
 
     import tabix
     import numpy as np
     import pandas as pd
     te_fh = tabix.open('/Users/wandingzhou/projects/pj-mm/2015-04-23-alu/rmsk.bed.gz')
 
-    d_upstream = 2500
-    d_downstream = 2500
     poses = range(-d_upstream, d_downstream+1)
 
     j = 0

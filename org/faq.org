@@ -149,6 +149,8 @@ sort -V
 it sorts natural numbers within text
 see also vcf-sort which uses sort -V
 * unix
+** "readlink -f" and realpath
+realpath is deprecated, use "readlink -f"
 ** split
 for i in reads/*.txt; do split -a 3 -d -l 12000000 ${i} reads_split/$(basename $i); done
 ** relink files
@@ -3134,6 +3136,10 @@ and follows the instruction
 do
 Renv rehash
 every time you install a new R binary
+
+location of installed packages
+~/.Renv/versions/3.2.3/lib64/R/library/
+
 *** example: add R3.0.2
 wget https://cran.cnr.berkeley.edu/src/base/R-3/R-3.0.2.tar.gz
 ./configure --prefix=/home/wanding.zhou/.Renv/versions/3.0.2
@@ -3143,6 +3149,12 @@ make install
 
 # switch R version
 Renv shell 3.2.2
+*** example add R3.2.3
+./configure --prefix=/home/wanding.zhou/.Renv/versions/3.2.3 --enable-R-shlib=yes
+export JAVA_HOME=/primary/vari/software/java/jdk1.7.0_40 # somehow the java home is not correctly setup
+make
+make install
+
 ** Bioconductor
 *** basics
 **** install bioconductor
@@ -3231,6 +3243,90 @@ exprs accesses expression from eSet class
 se.exprs access standard error of expression from eSet class
 
 fData retrieves features
+*** Rsamtools
+browseVignettes(Rsamtools)
+*** GenomicAlignments
+test data H.RNAseqData.HNRNPC.bam.chr14
+**** By default readGAlignments only reads genomic ranges.
+gal <- readGAlignments(bamfile_path)
+# accessor functions
+length(gal) # number of alignments
+strand(gal) # strand info as a factor
+table(strand(gal)) # count reads mapped to 2 strands
+**** fetch sequence and quality string as well using ScanBamParam
+scanBamWhat() # check all the options
+seq_gal <- readGAlignments(bamfile_path, param = ScanBamParam(what=c("seq","qual")))
+**** fetch sequence restrict to a region using ScanBamParam
+seq_gal <- readGAlignments(bamfile_path, param = ScanBamParam(which = GRanges(seqnames="chr14", ranges = ranges(gal)[1:5])))
+**** fetch reads mapped to positive strand only using scanBamFlag
+pos_gal <- readGAlignments(bamfile_path, param = ScanBamParam(which = gr, what = "seq", flag = scanBamFlag(isMinusStrand=FALSE)))
+*** AnnotationDb system
+see
+https://www.bioconductor.org/packages/release/data/annotation/
+for available annotation db
+see
+https://www.youtube.com/watch?v=8qvGNTVz3Ik
+for how to use it.
+** algorithm
+*** run length encoding (rle)
+> ## generate data for coin flipping example 
+> coin <- sample(c("H", "T"), 1000, replace = TRUE)
+> table(coin) 
+coin
+  H   T 
+501 499  
+> head(coin, n = 20)
+ [1] "T" "H" "T" "T" "T" "H" "T" "H" "T" "T" "H" "T" "H" "T"
+[15] "T" "T" "H" "H" "H" "H" 
+
+> ## use the rle function on our SMALL EXAMPLE above
+> ## note results MATCH what I described above... 
+> rle(c("H", "T", "T", "H", "H", "H", "H", "H", "T", "H"))
+Run Length Encoding
+  lengths: int [1:5] 1 2 5 1 1
+  values : chr [1:5] "H" "T" "H" "T" "H" 
+> ## use the rle function on our SIMULATED data
+> coin.rle <- rle(coin)
+> ## what is the structure of the returned result? 
+> str(coin.rle)
+List of 2
+ $ lengths: int [1:500] 1 1 3 1 1 1 2 1 1 1 ...
+ $ values : chr [1:500] "T" "H" "T" "H" ...
+ - attr(*, "class")= chr "rle" 
+> ## sort the data, this shows the longest run of
+> ## ANY type (heads OR tails)
+> sort(coin.rle$lengths, decreasing = TRUE)
+  [1] 9 8 7 7 7 7 7 6 6 6 6 6 6 6 6 5 5 5 5 5 5 5 5 5 5 5 5
+ [28] 5 5 5 5 5 5 5 5 5 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4
+ [55] 4 4 4 4 4 4 4 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3
+ [82] 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3
+[109] 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 2 2 2 2 2 2 2
+[136] 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+[163] 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+[190] 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+[217] 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+[244] 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+[271] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+[298] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+[325] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+[352] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+[379] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+[406] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+[433] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+[460] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+[487] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 
+> ## use the tapply function to break up
+> ## into 2 groups, and then find the maximum
+> ## within each group
+> 
+> tapply(coin.rle$lengths, coin.rle$values, max)
+H T 
+9 8
+
+unique (S3 method: unique.Rle)
+
+** best practices
+*** use . for multi-word names, NOT _ since _ is used as <- in early versions (and S_PLUS).
 ** basics
 *** R is a functional programming language
 meaning that arguments to functions are assumed to be immutable (RC below is a violation). "Side effects" should be minimized.
@@ -3273,7 +3369,7 @@ replacing the function f by f.a when the first argument to f is an object of cla
 f.A(other_args) === f(a, other_args) # and a is of class "A"
 
 setting the return value of a call to method "glm" to be "glm"
-print.glm is the specific version of print when it applies to object of class "glm"
+print.glm is the specific version of print (the "generic") when it applies to object of class "glm"
 
 For example, if you type "median", you see "UseMethod("median"). That means it is an S3 method. To list all the S3 classes
 #+BEGIN_SRC R
@@ -3290,6 +3386,7 @@ stats:::print.acf
 unclass()	remove the class attribute of an object
 # set attributes
 attr(z,"dim")<-c(10,10)		treat z as a 10 by 10 matrix
+**** list methods of a generic - methods()
 
 **** define S3 class
 All you need in defining a S3 class object is to add the "class" attribute by
@@ -3429,6 +3526,13 @@ Signatures:
         object
 target  "mle" 
 defined "mle" 
+
+**** use setAs() to create converter function
+"track" is a class with slot x and y.
+setAs("track", "numeric", function(from) from@y)
+t1 <- new("track", x=1:20, y=(1:20)^2)
+as(t1, "numeric")
+#> [1]   1   4   9  16  25  36  49  64  81 100 121 144 169 196 225 256 289 324 361 400
 
 **** more information
 vignette("Intro2Matrix",package="Matrix")
@@ -3821,6 +3925,7 @@ is.data.frame(df)
 #> [1] TRUE
 #+END_SRC
 **** "class" is an attribute, class() essentially display that attribute
+*** ls(2) sees the second environment in the search path, usually useful to see what is added from the latest attachment
 ** Data IO
 see R wiki for more options
 http://en.wikibooks.org/wiki/R_Programming/Importing_and_exporting_data
@@ -3857,6 +3962,7 @@ read and  write R code files, contain the metadata from R, possibly for multiple
 > source('data.R')
 
 *** sink
+this redirect any "cat"s to file without printing to terminal
 sink("/home/wanding/myfile.csv")
 datafile
 sink()
@@ -3929,6 +4035,17 @@ Levels: (1,5] (5,10] (10,15]
 > cut(a, br=c(1,5,10,15),labels=c('1-5','5 to 10','10~15'))
 [1] 1-5     5 to 10 1-5     1-5     5 to 10 10~15   10~15   10~15   <NA>   
 Levels: 1-5 5 to 10 10~15
+
+**** tertiary operator vectorization (ifelse)
+a <- 1
+x <- if(a==1) 2 else 1
+x
+#> [1] 2
+
+a <- c(1,2,1)
+x <- ifelse(a==2,1,2)
+x
+#> [1] 2 1 2
 
 **** string regular expression
 fetch pattern
@@ -4027,7 +4144,9 @@ substring:
 substring("wanding",1,3)
 gives "wan"
 *** vector
-numeric, character, integer are all vectors
+numeric, character, integer are all vectors, there is no atomic unit in R. 4L is a vector of length 1.
+integer are with "L" suffix, 1L, 3L etc.
+numeric are essentially floating numbers, 1.2, 3.1 etc.
 **** sort a vector
 x <- c("b","c","a")
 order(x)
@@ -5392,9 +5511,19 @@ escape special charactersinthe string used to defined the function, but not when
 #> [1] "((a %-% b) %-% c)"
 
 **** a useful infix function %||%
-"%||%" <- function(a,b) if (!is.null(a)) a else b
+`%||%` <- function(a,b) if (!is.null(a)) a else b
 function_that_might_return_null() %||% default value
 
+*** replacement functions
+
+`second<-` <- function(x, value) {
+  x[2] <- value
+  x
+}
+x <- 1:10
+second(x) <- 5L
+x
+#> [1] 1 5 3 4 5 6 7 8 9 10
 
 ** Statistics
 
@@ -5943,11 +6072,21 @@ what "build and reload" in Rstudio do
 4. Reloads the package in the new R session by executing the library function.
 
 ** debug
+
+*** the browser
+insert "browser()" to where you want to stop the program and the execution will give an interactive session at that location.
+you can also set option(error=browser) to invoke a browser when an error occurs
+点击RStudio的左栏也可实现加入breakpoint效果。
+
+In browser
+type "help" to list all the options.
+
 flag a function for “debug” mode which allows you to step through execution of a function one line a time
 n: next line
 Q: quit
 c: continue without single stepping
 where: show call stack
+
 > debug(lm)
 > lm(y~x)
 debugging in: lm(y ~ x)
@@ -5994,7 +6133,34 @@ Error in eval(expr, envir, enclos) : object 'y' not found
 2: eval(mf, parent.frame())
 1: lm(y ~ x)
 
+*** notice that Rstudio breakpoint cannot be set inside packaged sources (source file inside a package).
 ** other
+
+*** littler
+
+# do the following during your R installation
+./configure --prefix=/home/wanding.zhou/.Renv/versions/3.2.3 --enable-R-shlib=yes
+
+install.packages("littler")
+# link binary
+ln -s /primary/home/wanding.zhou/.Renv/versions/3.2.3/lib64/R/library/littler/bin/r ~/bin/
+# under macosx, R and r are the same, so use lr
+ln -s /Library/Frameworks/R.framework/Resources/library/littler/bin/r ~/bin/lr
+
+*** set library path
+default library location
+/Library/Frameworks/R.framework/Resources/library
+
+To change libPath temporarily:
+.libPaths(c("/usr/lib/R/library","/usr/share/R/library"))
+
+permanently add the library path:
+in ~/.Renviron add R_LIBS="home/wan/lib/R"
+
+*** set default packages that are loaded on start
+options(defaultPackages=c(getOption("defaultPackages"),
+       "mypackage1","mypackage2", ... [etc.]))
+
 *** parallel
 #+BEGIN_SRC R
 mclapply(x, func)
@@ -6020,10 +6186,6 @@ function (name, pos = -1, envir = as.environment(pos), all.names = FALSE,
  num [1:100] -0.61 3.586 2.446 -0.265 2.366 …
 *** time your code
 system.time(yourcodehere)
-
-*** set default packages that are loaded on start
-options(defaultPackages=c(getOption("defaultPackages"),
-       "mypackage1","mypackage2", ... [etc.]))
 
 *** recover
 allows you to modify the error behavior so that you can browse the function call stack
@@ -6058,13 +6220,6 @@ list.files(pattern=".pairs")	list all the files satisfying some pattern in the c
 file.show(filepath)	display the file indicated in the filepath
 *** list object in the work space
 > ls()
-
-*** set library path
-To change libPath temporarily:
-.libPaths(c("/usr/lib/R/library","/usr/share/R/library"))
-
-permanently add the library path:
-in ~/.Renviron add R_LIBS="home/wan/lib/R"
 
 *** free variables are searched in the parent closure
 > make.power <- function(n) {pow <-function(x) {x^n}; pow}
@@ -6110,9 +6265,9 @@ getwd()
 setwd(dir)
 
 * Python
-** pdb debugger
-python -m pdb yourprogram
-https://gimmebar-assets.s3.amazonaws.com/4fe38b76be0a5.html
+** docopt
+args = docopt(__doc__, version=__version__)
+
 ** setup ipython notebook on remote server
 
 start remote session
@@ -6127,32 +6282,6 @@ open localhost:8888
 close ssh tunnel
 ps aux | grep localhost:8888
 kill -15 <process_id>
-
-** bokeh
-
-*** heatmap example
-
-from bokeh.charts import HeatMap, output_file, show
-from bokeh.sampledata.unemployment1948 import data
-
-# pandas magic
-# df = data[data.columns[:-2]]
-# df2 = df.set_index(df[df.columns[0]].astype(str))
-# df2.drop(df.columns[0], axis=1, inplace=True)
-# df3 = df2.transpose()
-
-output_file("2015_05_05_450_orphan_CpG_pmd_byseg_heatmap.html")
-
-hm = HeatMap(tumor_betas_pmd.iloc[1:100,1:100], title="categorical heatmap", width=800)
-show(hm)
-
-** pip
-
-install to local directory
-pip install --user toolshed
-
-upgrade
-pip install --upgrade cutadapt
 
 ** pandas
 
@@ -6177,106 +6306,45 @@ df.myCol.plot().legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
 *** how to do string operation to index
 df[df.index.to_series().str.contains('LLChit')]
-** difference between numpy.array and numpy.matrix
-numpy.matrix is strictly 2-d
-please use numpy.array most of the time
-** to set python default install location
-edit
-~/.pydistutils.cfg
-====
-[easy_install]
 
-# set the default location to install packages
-install_dir = /scratch/bcb/wzhou1/tools/pythonlib
-====
-** python oneline if
-if condition:
-    do_something()
+** seaborn
+** bokeh
+*** heatmap example
 
+from bokeh.charts import HeatMap, output_file, show
+from bokeh.sampledata.unemployment1948 import data
 
-if condition: do_something()
+# pandas magic
+# df = data[data.columns[:-2]]
+# df2 = df.set_index(df[df.columns[0]].astype(str))
+# df2.drop(df.columns[0], axis=1, inplace=True)
+# df3 = df2.transpose()
 
-if condition:
-    do_something()
-    do_something_else()
+output_file("2015_05_05_450_orphan_CpG_pmd_byseg_heatmap.html")
 
-if condition: do_something(); do_something_else()
-** numpy.array how to index elements individually
-https://scipy-lectures.github.io/intro/numpy/array_object.html
+hm = HeatMap(tumor_betas_pmd.iloc[1:100,1:100], title="categorical heatmap", width=800)
+show(hm)
+** plotly
+** lightning
+http://lightning-viz.org/
+** matplotlib
+*** customize matplotlibrc file
+cp /etc/matplotlibrc ~/.matplotlib/
+then edit .matplotlib/matplotlibrc
+*** use rcParam to customize plot
+import matplotlib as mpl
+mpl.rcParams['font.size'] = 12
+or
+import matplotlib.pyplot as plt
+plt.rcParams['font.size'] = 12
 
-b = np.ones(6)
-b[ [1,2]] += 3
-
-# note that it is a [1,2] not a (1,2) or 1,2
-b
-array([ 1.,  4.,  4.,  1.,  1.,  1.])
-
-# one can also reuse index
-b[ [,2,2,5]]
-array([ 1.,  3.,  3.,  1.])
-** install python package to local location
-python setup.py install --user
-
-** wait for enqueued tasks to be completed
-
-https://docs.python.org/2/library/queue.html#Queue.Queue
-#+BEGIN_SRC python
-def worker():
-    while True:
-        item = q.get()
-        do_work(item)
-        q.task_done()
-
-q = Queue() # equivalent to multiprocessing.JoinableQueue
-for i in range(num_worker_threads):
-     t = Thread(target=worker)
-     t.daemon = True
-     t.start()
-
-for item in source():
-    q.put(item)
-
-q.join()       # block until all tasks are done
-#+END_SRC
-
-** information entropy
+*** set matplotlib style (e.g., to ggplot)
+from mpltools import style
+style.use('ggplot')
+from mpltools import layout
+figsize = layout.figaspect(scale=1.2)
 
 #+BEGIN_SRC python
-  def entropy(labels):
-      """ Computes entropy of label distribution. """
-      n_labels = float(len(labels))
-  
-      if n_labels <= 1:
-          return 0
-  
-      counter = collections.Counter(labels)
-      probs = [ _ / n_labels for _ in counter.values()]
-      n_classes = np.count_nonzero(probs)
-  
-      if n_classes <= 1:
-          return 0
-  
-      ent = 0.
-  
-      # Compute standard entropy.
-      for i in probs:
-          ent -= i * math.log(i, n_classes)
-  
-      return ent
-  
-#+END_SRC
-
-** how to time a one-liner code snippet?
-
-#+BEGIN_SRC python
-python -m timeit "i=5" "i *= i"
-#+END_SRC
-
-** how to get logic AND for all elements in a list
-all(list)
-any(list) for OR logic
-** matplotlib ggplot style
-#+BEGIN_SRC 
 
 from mpltools import style
 from mpltools import layout
@@ -6323,207 +6391,221 @@ for ax in axes.ravel():
 plt.show()
 #+END_SRC
 
-** how to get a variable / object by its name as a string?
-there are two ways.
-1. globals()['var']
-2. eval('var') # this is not very safe.
-*** spearman r
-      from scipy.stats import spearmanr
-      rho, p = spearmanr(x, y)
-      print rho, p
+*** change plotting backend
 
-** customize matplotlibrc file
-cp /etc/matplotlibrc ~/.matplotlib/
-then edit .matplotlib/matplotlibrc
+import matplotlib
+matplotlib.use('PS')
+matplotlib.use("WXAgg")
 
-** semantics
-*** how to write python main?
+or
+edit .matplotlib/matplotlibrc file
+To locate .matplotlib directory
+do
+>>> import matplotlib as mpl
+>>> mpl.get_configdir()
+'/home/wanding/.matplotlib'
+and write in matplotlibrc file
+backend : WXAgg
+Or in most cased
+backend : TkAgg
+
+*** figure size
+figure(num=None, figsize=(8, 6), dpi=80, facecolor='w', edgecolor='k')
+
+or
+fig = plt.gcf()
+fig.set_size_inches(18.5, 10.5)
+fig.savefig('test2png.png', dpi=100)
+
+or
+plt.rcParams['figure.figsize'] = 5, 10
+
+*** grid
+plt.grid()
+or
+ax = plt.gca()
+ax.grid(True)
+*** legend
+**** create a legend
+***** by just calling plt.legend()
+since matplotlib remembers what has been plotted.
+plt.figure()
+plt.scatter(k,a,color='k',label='curve1')
+plt.scatter(k,b,color='r',label='curve2')
+plt.legend(loc=2)
+
+***** use "handle" from data plots (DON'T forget "handle" keyword)
+
+#+BEGIN_SRC python
+# usually plot function returns a list of one artist, e.g.,
+# [<matplotlib.lines.Line2D at 0x121164450>]
+line_up, = plt.plot([1,2,3], label='Line 2') # the label argument will appear in legend
+line_down, = plt.plot([3,2,1], label='Line 1')
+plt.legend(handles=[line_up, line_down]) # DON'T forget "handle" keyword
+#+END_SRC
+
+#+BEGIN_SRC python
+line_up, = plt.plot([1,2,3], label='Line 2')
+line_down, = plt.plot([3,2,1], label='Line 1')
+plt.legend([line_up, line_down], ['Line Up', 'Line Down'])
+#+END_SRC
+***** create a legend handle that doesn't come from any data plots
+
+Some data plots cannot be used as a legend handle. So we need to create one.
+
+#+BEGIN_SRC python
+# example 1
+red_patch = mpatches.Patch(color='red', label='The red data')
+plt.legend(handles=[red_patch])
+
+# example 2
+blue_line = mlines.Line2D([], [], color='blue', marker='*', markersize=15, label='Blue stars')
+plt.legend(handles=[blue_line])
+#+END_SRC
+
+**** customize legend
+***** set location
+plt.legend(loc='upper center')
+
+options: 
+| ‘best’         |  0 |
+| ‘upper right’  |  1 |
+| ‘upper left’   |  2 |
+| ‘lower left’   |  3 |
+| ‘lower right’  |  4 |
+| ‘right’        |  5 |
+| ‘center left’  |  6 |
+| ‘center right’ |  7 |
+| ‘lower center’ |  8 |
+| ‘upper center’ |  9 |
+| ‘center'       | 10 |
+
+or use coordinates w.r.t the figure [0,1], NOT the plotting coordinates
+plt.legend(loc=(0.5,0.6))
+
+***** change the legend size
+plt.legend(loc=2,prop={'size':6})
+
+***** remove legend border/box
+
+plt.legend(frameon=False)
+
+or 
+leg = plt.legend()
+leg.get_frame().set_linewidth(0.0)
+
+***** change color of the legend box
+
+leg = plt.legend()
+leg.get_frame().set_edgecolor('b')
+
+*** customize fonts in plotting using prop keyword
+
+use prop keyword (short for font properties)
+prop = {'family': 'fantasy', style: 'italic', variant:' small-caps', stretch:'condensed', weight:'light', size:12}
+
+*** remove edgecolor in scatterplot
+plt.scatter(entropies, error_seqs, edgecolor='none')
+*** adjust plot margin
+plt.subplots_adjust(bottom=0.15)
+plt.subplots_adjust(bottom=0.08, top=0.99, left=0.08,right=0.99)
+plt.savefig(myfig,bbox_inches='tight',pad_inches=0.05)
+*** set xticks and xticklabels
+plt.xticks([<a list of numbers>],[<a list of labels>])
+
+or
+ax=plt.gca()
+ax.set_xticks([<a list of numbers>])
+ax.set_xticklabels([<a list of labels>])
+*** the callback mechanism used in matplotlib
+**** register a function func to a string s
+CallbackRegistry.connect(s, func)
+or in matplotlib: mpl_connect(s, func) (actually this subroutine call the
+CallbackRegistry.connects)
+Note: multiple functions can be connected to s. When s is called, all these functions are called.
+**** call all the function registered to s
+CallbackRegistry.process(s, *args, **kwargs)
+call all the functions registered to s with  *args and **kwargs
+**** s is so-called signals
+*** bar
+plt.bar(left_ends_of_each_bar, heights_of_each_bar)
+plt.xticks([_+bar_width for _ in left_ends_of_each_bar], bar_labels)
+*** hexbin
+plt.hexbin(entropies, error_seqs, bins='log', gridsize=20, cmap=cm.Greys)
+*** boxplot
+**** set the color of boxplot
 #+begin_src python
-  def main():
-      pass
-  # main code goes here
-  if __name__ == '__main__':
-      main()
+def setcolor(ob, col):
+    for item in ['medians', 'fliers', 'whiskers', 'boxes', 'caps']:
+        plt.setp(ob[item], color=col)
+    return
+
+b1=plt.boxplot([[vaf[0] for vaf in vaf_seq] for vaf_seq in vaf_seqs], 
+               positions=[_-0.25 for _ in xrange(1, len(seq_depth_seq)+1)], widths=0.2)
+setcolor(b1, "magenta")
 #+end_src
 
-**** 更加fancy的写法
+** debugging
 
-#+begin_src python
-  import sys
-  
-  def main(*args):
-      try:
-        # some code there
-        pass
-    except:
-        # handle some exceptions
-        pass
-    else:
-        return 0 # exit errorlessly
-  
-  if __name__ == '__main__':
-      sys.exit(main(*sys.argv))
-#+end_src
+insert 
+import pdb; pdb.set_trace()
+into where you want to stop in a python program
 
-*** how to avoid cyclic import
-Imports are pretty straightforward really. Just remember the following:
+b 	Set a breakpoint.
+c 	Continue with program execution.
+q 	Abort the program.
+h 	Print list of commands or help for a given command.
+l 	Show source code around current line.
+r 	Continue execution until the current function returns.
 
-'import' and 'from xxx import yyy' are executable statements. They execute when the running program reaches that line.
+Python debugging techniques
+https://gimmebar-assets.s3.amazonaws.com/4fe38b76be0a5.html
 
-If a module is not in sys.modules, then an import creates the new module entry in sys.modules and then executes the code in the module. It does not return control to the calling module until the execution has completed.
+or one can use
+import code; code.interact(local=locals())
 
-If a module does exist in sys.modules then an import simply returns that module whether or not it has completed executing. That is the reason why cyclic imports may return modules which appear to be partly empty.
+** pip
 
-Finally, the executing script runs in a module named __main__, importing the script under its own name will create a new module unrelated to __main__.
+install to local directory
+pip install --user toolshed
 
-Take that lot together and you shouldn't get any surprises when importing modules.
-**** difference between 'import' and 'from xxx import yyy'
-      from xxx import yyy need the entire script of xxx be compiled(or executed) before import yyy.
-*** how to writing an extension
-     The following discuss the reference counting:
-     http://bytes.com/topic/python/answers/158440-py_decref-question
+upgrade
+pip install --upgrade cutadapt
 
-*** how to sort a list based on the order of another list?
-I have a list of strings like this:
+** numpy
+*** difference between numpy.array and numpy.matrix
+numpy.matrix is strictly 2-d
+please use numpy.array most of the time
+*** numpy.array how to index elements individually
+https://scipy-lectures.github.io/intro/numpy/array_object.html
 
-X = ["a", "b", "c", "d", "e", "f", "g", "h", "i"]
-Y = [ 0,   1,   1,    0,   1,   2,   2,   0,   1]
+b = np.ones(6)
+b[ [1,2]] += 3
 
-What is the shortest way of sorting X using values from Y to get the following output?
+# note that it is a [1,2] not a (1,2) or 1,2
+b
+array([ 1.,  4.,  4.,  1.,  1.,  1.])
 
-    ["a", "d", "h", "b", "c", "e", "i", "f", "g"]
-
-The order for the elements having the same "key" does not matter. I can resort to using for constructs but I am curious if there is a shorter way. Any suggestions?
-
-[x for (y,x) in sorted(zip(y,x))]
-
-This is due to python's behavior of sorting list of tuples.
-It automatically sorts a list of tuples by the first elements in the tuples, then by the second elements and so on tuple([1,2,3]) will go before tuple([1,2,4]). If you want to override this behaviour pass a callable as the second argument to the sort method. This callable should return 1, -1, 0.
-
-*** elementwise operation of two lists
-[x+y for x,y in zip(list1, list2)]
-*** how to count occurrence (estimate frequency) of each item in the list?
-**** method 1 (best)
-use collections.Counter
-import collections
-a = [1,1,1,1,2,2,2,2,3,3,4,5,5]
-counter=collections.Counter(a)
-print(counter)
-# Counter({1: 4, 2: 4, 3: 2, 5: 2, 4: 1})
-print(counter.values())
-# [4, 4, 2, 1, 2]
-print(counter.keys())
-# [1, 2, 3, 4, 5]
-print(counter.most_common(3))
-# [(1, 4), (2, 4), (3, 2)]
-**** method 2
-use itertools.groupby
-a = [1,1,1,1,2,2,2,2,3,3,4,5,5]
-from itertools import groupby
-[len(list(group)) for key, group in groupby(a)]
-
-Output:
-
-[4, 4, 2, 1, 2]
-**** method 3
-use defaultdict
-
-from collections import defaultdict
-
-words = "apple banana apple strawberry banana lemon"
-
-d = defaultdict(int)
-for word in words.split():
-    d[word] += 1
-
-This runs in O(n).
-
-*** dot product
-use operator.mul
-sum(map( operator.mul, vector1, vector2))
-there should be better methods
-*** how to sort dictionary according to value
-**** solution 1
-import operator
-x = {1:2, 3:4, 4:3, 2:1, 0:0}
-sorted_x = sorted(x.items(), key=operator.itemgetter(1))
-**** solution 2
-from operator import itemgetter
-sorted(d.items(), key=itemgetter(1))
-**** solution 3
-sorted([(value,key) for (key, value) in mydict.items()])
-**** solution 4
-sorted(dictionaryObject.items(), key=lambda x:x[1])** 字符编码声明
-  # -*- coding: utf-8 -*- 
-
-*** get docstring of an object via __doc__ 
->>>print object.__doc__
-*** environment variables related to the python interpreter
-#!/usr/bin/python
-Or
-#!/usr/bin/env python
-Or
-$ set PYTHONINSPECT = 1
-$ export PYTHONINSPECT
-$ python sample.py
-Or
-env PYTHONINSPECT = 1 sample.py
-*** command line options of python interpreter
-D       PYTHONDEBUG     generate debug information
--I      PYTHONINSPECT   Cause the interpreter to go into interactive mode after executing the script
--O      PYTHONOPTIMIZE  optimize the bytecode
--OO     optimize and also remove the document string
--S      give warning when using tab as indentation
--u      PYTHONUNBEFFERED        Force the standard output and error filehandle to operate unbuffered.
--v      PYTHONVERBOSE   generate information about modules imported.
--x      skip the first line
--X      disable class-based exceptions
--c cmd  cmd is used as the script source instead of a source file
--       read the source file from standard input.
-*** how to do type coerce
->>>print 5/12
-0
->>>print 5.0/12
-0.41666666667
-int()
-float()
-coerce(a,b)     coerce the type of a into the type of b
-*** numbers:
-integer = -1234         32 bits long
-decimal = 255
-hexadeimal = 0xff       0x is prefix
-octal = 0377            0(zero) is prefix
-long = 1234L            L is suffix, arbitrary long
-float = 1234.5678
-scientific = -12.34E-56
-complex = 1.2+3.4j      j or J is suffix
-
-** when to use, "open" vs "file"?
-always use "open"
-http://stackoverflow.com/questions/112970/python-when-to-use-file-vs-open
-
-** how to zip?
-zip([1,2,3],[4,5,6],[7,8,9]) = [1,4,7], [2,5,8], [3,6,9]
-** string
-s.split()  with no argument, it splits on whitespace.
-s.ljust(n)  pad the string on the right until n characters if string longer than n, leave the string untruncated.
-** numpy.take
+# one can also reuse index
+b[ [,2,2,5]]
+array([ 1.,  3.,  3.,  1.])
+*** subset using take
 x = [1,2,3,4]
 numpy.take(x, [1,3])		# return [2,4]
-** scipy
+** algorithm
 *** cluster
 **** hierarchy
 ***** pdist
-       takes m by n ndarray
-       regard the array as m data points each of dimension n
-       compute m by m distance matrix
-       the matrix is in a condensed form.
-       has shape: (m(m-1)/2, )
-       not (m,m)
-       but can be converted to (m,m) by using squareform() function
+takes m by n ndarray
+regard the array as m data points each of dimension n
+compute m by m distance matrix
+the matrix is in a condensed form.
+has shape: (m(m-1)/2, )
+not (m,m)
+but can be converted to (m,m) by using squareform() function
 ***** squareform
 ***** linkage
-       compute the dendrogram connectivity from the distance matrix
+compute the dendrogram connectivity from the distance matrix
 ***** dendrogram
 *** k-mean clustering
 #+BEGIN_SRC python
@@ -6560,102 +6642,302 @@ plot(centroids[:,0],centroids[:,1],'sm',markersize=8)
 show()
 #+END_SRC
 
-** shlex
-*** split
-
-** random
-*** sample
-*** shuffle
-** os
-*** path
-     tutorial <http://www.doughellmann.com/PyMOTW/ospath/>
-     getcwd
-     expanduser('~/Dropbox/')
-     join
-     commprefix
-     dirname
-     split
-     splitext
-     basename
-     expandvars('/path/to/$MYVAR')
-     normpath
-     abspath
-*** listdir
-*** sep
-*** extsep
-*** pardir
-*** curdir
-*** mkdir
-** sys
-*** how to pass command line argument
-import sys      # this is required.
-filename        sys.argv[0]
-the 1st argument   sys.argv[1]
-** itertools
-*** itertools.groupby
-     http://stackoverflow.com/questions/893417/item-frequency-count-in-python
-*** combinations
-** datetime
-*** to time python code
-from datetime import datetime
-time1 = datetime.now()
-time2 = datetime.now()
-dt = time2 - time1		# a timedelta object
-str(dt)			# the human readable format
-   
-** rpy
-    from rpy import r
-    print r.summary(some_vector)
-** matplotlib
-*** bar
-     plt.bar(left_ends_of_each_bar, heights_of_each_bar)
-     plt.xticks([_+bar_width for _ in left_ends_of_each_bar], bar_labels)
-*** Set xticks and xticklabels
-ax=plt.gca()
-ax.set_xticks([<a list of numbers>])
-ax.set_xticklabels([<a list of labels>])
-*** set the color of boxplot
-#+begin_src python
-    def setcolor(ob, col):
-        for item in ['medians', 'fliers', 'whiskers', 'boxes', 'caps']:
-            plt.setp(ob[item], color=col)
-
-        return
-
-    b1=plt.boxplot([[vaf[0] for vaf in vaf_seq] for vaf_seq in vaf_seqs], 
-                   positions=[_-0.25 for _ in xrange(1, len(seq_depth_seq)+1)], widths=0.2)
-    setcolor(b1, "magenta")
-#+end_src
-
-*** imshow and pcolor
-** statistics
-*** linear regression
-      from scipy import polyfit, polyval
-      (ar, br) = polyfit(x, y, 1)
-      xr=polyval([ar,br], x)
-      print ar, br
-
-** ete2
-*** Tree rendering
+*** ete2 and phylogenetics
+**** Tree rendering
 t=Tree(..)
 ts=TreeStyle()
 ts.layout_fn=mylayout
 ts.show_leaf_name=False
 t.render(“outputfile.png”, tree_style=ts)
 
-*** Layout function
+**** Layout function
 def mylayout(node):
 	faces.add_face_to_node(faces.AttrFace(“lcamapped”, fsize=7, fgcolor=”red”), node, column=0, position=”branch-top”)
 
-*** NodeStyle
+**** NodeStyle
 nstyle=NodeStyle()
 nstyle['shape']='sphere'
 for n in t.traverse():
 n.set_style(nstyle)
-** thread and threading
+*** Shannon entropy
+
+#+BEGIN_SRC python
+  def entropy(labels):
+      """ Computes entropy of label distribution. """
+      n_labels = float(len(labels))
+  
+      if n_labels <= 1:
+          return 0
+  
+      counter = collections.Counter(labels)
+      probs = [ _ / n_labels for _ in counter.values()]
+      n_classes = np.count_nonzero(probs)
+  
+      if n_classes <= 1:
+          return 0
+  
+      ent = 0.
+  
+      # Compute standard entropy.
+      for i in probs:
+          ent -= i * math.log(i, n_classes)
+  
+      return ent
+  
+#+END_SRC
+
+*** linear regression
+from scipy import polyfit, polyval
+(ar, br) = polyfit(x, y, 1)
+xr=polyval([ar,br], x)
+print ar, br
+*** spearman r
+from scipy.stats import spearmanr
+rho, p = spearmanr(x, y)
+print rho, p
+** Cython
+*** Build manually using gcc
+     1. This will create a .c file
+     cython mymodule.pyx
+     
+     2. Compile .c into .o
+     gcc -O2 -c -fPIC -I/usr/include/python2.6/ mymodule.c
+     -c
+     produces a .o file instead of an executable.
+     -fPIC
+     Produces position independent code, so we can dynamically link against it
+     -I/usr/include/python2.6/
+     the location of the Python 2.6 include file
+     
+     3. Link the .o into a .so
+     gcc -shared mymodule.o -o mymodule.so
+     -shared
+     produces a shared-object file, instead of an executable.
+     mymodule.o
+     is the name of the module you wish to compile.
+     -lxosd (optional)
+     links against the C-library xosd.
+     xosd(X On Screen Display) library displays text on your screen.
+     -o mymodule.so
+     causes gcc to put the output into a file called mymodule.so
+*** compile using distutils
+**** save the following as setup.py
+      from disutils.core import setup
+      from disutils.extension import Extension
+      from Pyrex.Distutils import build_ext
+      setup(
+      name = "PyrexGuide",
+      ext_modules=[ 
+      Extension("mymodule", ["mymodule.pyx"], libraries = ["xosd"])
+      ],
+      cmdclass = {'build_ext': build_ext}
+      )
+**** python setup.py build_ext --inplace
+*** Use your module
+     import mymodule
+     print dir(mymodule)
+** basics
+*** python oneline if
+if condition:
+    do_something()
+
+if condition: do_something()
+
+if condition: do_something(); do_something_else()
+
+if condition:
+    do_something()
+    do_something_else()
+*** how to sort a list based on the order of another list?
+I have a list of strings like this:
+
+X = ["a", "b", "c", "d", "e", "f", "g", "h", "i"]
+Y = [ 0,   1,   1,    0,   1,   2,   2,   0,   1]
+
+What is the shortest way of sorting X using values from Y to get the following output?
+
+    ["a", "d", "h", "b", "c", "e", "i", "f", "g"]
+
+The order for the elements having the same "key" does not matter. I can resort to using for constructs but I am curious if there is a shorter way. Any suggestions?
+
+[x for (y,x) in sorted(zip(y,x))]
+
+This is due to python's behavior of sorting list of tuples.
+It automatically sorts a list of tuples by the first elements in the tuples, then by the second elements and so on tuple([1,2,3]) will go before tuple([1,2,4]). If you want to override this behaviour pass a callable as the second argument to the sort method. This callable should return 1, -1, 0.
+
+*** elementwise operation of two lists
+[x+y for x,y in zip(list1, list2)]
+*** count occurrence (estimate frequency) of each item in the list?
+**** method 1 (best)
+use collections.Counter
+import collections
+a = [1,1,1,1,2,2,2,2,3,3,4,5,5]
+counter=collections.Counter(a)
+print(counter)
+# Counter({1: 4, 2: 4, 3: 2, 5: 2, 4: 1})
+print(counter.values())
+# [4, 4, 2, 1, 2]
+print(counter.keys())
+# [1, 2, 3, 4, 5]
+print(counter.most_common(3))
+# [(1, 4), (2, 4), (3, 2)]
+**** method 2
+use itertools.groupby
+a = [1,1,1,1,2,2,2,2,3,3,4,5,5]
+from itertools import groupby
+[len(list(group)) for key, group in groupby(a)]
+
+Output:
+
+[4, 4, 2, 1, 2]
+**** method 3
+use defaultdict
+
+from collections import defaultdict
+
+words = "apple banana apple strawberry banana lemon"
+
+d = defaultdict(int)
+for word in words.split():
+    d[word] += 1
+
+This runs in O(n).
+
+*** dot product using operator.mul
+sum(map( operator.mul, vector1, vector2))
+there should be better methods
+*** how to sort dictionary according to value
+**** solution 1
+import operator
+x = {1:2, 3:4, 4:3, 2:1, 0:0}
+sorted_x = sorted(x.items(), key=operator.itemgetter(1))
+**** solution 2
+from operator import itemgetter
+sorted(d.items(), key=itemgetter(1))
+**** solution 3
+sorted([(value,key) for (key, value) in mydict.items()])
+**** solution 4
+#+BEGIN_SRC python
+sorted(dictionaryObject.items(), key=lambda x:x[1])** 字符编码声明
+#+END_SRC
+
+*** how to zip?
+zip([1,2,3],[4,5,6],[7,8,9]) = [1,4,7], [2,5,8], [3,6,9]
+**** change a [(x1, y1), (x2, y2)] into [x1,x2], [y1, y2]
+***** zip() and unzip
+***** numpy.asarray method
+xy = numpy.asarray([(x1, y1), (x2, y2)]
+xy[:,0], xy[:,1]
+*** how to get logic AND for all elements in a list
+all(list)
+any(list) for OR logic
+*** how to get a variable / object by its name (as a string)?
+there are two ways.
+1. globals()['var']
+2. eval('var') # this is not very safe.
+
+*** pad string on the right until string as long as n
+s.ljust(n)  pad the string on the right until n characters if string longer than n, leave the string untruncated.
+*** how to know the type of a python object
+type(object)
+e.g. a = [1,2,3]
+type(a) 			# return <type 'list'>
+isinstance(a, type(a))	# return True
+*** the difference between __call__ and __init__
+    class A:
+    def __init__(self):
+    print "init"
+    def __call__(self):
+    print "call"
+    # then,
+    a = A() 			# print init
+    a()				# print call
+*** getattr and callable
+func = getattr(self, 'set_'+k, None) # same as calling self.set_*k*
+if func is None or not callable(func): raise AttributeError("Unknown
+Prop")
+func(v)
+** xml
+*** sax
+**** good xml references:
+www.boddie.org.uk/python/XML_intro.html
+**** xml.sax explained
+http://mail.python.org/pipermail/python-dev/2000-October/009946.html
+and see Troy's pyGS2 script in Dropbox/scripts/python/analysis
+a general pattern is 
+--
+from xml.sax import make_parser, ContentHandler
+parser = make_parser()
+# build a handler
+parser.setContentHandler(handler)
+parser.parse(fstream)
+***** how to define a handler
+class YourHandler(ContentHandler):
+you need to define:
+__init__, 
+startElement(self,name,attrs), endElement(self,name), and characters(self,ch)
+** others
+*** install python package to local location
+python setup.py install --user
+*** to set python package default install location
+edit
+~/.pydistutils.cfg
+====
+[easy_install]
+
+# set the default location to install packages
+install_dir = /scratch/bcb/wzhou1/tools/pythonlib
+====
+*** when to use, "open" vs "file"?
+always use "open", "file" is obsolete
+http://stackoverflow.com/questions/112970/python-when-to-use-file-vs-open
+
+*** how to time a one-liner code snippet?
+
+#+BEGIN_SRC python
+python -m timeit "i=5" "i *= i"
+#+END_SRC
+
+*** how to writing an extension
+The following discuss the reference counting:
+http://bytes.com/topic/python/answers/158440-py_decref-question
+*** to time python code
+from datetime import datetime
+time1 = datetime.now()
+time2 = datetime.now()
+dt = time2 - time1		# a timedelta object
+str(dt)			# the human readable format  
+*** how to browse modules that has been loaded
+import sys
+sys.modules
+
+** parallel programming, multiprocessing, threads
+*** wait for enqueued tasks to be completed
+
+https://docs.python.org/2/library/queue.html#Queue.Queue
+#+BEGIN_SRC python
+def worker():
+    while True:
+        item = q.get()
+        do_work(item)
+        q.task_done()
+
+q = Queue() # equivalent to multiprocessing.JoinableQueue
+for i in range(num_worker_threads):
+     t = Thread(target=worker)
+     t.daemon = True
+     t.start()
+
+for item in source():
+    q.put(item)
+
+q.join()       # block until all tasks are done
+#+END_SRC
+
+*** thread and threading
 [2013-07-21 Sun]
 Python 标准库提供了 thread 和 threading 两个模块来对多线程进行支持。其中， thread 模块以低级、原始的方式来处理和控制线程，而 threading 模块通过对 thread 进行二次封装，提供了更方便的 api 来处理线程。 虽然使用 thread 没有 threading 来的方便，但它更灵活。今天先介绍 thread 模块的基本使用，
-*** thread
+**** thread
 #+begin_src python
   #coding=gbk  
   import thread, time, random  
@@ -6669,7 +6951,7 @@ Python 标准库提供了 thread 和 threading 两个模块来对多线程进行
   time.sleep(3)  
   print count #count是多少呢？是10000 * 10 吗？ 
 #+end_src
-*** threading
+**** threading
 Thread 是threading模块中最重要的类之一，可以使用它来创建线程。有两种方式来创建线程：一种是通过继承Thread类，重写它的run方法；另一种是创建一个threading.Thread对象，在它的初始化函数（__init__）中将可调用对象作为参数传入。下面分别举例说明。先来看看通过继承threading.Thread类来创建线程的例子：
 #+begin_src python
   #coding=gbk  
@@ -6703,7 +6985,7 @@ Thread 是threading模块中最重要的类之一，可以使用它来创建线�
 #+end_src
 在代码中，我们创建了一个Counter类，它继承了threading.Thread。初始化函数接收两个参数，一个是琐对象，另一个是线程的名称。在Counter中，重写了从父类继承的run方法，run方法将一个全局变量逐一的增加10000。在接下来的代码中，创建了五个Counter对象，分别调用其start方法。最后打印结果。这里要说明一下run方法 和start方法: 它们都是从Thread继承而来的，run()方法将在线程开启后执行，可以把相关的逻辑写到run方法中（通常把run方法称为活动[Activity]。）；start()方法用于启动线程。
 
-*** what's 线程安全?
+**** what's 线程安全?
 如果你的代码所在的进程中有多个线程在同时运行，而这些线程可能会同时运行这段代码。如果每次运行结果和单线程运行的结果是一样的，而且其他的变量的值也和预期的是一样的，就是线程安全的。
 
 或者说:一个类或者程序所提供的接口对于线程来说是原子操作或者多个线程之间的切换不会导致该接口的执行结果存在二义性,也就是说我们不用考虑同步的问题。
@@ -6712,11 +6994,11 @@ Thread 是threading模块中最重要的类之一，可以使用它来创建线�
 在单线程运行的情况下，如果 Size = 0，添加一个元素后，此元素在位置 0，而且 Size=1；
 而如果是在多线程情况下，比如有两个线程，线程 A 先将元素存放在位置 0。但是此时 CPU 调度线程A暂停，线程 B 得到运行的机会。线程B也向此 ArrayList 添加元素，因为此时 Size 仍然等于 0 （注意哦，我们假设的是添加一个元素是要两个步骤哦，而线程A仅仅完成了步骤1），所以线程B也将元素存放在位置0。然后线程A和线程B都继续运行，都增加 Size 的值。
 那好，我们来看看 ArrayList 的情况，元素实际上只有一个，存放在位置 0，而 Size 却等于 2。这就是“线程不安全”了。
-*** what cause 线程安全问题
+**** what cause 线程安全问题
 线程安全问题都是由全局变量及静态变量引起的。
   
 若每个线程中对全局变量、静态变量只有读操作，而无写操作，一般来说，这个全局变量是线程安全的；若有多个线程同时执行写操作，一般都需要考虑线程同步，否则的话就可能影响线程安全。
-*** Python：使用threading模块实现多线程编程一[综述]
+**** Python：使用threading模块实现多线程编程一[综述]
 Python这门解释性语言也有专门的线程模型，Python虚拟机使用GIL（Global Interpreter Lock，全局解释器锁）来互斥线程对共享资源的访问，但暂时无法利用多处理器的优势。
 
 在Python中我们主要是通过thread和threading这两个模块来实现的，其中Python的threading模块是对thread做了一些包装的，可以更加方便的被使用，所以我们使用 threading模块实现多线程编程。这篇文章我们主要来看看Python对多线程编程的支持。
@@ -6756,9 +7038,9 @@ PriorityQueue 优先队列
 
 接下来的一系列文章，我们将会用一个一个示例来展示threading的各个功能，包括但不限于：两种方式起线程、threading.Thread类的重要函数、使用Lock互斥及RLock实现重入锁、使用Condition实现生产者和消费者模型、使用Event和Semaphore多线程通信。
 
-*** Python：使用threading模块实现多线程编程二[两种方式起线程]
+**** Python：使用threading模块实现多线程编程二[两种方式起线程]
 在Python中我们主要是通过thread和threading这两个模块来实现的，其中Python的threading模块是对thread做了一些包装的，可以更加方便的被使用，所以我们使用threading模块实现多线程编程。一般来说，使用线程有两种模式，一种是创建线程要执行的函数，把这个函数传递进Thread对象里，让它来执行；另一种是直接从Thread继承，创建一个新的class，把线程执行的代码放到这个新的 class里。
-**** 将函数传递进Thread对象
+***** 将函数传递进Thread对象
 #+begin_src python
   '''''  
   Created on 2012-9-5  
@@ -6793,7 +7075,7 @@ PriorityQueue 优先队列
 #+end_src
 程序启动了3个线程，并且打印了每一个线程的线程名字，这个比较简单吧，处理重复任务就派出用场了，下面介绍使用继承threading的方式；
 
-**** 继承自threading.Thread类
+***** 继承自threading.Thread类
 #+begin_src python
     ''''' 
     Created on 2012-9-6 
@@ -6817,7 +7099,7 @@ PriorityQueue 优先队列
             t.start()  
 #+end_src
 接下来的文章，将会介绍如何控制这些线程，包括子线程的退出，子线程是否存活及将子线程设置为守护线程(Daemon)。
-*** Python：使用threading模块实现多线程编程三[threading.Thread类的重要函数]
+**** Python：使用threading模块实现多线程编程三[threading.Thread类的重要函数]
 这篇文章主要介绍threading模块中的主类Thread的一些主要方法，实例代码如下：
 
 #+begin_src python
@@ -6870,7 +7152,7 @@ join方法原型如下，这个方法是用来阻塞当前上下文，直至该�
 3 setDaemon方法
 当我们在程序运行中，执行一个主线程，如果主线程又创建一个子线程，主线程和子线程就分兵两路，当主线程完成想退出时，会检验子线程是否完成。如果子线程未完成，则主线程会等待子线程完成后再退出。但是有时候我们需要的是，只要主线程完成了，不管子线程是否完成，都要和主线程一起退出，这时就可以用setDaemon方法，并设置其参数为True。
 
-*** Python：使用threading模块实现多线程编程四[使用Lock互斥锁]
+**** Python：使用threading模块实现多线程编程四[使用Lock互斥锁]
 前面已经演示了Python：使用threading模块实现多线程编程二两种方式起线程和Python：使用threading模块实现多线程编程三threading.Thread类的重要函数，这两篇文章的示例都是演示了互不相干的独立线程，现在我们考虑这样一个问题：假设各个线程需要访问同一公共资源，我们的代码该怎么写？
 
 #+begin_src python
@@ -6954,7 +7236,7 @@ Python编程中，引入了对象互斥锁的概念，来保证共享数据操�
 
 上述这两种情况会直接造成程序挂起，即死锁，下面我们会谈死锁及可重入锁RLock。
 
-*** Python：使用threading模块实现多线程编程五[死锁的形成]
+**** Python：使用threading模块实现多线程编程五[死锁的形成]
 前一篇文章Python：使用threading模块实现多线程编程四[使用Lock互斥锁]我们已经开始涉及到如何使用互斥锁来保护我们的公共资源了，现在考虑下面的情况
 如果有多个公共资源，在线程间共享多个资源的时候，如果两个线程分别占有一部分资源并且同时等待对方的资源，这会引起什么问题？
 *死锁概念*
@@ -7020,7 +7302,7 @@ I am Thread-2 , get res: ResAI am Thread-1 , get res: ResB
 
 *避免死锁*
 避免死锁主要方法就是：正确有序的分配资源，避免死锁算法中最有代表性的算法是Dijkstra E.W 于1968年提出的银行家算法。
-*** Python：使用threading模块实现多线程编程六[可重入锁RLock]
+**** Python：使用threading模块实现多线程编程六[可重入锁RLock]
 考虑这种情况：如果一个线程遇到锁嵌套的情况该怎么办，这个嵌套是指当我一个线程在获取临界资源时，又需要再次获取。
 根据这种情况，代码如下：
 
@@ -7070,7 +7352,7 @@ I am Thread-2 , get res: ResAI am Thread-1 , get res: ResB
 替换成：
 =mutex = threading.RLock()=
 
-*** Python：使用threading模块实现多线程编程七[使用Condition实现复杂同步]
+**** Python：使用threading模块实现多线程编程七[使用Condition实现复杂同步]
 目前我们已经会使用Lock去对公共资源进行互斥访问了，也探讨了同一线程可以使用RLock去重入锁，但是尽管如此我们只不过才处理了一些程序中简单的同步现象，我们甚至还不能很合理的去解决使用Lock锁带来的死锁问题。所以我们得学会使用更深层的解决同步问题。
 
 Python提供的Condition对象提供了对复杂线程同步问题的支持。Condition被称为条件变量，除了提供与Lock类似的acquire和release方法外，还提供了wait和notify方法。
@@ -7155,7 +7437,7 @@ Consumer(Thread-11):only 1, stop consume, products:1
 ---
 另外：Condition对象的构造函数可以接受一个Lock/RLock对象作为参数，如果没有指定，则Condition对象会在内部自行创建一个RLock；除了notify方法外，Condition对象还提供了notifyAll方法，可以通知waiting池中的所有线程尝试acquire内部锁。由于上述机制，处于waiting状态的线程只能通过notify方法唤醒，所以notifyAll的作用在于防止有线程永远处于沉默状态。
 
-*** Python：使用threading模块实现多线程编程八[使用Event实现线程间通信]
+**** Python：使用threading模块实现多线程编程八[使用Event实现线程间通信]
 使用threading.Event可以实现线程间相互通信，之前的Python：使用threading模块实现多线程编程七[使用Condition实现复杂同步]我们已经初步实现了线程间通信的基本功能，但是更为通用的一种做法是使用threading.Event对象。
 使用threading.Event可以使一个线程等待其他线程的通知，我们把这个Event传递到线程对象中，Event默认内置了一个标志，初始值为False。一旦该线程通过wait()方法进入等待状态，直到另一个线程调用该Event的set()方法将内置标志设置为True时，该Event会通知所有等待状态的线程恢复运行。
 #+begin_src python
@@ -7200,591 +7482,7 @@ I am Thread-1, I awake...
 I am Thread-2, I awake...
 I am Thread-3, I awake...
 ---
-** cProfile 
-需要安装python-profiler
-*** 命令行profile
-     python -m cProfile -o ProfileOutput -s 'cumulative' myscript.py
-     -m tells Python to run the library module profile as a script
-     optional:
-     -o tells cProfile to write the profile data to a specific file
-     -s what to order by
-*** Interactive Shell Profile
-     import cProfile
-     cProfile.run('foo()','ProfileOutput')
-     import pstats
-     pstats.Stats('ProfileOutput')
-*** pstats (用来查看cProfile生成的文件)
-     import pstats
-     p = pstats.Stats('profile_file')
-     p.sort_stats('cumulative').print_stats(10)  # sort by cumulative time
-** Cython
-*** Build manually using gcc
-     1. This will create a .c file
-     cython mymodule.pyx
-     
-     2. Compile .c into .o
-     gcc -O2 -c -fPIC -I/usr/include/python2.6/ mymodule.c
-     -c
-     produces a .o file instead of an executable.
-     -fPIC
-     Produces position independent code, so we can dynamically link against it
-     -I/usr/include/python2.6/
-     the location of the Python 2.6 include file
-     
-     3. Link the .o into a .so
-     gcc -shared mymodule.o -o mymodule.so
-     -shared
-     produces a shared-object file, instead of an executable.
-     mymodule.o
-     is the name of the module you wish to compile.
-     -lxosd (optional)
-     links against the C-library xosd.
-     xosd(X On Screen Display) library displays text on your screen.
-     -o mymodule.so
-     causes gcc to put the output into a file called mymodule.so
-*** compile using distutils
-**** save the following as setup.py
-      from disutils.core import setup
-      from disutils.extension import Extension
-      from Pyrex.Distutils import build_ext
-      setup(
-      name = "PyrexGuide",
-      ext_modules=[ 
-      Extension("mymodule", ["mymodule.pyx"], libraries = ["xosd"])
-      ],
-      cmdclass = {'build_ext': build_ext}
-      )
-**** python setup.py build_ext --inplace
-*** Use your module
-     import mymodule
-     print dir(mymodule)
-** vim_python mode:
-    ]t      - jump to beginning of block
-    ]e      -- Jump to end of block
-    ]v      -- Select (Visual Line Mode) block
-    ]<      -- Shift block to left
-    ]>      -- Shift block to right
-    ]#      -- Comment selection
-    ]u      -- Uncomment selection
-    ]c      -- Select current/previous class
-    ]d      -- Select current/previous function
-    ]<up>   -- Jump to previous line with the same/lower indentation
-    ]<down> -- Jump to next line with the same/lower indentation
-** xml
-*** sax
-**** good xml references:
-      www.boddie.org.uk/python/XML_intro.html
-**** xml.sax explained
-      http://mail.python.org/pipermail/python-dev/2000-October/009946.html
-      and see Troy's pyGS2 script in Dropbox/scripts/python/analysis
-      a general pattern is 
-      --
-      from xml.sax import make_parser, ContentHandler
-      parser = make_parser()
-      # build a handler
-      parser.setContentHandler(handler)
-      parser.parse(fstream)
-***** how to define a handler
-       class YourHandler(ContentHandler):
-       you need to define:
-       __init__, 
-       startElement(self,name,attrs), endElement(self,name), and characters(self,ch)
-** optparse
 
-** matplotlib
-[plt.ylabel]    plt.ylabel('some numbers')
-[plt.show]      plt.show()
-[plt.axis]      plt.axis([0,6,0,20])
-imshow		takes a matrix and plot it as image
-contour		plot the contour
-*** configure backend
-     edit .matplotlib/matplotlibrc file
-     To locate .matplotlib directory
-     do
-     >>> import matplotlib as mpl
-     >>> mpl.get_configdir()
-     '/home/wanding/.matplotlib'
-     and write in matplotlibrc file
-     backend : WXAgg
-     Or in most cased
-     backend : TkAgg
-     
-     import matplotlib
-     matplotlib.use('PS')
-*** change a [(x1, y1), (x2, y2)] into [x1,x2], [y1, y2]
-**** zip() and unzip
-**** numpy.asarray method
-      xy = numpy.asarray([(x1, y1), (x2, y2)]
-      xy[:,0], xy[:,1]
-*** the structure of matplotlib
-**** matplotlib.artist.Artist
-      base class for adding something onto the canvas
-      the most useful plotting functions are defined there.
-***** attribute
-****** canvas
-       	matplotlib.backends.backend_tkagg.FigureCanvasTkAgg
-****** figure
-       	matplotlib.figure.Figure
-       	set in set_figure() function
-****** axes
-       	matplotlib.axes.Axes, where the artist "resides".
-       	initialized to None
-****** _picker
-       	can be None, a boolean, a float, or a function
-       	see set_picker() docstring for detail
-****** zorder
-       	any number, artists with lower zorder values are drawn first
-****** _alpha
-       	the alpha value used for blending
-       	float (0.0 transparent through 1.0 opaque)
-***** function
-****** set_picker()
-       	set self._picker which is often overrides by the same name
-       	in the derived classes. 
-****** update()
-       	set the parameters from the **kwargs
-       	if we specify "picker = 5" in the argument
-       	the update() would call self.set_picker(5)
-****** pick()
-       	call matplotlib.backend_bases.FigureCanvasBase.pick_event()
-****** set_figure()
-****** set_zorder()
-       	take any number, artists with lower zorder values are drawn first
-****** set_alpha()
-       	set the alpha value used for blending
-       	take a floating number (0.0 transparent through 1.0 opaque)
-***** matplotlib.axes.Axes
-****** attributes
-******* name
-       	 rectilinear
-******* _get_lines
-       	 matplotlib.axes._process._plot_var_args
-       	 initialized to matplotlib.axes._process_plot_var_args(self)
-       	 when it's called, the matplotlib.axes._process_plot_var_args.__call__()
-       	 would be called.
-******* lines
-       	 a list of matplotlib.lines.line2D
-******* patches
-******* texts
-******* tables
-******* artists
-******* images
-******* collections
-****** functions
-******* cla()
-       	 clear current axes
-******* set_title()
-       	 return matplotlib.text.Text object       
-******* add_artist()
-******* add_collection()
-******* add_line()
-******* add_patch()
-******* add_table()
-******* pie()
-       	 call add_patch(), make a piechart
-****** matplotlib.projections.polar.PolarAxes
-****** matplotlib.projections.geo.GeoAxes
-******* matplotlib.projections.geo.AitoffAxes
-******* matplotlib.projections.geo.HammerAxes
-******* matplotlib.projections.geo.MollweideAxes
-******* matplotlib.projections.geo.LamberAxes
-***** matplotlib.figure.Figure
-****** attributes
-******* canvas
-       	 this is originally "None"
-       	 and is usually set in matplotlib.pyplot.figure()
-       	 into matplotlib.backends.backend_tkagg.FigureCanvasTkAgg
-******* axes
-       	 a list of matplotlib.axes.Axes
-******* _axstack
-       	 matplotlib.cbook.Stack
-       	 for maintaining the current axes
-****** functions
-******* add_subplot()
-       	 return matplotlib.axes.subplot_class_factory() class object,
-       	 Notice that this object is obscure since the class's created on the fly
-       	 in most cases it's a joint child class of matplotlib.axes.SubplotBase
-       	 and the projection class object
-******* sca()
-       	 take a matplotlib.axes.Axes as its argument
-       	 bubble the current axes in the self._axstack
-******* gca()
-       	 get current axes
-       	 this returns a projection_class directly or calls add_subplot()
-       	 and return a joint object of projection_class and SubplotBase
-       	 class, if multiple axes exists, the gca() returns the top in
-       	 the self._axstack()
-******* clf()
-       	 delete all the axes and other stuff drawn
-       	 now self.axes become []
-***** matplotlib.patches.Patch
-       geometric shapes of various kinds
-****** matplotlib.patches.Shadow
-****** matplotlib.patches.Rectangle
-****** matplotlib.patches.RegularPolygon
-******* matplotlib.patches.CirclePolygon
-****** matplotlib.patches.PathPatch
-****** matplotlib.patches.Polygon
-******* matplotlib.patches.FancyArrow
-****** matplotlib.patches.Wedge
-****** matplotlib.patches.Arrow
-****** matplotlib.patches.YAArrow
-****** matplotlib.patches.Ellipse
-******* matplotlib.patches.Circle
-******* matplotlib.patches.Arc
-***** matplotlib.collections.Collection
-       jointly inherited from matplotlib.artist.Artist
-       and matplotlib.cm.ScalarMappable
-****** matplotlib.collections.QuadMesh
-****** matplotlib.collections.PollyCollection
-******* matplotlib.collections.BrokenBarHCollection
-****** matplotlib.collections.RegularPolyCollection
-******* matplotlib.collections.StarPolygonCollection
-******* matplotlib.collections.AsteriskPolygonCollection
-****** matplotlib.collections.LineCollection
-****** matplotlib.collections.EllipseCollection
-****** matplotlib.collections.PatchCollection
-***** matplotlib.lines.line2D
-****** funcs
-******* set_picker()
-       	 set self._picker which is a matplotlib.artist.Artist member
-**** matplotlib.artist.ArtistInspector
-**** matplotlib.backend_bases.FigureCanvasBase
-***** attributes
-****** figure
-       	matplotlib.figure.Figure
-****** callbacks
-       	matplotlib.cbooks.CallbackRegistry
-       	it is initialized to have the record of all the events
-****** events
-       	all the possible responsive events
-       	this includes, resize_event, draw_event, key_press_event,
-       	key_release_event, button_press_event, button_release_event,
-       	scroll_event, motion_notify_event,
-       	pick_event, idle_event, figure_enter_event, figure_leave_event,
-       	anxes_enter_event, axes_leave_event.
-***** function
-       the xxx_event function would be triggered by the human
-       interaction with canvas
-****** mpl_connect()
-       	connect a string to a function(event) where event is
-       	matplotlib.backend_bases.Event
-****** pick_event()
-       	callbacks.process(s, PickEvent)
-****** scroll_event()
-       	callbacks.process(s, MouseEvent)
-****** button_press_event()
-       	callbacks.process(s, MouseEvent)
-****** button_release_event()
-       	callbacks.process(s, MouseEvent)
-****** motion_notify_event()
-       	callbacks.process(s, MouseEvent)
-***** matplotlib.backends.backend_tkagg.FigureCanvasTkAgg
-       needs matplotlib.figure.Figure to initialize
-**** matplotlib.backend_bases.FigureManagerBase
-***** attributes
-****** canvas
-       	a matplotlib.backends.backend_tkagg.FigureCanvasTkAgg
-***** matplotlib.backends.backend_tkagg.FigureManagerTkAgg
-       needs matplotlib.backends.backend_tkagg.FigureCanvasTkAgg to
-       initialize
-**** matplotlib.backend_bases.Event
-      needs a matplotlib.backend_bases.FigureCanvas to initialize
-***** attributes
-****** canvas
-       	FigureCanvas
-****** guiEvent
-       	the GUI event that triggered the event
-***** matplotlib.backend_bases.IdleEvent
-***** matplotlib.backend_bases.DrawEvent
-***** matplotlib.backend_bases.LocationEvent
-****** matplotlib.backend_bases.MouseEvent
-****** matplotlib.backend_bases.KeyEvent
-***** matplotlib.backend_bases.PickEvent
-       needs a MouseEvent and an Artist to initialize
-       the pick_event would check how close the coordinates of this
-       MouseEvent and this Artist is.
-****** mouseevent
-       	matplotlib.backend_bases.MouseEvent
-****** artist
-       	matplotlib.artist.Artist
-**** matplotlib.axes._pylab_helpers.Gcf
-      Manage a set of integer-numbered figures.
-***** attributes
-****** _aciveQue
-       	a list of active matplotlib.figure.Figure()
-****** figs
-       	dictionary
-***** funcs
-****** get_fig_manager()
-       	take an interger number *num* as argument
-       	return figs[num]
-****** get_active
-       	return Gcf._activeQue[-1]
-**** matplotlib.axes._process_plot_var_args
-      needs matplotlib.axes.Axes and command (default to "plot") to
-      initiaize
-***** attribute
-****** axes
-****** command
-***** funcs
-****** __call__
-       	this call mainly does set_units
-**** matplotlib.patches._Style
-**** matplotlib.pyplot (module)
-***** funcs
-****** figure()
-       	return a matplotlib.figure.Figure using either
-       	_pylab_helpers.Gcf.get_fig_manager(num) to get a current figure
-       	or new_figure_manager (returned by pylab_setup from
-       	matplotlib.backends.__init__) to create a new figure.
-****** pie()
-       	call matplotlib.axes.Axes.pie()
-**** matplotlib.backends.backend_tkagg (module)
-***** attributes
-****** rcParams
-       	matplotlib.rcParams
-***** functions
-****** draw_if_interactive()
-****** show()
-****** new_figure_manager()
-**** matplotlib.backends (package)
-***** function
-****** pylab_setup()
-       	import backends according to the string "backend" which is
-       	obtained by matplotlib.get_backend()
-       	mainly import
-       	1. matplotlib.backends.backend_XXX.new_figure_manager() 
-       	2. matplotlib.backends.backend_XXX.draw_if_interactive()
-       	3. matplotlib.backends.backend_XXX.show()
-***** possible backends can be:
-       1. backend_agg
-       2. backend_cairo
-       3. backend_cocoaagg
-       4. backedn_emf
-       5. backend_fltkagg
-       6. backend_gtk
-       7. backend_gtkagg
-       8. backend_gtkcairo
-       9. backend_macosx
-       10. backend_mixed
-       11. backend_pdf
-       12. backend_qt
-       13. backend_ps
-       14. backend_qt4
-       15. backend_qt4agg
-       16. backend_svg
-       17. backend_template
-       18. backend_tkagg (default)
-       19. backend_wx
-       20. backend_wxagg
-       21. tkagg (not a backend)
-**** matplotlib.backend_bases.NavigationToolbar2
-**** matplotlib.cbook.CallbackRegistry
-***** attributs
-****** signals
-       	a set of strings (signals)
-****** callbacks
-       	a dictionary mapping signals to a dictionary mapping calback id
-       	to the callback function
-***** functions
-****** process()
-       	call all the functions registered to the signal string.
-**** matplotlib.cbook.Stack
-**** the relationship between figure.Figure and backends.backend_tkagg.FigureCanvasTkAgg
-      they are 1 on 1. figure.Figure has canvas attribute which is
-      FigureCanvasTkAgg while FigureCanvasTkAgg has figure attribute
-      which is figure.Figure.
-      
-      When they are initialized in pyplot.figure(), figure.Figure is
-      first initialized with canvas set to None. then through
-      backend_tkagg.new_figure_manager() function, FigureCanvasTkAgg is
-      initialized with the figure.Figure() object. 
-
-      In the initialization of FigureCanvasBase which is the base class
-      of FigureCanvasTkAgg, figure.set_canvas is called.
-**** Tkinter.Frame
-***** matplotlib.backends.backend_tkagg.NavigationToolbar
-***** matplotlib.backends.backend_tkagg.NavigationToolbar2TkAgg
-
-*** how to plot hexbin
-     plt.hexbin(entropies, error_seqs, bins='log', gridsize=20, cmap=cm.Greys)
-*** remove edgecolor in scatterplot
-     plt.scatter(entropies, error_seqs, edgecolor='none')
-*** adjust margin
-plt.subplots_adjust(bottom=0.15)
-plt.subplots_adjust(bottom=0.08, top=0.99, left=0.08,right=0.99)
-plt.savefig(myfig,bbox_inches='tight',pad_inches=0.05)
-*** remove margin
-plt.savefig(myfig,bbox_inches='tight',pad_inches=0.05)
-*** the callback mechanism used in matplotlib
-**** register a function func to a string s
-      CallbackRegistry.connect(s, func)
-      or in matplotlib: mpl_connect(s, func) (actually this subroutine call the
-      CallbackRegistry.connects)
-      Note: multiple functions can be connected to s. When s is called, all these functions are called.
-**** call all the function registered to s
-      CallbackRegistry.process(s, *args, **kwargs)
-      call all the functions registered to s with  *args and **kwargs
-**** s is so-called signals
-** ipython
-*** how to paste code to ipython?
-%paste
-*** reload problem: e.g. we have module.py then we need to first import module
-     import module
-     reload(module)
-     then use module.class
-*** useful magic command
-     who, whos 
-     psearch msg*
-     psearch msg* int
-     store msgflag
-     store msgflag > /tmp/a.txt
-     reset
-     store -r        # recover the stored setting
-     store -z        # clean the storage
-     logstate
-     logstart
-     logon
-     logoff
-     lsmagic
-     lsmagic??
-     lsmagic?
-     msgflag?
-     p short for "print"
-     p sys.path
-     page sys.path
-     help(sys)
-     help('for')
-     \function
-     help()
-     topics
-     functions
-     pdef re.match		# show function definition
-     pdoc re.match		# show the docstring
-     pinfo re.match		# show all the information (including
-     # definition, docstring, stringform and file location) If you want
-     # to check the file location. This is the command to issue. This is
-     the same as ?? and ? suffix.
-     psource re.match	# print part of the source file that contains the function
-     magic
-     pfile re.match 		# print out the entire file
-     edit -x re.match
-     pwd
-     cd /tmp
-     pushd /usr/lib/
-     popd
-     dhist
-     dirs
-     bookmark btree
-     bookmark site /usr/lib/python2
-     bookmark -l     # list bookmarks
-     cd -<n>
-     cd?
-     ![BashCommand]
-     patt = '*.py'
-     !ls -l $patt
-     !ls -l ${patt+'c'}
-     
-     alias
-     alias pr echo you said %s
-     pr Hello
-     unalias pr
-
-     def go(patt=patt)
-     !ls -l $patt
-     go()
-     go('*.so')
-
-     len(list)
-     list.s  # smart list
-     list.x  # newline list
-     list.n  # newline string
-     !ls *.py | sort
-
-     run calc
-     less
-     pycat calc
-     run -p calc profile
-     run -d calc debugger
-     q
-
-     _i _ii _iii
-     _i1
-     In[3]
-     hist 1 10
-     hist -r # filter all the magic command for cut and paste use
-     hist 10
-     exec _i3
-     exec In[1:4]
-
-     macro
-     macro begin 1-4 5
-     print macro
-     store begin
-
-     edit
-     save apple 1-3 5        # save line 1 to 3 and 5 to file apple
-     cat apple.py
-     pycat apple.py          # with syntax coloring
-     edit _i163
-
-     cpaste # end with "--"
-     Out[118]
-     Out[120]
-     less ipython_log.py
-     runlog
-
-
-     Debug:
-     xmode Plain
-     xmode Verbose
-     xmode Context
-     pdb
-     run -d calc2
-     c
-
-     To embed into code:
-     from IPython.Shell import IPShellEmbed
-     ipshell = IPShellEmbed()
-     ipshell()
-
-     time sum(range(100000))
-     timeit sum(range(1000))
-     time zopedocs();        # ; inhibit output
-     prun    # profile run expression on file
-     run -p  # file on expression
-     less gofetch.py
-     ed gofetch.py   # ed short for 'edit'
-     bg gofetch()
-     jobs[0].status
-     jobs[0].result
-
-     ipython -p physics      # with unit
-     e.convertToUnit('J')
-     ipython -pylab
-** how to look at modules that has been loaded
-    import sys
-    sys.modules
-** how to know the type of a python object
-    type(object)
-    e.g. a = [1,2,3]
-    type(a) 			# return <type 'list'>
-    isinstance(a, type(a))	# return True
-** getattr and callable
-    func = getattr(self, 'set_'+k, None) # same as calling self.set_*k*
-    if func is None or not callable(func): raise AttributeError("Unknown
-    Prop")
-    func(v)
-** the difference between __call__ and __init__
-    class A:
-    def __init__(self):
-    print "init"
-    def __call__(self):
-    print "call"
-    # then,
-    a = A() 			# print init
-    a()				# print call
 * Perl
 ** load perl modules
 A little builtin syntactic sugar means you can also say -mmodule=foo,bar or -Mmodule=foo,bar as a shortcut for -Mmodule qw(foo bar). This avoids the need to use quotes when importing symbols. The actual code generated by -Mmodule=foo,bar is use module split(/,/,q{foo,bar}). Note that the = form removes the distinction between -m and -M.
@@ -8559,7 +8257,7 @@ console.log(19==='19'); //false
 
 == compare only values
 === compare values and types
-* jquery
+* JQuery
 fadeIn, fadeOut, fadeTo, mouseenter,
 ** $(this)
 $('div').click(function() {
