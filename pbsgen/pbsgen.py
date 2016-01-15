@@ -74,6 +74,7 @@ class Job():
             
         with open(pbsname, 'w') as fout:
             fout.write(template.format(self=self))
+        return pbsname
 
     def clean(self):
         import os
@@ -128,7 +129,18 @@ def main_one(args):
     job.commands = "echo `date`\n\n"
     job.commands += args.command
     job.commands += "\n\necho `date` Done.\n"
-    job.gen(int(args.index), jobname=args.name, pbsname=args.dest)
+    pbsfn=job.gen(int(args.index), jobname=args.name, pbsname=args.dest)
+    if not args.silent:
+        sys.stderr.write('==================\n\n')
+        sys.stderr.write('pbs path: %s\n' % pbsfn)
+        sys.stderr.write('pbs stdout: %s\n' % job.stdout)
+        sys.stderr.write('pbs stderr: %s\n' % job.stderr)
+        sys.stderr.write('hour: %d\n' % job.hour)
+        sys.stderr.write('memG: %d\n' % job.memG)
+        sys.stderr.write('ppn: %d\n' % job.ppn)
+        sys.stderr.write('==================\n\n')
+    if args.submit:
+        subprocess.check_call(['qsub', pbsfn])
 
 def main_batch(args):
 
@@ -180,12 +192,15 @@ def add_default_settings(parser, d):
                         help="stdout [%s]" % d.stdoutdir)
     parser.add_argument('-stderr', default=d.stderrdir,
                         help='stderr [%s]' % d.stderrdir)
-    parser.add_argument("-ppn", default=d.ppn, 
+    parser.add_argument("-ppn", default=d.ppn, type=int,
                         help="ppn [%d]" % d.ppn)
     parser.add_argument("-jobroot", default="WandingJob", 
                         help="Job root [WandingJob]")
-    parser.add_argument("-memG", default=d.memG, 
+    parser.add_argument("-memG", default=d.memG, type=int,
                         help="memory in G [%d]" % d.memG)
+    parser.add_argument('-depend', default='', help='dependency')
+    parser.add_argument('-silent', action='store_true', help='suppress info print')
+
 
 def pbsgen_main(setting, set_queue):
     
@@ -204,7 +219,8 @@ def pbsgen_main(setting, set_queue):
     parser_one.add_argument('-name', default=None, help='job name (if specified, obsolete index)')
     add_default_settings(parser_one, setting)
     parser_one.add_argument('-dest', default=None, help='destination pbs file')
-    parser_one.add_argument('-depend', default='', help='dependency')
+    parser_one.add_argument('-submit', action='store_true', help='submit pbs')
+    # parser_one.add_argument('-print', action='store_true', help='print without submitting pbs')
     parser_one.set_defaults(func=main_one)
 
     ###### batch #####

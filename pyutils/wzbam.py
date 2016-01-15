@@ -3,6 +3,7 @@
 import sys, re
 import pysam
 import argparse
+import faidx
 import sys, __builtin__
 
 class Read():
@@ -36,8 +37,8 @@ class Read():
             self.mapq = x.mapq
             self.keys.append('mapq')
 
-            # self.reverse = x.is_reverse
-            # self.keys.append('is_reverse')
+            self.reverse = x.is_reverse
+            self.keys.append('is_reverse')
 
             self.seq = x.seq
             self.keys.append('seq')
@@ -45,10 +46,10 @@ class Read():
             self.qual = x.qual
             self.keys.append('qual')
 
-            self.unmapped = 1 if x.is_unmapped else 0
+            self.unmapped = True if x.is_unmapped else False
             self.keys.append('unmapped')
 
-            self.duplicate = 1 if x.is_duplicate else 0
+            self.duplicate = True if x.is_duplicate else False
             self.keys.append('duplicate')
 
             if hasattr(x, "tags"):
@@ -120,6 +121,20 @@ class Read():
 
         return (4, None, None)
 
+    def calend(self):
+        end = self.pos
+        for op, clen in self.cigar:
+            if op == 0:         # match
+                end += clen
+            elif op == 1:       # insertion
+                pass
+            elif op == 2:       # deletion, quality is the base before
+                end += clen
+            elif op == 4 or op == 5:
+                pass
+            else:
+                raise Exception("unknown cigar: %d" % op)
+        return end
 
 def parse_readfile(fh):
 
@@ -217,6 +232,111 @@ def main_pileupone(args):
 
     return
 
+def main_bed6(args):
+
+    bam = pysam.Samfile(args.bam)
+    out = open(args.o,"w") if args.o else sys.stdout
+    for x in bam.fetch():
+        read = Read(x=x, xob=bam)
+        if read.unmapped:
+            continue
+        if read.duplicate:
+            continue
+        if read.mapq < args.q:
+            continue
+        out.write('%s\t%d\t%d\t%s\t1\t%s\n' % (read.chrm, read.pos, read.calend(), read.qname, '-' if read.reverse else '+'))
+
+    return
+    
+def main_editing(args):
+
+    """ pileup editing """
+
+    import subprocess
+    proc = subprocess.Popen(['samtools', 'mpileup', '-f', args.ref,
+                             '--min-MQ', '30', '--min-BQ', '30', args.bam], stdout=subprocess.PIPE)
+    while True:
+        line = proc.stdout.readline()
+        if not line:
+            break
+        fields = line.strip('\n').split('\t')
+        chrm = fields[0]
+        loc = int(fields[1])
+        ref = fields[2].upper()
+        # cov = int(fields[3])
+        bases = fields[4]
+        strands = fields[5]
+
+        if ref != 'A' and ref != 'T':
+            continue
+
+        i = 0
+        n = len(bases)
+        bases2 = []
+        while True:
+            if i >= n:
+                break
+            b = bases[i]
+            if b == '-':        # deletion
+                num = ''
+                while i+1<n and bases[i+1].isdigit():
+                    i += 1
+                    num += bases[i]
+                num = int(num)
+                i += num
+            elif b == '+':      # insertion
+                num = ''
+                while i+1<n and bases[i+1].isdigit():
+                    i += 1
+                    num += bases[i]
+                num = int(num)
+                i += num
+            elif b == '^':
+                i += 1
+            elif b != '$':
+                bases2.append(b)
+            i += 1
+
+        if len(bases2) != len(strands):
+            print chrm, loc
+            print bases
+            print bases2, len(bases2)
+            print strands, len(strands)
+            sys.exit(1)
+
+        # this works on the stranded protocol
+        # for unstranded protocol, one needs
+        # to consider T on the positive strand
+        nA = 0
+        nG = 0
+        for b,s in zip(bases2, strands):
+
+            if args.stranded:
+                if ref == 'A':
+                    if b == '.':
+                        nA += 1
+                    if b == 'G':
+                        nG += 1
+                if ref == 'T':
+                    if b == ',':
+                        nA += 1
+                    if b == 'c':
+                        nG += 1
+            else:
+                if ref == 'A':
+                    if b == '.' or b == ',':
+                        nA += 1
+                    if b == 'g' or b == 'G':
+                        nG += 1
+                if ref == 'T':
+                    if b == '.' or b == ',':
+                        nA += 1
+                    if b == 'c' or b == 'C':
+                        nG += 1
+
+        if nA + nG > 0:
+            print '%s\t%d\t%d\t%s\t%d\t%d\t%s' % (chrm, loc-1, loc, ref, nA, nG, bases)
+    
 if __name__ == '__main__':
    parser = argparse.ArgumentParser(description="bam utilities")
 
@@ -259,6 +379,20 @@ if __name__ == '__main__':
    parser_tabulate.add_argument('read_file', type = argparse.FileType('r'), default='-', help='read file name')
    parser_tabulate.add_argument('-p', default='', help='columns to display in the table')
    parser_tabulate.set_defaults(func=main_tabulate)
+
+   # to as the input for BCP, GEM etc.
+   parser_bed6 = subparsers.add_parser('bed6', help='convert bam to bed6 format')
+   parser_bed6.add_argument('-bam', required=True, help='input bam')
+   parser_bed6.add_argument('-o', help='output', default=None)
+   parser_bed6.add_argument('-q', type=int, default=20, help='minimum mapq')
+   parser_bed6.set_defaults(func=main_bed6)
+
+   # pileup RNA-editting
+   parser_editing = subparsers.add_parser('editing', help='pileup editing from bam file')
+   parser_editing.add_argument('-bam', required=True, help='input bam')
+   parser_editing.add_argument('-ref', required=True, help='fai-indexed reference')
+   parser_editing.add_argument('-stranded', action='store_true', help="consider only A>G on positive strand and T>C on negative strand (otherwise consider both A>G and T>C on both strand)")
+   parser_editing.set_defaults(func=main_editing)
 
    args = parser.parse_args()
    args.func(args)

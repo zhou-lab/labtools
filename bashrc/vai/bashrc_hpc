@@ -137,6 +137,7 @@ eval "$(Renv init -)"
 
 alias scp='rsync -Pravdtze ssh'
 # alias awk='$HOME/tools/awk4.01/gawk-4.01-install/bin/awk -F"\t" -v OFS="\t"'
+alias awk='awk -F"\t" -v OFS="\t"'
 alias les="less -S"
 alias qsuball="find $HOME/htcpbs/ -type f | sort | xargs -I {} qsub {}"
 alias rdf="readlink -f"
@@ -268,3 +269,5 @@ sortbed ()
     LC_ALL=C sort -k1,1 -k2,2n -T /secondary/projects/shen/tmp $1
 }
 export sortbed
+
+export TMPDIR=/secondary/projects/shen/tmp

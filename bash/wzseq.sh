@@ -155,6 +155,101 @@ function auto_setup_links() {
   echo
 }
 
+##################################
+# samtools mpileup call mutation #
+##################################
+# check http://samtools.sourceforge.net/mpileup.shtml
+
+# mpileup one sample
+# usage: wzseq_mpileup1 bam/sname.bam
+# one could use "vcfutils.pl varFilter -d10" to control vcf minimum depth
+function wzseq_mpileup1 {
+
+  base=$(pwd)
+  bam=$1;
+  sname=$(basename $bam .bam)
+  [[ -d mpileup ]] || mkdir -p mpileup
+  cmd="
+cd $base
+samtools mpileup -q 10 -uf $WZSEQ_REFERENCE $bam | bcftools call -cv -O b -o mpileup/$sname.raw.bcf
+bcftools view mpileup/$sname.raw.bcf | vcf-sort -t mpileup/ | bgzip -c > mpileup/$sname.sorted.vcf.gz
+"
+  [[ ${!#} == "do" ]]  && qsub $pbsfn
+}
+
+###########################
+### GATK best practice ####
+###########################
+
+function wzseq_seqtk_trimfq1 {
+  [[ -d trimfq ]] || mkdir -p trimfq;
+  [[ -d pbs ]] || mkdir -p pbs;
+  $fq=$1;
+  $fqname=${fq#fastq};
+  $fqname=${fqname%.*};
+  cmd="
+seqtk trimfq $1 fastq/$fqname.fastq >trimfq/${fqname}_trimmed.fastq
+"
+  jobname="trimfq_$fqname"
+  pbsfn="pbs/$jobname.pbs"
+  pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 2 -ppn 1
+  [[ ${!#} == "do" ]] && qsub $pbsfn
+}
+
+# wzseq_bwa_mem
+function wzseq_bwa_mem {
+
+  base=$(pwd);
+  [[ -d pbs ]] || mkdir pbs
+  [[ -d bam ]] || mkdir bam
+  awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples |
+    while read sname sread1 sread2; do
+      cmd="
+cd $base
+bwa mem -M -R \"@RG\tLB:$WZSEQ_REFVERSION\tID:${sname}\tPL:Illumina\tPU:hiseq2500\tSM:${sname}\" -t 28 $WZSEQ_BWA_INDEX $sread1 $sread2 | samtools sort -O bam -T bam/$sname.tmp -o bam/$sname.bam -
+samtools index bam/$sname.bam
+samtools flagstat bam/${sname}.bam > bam/$sname.bam.flagstat
+"
+      jobname="bwamem_$sname"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 250 -ppn 28
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
+}
+
+# mark duplication
+function wzseq_markdup {
+  cmd="
+# dedup bam
+java -Xmx60g -Djava.io.tmpdir=./indelrealn/ -jar ~/software/GATK/GATK-3.3.0/GenomeAnalysisTK.jar -T MarkDuplicates METRICS_FILE=logs/${sname}_dedup_metrics.txt I=bams/$(sample_id)_rg.bam O=bams/$(sample_id)_rg_dedup.bam REMOVE_DUPLICATES=true ASSUME_SORTED=true
+samtools index bams/$(sample_id)_rg_dedup.bam
+"
+}
+
+# indel realignment
+function wzseq_indel_realign {
+
+  [[ -d pbs ]] || mkdir -p pbs
+  [[ -d indelrealn ]] || mkdir -p indelrealn
+  while read sname sread1 sread2; do
+    nthreads=28;
+    interval=logs/${sname}_gatk_indels.intervals
+    cmd="
+# create interval
+logs/$(sample_id)_gatk_indels.intervals:bams/$(sample_id)_rg_dedup.bam.bai bams/$(sample_id)_rg_dedup.bam
+java -Xmx60g -Djava.io.tmpdir=./indelrealn/ -jar ~/software/GATK/GATK-3.3.0/GenomeAnalysisTK.jar --fix_misencoded_quality_scores --num_threads $nthreads -I bam/$bam -R $WZSEQ_REFERENCE -T RealignerTargetCreator --filter_mismatching_base_and_quals -o $interval --known $WZSEQ_GATK_KNOWN_INDEL
+
+# actual realignment
+java -Xmx2g -Djava.io.tmpdir=./indelrealn/ -jar ~/software/GATK/GATK-3.3.0/GenomeAnalysisTK.jar --fix_misencoded_quality_scores -o indelrealn/${sname}.indelrealn.bam -I bam/$bam -R $WZSEQ_REFERENCE -T IndelRealigner --filter_mismatching_base_and_quals -rf BadCigar -targetIntervals $interval --maxReadsForRealignment 200000 -known ${WZSEQ_GATK_KNOWN_INDEL}
+"
+    jobname="indelrealn_$sname"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 250 -ppn 28
+    [[ ${!#} == "do" ]] && qsub $pbsfn
+  done
+  # -known $(broad_files)/Mills_and_1000G_gold_standard.indels.hg19.vcf -known $(broad_files)/1000G_phase1.indels.hg19.vcf
+}
+
 #########################################
 ### Whole Genome Bisulfite Sequencing ###
 #########################################
@@ -183,21 +278,22 @@ function wgbs_biscuit_align {
   base=$(pwd)
   [[ -d bam ]] || mkdir bam
   [[ -d pbs ]] || mkdir pbs
-  while read sname sread1 sread2; do
-    # while read samplecode fastq1 fastq2 _junk_; do
-    cmd="
+  awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples |
+    while read sname sread1 sread2; do
+      # while read samplecode fastq1 fastq2 _junk_; do
+      cmd="
 biscuit align $WZSEQ_BISCUIT_INDEX -t 28 $base/fastq/$sread1 $base/fastq/$sread2 | samtools sort -T $base/bam/${sname} -O bam -o $base/bam/${sname}.bam
 samtools index $base/bam/${sname}.bam
 samtools flagstat $base/bam/${sname}.bam > $base/bam/${sname}.bam.flagstat
 "
-    jobname="biscuit_align_$sname"
-    pbsfn=$base/pbs/$jobname.pbs
-    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 250 -ppn 28
-    [[ $1 == "do" ]] && qsub $pbsfn
+      jobname="biscuit_align_$sname"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 48 -memG 250 -ppn 28
+      [[ $1 == "do" ]] && qsub $pbsfn
 
-    # biscuit_bwameth -b -s $samplecode -j jid_bwameth $base/fastq/$fastq1 $base/fastq/$fastq2
-    # biscuit_mdup -j jid_mdup -d $jid_bwameth -i bam/$samplecode
-  done < samples
+      # biscuit_bwameth -b -s $samplecode -j jid_bwameth $base/fastq/$fastq1 $base/fastq/$fastq2
+      # biscuit_mdup -j jid_mdup -d $jid_bwameth -i bam/$samplecode
+    done
   return
 }
 
@@ -208,20 +304,19 @@ function wgbs_biscuit_align_lambdaphage {
   base=$(pwd)
   [[ -d bam ]] || mkdir bam
   [[ -d pbs ]] || mkdir pbs
-  while read sname sread1 sread2; do
-    # while read samplecode fastq1 fastq2 _junk_; do
-    cmd="
+  awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples |
+    while read sname sread1 sread2; do
+      # while read samplecode fastq1 fastq2 _junk_; do
+      cmd="
 biscuit align $WZSEQ_BISCUIT_INDEX_LAMBDAPHAGE -t 28 $base/fastq/$sread1 $base/fastq/$sread2 | samtools view -h -F 0x4 - | samtools sort -T $base/bam/${sname} -O bam -o $base/bam/${sname}_lamdaphage.bam
 samtools index $base/bam/${sname}_lamdaphage.bam
 samtools flagstat $base/bam/${sname}_lamdaphage.bam > $base/bam/${sname}_lamdaphage.bam.flagstat
 "
-    jobname="biscuit_align_lambdaphage_$sname"
-    pbsfn=$base/pbs/$jobname.pbs
-    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 250 -ppn 28
-    [[ $1 == "do" ]] && qsub $pbsfn
-
-  done < samples
-  return
+      jobname="biscuit_align_lambdaphage_$sname"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 250 -ppn 28
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
 }
 
 #### BWA-meth #####
@@ -242,17 +337,18 @@ function wgbs_bwameth() {
   base=$(pwd)
   [[ -d bam ]] || mkdir bam
   [[ -d pbs ]] || mkdir pbs
-  while read sname sread1 sread2; do
-    cmds="
+  awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples |
+    while read sname sread1 sread2; do
+      cmds="
 cd $base
 bwameth --reference $WZSEQ_BWAMETH_INDEX fastq/$sread1 fastq/$sread2 -t 28 --prefix bam/${sname}_bwameth
 samtools flagstat bam/${sname}_bwameth.bam > bam/${sname}_bwameth.bam.flagstat
 "
-    jobname="bwameth_$sname"
-    pbsfn=$base/pbs/$jobname.pbs
-    pbsgen one "$cmds" -name $jobname -dest $pbsfn -hour 24 -ppn 28 -memG 250
-    [[ $1 == "do" ]] && qsub $pbsfn
-  done < samples
+      jobname="bwameth_$sname"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmds" -name $jobname -dest $pbsfn -hour 24 -ppn 28 -memG 250
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
 }
 
 function wgbs_adaptor() {
@@ -298,17 +394,18 @@ bismark_genome_preparation --bowtie1 $WZSEQ_BISMARK_BT1_INDEX
 function wgbs_bismark_bowtie1 {
   base=$(pwd);
   [[ -d pbs ]] || mkdir pbs
-  while read sname sread1 sread2; do
-    cmd="
+  awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples |
+    while read sname sread1 sread2; do
+      cmd="
 export PATH=~/tools/bismark/default:~/tools/bowtie1/default:$PATH
 cd $base
 bismark $WZSEQ_BISMARK_BT1_INDEX --chunkmbs 2000 -1 $base/fastq/$sread1 -2 $base/fastq/$sread2
 "
-    jobname="bismark_bt1_$sname"
-    pbsfn=$base/pbs/$jobname.pbs
-    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 250 -ppn 28
-    [[ $1 == "do" ]] && qsub $pbsfn
-  done < samples
+      jobname="bismark_bt1_$sname"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 250 -ppn 28
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
 }
 
 #### bismark with bowtie2 ####
@@ -328,12 +425,13 @@ bismark_genome_preparation --bowtie2 --verbose $WZSEQ_BISMARK_BT2_INDEX
 function wgbs_bismark_bowtie2 {
   base=$(pwd);
   [[ -d pbs ]] || mkdir pbs
-  while read sname sread1 sread2; do
-    base1=${sread1%.fastq.gz}
-    base2=${sread2%.fastq.gz}
-    base1=${base1%.fq.gz}
-    base2=${base2%.fq.gz}
-    cmd="
+  awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples |
+    while read sname sread1 sread2; do
+      base1=${sread1%.fastq.gz}
+      base2=${sread2%.fastq.gz}
+      base1=${base1%.fq.gz}
+      base2=${base2%.fq.gz}
+      cmd="
 export PATH=~/tools/bismark/default:~/tools/bowtie2/default:$PATH
 cd $base
 
@@ -346,12 +444,12 @@ fi
 
 bismark $WZSEQ_BISMARK_BT2_INDEX --bowtie2 --chunkmbs 2000 -p 4 -o $base/bam/${sname}_bismark_bt2/ -1 $base/fastq/${sname}_trim_galore/${base1}_val_1* -2 $base/fastq/${sname}_trim_galore/${base2}_val_2 --temp_dir $base/bam/${sname}_bismark_bt2/*
 "
-    jobname="bismark_bt2_$sname"
-    pbsfn=$base/pbs/$jobname.pbs
-    # it seems that bismark with bowtie2 can never reach full potential of parallelization
-    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 60 -memG 50 -ppn 8
-    [[ $1 == "do" ]] && qsub $pbsfn
-  done < samples
+      jobname="bismark_bt2_$sname"
+      pbsfn=$base/pbs/$jobname.pbs
+      # it seems that bismark with bowtie2 can never reach full potential of parallelization
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 60 -memG 50 -ppn 8
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
 }
 
 #### bsmap ####
@@ -359,8 +457,9 @@ bismark $WZSEQ_BISMARK_BT2_INDEX --bowtie2 --chunkmbs 2000 -p 4 -o $base/bam/${s
 function wgbs_bsmap {
   base=$(pwd);
   [[ -d pbs ]] || mkdir pbs
-  while read sname sread1 sread2; do
-    cmd="
+  awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples |
+    while read sname sread1 sread2; do
+      cmd="
 cd $base
 ~/tools/bsmap/default/bsmap -a fastq/$sread1 -b fastq/$sread2 -d $WZSEQ_BSMAP_INDEX -o bam/${sname}_bsmap_unsorted.bam -p 28 -s 16 -v 10 -q 2 -A AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT -A AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT
 samtools sort -O bam -o bam/${sname}_bsmap.bam -T bam/${sname}_bsmap.tmp bam/${sname}_bsmap_unsorted.bam
@@ -368,11 +467,11 @@ rm -f bam/${sname}_bsmap_unsorted.bam
 samtools index bam/${sname}_bsmap.bam
 samtools flagstat bam/${sname}_bsmap.bam > bam/${sname}_bsmap.bam.flagstat
 "
-    jobname="bsmap_$sname"
-    pbsfn=$base/pbs/$jobname.pbs
-    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 250 -ppn 28
-    [[ $1 == "do" ]] && qsub $pbsfn
-  done < samples
+      jobname="bsmap_$sname"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 250 -ppn 28
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
 }
 
 #### rmapbs (doesn't allow gaps) ###
@@ -748,14 +847,16 @@ function biscuit_cpgisland() {
 ## ChIP-seq pipeline ##
 #######################
 
+# BWA-aln single-ended
 function wzseq_bwa_aln_se {
 
   base=$(pwd);
   [[ -d pbs ]] || mkdir pbs
   [[ -d bam ]] || mkdir bam;
-  while read sname sread _junk_; do
-    sfile=$(readlink -f fastq/$sread);
-    cmd="
+  awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples |
+    while read sname sread _junk_; do
+      sfile=$(readlink -f fastq/$sread);
+      cmd="
 cd $base
 bwa aln -t 10 $WZSEQ_REFERENCE $sfile >bam/${sname}.sai
 bwa samse $WZSEQ_REFERENCE bam/${sname}.sai $sfile | samtools view -bS - | samtools sort -T $base/bam/$sname -O bam -o bam/${sname}.bam
@@ -763,24 +864,54 @@ samtools index bam/${sname}.bam
 samtools flagstat bam/${sname}.bam > bam/${sname}.bam.flagstat
 rm -f bam/${sname}.sai
 "
-    jobname="bwa_aln_$sname"
-    pbsfn=$base/pbs/$jobname.pbs
-    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 10
-    [[ $1 == "do" ]] && qsub $pbsfn
-  done < samples
+      jobname="bwa_aln_$sname"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 10
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
 }
 
 function chipseq_bcp() {
 
-  [[ $# -eq 3 ]] || { echo "not enough arguments"; return 1; }
-  targetbed=$1
-  inputbed=$2
-  results=$3
-  BCP_HM -1 $targetbed -2 $inputbed -f 200 -w 200 -p 0.001 -3 $results
+  # need chip_config
+  # ==================
+  # sname tread cread
+  # ==================
+  base=$(pwd);
+  [[ -d bcp ]] || mkdir bcp
+  [[ -d pbs ]] || mkdir pbs
+
+  while read sname tread cread do; do
+
+    tfile=$(readlink -f bam/$tread);
+    cfile=$(readlink -f bam/$cread);
+
+    mkdir bcp/$sname;
+    tbed=bcp/$sname/$tread.bcp.bed
+    cbed=bcp/$sname/$cread.bcp.bed
+
+    cmd="
+cd $base
+wzbam bed6 -bam $tfile -o $tbed
+wzbam bed6 -bam $cfile -o $cbed
+
+~/tools/bcp/BCP_v1.1/BCP_HM -1 $tbed -2 $cbed -3 bcp/$sname/peaks.hm
+~/tools/bcp/BCP_v1.1/BCP_TF -1 $tbed -2 $cbed -3 bcp/$sname/peaks.tfbs
+
+rm -f $tbed $cbed
+"
+    jobname="bcp_$sname"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 10 -ppn 1
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done < chip_config
 }
 
 function chipseq_macs2 {
-  # need macs_config
+  # need chip_config
+  # ==================
+  # sname tread cread
+  # ==================
   [[ -s macs2 ]] || mkdir macs2
   base=$(pwd);
   [[ -d pbs ]] || mkdir pbs
@@ -795,33 +926,109 @@ macs2 callpeak -t $tfile -c $cfile -f BAM -g $WZSEQ_MACS_SHORT -n macs2/$sname -
     pbsfn=$base/pbs/$jobname.pbs
     pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
     [[ $1 == "do" ]] && qsub $pbsfn
-  done < macs_config
+  done < chip_config
+}
+
+function chipseq_gem {
+  # need chip_config
+  # ==================
+  # sname tread cread
+  # ==================
+
+  [[ -d gem ]] || mkdir -p gem
+  [[ -d pbs ]] || mkdir -p pbs
+
+  while read sname tread cread do; do
+
+    tfile=$(readlink -f bam/$tread);
+    cfile=$(readlink -f bam/$cread);
+
+    [[ -d gem/$sname ]] || mkdir -p gem/$sname;
+    tbed=gem/$sname/$tread.gem.bed
+    cbed=gem/$sname/$cread.gem.bed
+    
+    cmd="
+cd $base
+wzbam bed6 -bam $tfile -o $tbed
+wzbam bed6 -bam $cfile -o $cbed
+
+java -Xmx100G -jar ~/tools/gem/gem/gem.jar --d ~/tools/gem/gem/Read_Distribution_default.txt --g $WZSEQ_REFERENCE.fai --genome $WZSEQ_REFERENCE_SPLIT --s 2000000000 --expt $tbed --ctrl $cbed --f BED --out gem/$sname --k_min 6 --k_max 13
+
+rm -f $tbed $cbed
+"
+    jobname="gem_$sname"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 100 -ppn 1
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done < chip_config
+}
+
+# http://dir.nhlbi.nih.gov/papers/lmi/epigenomes/sissrs/SISSRs-Manual.pdf
+# from Keji Zhao lab, allows both with and without background
+# WZSEQ_REFERENCE_SIZE can come from the last row of .fai
+function chipseq_sissrs {
+
+  [[ -d sissrs ]] || mkdir sissrs
+  [[ -d pbs ]] || mkdir pbs
+  base=$(pwd)
+  while read sname tread cread do; do
+    tfile=$(readlink -f bam/$tread);
+    cfile=$(readlink -f bam/$cread);
+
+    [[ -d sissrs/$sname ]] || mkdir sissrs/$sname;
+    tbed=sissrs/$sname/$tread.bed
+    cbed=sissrs/$sname/$cread.bed
+
+    cmd="
+cd $base
+wzbam bed6 -bam $tfile -o $tbed
+wzbam bed6 -bam $cfile -o $cbed
+~/software/SISSERs/v1.4/sissrs.pl -i $tbed -b $cbed -o sissrs/$sname/$sname.bsites -s $WZSEQ_REFERENCE_SIZE
+rm -f $tbed $cbed
+"
+    jobname="sissrs_$sname"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 20 -ppn 1
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done < chip_config
 }
 
 ###########################
 ##### RNA-seq pipeline ####
 ###########################
 
-# flowchat
-# rnaseq_tophat2 => rnaseq_cufflinks => rnaseq_cuffmerge => rnaseq_cuffquant (optional) => rnaseq_cuffdiff
+function examplepipeline_rnaseq {
+cat<<- EOF
+=== pipeline 2015-10-01 ===
+(+) rnaseq_tophat2 => (+) rnaseq_cufflinks => (+) rnaseq_cuffmerge => (+) rnaseq_cuffquant (optional) => (+) rnaseq_cuffdiff
+EOF
 
+cat<<EOF
+=== pipeline 2016-01-12 ===
+(+) wzseq_fastqc => (+) edit samples [alignment]; rnaseq_tophat2_firststrand => (+) wzseq_bam_coverage => (+) wzseq_qualimap => (+) rnaseq_cufflinks => (+) rnaseq_cuffmerge => (+) edit samples [diffexp] ; rnaseq_cuffdiff => (+) rnaseq_edgeR
+EOF
+}
+
+#########################
+## section 1: alignment
+#########################
 # rnaseq_tophat2
 function rnaseq_tophat2() {
   if [[ ! -s samples ]]; then
     echo "No [samples] file. Abort."
     return 1;
   fi
-  samplefn=samples
   base=$(pwd);
   [[ -d bam ]] || mkdir -p bam
   [[ -d pbs ]] || mkdir -p pbs
-  while read sname sread1 sread2; do
-    sfile1=$(readlink -f fastq/$sread1);
-    [[ $sread2 == "." ]] && sfile2="" || sfile2=$(readlink -f fastq/$sread2); # in case of single ended.
-    odir=$(readlink -f bam/$sname);
-    # customize the following
-    # default: no novel junction, 28 threads
-    cmd="
+  awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples |
+    while read sname sread1 sread2; do
+      sfile1=$(readlink -f fastq/$sread1);
+      [[ $sread2 == "." ]] && sfile2="" || sfile2=$(readlink -f fastq/$sread2); # in case of single ended.
+      odir=$(readlink -f bam/$sname);
+      # customize the following
+      # default: no novel junction, 28 threads
+      cmd="
 cd $base
 tophat2 -p 28 -G $WZSEQ_GTF --library-type fr-unstranded -o $odir --no-novel-juncs $WZSEQ_BOWTIE2_INDEX $sfile1 $sfile2
 samtools index $odir/accepted_hits.bam
@@ -830,14 +1037,15 @@ cd $base/bam
 ln -s $sname/accepted_hits.bam $sname.bam
 ln -s $sname/accepted_hits.bam.bai $sname.bam.bai
 "
-    jobname="tophat_$sname"
-    pbsfn=$base/pbs/$jobname.pbs
-    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 250 -ppn 28
-    [[ $1 == "do" ]] && qsub $pbsfn
-  done <$samplefn
+      jobname="tophat_$sname"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 250 -ppn 28
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
 }
 
 # rnaseq_tophat2_firststrand samplefn
+# first strand
 function rnaseq_tophat2_firststrand() {
   if [[ ! -s samples ]]; then
     echo "file: samples missing. Abort."
@@ -846,22 +1054,81 @@ function rnaseq_tophat2_firststrand() {
   base=$(pwd);
   [[ -d bam ]] || mkdir -p bam
   [[ -d pbs ]] || mkdir -p pbs
-  while read sname sread1 sread2; do
-    sfile1=$(readlink -f fastq/$sread1);
-    sfile2=$(readlink -f fastq/$sread2);
-    odir=$(readlink -f bam/$sname);
-    cmd="
-tophat2 -p 28 -G /primary/vari/genomicdata/genomes/hg19/tophat/Homo_sapiens/UCSC/hg19/Annotation/Genes/genes.gtf --library-type fr-firststrand -o $odir --no-novel-juncs ~/references/hg19/bowtie2/hg19 $sfile1 $sfile2
+  awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples |
+    while read sname sread1 sread2; do
+      sfile1=$(readlink -f fastq/$sread1);
+      sfile2=$(readlink -f fastq/$sread2);
+      odir=$(readlink -f bam/$sname);
+      cmd="
+tophat2 -p 28 -G $WZSEQ_GTF --library-type fr-firststrand -o $odir --no-novel-juncs $WZSEQ_BOWTIE2_INDEX $sfile1 $sfile2
 samtools index $odir/accepted_hits.bam
 samtools flagstat $odir/accepted_hits.bam > $odir/accepted_hits.bam.flagstat
 cd $base/bam
 ln -s $sname/accepted_hits.bam $sname.bam
 ln -s $sname/accepted_hits.bam.bai $sname.bam.bai
 "
-    jobname="tophat_$sname"
-    pbsgen one "$cmd" -name $jobname -dest $base/pbs/$jobname.pbs -hour 24 -memG 250 -ppn 28
-  done <samples
+      jobname="tophat_$sname"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 250 -ppn 28
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
 }
+
+# STAR
+# make a genome index first
+# STAR --runThreadN 28 --runMode genomeGenerate --genomeDir $WZSEQ_STAR_INDEX --genomeFastaFiles $WZSEQ_REFERENCE --sjdbGTFfile $WZSEQ_GTF --sjdbOverhang 49
+function rnaseq_star() {
+  if [[ ! -s samples ]]; then
+    echo "file: samples missing. Abort"
+    return 1
+  fi
+  base=$(pwd)
+  [[ -d bam ]] || mkdir bam
+  [[ -d pbs ]] || mkdir pbs
+  awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples |
+    while read sname sread1 sread2; do
+      cmd="
+mkdir $base/bam/$sname
+STAR --runThreadN 28 --genomeDir $WZSEQ_STAR_INDEX --readFilesIn $base/fastq/$sread1 $base/fastq/$sread2 --readFilesCommand zcat --outSAMtype BAM SortedByCoordinate --outFileNamePrefix $base/bam/$sname/$sname
+samtools index $base/bam/$sname/$snameAligned.sortedByCoord.out.bam
+"
+      jobname="star_$sname"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 250 -ppn 28
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
+}
+
+
+# mapsplice
+# input fastq must be uncompressed and with no space
+function rnaseq_mapsplice() {
+
+  if [[ ! -s samples ]]; then
+    echo "file: samples missing. Abort"
+    return 1
+  fi
+  base=$(pwd)
+  [[ -d bam ]] || mkdir bam
+  [[ -d pbs ]] || mkdir pbs
+  awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples |
+    while read sname sread1 sread2; do
+      cmd="
+zcat $base/fastq/$sread1 | sed 's/ /_/g' >$base/fastq/_${sread1}_tmp
+zcat $base/fastq/$sread2 | sed 's/ /_/g' >$base/fastq/_${sread2}_tmp
+python /home/wanding.zhou/tools/mapsplice/MapSplice-v2.2.0/mapsplice.py -p 28 -o $base/bam/${sname}_mapsplice --bam -c $WZSEQ_BOWTIE1_INDEX -x $WZSEQ_BOWTIE1_INDEX/mm10 -1 $base/fastq/_${sread1}_tmp -2 $base/fastq/_${sread2}_tmp --gene-gtf $WZSEQ_GTF_ENSEMBL
+rm -f $base/fastq/_${sread1}_tmp $base/fastq/_${sread2}_tmp
+"
+      jobname="mapsplice_$sname"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 250 -ppn 28
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
+
+}
+#####################################
+## section 2: differential expression
+#####################################
 
 # rnaseq_cufflinks <do>
 function rnaseq_cufflinks() {
@@ -901,7 +1168,7 @@ function rnaseq_cuffmerge() {
 cd $base/cuffmerge/
 cuffmerge -g $WZSEQ_GTF -s $WZSEQ_REFERENCE -p 10 $base/cuffmerge/assemblies.txt
 "
-  jobname='cuffmerge'
+  jobname='cuffmerge_'$(basename base)
   pbsfn=$base/pbs/$jobname.pbs
   pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 1 -memG 2 -ppn 10
   [[ $1 == "do" ]] && qsub $pbsfn
@@ -931,42 +1198,83 @@ cuffquant $gtf $fn -o $base/cuffmerge/cuffquant_$bf -p 8 -q
   done
 }
 
-# cuffdiff <do>
-# cuffdiff/sample_sheet file example:
-# cond1\tcond2\tbams1\tbams2
-# e.g.
-# aza     PBS     bam/aza.bam     bam/PBS.bam
-# for cuffdiff >2.2 bams can be replaced by cxb files.
+# require [diffexp] section in "samples"
+# format: cond1\tcond2\tbams1\tbams2
 # bams1 and bams2 can be comma separated if containing multiple samples
+# e.g.
+# [diffexp]
+# aza     PBS     bam/aza.bam     bam/PBS.bam
+# 
+# for cuffdiff >2.2 bams can be replaced by cxb files.
 function rnaseq_cuffdiff() {
   base=$(pwd);
   [[ -d cuffdiff ]] || mkdir -p cuffdiff;
 
-  if [[ ! -s cuffdiff/sample_sheet ]]; then
-    echo "file: cuffdiff/sample_sheet missing"
-    return 1
-  fi
-
-  while read cond1 cond2 bams1 bams2; do
-    # use merged gtf if available otherwise, use back-up gtf
-    gtf=$base/cuffmerge/merged_asm/merged.gtf
-    [[ -s $gtf ]] || gtf=$WZSEQ_GTF
-
-    cmd="
+  awk '/^\[/{p=0}/\[diffexp\]/{p=1;next} p&&!/^$/' samples |
+    while read cond1 cond2 bams1 bams2; do
+      # use merged gtf if available otherwise, use back-up gtf
+      gtf=$base/cuffmerge/merged_asm/merged.gtf
+      [[ -s $gtf ]] || gtf=$WZSEQ_GTF
+      
+      cmd="
 cd $base
 cuffdiff -o $base/cuffdiff/${cond1}_vs_${cond2} -q -b $WZSEQ_REFERENCE -p 8 -L $cond1,$cond2 -u $gtf $bams1 $bams2
 "
-    jobname="cuffdiff_${cond1}_vs_${cond2}"
-    pbsfn=$base/pbs/$jobname.pbs
-    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 8
-    [[ $1 == "do" ]] && qsub $pbsfn
-  done < cuffdiff/sample_sheet
+      jobname="cuffdiff_${cond1}_vs_${cond2}"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 8
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
 }
 
 # TODO: cuffnorm
 function rnaseq_cuffnorm() {
   return 1
 }
+
+function rnaseq_edgeR {
+  base=$(pwd)
+  [[ -d edgeR ]] || mkdir edgeR
+  [[ -d pbs ]] || mkdir pbs
+  awk '/^\[/{p=0}/\[diffexp\]/{p=1;next} p&&!/^$/' samples |
+    while read cond1 cond2 bams1 bams2; do
+      # use merged gtf if available otherwise, use back-up gtf
+      gtf=$base/cuffmerge/merged_asm/merged.gtf
+      [[ -s $gtf ]] || gtf=$WZSEQ_GTF
+      
+      cmd="
+cd $base
+~/wzlib/Rutils/bin/bioinfo/edgeR.r -g $WZSEQ_REFVERSION -G $WZSEQ_GTF_ENSEMBL -a $cond1 -b $cond2 -A $bams1 -B $bams2 -o edgeR/${cond1}_vs_${cond2}_diffexp.tsv 2> edgeR/${cond1}_vs_${cond2}_diffexp.log
+"
+      jobname="edgeR_${cond1}_vs_${cond2}"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 20 -ppn 2
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
+}
+
+function rnaseq_DESeq2 {
+  base=$(pwd)
+  [[ -d DESeq2 ]] || mkdir DESeq2
+  [[ -d pbs ]] || mkdir pbs
+  awk '/^\[/{p=0}/\[diffexp\]/{p=1;next} p&&!/^$/' samples |
+    while read cond1 cond2 bams1 bams2; do
+      # use merged gtf if available otherwise, use back-up gtf
+      gtf=$base/cuffmerge/merged_asm/merged.gtf
+      [[ -s $gtf ]] || gtf=$WZSEQ_GTF
+      
+      cmd="
+cd $base
+~/wzlib/Rutils/bin/bioinfo/DESeq2.r -g $WZSEQ_REFVERSION -a $cond1 -b $cond2 -A $bams1 -B $bams2 -o DESeq2/${cond1}_vs_${cond2}_diffexp.tsv 2> DESeq2/${cond1}_vs_${cond2}_diffexp.log
+"
+      jobname="DESeq2_${cond1}_vs_${cond2}"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 20 -ppn 2
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
+}
+
+# TODO: DESeq2, EBSeq, Voom
 
 # RSeQC
 # need to define WZSEQ_RSEQ_GENE_BED
@@ -1013,20 +1321,21 @@ geneBody_coverage.py -i $fn -r $WZSEQ_RSEQC_GENE_BED -o rseqc/${bfn}_genebody_co
 function rnaseq_subjunc() {
   base=$(pwd);
   [[ -d pbs ]] || mkdir pbs
-  while read sname sread1 sread2; do
-    sfile1=$(readlink -f fastq/$sread1);
-    sfile2=$(readlink -f fastq/$sread2);
-    mkdir -p bam/${sname}_subjunc;
-    cmd="
+  awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples |
+    while read sname sread1 sread2; do
+      sfile1=$(readlink -f fastq/$sread1);
+      sfile2=$(readlink -f fastq/$sread2);
+      mkdir -p bam/${sname}_subjunc;
+      cmd="
 cd $base
 /primary/home/wanding.zhou/tools/subread/subread-1.4.6-p5-Linux-x86_64/bin/subjunc -T 28 -I 16 -i $WZSEQ_SUBREAD_INDEX -r fastq/$sread1 -R fastq/$sread2 --gzFASTQinput -o bam/${sname}_subjunc/$sname.bam --BAMoutput
 [[ -e bam/${sname}.bam ]] || ln -s ${sname}_subjunc/$sname.bam bam/${sname}.bam
 "
-    jobname="subjunc_${sname}"
-    pbsfn=$base/pbs/$jobname.pbs
-    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
-    [[ $1 == "do" ]] && qsub $pbsfn
-  done <samples
+      jobname="subjunc_${sname}"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
 }
 
 function rnaseq_count_rmsk {
@@ -1060,71 +1369,13 @@ featureCounts -T 28 -t exon -g gene_id -a annotation.gtf -o featureCounts/$bfn_c
     pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
     [[ $1 == "do" ]] && qsub $pbsfn
   done
-
 }
 
-# TODO: DESeq
-
 # TODO: MISO
-
-# TODO: limma
 
 # TODO: RSEM
 # ~/tools/rsem/rsem-1.2.22/rsem-prepare-reference
 # rsem-calculate-expression -p 20 --calc-ci --ci-memory 12294 --bowtie-chunkmbs 2000 --paired-end --bowtie-path $WZSEQ_BOWTIE1 --rsem-index RSEM
-
-# TODO: EBSeq
-
-# STAR
-# make a genome index first
-# STAR --runThreadN 28 --runMode genomeGenerate --genomeDir $WZSEQ_STAR_INDEX --genomeFastaFiles $WZSEQ_REFERENCE --sjdbGTFfile $WZSEQ_GTF --sjdbOverhang 49
-function rnaseq_star() {
-  if [[ ! -s samples ]]; then
-    echo "file: samples missing. Abort"
-    return 1
-  fi
-  base=$(pwd)
-  [[ -d bam ]] || mkdir bam
-  [[ -d pbs ]] || mkdir pbs
-  while read sname sread1 sread2; do
-    cmd="
-mkdir $base/bam/$sname
-STAR --runThreadN 28 --genomeDir $WZSEQ_STAR_INDEX --readFilesIn $base/fastq/$sread1 $base/fastq/$sread2 --readFilesCommand zcat --outSAMtype BAM SortedByCoordinate --outFileNamePrefix $base/bam/$sname/$sname
-samtools index $base/bam/$sname/$snameAligned.sortedByCoord.out.bam
-"
-    jobname="star_$sname"
-    pbsfn=$base/pbs/$jobname.pbs
-    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 250 -ppn 28
-    [[ $1 == "do" ]] && qsub $pbsfn
-  done <samples
-}
-
-
-# mapsplice
-# input fastq must be uncompressed and with no space
-function rnaseq_mapsplice() {
-
-  if [[ ! -s samples ]]; then
-    echo "file: samples missing. Abort"
-    return 1
-  fi
-  base=$(pwd)
-  [[ -d bam ]] || mkdir bam
-  [[ -d pbs ]] || mkdir pbs
-  while read sname sread1 sread2; do
-    cmd="
-zcat $base/fastq/$sread1 | sed 's/ /_/g' >$base/fastq/_${sread1}_tmp
-zcat $base/fastq/$sread2 | sed 's/ /_/g' >$base/fastq/_${sread2}_tmp
-python /home/wanding.zhou/tools/mapsplice/MapSplice-v2.2.0/mapsplice.py -p 28 -o $base/bam/${sname}_mapsplice --bam -c $WZSEQ_BOWTIE1_INDEX -x $WZSEQ_BOWTIE1_INDEX/mm10 -1 $base/fastq/_${sread1}_tmp -2 $base/fastq/_${sread2}_tmp --gene-gtf $WZSEQ_GTF_ENSEMBL
-rm -f $base/fastq/_${sread1}_tmp $base/fastq/_${sread2}_tmp
-"
-    jobname="mapsplice_$sname"
-    pbsfn=$base/pbs/$jobname.pbs
-    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 250 -ppn 28
-    [[ $1 == "do" ]] && qsub $pbsfn
-  done <samples
-
-}
 
 #####################
 ### other utility ###
@@ -1187,20 +1438,26 @@ function wzseq_merge_bam {
 
   [[ -d $base/bam ]] || mkdir -p $base/bam
 
-  if [[ ! -s $base/bam/$dest.rg.txt ]]; then
-    :>$base/bam/$dest.rg.txt
-    for x in $@; do
-      samtools view -H $x | grep '^@RG' >>$base/bam/$dest.rg.txt
-    done
-  fi
+  cmd="
+if [[ ! -s $base/bam/$dest.rg.txt ]]; then
+  :>$base/bam/$dest.rg.txt
+  for x in $@; do
+    samtools view -H $x | grep '^@RG' >>$base/bam/$dest.rg.txt
+  done
+fi
 
+if [[ -s $base/bam/$dest.rg.txt ]]; then
   samtools merge -h $base/bam/$dest.rg.txt $base/bam/$dest.bam $@
-  samtools index $base/bam/$dest.bam
-
   rm -f $base/bam/$dest.rg.txt;
-  
-  echo "Done"
-  
+else
+  samtools merge $base/bam/$dest.bam $@
+fi
+samtools index $base/bam/$dest.bam
+"
+  jobname="merge_bam_$dest"
+  pbsfn=pbs/$jobname.pbs
+  pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 1 -memG 10 -ppn 1
+  [[ $1 == "do" ]] && qsub $pbsfn
 }
 
 
@@ -1244,6 +1501,7 @@ fastqc -f fastq $fn -o $base/fastqc/$bfn
   done
 }
 
+# create coverage track, unique and nonunique mapping
 function wzseq_bam_coverage {
 
   base=$(pwd);
@@ -1257,10 +1515,15 @@ cd $base
 bedtools genomecov -ibam $fn -g ${WZSEQ_REFERENCE}.fai -bga -split | LC_ALL=C sort -k1,1 -k2,2n -T tracks/  >tracks/${bfn}.coverage.bedg
 bedGraphToBigWig tracks/${bfn}.coverage.bedg ${WZSEQ_REFERENCE}.fai tracks/${bfn}.coverage.bw
 rm -f tracks/${bfn}.coverage.bedg
+
+minmapq=10
+samtools view -q \$minmapq -b $fn | bedtools genomecov -ibam stdin -g ${WZSEQ_REFERENCE}.fai -bga -split | LC_ALL=C sort -k1,1 -k2,2n -T tracks/  >tracks/${bfn}.coverage.q10.bedg
+bedGraphToBigWig tracks/${bfn}.coverage.q10.bedg ${WZSEQ_REFERENCE}.fai tracks/${bfn}.coverage.q10.bw
+rm -f tracks/${bfn}.coverage.q10.bedg
 "
     jobname="genomecov_$bfn"
     pbsfn=$base/pbs/$jobname.pbs
-    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 2 -ppn 1
     [[ $1 == "do" ]] && qsub $pbsfn
   done
 }
@@ -1284,9 +1547,9 @@ qualimap --java-mem-size=10G bamqc -nt 10 -bam $fn -outdir $qualimapdir/$bfn -c
   done
 }
 
-################
-# trim adaptor #
-################
+###################################
+# trimming of adaptor and quality 
+###################################
 
 function wzseq_trimmomatic {
   base=$(pwd);
@@ -1298,10 +1561,11 @@ function wzseq_trimmomatic {
   
   [[ -d fastq/trimmed ]] || mkdir -p fastq/trimmed
   [[ -d fastq/untrimmed ]] || mkdir -p fastq/untrimmed
-  while read sname sread1 sread2; do
-    sread1base=$(basename $sread1 .fastq.gz)
-    sread2base=$(basename $sread2 .fastq.gz)
-    cmd="
+  awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples |
+    while read sname sread1 sread2; do
+      sread1base=$(basename $sread1 .fastq.gz)
+      sread2base=$(basename $sread2 .fastq.gz)
+      cmd="
 java -jar /primary/home/wanding.zhou/tools/trimmomatic/Trimmomatic-0.33/trimmomatic-0.33.jar PE -phred33 $base/fastq/$sread1 $base/fastq/$sread2 $base/fastq/trimmed/$sread1 $base/fastq/trimmed/${sread1base}_unpaired.fastq.gz $base/fastq/trimmed/$sread2 $base/fastq/trimmed/${sread2base}_unpaired.fastq.gz ILLUMINACLIP:/primary/home/wanding.zhou/tools/trimmomatic/Trimmomatic-0.33/adapters/TruSeq3-PE.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36
 mv $base/fastq/$sread1 $base/fastq/untrimmed
 mv $base/fastq/$sread2 $base/fastq/untrimmed
@@ -1309,12 +1573,11 @@ cd $base/fastq
 ln -s trimmed/$sread1 .
 ln -s trimmed/$sread2 .
 "
-    jobname="trimmomatic_$bfn"
-    pbsfn=$base/pbs/$jobname.pbs
-    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
-    [[ $1 == "do" ]] && qsub $pbsfn
-  done < samples
-
+      jobname="trimmomatic_$bfn"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
 }
 
 ##########
@@ -1329,3 +1592,18 @@ function absolute_path() {
   done
   echo "${out[@]}"
 }
+
+function wzseq_basic() {
+  # for RNAseq
+  for f in bam/*.bam; do b=${f%.bam}; b=${b#bam/}; sec=$(cat ${f%.bam}/accepted_hits.bam.flagstat | grep 'secondary' | awk '{match($1, /([0-9]*) \+/, a); print a[1];}'); tot=$(cat ${f%.bam}/accepted_hits.bam.flagstat | grep 'total (' | awk '{match($1, /([0-9]*) \+/, a); print a[1];}'); echo ${b%.bam} $(($tot-$sec)); done
+  echo -e "\nraw read counts (paired-end, single-end)"
+  for f in fastq/*.fastq.gz; do c=$(zcat $f | lc); echo $f $(($c / 2)) $(($c / 4)); done
+}
+
+#############
+# RepEnrich
+#
+# python RepEnrich_setup.py ~/references/hg19/repeatmasker/hg19_repeatmasker.txt ~/references/hg19/hg19.fa
+#   ~/references/hg19/RepEnrich/
+# https://github.com/nerettilab/RepEnrich
+#############
