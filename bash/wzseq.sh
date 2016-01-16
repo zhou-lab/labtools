@@ -7,7 +7,7 @@
 # export WZSEQ_REFVERSION=mm10
 
 # export WZSEQ_TOOLS=/primary/home/wandingzhou/tools
-export PICARD=$WZSEQ_TOOLS/picard/picard-tools-1.135/picard.jar
+# export PICARD=$WZSEQ_TOOLS/picard/picard-tools-1.135/picard.jar
 
 ######################
 ## auto setup links ##
@@ -253,6 +253,13 @@ java -Xmx2g -Djava.io.tmpdir=./indelrealn/ -jar ~/software/GATK/GATK-3.3.0/Genom
 #########################################
 ### Whole Genome Bisulfite Sequencing ###
 #########################################
+
+function examplepipeline_wgbs {
+  cat <<- EOF
+=== pipeline 2015-10-01 ===
+(+) wgbs_biscuit_align => (+) wgbs_biscuit_markdup
+EOF
+}
 
 ##### biscuit ####
 
@@ -568,11 +575,15 @@ function wgbs_biscuit_markdup {
   [[ -d pbs ]] || mkdir pbs
   [[ -d bam/before_mdup ]] || mkdir -p bam/before_mdup
   for f in bam/*.bam; do
-    fn=$(readlink -f $f)
     bfn=$(basename $f .bam)
     cmd="
 cd $base
-biscuit markdup -q $fn bam/$bfn.mdup.bam 2>bam/$bfn.mdup.stats
+mv $f bam/before_mdup/$bfn.bam
+[[ -e $f.bai ]] && mv $f.bai bam/before_mdup/$bfn.bam.bai
+[[ -e $f.flagstat ]] && mv $f.flagstat bam/before_mdup/$bfn.bam.flagstat
+biscuit markdup -q bam/before_mdup/$bfn.bam $f 2>bam/before_mdup/$bfn.mdup.stats
+samtools index $f
+samtools flagstat $f
 "
     jobname="biscuit_markdup_$bfn"
     pbsfn=$base/pbs/$jobname.pbs
@@ -1003,7 +1014,7 @@ cat<<- EOF
 (+) rnaseq_tophat2 => (+) rnaseq_cufflinks => (+) rnaseq_cuffmerge => (+) rnaseq_cuffquant (optional) => (+) rnaseq_cuffdiff
 EOF
 
-cat<<EOF
+cat<<- EOF
 === pipeline 2016-01-12 ===
 (+) wzseq_fastqc => (+) edit samples [alignment]; rnaseq_tophat2_firststrand => (+) wzseq_bam_coverage => (+) wzseq_qualimap => (+) rnaseq_cufflinks => (+) rnaseq_cuffmerge => (+) edit samples [diffexp] ; rnaseq_cuffdiff => (+) rnaseq_edgeR
 EOF
