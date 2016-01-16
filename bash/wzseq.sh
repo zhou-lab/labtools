@@ -1,163 +1,13 @@
 #!/bin/bash
 
-# export WZSEQ_REF_BASE=/primary/home/wandingzhou/genomes #/data/reference #/home/uec-00/shared/production/genomes/
-# export WZSEQ_REF_MM10=$WZSEQ_REF_BASE/mm10/mm10.fa
-# export WZSEQ_REF=$WZSEQ_REF_MM10
-# export WZSEQ_REF_CGIBED=$WZSEQ_REF_BASE/mm10/cpg_island/cpgIsland.bed
-# export WZSEQ_REFVERSION=mm10
+# tips:
+# pbsgen one "$cmds" -name $jobname -dest $pbsdir/$jobname $depend
 
-# export WZSEQ_TOOLS=/primary/home/wandingzhou/tools
-# export PICARD=$WZSEQ_TOOLS/picard/picard-tools-1.135/picard.jar
+################################################################################
+# DNA-seq, mutation calling etc.
+################################################################################
 
-######################
-## auto setup links ##
-######################
-
-function auto_setup_links_methlevelaverage() {
-  # usage: auto_setup_links_methlevelaverage . /data/sequencing/analysis/H5MW5BGXX/results/H5MW5BGXX/H5MW5BGXX_1_PL430BS1 mm10
-
-  local base=$1
-  local mla_dir=$base/data/methlevelaverage
-  if [[ ! -d $mla_dir ]]; then mkdir -p $mla_dir; fi
-
-  sampledir=$2;
-  local genome=$3;
-  mla_fns=($(find $sampledir -name *.$genome.fa.bam.MethLevelAverages.metric.txt));
-
-  if [[ ${#mla_fns[@]} -eq 1 ]]; then
-    mla_fn=${mla_fns[0]};
-  else
-    echo '[Error] '${#mla_fns[@]}" methlevelaverage files for sample "$sample;
-    printf "%s\n" "${mla_fns[@]}";
-    return 1;
-  fi
-  
-  if [[ $mla_fn =~ ResultCount_([^.]*).$genome.fa.bam.MethLevelAverages.metric.txt ]]; then
-    scode=${BASH_REMATCH[1]};
-  else
-    echo "[Error] Unmatched methlevelaverage name: "$mla_fn;
-    echo "Abort";
-    return 1;
-  fi
-  ln -s $mla_fn $mla_dir/$scode".txt" && echo "Linked "$mla_fn;
-
-}
-
-# auto_setup_links_fastq [basedir] [targetdir]
-function auto_setup_links_fastq() {
-
-  if [[ $# -eq 0 ]]; then
-    echo " auto_setup_links_fastq basedir rootdir"
-    echo " auto_setup_links_fastq . /data/sequencing/analysis/H5MW5BGXX/"
-    return 1;
-  fi
-  
-  local base=$(readlink -f $1)
-  local rootdir=$(readlink -f $2)
-
-  echo "Linking fastq..."
-  fastqdir=$base/fastq
-  [[ -d $fastqdir ]] || mkdir -p $fastqdir
-  fastqs=($(find $rootdir -maxdepth 1 -name *.fastq.gz));
-  for fastq in ${fastqs[@]}; do
-    ln -s $fastq $fastqdir/$(basename $fastq) && echo "Linked "$fastq;
-  done
-  
-}
-
-# auto_setup_links_bam [targetdir]
-function auto_setup_links_bam() {
-  base=$(pwd)
-  [[ -d bam ]] || mkdir -p bam
-  find $1 -name *.bam |
-    while read f; do
-      ln -s $(readlink -f $f) bam/
-      [[ -s ${f/.bam/.bam.bai} ]] && ln -s $(readlink -f ${f/.bam/.bam.bai}) bam/
-      [[ -s ${f/.bam/.bai} ]] && ln -s $(readlink -f ${f/.bam/.bam.bai}) bam/
-    done
-}
-
-function auto_setup_links_bam_usc() {
-
-  local base=$(readlink -f $1)
-  local sample=$(readlink -f $2)
-  local genome=$3
-
-  bamdir=$base/data/bam
-  [[ -d $bamdir ]] || mkdir -p $bamdir;
-  
-  # bams=($(find $sample -name *.fa.realign.mdups.recal.bam));
-  bams=($(find $sample -name *.$genome.fa.mdups.bam));
-  if [[ ${#bams[@]} -eq 1 ]]; then
-    bam=${bams[0]};
-    # if [[ $bam =~ ResultCount_([^.]*).([^.]*).fa.realign.mdups.recal.bam ]]; then
-    if [[ $bam =~ ResultCount_([^.]*).$genome.fa.mdups.bam ]]; then
-      ln -s $bam $bamdir/${BASH_REMATCH[1]}.bam && echo "Linked "$bam
-      # ln -s ${bam%m}i $bamdir/${BASH_REMATCH[1]}.bam.bai;
-      ln -s $bam.bai $bamdir/${BASH_REMATCH[1]}.bam.bai
-    else
-      echo "[Error] unmatched bam file name: "$bam
-      return 1
-    fi
-  else
-    echo "[Error] "${#bams[@]}" bam files exist for the sample "$sample
-    [[ ${#bams[@]} -gt 1 ]] && printf "%s\n" "${bams[@]}";
-    return 1
-  fi
-
-}
-
-function auto_setup_links() {
-  # usage: auto_setup_links -b . -r /data/sequencing/analysis/H55TVBGXX/ -g mm10
-
-  local OPTIND opt base genome root
-  while getopts "g:r:b:" opt; do
-    case $opt in
-      g) genome=$OPTARG ;;
-      r) rootdir=$(readlink -f $OPTARG) ;;
-      b) base=$(readlink -f $OPTARG) ;;
-      \?) echo "Invalid option: -$OPTARG" >&2; exit 1;;
-      :) echo "Option -$OPTARG requires an argument." >&2; exit1;;
-    esac
-  done
-
-  if [[ -z ${rootdir+x} ]]; then
-    echo "[Error] Please provide root dir via -r";
-    return 1;
-  fi
-  [[ -z ${base+x} ]] && base=$(pwd);
-
-  ## link fastq
-  auto_setup_links_fastq $base $rootdir
-  echo
-
-  flowcell=$(basename $rootdir);
-  samples=($(/bin/ls $rootdir/results/$flowcell));
-  echo "Found "${#samples[@]}" samples:"
-  printf "\t%s\n" ${samples[@]}
-
-  local datadir=$base/data
-  [[ -d $datadir ]] || mkdir -p $datadir;
-  [[ -e $datadir/root ]] || ln -s $rootdir $datadir/root;
-
-  echo "Linking bams..."
-  for sample in ${samples[@]}; do
-    samplef=$rootdir/results/$flowcell/$sample
-    auto_setup_links_bam $base $samplef $genome
-  done
-  echo
-
-  echo "Linking methlevelaverages..."
-  for sample in ${samples[@]}; do
-    samplef=$rootdir/results/$flowcell/$sample
-    auto_setup_links_methlevelaverage $base $samplef $genome
-  done
-  echo
-}
-
-##################################
 # samtools mpileup call mutation #
-##################################
 # check http://samtools.sourceforge.net/mpileup.shtml
 
 # mpileup one sample
@@ -177,10 +27,7 @@ bcftools view mpileup/$sname.raw.bcf | vcf-sort -t mpileup/ | bgzip -c > mpileup
   [[ ${!#} == "do" ]]  && qsub $pbsfn
 }
 
-###########################
-### GATK best practice ####
-###########################
-
+# GATK best practice
 function wzseq_seqtk_trimfq1 {
   [[ -d trimfq ]] || mkdir -p trimfq;
   [[ -d pbs ]] || mkdir -p pbs;
@@ -217,15 +64,6 @@ samtools flagstat bam/${sname}.bam > bam/$sname.bam.flagstat
     done
 }
 
-# mark duplication
-function wzseq_markdup {
-  cmd="
-# dedup bam
-java -Xmx60g -Djava.io.tmpdir=./indelrealn/ -jar ~/software/GATK/GATK-3.3.0/GenomeAnalysisTK.jar -T MarkDuplicates METRICS_FILE=logs/${sname}_dedup_metrics.txt I=bams/$(sample_id)_rg.bam O=bams/$(sample_id)_rg_dedup.bam REMOVE_DUPLICATES=true ASSUME_SORTED=true
-samtools index bams/$(sample_id)_rg_dedup.bam
-"
-}
-
 # indel realignment
 function wzseq_indel_realign {
 
@@ -250,9 +88,9 @@ java -Xmx2g -Djava.io.tmpdir=./indelrealn/ -jar ~/software/GATK/GATK-3.3.0/Genom
   # -known $(broad_files)/Mills_and_1000G_gold_standard.indels.hg19.vcf -known $(broad_files)/1000G_phase1.indels.hg19.vcf
 }
 
-#########################################
-### Whole Genome Bisulfite Sequencing ###
-#########################################
+################################################################################
+# Whole Genome Bisulfite Sequencing
+################################################################################
 
 function examplepipeline_wgbs {
   cat <<- EOF
@@ -326,8 +164,7 @@ samtools flagstat $base/bam/${sname}_lamdaphage.bam > $base/bam/${sname}_lamdaph
     done
 }
 
-#### BWA-meth #####
-
+# BWA-meth #####
 function wgbs_bwameth_index_reference {
   [[ -d ~/pbs ]] || mkdir ~/pbs
   cmd="
@@ -525,50 +362,7 @@ grep -v '^chrUn\|random' Undetermined.mr.sorted_end_first > Undetermined.mr.sort
   done
 }
 
-function wgbs_picard_mdup {
-
-  if [[ $# -eq 0 ]]; then
-    echo "biscuit_mdup -i bam/H75J7BGXX_1_Undetermined.bam"
-    echo "PBS: biscuit_mdup -j jid -d depend -i bam/H75J7BGXX_1_Undetermined.bam"
-    return 1
-  fi
-
-  local OPTIND opt base jobid _jobid depend bam1 bam2 duplog tmp
-  while getopts "b:i:d:j:" opt; do
-    case $opt in
-      b) base=$(readlink -f $OPTARG) ;;
-      i) bam1=$(readlink -f $OPTARG) ;; # required
-      j) jobid=$OPTARG ;;
-      d) depend=$OPTARG ;;
-      \?) echo "Invalid option: -$OPTARG" >&2; return 1;;
-      :) echo "Option -$OPTARG requires an argument." >&2; return 1;;
-    esac
-  done
-
-  [[ -z ${base+x} ]] && base=$(pwd);
-  [[ -z ${depend+x} ]] && depend="" || depend="-depend "$depend;
-
-  bam2=${bam1%.bam}.mdup.bam
-  duplog=${bam1%.bam}.mdup_metrics
-  tmp=$base/tmp
-  [[ -d $tmp ]] || mkdir -p $tmp
-  cmds="java -Xmx7g -jar $PICARD MarkDuplicates CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT METRICS_FILE=$duplog READ_NAME_REGEX=null INPUT=$bam1 OUTPUT=$bam2 TMP_DIR=$tmp"
-  echo $cmds
-  if [[ -z ${jobid+x} ]]; then
-    $cmds
-  else
-    pbsdir=$base/pbs
-    [[ -d $pbsdir ]] || mkdir -p $pbsdir
-    jobname=$(basename $bam1)"_mdup"
-    pbsgen one "$cmds" -name $jobname -dest $pbsdir/$jobname $depend
-    _jobid=$(qsub $pbsdir/$jobname)
-    eval $jobid=$_jobid;
-    echo "Submitted "$_jobid;
-  fi
-}
-
-#### bisulfite analysis ####
-
+# TODO: the following gives seg fault now
 function wgbs_biscuit_markdup {
 
   base=$(pwd);
@@ -633,59 +427,6 @@ biscuit pileup -r $WZSEQ_REFERENCE_LAMBDAPHAGE -i $fn -o pileup/$bfn.vcf -q 28
     pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 28
     [[ $1 == "do" ]] && qsub $pbsfn
   done
-}
-
-#   local OPTIND opt base reference verbose
-
-#   verbose=false
-#   while getopts "b:r:v" opt; do
-#     case $opt in
-#       r) reference=$(readlink -f $OPTARG) ;;
-#       b) base=$(readlink -f $OPTARG) ;;
-#       v) verbose=true ;;
-#       \?) echo "Invalid option: -$OPTARG" >&2; return 1;;
-#       :) echo "Option -$OPTARG requires an argument." >&2; return 1;;
-#     esac
-#   done
-
-#   [[ -z ${base+x} ]] && base=$(pwd)
-#   [[ -z ${reference+x} ]] && reference=$WZSEQ_REF
-  
-#   echo "[$(date)] Pileup reference: $reference"
-#   [[ -d $base/pileup ]] || mkdir -p $base/pileup
-#   for bam in $base/data/bam/*.bam; do
-#     sample_code=$(basename $bam .bam);
-#     echo "[$(date)] Pileing up $bam"
-#     cmd="pileup_cytosine -r $reference -i $bam -q 10 | bgzip > $base/pileup/$sample_code.pileup.gz;"
-
-#     # for bsmap bam file, make sure use NM filter "-n 2".
-#     # for bwa-meth bam file, mapping quality filter is used by default.
-#     [[ $verbose == true ]] && echo "[$(date)] $cmd"
-#     eval $cmd
-#     if [[ $? -ne 0 ]]; then
-#       echo "[$(date)] Pileup failure"
-#       return 1
-#     fi
-#     echo "[$(date)] Done"
-#   done
-
-#   # we need a relatively new gnu sort >= 8.23 that supports parallel sorting
-#   temp=$base/temp
-#   [[ -d $temp ]] || mkdir -p $temp
-
-#   # sort and index pileup file
-#   for pileup in $base/pileup/*.pileup.gz; do
-#     echo "[$(date)] Indexing" $pileup
-#     tabix -p bed $pileup
-#     echo "[$(date)] Done"
-#   done
-
-#   echo "[$(date)] All done"
-
-# }
-
-function decho() {
-  echo "[$(date)] "$@ >&2
 }
 
 # wgbs_vcf2tracks [-nome] do
@@ -854,9 +595,9 @@ function biscuit_cpgisland() {
   decho 'Done'
 }
 
-#######################
-## ChIP-seq pipeline ##
-#######################
+################################################################################
+# ChIP-seq pipeline
+################################################################################
 
 # BWA-aln single-ended
 function wzseq_bwa_aln_se {
@@ -1004,9 +745,9 @@ rm -f $tbed $cbed
   done < chip_config
 }
 
-###########################
-##### RNA-seq pipeline ####
-###########################
+################################################################################
+# RNA-seq pipeline
+################################################################################
 
 function examplepipeline_rnaseq {
 cat<<- EOF
@@ -1135,8 +876,8 @@ rm -f $base/fastq/_${sread1}_tmp $base/fastq/_${sread2}_tmp
       pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 250 -ppn 28
       [[ $1 == "do" ]] && qsub $pbsfn
     done
-
 }
+
 #####################################
 ## section 2: differential expression
 #####################################
@@ -1388,9 +1129,33 @@ featureCounts -T 28 -t exon -g gene_id -a annotation.gtf -o featureCounts/$bfn_c
 # ~/tools/rsem/rsem-1.2.22/rsem-prepare-reference
 # rsem-calculate-expression -p 20 --calc-ci --ci-memory 12294 --bowtie-chunkmbs 2000 --paired-end --bowtie-path $WZSEQ_BOWTIE1 --rsem-index RSEM
 
-#####################
-### other utility ###
-#####################
+################################################################################
+# other utility
+################################################################################
+
+function wzseq_picard_markdup {
+
+  base=$(pwd)
+  [[ -d pbs ]] || mkdir pbs
+  [[ -d bam/before_mdup ]] || mkdir -p bam/before_mdup
+  [[ -d tmp ]] || mkdir tmp
+  for f in bam/*.bam; do
+    bfn=$(basename $f .bam)
+    cmd="
+cd $base
+mv $f bam/before_mdup/$bfn.bam
+[[ -e $f.bai ]] && mv $f.bai bam/before_mdup/$bfn.bam.bai
+[[ -e $f.flagstat ]] && mv $f.flagstat bam/before_mdup/$bfn.bam.flagstat
+java -Xmx10g -Djava.io.tmpdir=./tmp/ -jar /home/wanding.zhou/software/picard/picard-tools-1.138/picard.jar MarkDuplicates CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT METRICS_FILE=bam/before_mdup/$bfn.mdup.stats READ_NAME_REGEX=null INPUT=bam/before_mdup/$bfn.bam OUTPUT=$f TMP_DIR=tmp
+#samtools index $f
+#samtools flagstat $f
+" # other options: REMOVE_DUPLICATES=true ASSUME_SORTED=true
+    jobname="biscuit_markdup_$bfn"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 60 -memG 50 -ppn 5
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done
+}
 
 function wzseq_sra_to_fastq() {
   base=$(pwd);
@@ -1472,7 +1237,6 @@ samtools index $base/bam/$dest.bam
 }
 
 
-# wzseq_index_flagstat_bam <do>
 function wzseq_index_flagstat_bam() {
   base=$(pwd);
   [[ -d pbs ]] || mkdir pbs
@@ -1539,7 +1303,6 @@ rm -f tracks/${bfn}.coverage.q10.bedg
   done
 }
 
-# wzseq_qualimap <do>
 function wzseq_qualimap() {
   
   base=$(pwd);
@@ -1558,10 +1321,7 @@ qualimap --java-mem-size=10G bamqc -nt 10 -bam $fn -outdir $qualimapdir/$bfn -c
   done
 }
 
-###################################
 # trimming of adaptor and quality 
-###################################
-
 function wzseq_trimmomatic {
   base=$(pwd);
   [[ -d pbs ]] || mkdir pbs
@@ -1591,9 +1351,13 @@ ln -s trimmed/$sread2 .
     done
 }
 
-##########
-# others #
-##########
+# basic summary of the folder
+function wzseq_basic_summary() {
+  # for RNAseq
+  for f in bam/*.bam; do b=${f%.bam}; b=${b#bam/}; sec=$(cat ${f%.bam}/accepted_hits.bam.flagstat | grep 'secondary' | awk '{match($1, /([0-9]*) \+/, a); print a[1];}'); tot=$(cat ${f%.bam}/accepted_hits.bam.flagstat | grep 'total (' | awk '{match($1, /([0-9]*) \+/, a); print a[1];}'); echo ${b%.bam} $(($tot-$sec)); done
+  echo -e "\nraw read counts (paired-end, single-end)"
+  for f in fastq/*.fastq.gz; do c=$(zcat $f | lc); echo $f $(($c / 2)) $(($c / 4)); done
+}
 
 function absolute_path() {
   local in=$1
@@ -1604,11 +1368,8 @@ function absolute_path() {
   echo "${out[@]}"
 }
 
-function wzseq_basic() {
-  # for RNAseq
-  for f in bam/*.bam; do b=${f%.bam}; b=${b#bam/}; sec=$(cat ${f%.bam}/accepted_hits.bam.flagstat | grep 'secondary' | awk '{match($1, /([0-9]*) \+/, a); print a[1];}'); tot=$(cat ${f%.bam}/accepted_hits.bam.flagstat | grep 'total (' | awk '{match($1, /([0-9]*) \+/, a); print a[1];}'); echo ${b%.bam} $(($tot-$sec)); done
-  echo -e "\nraw read counts (paired-end, single-end)"
-  for f in fastq/*.fastq.gz; do c=$(zcat $f | lc); echo $f $(($c / 2)) $(($c / 4)); done
+function decho() {
+  echo "[$(date)] "$@ >&2
 }
 
 #############
@@ -1618,3 +1379,193 @@ function wzseq_basic() {
 #   ~/references/hg19/RepEnrich/
 # https://github.com/nerettilab/RepEnrich
 #############
+
+################################################################################
+## auto setup links 
+################################################################################
+
+function auto_setup_links_methlevelaverage() {
+  # usage: auto_setup_links_methlevelaverage . /data/sequencing/analysis/H5MW5BGXX/results/H5MW5BGXX/H5MW5BGXX_1_PL430BS1 mm10
+
+  local base=$1
+  local mla_dir=$base/data/methlevelaverage
+  if [[ ! -d $mla_dir ]]; then mkdir -p $mla_dir; fi
+
+  sampledir=$2;
+  local genome=$3;
+  mla_fns=($(find $sampledir -name *.$genome.fa.bam.MethLevelAverages.metric.txt));
+
+  if [[ ${#mla_fns[@]} -eq 1 ]]; then
+    mla_fn=${mla_fns[0]};
+  else
+    echo '[Error] '${#mla_fns[@]}" methlevelaverage files for sample "$sample;
+    printf "%s\n" "${mla_fns[@]}";
+    return 1;
+  fi
+  
+  if [[ $mla_fn =~ ResultCount_([^.]*).$genome.fa.bam.MethLevelAverages.metric.txt ]]; then
+    scode=${BASH_REMATCH[1]};
+  else
+    echo "[Error] Unmatched methlevelaverage name: "$mla_fn;
+    echo "Abort";
+    return 1;
+  fi
+  ln -s $mla_fn $mla_dir/$scode".txt" && echo "Linked "$mla_fn;
+
+}
+
+# auto_setup_links_fastq [basedir] [targetdir]
+function auto_setup_links_fastq() {
+
+  if [[ $# -eq 0 ]]; then
+    echo " auto_setup_links_fastq basedir rootdir"
+    echo " auto_setup_links_fastq . /data/sequencing/analysis/H5MW5BGXX/"
+    return 1;
+  fi
+  
+  local base=$(readlink -f $1)
+  local rootdir=$(readlink -f $2)
+
+  echo "Linking fastq..."
+  fastqdir=$base/fastq
+  [[ -d $fastqdir ]] || mkdir -p $fastqdir
+  fastqs=($(find $rootdir -maxdepth 1 -name *.fastq.gz));
+  for fastq in ${fastqs[@]}; do
+    ln -s $fastq $fastqdir/$(basename $fastq) && echo "Linked "$fastq;
+  done
+  
+}
+
+# auto_setup_links_bam [targetdir]
+function auto_setup_links_bam() {
+  base=$(pwd)
+  [[ -d bam ]] || mkdir -p bam
+  find $1 -name *.bam |
+    while read f; do
+      ln -s $(readlink -f $f) bam/
+      [[ -s ${f/.bam/.bam.bai} ]] && ln -s $(readlink -f ${f/.bam/.bam.bai}) bam/
+      [[ -s ${f/.bam/.bai} ]] && ln -s $(readlink -f ${f/.bam/.bam.bai}) bam/
+    done
+}
+
+function auto_setup_links_bam_usc() {
+
+  local base=$(readlink -f $1)
+  local sample=$(readlink -f $2)
+  local genome=$3
+
+  bamdir=$base/data/bam
+  [[ -d $bamdir ]] || mkdir -p $bamdir;
+  
+  # bams=($(find $sample -name *.fa.realign.mdups.recal.bam));
+  bams=($(find $sample -name *.$genome.fa.mdups.bam));
+  if [[ ${#bams[@]} -eq 1 ]]; then
+    bam=${bams[0]};
+    # if [[ $bam =~ ResultCount_([^.]*).([^.]*).fa.realign.mdups.recal.bam ]]; then
+    if [[ $bam =~ ResultCount_([^.]*).$genome.fa.mdups.bam ]]; then
+      ln -s $bam $bamdir/${BASH_REMATCH[1]}.bam && echo "Linked "$bam
+      # ln -s ${bam%m}i $bamdir/${BASH_REMATCH[1]}.bam.bai;
+      ln -s $bam.bai $bamdir/${BASH_REMATCH[1]}.bam.bai
+    else
+      echo "[Error] unmatched bam file name: "$bam
+      return 1
+    fi
+  else
+    echo "[Error] "${#bams[@]}" bam files exist for the sample "$sample
+    [[ ${#bams[@]} -gt 1 ]] && printf "%s\n" "${bams[@]}";
+    return 1
+  fi
+
+}
+
+function auto_setup_links() {
+  # usage: auto_setup_links -b . -r /data/sequencing/analysis/H55TVBGXX/ -g mm10
+
+  local OPTIND opt base genome root
+  while getopts "g:r:b:" opt; do
+    case $opt in
+      g) genome=$OPTARG ;;
+      r) rootdir=$(readlink -f $OPTARG) ;;
+      b) base=$(readlink -f $OPTARG) ;;
+      \?) echo "Invalid option: -$OPTARG" >&2; exit 1;;
+      :) echo "Option -$OPTARG requires an argument." >&2; exit1;;
+    esac
+  done
+
+  if [[ -z ${rootdir+x} ]]; then
+    echo "[Error] Please provide root dir via -r";
+    return 1;
+  fi
+  [[ -z ${base+x} ]] && base=$(pwd);
+
+  ## link fastq
+  auto_setup_links_fastq $base $rootdir
+  echo
+
+  flowcell=$(basename $rootdir);
+  samples=($(/bin/ls $rootdir/results/$flowcell));
+  echo "Found "${#samples[@]}" samples:"
+  printf "\t%s\n" ${samples[@]}
+
+  local datadir=$base/data
+  [[ -d $datadir ]] || mkdir -p $datadir;
+  [[ -e $datadir/root ]] || ln -s $rootdir $datadir/root;
+
+  echo "Linking bams..."
+  for sample in ${samples[@]}; do
+    samplef=$rootdir/results/$flowcell/$sample
+    auto_setup_links_bam $base $samplef $genome
+  done
+  echo
+
+  echo "Linking methlevelaverages..."
+  for sample in ${samples[@]}; do
+    samplef=$rootdir/results/$flowcell/$sample
+    auto_setup_links_methlevelaverage $base $samplef $genome
+  done
+  echo
+}
+
+
+# an example of "dependency coding" (not recommended)
+# function wgbs_picard_mdup {
+
+#   if [[ $# -eq 0 ]]; then
+#     echo "biscuit_mdup -i bam/H75J7BGXX_1_Undetermined.bam"
+#     echo "PBS: biscuit_mdup -j jid -d depend -i bam/H75J7BGXX_1_Undetermined.bam"
+#     return 1
+#   fi
+
+#   local OPTIND opt base jobid _jobid depend bam1 bam2 duplog tmp
+#   while getopts "b:i:d:j:" opt; do
+#     case $opt in
+#       b) base=$(readlink -f $OPTARG) ;;
+#       i) bam1=$(readlink -f $OPTARG) ;; # required
+#       j) jobid=$OPTARG ;;
+#       d) depend=$OPTARG ;;
+#       \?) echo "Invalid option: -$OPTARG" >&2; return 1;;
+#       :) echo "Option -$OPTARG requires an argument." >&2; return 1;;
+#     esac
+#   done
+
+#   [[ -z ${base+x} ]] && base=$(pwd);
+#   [[ -z ${depend+x} ]] && depend="" || depend="-depend "$depend;
+
+#   bam2=${bam1%.bam}.mdup.bam
+#   duplog=${bam1%.bam}.mdup_metrics
+#   tmp=$base/tmp
+#   [[ -d $tmp ]] || mkdir -p $tmp
+#   cmds="java -Xmx7g -jar /home/wanding.zhou/software/picard/picard-tools-1.138/picard.jar MarkDuplicates CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT METRICS_FILE=$duplog READ_NAME_REGEX=null INPUT=$bam1 OUTPUT=$bam2 TMP_DIR=$tmp"
+#   echo $cmds
+#   if [[ -z ${jobid+x} ]]; then
+#     $cmds
+#   else
+#     pbsdir=$base/pbs
+#     [[ -d $pbsdir ]] || mkdir -p $pbsdir
+#     jobname=$(basename $bam1)"_mdup"
+#     pbsgen one "$cmds" -name $jobname -dest $pbsdir/$jobname $depend
+#     _jobid=$(qsub $pbsdir/$jobname)
+#     eval $jobid=$_jobid;
+#     echo "Submitted "$_jobid;
+#   fi
+# }
