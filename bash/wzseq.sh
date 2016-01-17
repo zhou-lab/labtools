@@ -65,7 +65,7 @@ samtools flagstat bam/${sname}.bam > bam/$sname.bam.flagstat
 }
 
 # indel realignment
-function wzseq_indel_realign {
+function wzseq_GATK_indelrealign {
 
   [[ -d pbs ]] || mkdir -p pbs
   [[ -d indelrealn ]] || mkdir -p indelrealn
@@ -95,12 +95,32 @@ java -Xmx2g -Djava.io.tmpdir=./indelrealn/ -jar ~/software/GATK/GATK-3.3.0/Genom
 function examplepipeline_wgbs {
   cat <<- EOF
 === pipeline 2015-10-01 ===
-(+) wgbs_biscuit_align => (+) wgbs_biscuit_markdup
+[o] wgbs_adaptor => (+) wgbs_biscuit_align => (+) wgbs_biscuit_align_lambdaphage => (+) wzseq_GATK_realign (TODO: wgbs_indel_realign) => (+) wzseq_picard_markdup (TODO: wgbs_biscuit_markdup) => (+) wzseq_clean_intermediate => (+) TODO: wgbs_basequal_recal => [o] wzseq_merge_bam => (+) wgbs_biscuit_pileup => (+) wgbs_biscuit_pileup_lambdaphage => (+) wgbs_vcf2tracks => (+) wgbs_biscuit_diffmeth => (+) wgbs_cpgisland
 EOF
 }
 
-##### biscuit ####
+# check adaptor conversion rate
+function wgbs_adaptor() {
+  local base=$(pwd);
+  [[ -d adaptor ]] || mkdir adaptor;
+  cmd="
+cd $base
+parallel -j 4 ~/wzlib/pyutils/wzadapter.py {} '>' adaptor/{/.}.txt ::: $base/fastq/*R1*.fastq.gz
+for f in adaptor/*.txt; do
+  tail -2 $f | cut -d\":\" -f2 | cut -d\" \" -f2 | paste -s -d\"\t\" ;
+done | awk 'BEGIN{print \"adaptorC\tadaptorC2T\"}{print \$1,\$2/\$1}' > adaptor.stats
+"
+  jobname="adaptor_analysis"
+  pbsfn=$base/pbs/$jobname.pbs
+  pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 8 -ppn 4
+  [[ ${!#} == "do" ]] && qsub $pbsfn
+}
 
+########################
+## section1: alignment
+########################
+
+# biscuit alignment
 # wgbs_biscuit_index_reference
 # run mm10generic to setup $WZ_BISCUIT_INDEX
 # use ~/pbs
@@ -143,15 +163,11 @@ samtools flagstat $base/bam/${sname}.bam > $base/bam/${sname}.bam.flagstat
 }
 
 function wgbs_biscuit_align_lambdaphage {
-  # requires base/samples with format:
-  # sample_code fastq1 fastq2
-
   base=$(pwd)
   [[ -d bam ]] || mkdir bam
   [[ -d pbs ]] || mkdir pbs
   awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples |
     while read sname sread1 sread2; do
-      # while read samplecode fastq1 fastq2 _junk_; do
       cmd="
 biscuit align $WZSEQ_BISCUIT_INDEX_LAMBDAPHAGE -t 28 $base/fastq/$sread1 $base/fastq/$sread2 | samtools view -h -F 0x4 - | samtools sort -T $base/bam/${sname} -O bam -o $base/bam/${sname}_lamdaphage.bam
 samtools index $base/bam/${sname}_lamdaphage.bam
@@ -164,7 +180,7 @@ samtools flagstat $base/bam/${sname}_lamdaphage.bam > $base/bam/${sname}_lamdaph
     done
 }
 
-# BWA-meth #####
+# BWA-meth
 function wgbs_bwameth_index_reference {
   [[ -d ~/pbs ]] || mkdir ~/pbs
   cmd="
@@ -195,34 +211,7 @@ samtools flagstat bam/${sname}_bwameth.bam > bam/${sname}_bwameth.bam.flagstat
     done
 }
 
-function wgbs_adaptor() {
-
-  local base=$1;
-  
-  [[ -d adaptor ]] || mkdir adaptor;
-
-  parallel wzadaptor {} '>' adaptor/{/.}.txt ::: $base/root/*R1*.fastq.gz
-
-  for f in adaptor/*.txt; do
-    tail -2 $f | cut -d":" -f2 | cut -d" " -f2 | paste -s -d"\t" ;
-  done | awk 'BEGIN{print "adaptorC\tadaptorC2T"}{print $1,$2/$1}' > merged
-
-}
-
-function wgbs_merge_methlevelaverages {
-  # usage: biscuit_merge_methlevelaverages data/methlevelaverage
-
-  local basedir=$1;
-  for f in $basedir/*.txt; do
-    sed -e 's/://g' -e 's/%//' $f | awk -f wanding.awk -e 'BEGIN{split("",k);split("",n);split("",v);}(length($0)>0){k[length(k)+1]=$1;n[length(n)+1]=$2;v[length(v)+1]=$3/100;}END{for(i=1;i<=length(k);++i){kn[i]=k[i]"n"};print(join(k,1,length(k),"\t")"\t"join(kn,1,length(kn),"\t"));print(join(v,1,length(v),"\t")"\t"join(n,1,length(n),"\t"))}' > ${f%.txt}.processed
-  done
-
-  wzmanip concat -f $basedir/*.processed | awk -f wanding.awk -e '{n=NF;print;}END{repeat("NA", n, rep); print joina(rep,"\t");}' > $basedir/merge;
-
-}
-
-#### bismark with bowtie1 ####
-
+# bismark with bowtie1
 function wgbs_bismark_bowtie1_prepare_reference {
   base=$(pwd)
   cmd="
@@ -252,8 +241,7 @@ bismark $WZSEQ_BISMARK_BT1_INDEX --chunkmbs 2000 -1 $base/fastq/$sread1 -2 $base
     done
 }
 
-#### bismark with bowtie2 ####
-
+# bismark with bowtie2
 function wgbs_bismark_bowtie2_prepare_reference {
   base=$(pwd)
   cmd="
@@ -296,8 +284,7 @@ bismark $WZSEQ_BISMARK_BT2_INDEX --bowtie2 --chunkmbs 2000 -p 4 -o $base/bam/${s
     done
 }
 
-#### bsmap ####
-
+# bsmap
 function wgbs_bsmap {
   base=$(pwd);
   [[ -d pbs ]] || mkdir pbs
@@ -322,9 +309,23 @@ samtools flagstat bam/${sname}_bsmap.bam > bam/${sname}_bsmap.bam.flagstat
 # rmapbs -c hg18 -o Human_NHFF.mr Human_NHFF.fastq
 # rmapbs-pe -c hg18 -o Human_ESC.mr Human_ESC_1.fastq Human_ESC_2.fastq
 
-#### TODO bissnp ####
 
-#### picard mark duplicate ####
+########################
+## section 2: analysis
+########################
+
+## TODO bissnp ####
+
+function wgbs_merge_methlevelaverages {
+  # usage: biscuit_merge_methlevelaverages data/methlevelaverage
+
+  local basedir=$1;
+  for f in $basedir/*.txt; do
+    sed -e 's/://g' -e 's/%//' $f | awk -f wanding.awk -e 'BEGIN{split("",k);split("",n);split("",v);}(length($0)>0){k[length(k)+1]=$1;n[length(n)+1]=$2;v[length(v)+1]=$3/100;}END{for(i=1;i<=length(k);++i){kn[i]=k[i]"n"};print(join(k,1,length(k),"\t")"\t"join(kn,1,length(kn),"\t"));print(join(v,1,length(v),"\t")"\t"join(n,1,length(n),"\t"))}' > ${f%.txt}.processed
+  done
+
+  wzmanip concat -f $basedir/*.processed | awk -f wanding.awk -e '{n=NF;print;}END{repeat("NA", n, rep); print joina(rep,"\t");}' > $basedir/merge;
+}
 
 # note that I use my own version of to-mr which is agnostic of input bam type
 # /home/wanding.zhou/software/methpipe/default/to-mr
@@ -365,6 +366,7 @@ grep -v '^chrUn\|random' Undetermined.mr.sorted_end_first > Undetermined.mr.sort
 # TODO: the following gives seg fault now
 function wgbs_biscuit_markdup {
 
+  # this differentiate strands (parent/daughter) when applied to WGBS.
   base=$(pwd);
   [[ -d pbs ]] || mkdir pbs
   [[ -d bam/before_mdup ]] || mkdir -p bam/before_mdup
@@ -386,8 +388,8 @@ samtools flagstat $f
   done
 }
 
-# wgbs_biscuit_pileup [-nome] do
 function wgbs_biscuit_pileup() {
+  # wgbs_biscuit_pileup [-nome] do
 
   base=$(pwd);
   [[ -d pbs ]] || mkdir pbs
@@ -415,7 +417,7 @@ function wgbs_biscuit_pileup_lambdaphage() {
   base=$(pwd);
   [[ -d pbs ]] || mkdir pbs
   [[ -d pileup ]] || mkdir pileup
-  for f in bam/*.bam; do
+  for f in bam/*_lambdaphage.bam; do
     fn=$(readlink -f $f)
     bfn=$(basename $f .bam)
     cmd="
@@ -501,7 +503,7 @@ rm -f tracks/${bfn}_cov3_window1k.bedg
   done
 }
 
-function biscuit_diffmeth() {
+function wgbs_biscuit_diffmeth() {
 
   # usage: biscuit_diffmeth -t pileup1 -n pileup2 [-b base] [-c mincov]
   local OPTARG OPTIND opt base pileup1 pileup2 mincov analysis
@@ -578,7 +580,7 @@ function biscuit_diffmeth() {
   decho "All done"
 }
 
-function biscuit_cpgisland() {
+function wgbs_cpgisland() {
 
   local cgipileup
   [[ $# -eq 1 ]] && base=$(readlink -f $1) || base=$(pwd)
@@ -878,9 +880,9 @@ rm -f $base/fastq/_${sread1}_tmp $base/fastq/_${sread2}_tmp
     done
 }
 
-#####################################
+#######################################
 ## section 2: differential expression
-#####################################
+#######################################
 
 # rnaseq_cufflinks <do>
 function rnaseq_cufflinks() {
@@ -1146,15 +1148,24 @@ cd $base
 mv $f bam/before_mdup/$bfn.bam
 [[ -e $f.bai ]] && mv $f.bai bam/before_mdup/$bfn.bam.bai
 [[ -e $f.flagstat ]] && mv $f.flagstat bam/before_mdup/$bfn.bam.flagstat
-java -Xmx10g -Djava.io.tmpdir=./tmp/ -jar /home/wanding.zhou/software/picard/picard-tools-1.138/picard.jar MarkDuplicates CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT METRICS_FILE=bam/before_mdup/$bfn.mdup.stats READ_NAME_REGEX=null INPUT=bam/before_mdup/$bfn.bam OUTPUT=$f TMP_DIR=tmp
-#samtools index $f
-#samtools flagstat $f
-" # other options: REMOVE_DUPLICATES=true ASSUME_SORTED=true
-    jobname="biscuit_markdup_$bfn"
+java -Xmx10g -Djava.io.tmpdir=./tmp/ -jar /home/wanding.zhou/software/picard/picard-tools-1.138/picard.jar MarkDuplicates CREATE_INDEX=true ASSUME_SORTED=true VALIDATION_STRINGENCY=SILENT METRICS_FILE=bam/before_mdup/$bfn.mdup.stats READ_NAME_REGEX=null INPUT=bam/before_mdup/$bfn.bam OUTPUT=$f TMP_DIR=tmp
+(cd bam; ln -s $bfn.bai $bfn.bam.bai;)
+samtools flagstat $f >$f.flagstat
+" # other options: REMOVE_DUPLICATES=true
+    jobname="picard_markdup_$bfn"
     pbsfn=$base/pbs/$jobname.pbs
     pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 60 -memG 50 -ppn 5
     [[ $1 == "do" ]] && qsub $pbsfn
   done
+}
+
+function wzseq_clean_intermediate {
+
+  if [[ -d bam/before_mdup ]]; then
+    echo "Remove mark duplicate intermediate"
+    [[ -n $(compgen -G bam/before_mdup/*.bam) ]] && rm -i bam/before_mdup/*.bam
+    [[ -n $(compgen -G bam/before_mdup/*.bai) ]] && rm -i bam/before_mdup/*.bai
+  fi
 }
 
 function wzseq_sra_to_fastq() {
@@ -1209,31 +1220,21 @@ function wzseq_merge_bam {
   # if $dest.rg.txt does not exist, will create by inferring from file name
 
   base=$(pwd)
-  local dest=$1
-  shift
-
-  [[ -d $base/bam ]] || mkdir -p $base/bam
-
-  cmd="
-if [[ ! -s $base/bam/$dest.rg.txt ]]; then
-  :>$base/bam/$dest.rg.txt
-  for x in $@; do
-    samtools view -H $x | grep '^@RG' >>$base/bam/$dest.rg.txt
-  done
-fi
-
-if [[ -s $base/bam/$dest.rg.txt ]]; then
-  samtools merge -h $base/bam/$dest.rg.txt $base/bam/$dest.bam $@
-  rm -f $base/bam/$dest.rg.txt;
-else
-  samtools merge $base/bam/$dest.bam $@
-fi
-samtools index $base/bam/$dest.bam
+  [[ -d bam ]] || mkdir bam
+  [[ -d pbs ]] || mkdir pbs
+  awk '/^\[/{p=0}/\[merge\]/{p=1;next} p&&!/^$/' samples |
+    while read merged sourcebams; do
+      cmd="
+cd $base
+samtools merge $merged.bam \$(echo $sourcebams | tr ',' ' ')
+samtools index $merged.bam
+samtools flagstat $merged.bam
 "
-  jobname="merge_bam_$dest"
-  pbsfn=pbs/$jobname.pbs
-  pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 1 -memG 10 -ppn 1
-  [[ $1 == "do" ]] && qsub $pbsfn
+      jobname="bam_merge_$merged"
+      pbsfn=pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 1 -memG 10 -ppn 1
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
 }
 
 
