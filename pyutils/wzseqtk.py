@@ -8,7 +8,6 @@ import collections as colls
 import re
 from wzcore import *
 
-
 # Heng Li's readfq
 # usage
 # if __name__ == "__main__":
@@ -84,6 +83,19 @@ def parse_indices(indstr):
             indices.extend(int(rg)-1, int(rg))
 
     return indices
+
+def main_getfasta(args):
+
+    import faidx
+    genome = faidx.RefGenome(args.f)
+    out = open(args.o, 'w') if args.o is not None else sys.stdout
+    for line in args.i:
+        fields = line.strip().split('\t')
+        chrm = fields[0]
+        beg = int(fields[1])
+        end = int(fields[2])
+
+        out.write('%s\t%s\n' % (line.strip(), genome.fetch_sequence(chrm, beg+1, end)))
 
 def main_printc(args):
 
@@ -291,7 +303,7 @@ def main_consensus(args):
                 print wrap(''.join(seq))
                 k += 1
             seq = []
-            
+
 if __name__ == '__main__':
     
     parser = argparse.ArgumentParser(description='calculate sequence')
@@ -302,6 +314,12 @@ if __name__ == '__main__':
     psr_printc.add_argument('-o', default=None, help='output file (default stdout)')
     psr_printc.add_argument('-v', action='store_true', help='print status')
     psr_printc.set_defaults(func=main_printc)
+
+    parser_getfasta = subparsers.add_parser('getfasta', help=' get sequence from indexed fasta ')
+    parser_getfasta.add_argument('-f', required=True, help='reference in fasta format')
+    parser_getfasta.add_argument('-i', type=argparse.FileType('r'), default='-', help='input bed')
+    parser_getfasta.add_argument('-o', help='output', default=None)
+    parser_getfasta.set_defaults(func=main_getfasta)
 
     psr_orphan = subparsers.add_parser('orphan', help=""" orphan CpG """)
     psr_orphan.add_argument('-i', required=True, help='genomic sequence format in fasta')
@@ -339,7 +357,6 @@ if __name__ == '__main__':
     psr_consensus.add_argument('-l', type=int, default=20, help='min length [20]')
     psr_consensus.set_defaults(func=main_consensus)
 
-    
     parser_runningcomp = subparsers.add_parser('runningcomp', help='compute running composition')
     parser_runningcomp.add_argument('-i', required=True, help='genomic sequence format in fasta')
     parser_runningcomp.add_argument('-k', type=int, default=1000, help='flanking length')
@@ -347,6 +364,7 @@ if __name__ == '__main__':
     parser_runningcomp.add_argument('-v', action='store_true', help='print status')
     parser_runningcomp.add_argument('-o', help='output', default=None)
     parser_runningcomp.set_defaults(func=main_runningcomp)
+
 
     args = parser.parse_args()
     try:

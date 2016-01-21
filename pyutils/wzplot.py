@@ -431,6 +431,35 @@ def main_hist(args):
 
     __core__(args)
 
+def main_cumhist(args):
+    
+    """ cumulative stepwise histogram with increment 1 """
+    data = []
+    dmax = None
+    dmin = None
+    for i, line in enumerate(args.table):
+        pair = line.strip().split(args.delim)
+        if pair[args.c-1] == 'NA':
+            continue
+        d = float(pair[args.c-1])
+
+        if args.xmax and d > args.xmax:
+            continue
+
+        if args.xmin and d < args.xmin:
+            continue
+        
+        data.append(d)
+        
+        if dmax is None or dmax < d:
+            dmax = d
+        if dmin is None or dmin > d:
+            dmin = d
+
+    plt.hist(data, bins=range(int(np.percentile(data, 99))+1), histtype='step', cumulative=-1)
+
+    __core__(args)
+    
 def main_box(args):
 
     def drawmean(starts, ends, means, color):
@@ -1104,7 +1133,7 @@ def add_std_options_table(psr):
                      help="table delimiter [\\t]")
     psr.add_argument('--skipheader', action='store_true', help='skip header')
     psr.add_argument('--skipline', default=0, type=int, help='skip line from table')
-    psr.add_argument('--maxline', default=100000, type=int, help='number of lines to plot [100000]')
+    psr.add_argument('--maxline', default=1000000, type=int, help='number of lines to plot [1000000]')
 
 
 def add_std_options_out(psr):
@@ -1197,8 +1226,7 @@ if __name__ == '__main__':
     # histogram
     psr_hist = subparsers.add_parser("hist", help=""" histogram """)
     psr_hist.add_argument('-c', type=int, default=1, help="column to plot (1-based)")
-    psr_hist.add_argument('--bins', type=int,
-                          default=20, help="number of bins [20]")
+    psr_hist.add_argument('--bins', type=int, default=20, help="number of bins [20]")
     psr_hist.add_argument('--cat', type=int, help="column to indicate category (1-based)")
     psr_hist.add_argument('--binseq', default=None, help='bin sequences. e.g., 1,20,100,400,1000 means [1,20),[20,100)...')
     psr_hist.add_argument('--log', action='store_true', help='log scaled x and y')
@@ -1206,6 +1234,12 @@ if __name__ == '__main__':
     psr_hist.add_argument('--xrange', default=None, help="range of x axes. E.g., (xmin, xmax)")
     add_std_options(psr_hist)
     psr_hist.set_defaults(func=main_hist)
+
+    parser_cumhist = subparsers.add_parser('cumhist', help=' cumulative histogram ')
+    parser_cumhist.add_argument('-c', type=int, default=1, help="column to plot (1-based)")
+    parser_cumhist.add_argument('--bins', type=int, default=20, help="number of bins [20]")
+    add_std_options(parser_cumhist)
+    parser_cumhist.set_defaults(func=main_cumhist)
 
     parser_dhist = subparsers.add_parser('dhist', help='discrete histogram')
     parser_dhist.add_argument('-i', type=argparse.FileType('r'), default='-', help='input table')

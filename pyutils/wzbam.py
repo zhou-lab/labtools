@@ -5,6 +5,7 @@ import pysam
 import argparse
 import faidx
 import sys, __builtin__
+from datetime import datetime
 
 class Read():
 
@@ -114,6 +115,11 @@ class Read():
                     return ((2, None, self.qual[qpos]))
                 else:
                     rpos += clen
+            elif op == 3:      # N, ref-skip
+                if rpos + clen > tpos:
+                    return ((3, None, self.qual[qpos]))
+                else:
+                    rpos += clen
             elif op == 4:
                 qpos += clen
             else:
@@ -128,12 +134,12 @@ class Read():
                 end += clen
             elif op == 1:       # insertion
                 pass
-            elif op == 2:       # deletion, quality is the base before
+            elif op == 2 or op == 3:       # deletion, quality is the base before
                 end += clen
             elif op == 4 or op == 5:
                 pass
             else:
-                raise Exception("unknown cigar: %d" % op)
+                raise Exception("unknown cigar: %d (%s)" % (op, self.qname))
         return end
 
 def parse_readfile(fh):
@@ -336,7 +342,96 @@ def main_editing(args):
 
         if nA + nG > 0:
             print '%s\t%d\t%d\t%s\t%d\t%d\t%s' % (chrm, loc-1, loc, ref, nA, nG, bases)
-    
+
+
+class SNP:
+
+    def __init__(self, loc, base):
+
+        self.loc = int(loc)
+        self.base = base
+        
+class SNPFile:
+
+    def __init__(self, fn):
+
+        self.chrm2snps = {}
+        with open(fn) as fh:
+            for line in fh:
+                fields = line.strip().split('\t')
+                chrm = fields[0]
+                if chrm in self.chrm2snps:
+                    self.chrm2snps[chrm].append(SNP(int(fields[2]), fields[3]))
+                else:
+                    self.chrm2snps[chrm] = [SNP(int(fields[2]), fields[3])]
+
+def main_splitallele(args):
+
+    bam = pysam.AlignmentFile(args.bam,"r")
+    out = args.bam if args.o is None else args.o
+
+    names = args.name.split(',')
+    out1 = pysam.AlignmentFile(out+'.'+names[0]+'.bam', "wb", template=bam)
+    out2 = pysam.AlignmentFile(out+'.'+names[1]+'.bam', "wb", template=bam)
+
+    snpfile = SNPFile(args.snp)
+
+    snp_chrm = None
+    from collections import deque
+    n1 = 0
+    n2 = 0
+    n_contradictory = 0
+    n_ambiguous = 0
+    for i,x in enumerate(bam.fetch()):
+        
+        if i % 1000000 == 0:
+            sys.stderr.write("[%s] Processed %d reads\n" % (datetime.now(), i))
+            sys.stderr.flush()
+            
+        read = Read(x=x, xob=bam)
+        if read.chrm != snp_chrm:
+            snps = deque(snpfile.chrm2snps[read.chrm]) if read.chrm in snpfile.chrm2snps else deque()
+            snp_chrm = read.chrm
+
+        support1 = 0
+        support2 = 0
+        while snps and read.pos > snps[0].loc:
+            snps.popleft()
+
+        read_end = read.calend()
+        for i in xrange(len(snps)):
+            snp = snps[i]
+            if snp.loc > read_end:
+                break
+
+            ct, b, q = read.getbase(snp.loc)
+            if b == snp.base[0]:
+                support1 += 1
+            if b == snp.base[1]:
+                support2 += 1
+
+            if support1 > 0 and support2 > 0:
+                n_contradictory += 1
+                
+            if support1 > support2:
+                n1 += 1
+                out1.write(x)
+                
+            elif support2 > support1:
+                n2 += 1
+                out2.write(x)
+                
+            else:
+                n_ambiguous += 1
+
+    out1.close()
+    out2.close()
+    sys.stderr.write("[%s] Done.\n" % datetime.now())
+    sys.stderr.write("%d are of background %s\n" % (n1, names[0]))
+    sys.stderr.write("%d are of background %s\n" % (n2, names[1]))
+    sys.stderr.write("%d are ambiguous (no preference)\n" % n_ambiguous)
+    sys.stderr.write("%d reads are contradictory (with both supporting SNPs)\n" % n_contradictory)
+
 if __name__ == '__main__':
    parser = argparse.ArgumentParser(description="bam utilities")
 
@@ -393,6 +488,14 @@ if __name__ == '__main__':
    parser_editing.add_argument('-ref', required=True, help='fai-indexed reference')
    parser_editing.add_argument('-stranded', action='store_true', help="consider only A>G on positive strand and T>C on negative strand (otherwise consider both A>G and T>C on both strand)")
    parser_editing.set_defaults(func=main_editing)
+
+   # split
+   parser_splitallele = subparsers.add_parser('splitallele', help='split bam based on allele')
+   parser_splitallele.add_argument('-bam', required=True, help='input bam')
+   parser_splitallele.add_argument('-snp', required=True, help='input SNP bed')
+   parser_splitallele.add_argument('-o', default=None, help='output prefix')
+   parser_splitallele.add_argument('-name', default="1,2", help='suffix for two split bams')
+   parser_splitallele.set_defaults(func=main_splitallele)
 
    args = parser.parse_args()
    args.func(args)

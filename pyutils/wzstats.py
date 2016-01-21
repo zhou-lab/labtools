@@ -188,6 +188,7 @@ def add_std_options(psr):
     # psr.add_argument('-o', dest='outfn', default="wz.out",
     #                  help='output file name [stdout]')
 
+
 if __name__ == '__main__':
     
     parser = argparse.ArgumentParser(description='calculator of different statistics')

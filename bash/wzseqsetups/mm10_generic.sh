@@ -23,3 +23,4 @@ export WZSEQ_BSMAP_INDEX=/home/wanding.zhou/references/mm10/bsmap/mm10.fa
 export WZSEQ_REFERENCE_SPLIT=/primary/vari/genomicdata/genomes/mm10/bowtie1/
 
 export WZSEQ_MACS_SHORT=mm
+export WZSEQ_CGIBED=/home/wanding.zhou/references/mm10/annotation/cpgisland/cpgIslandExt.bed

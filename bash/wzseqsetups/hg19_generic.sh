@@ -14,4 +14,6 @@ export WZSEQ_REFERENCE_SPLIT=/primary/vari/genomicdata/genomes/hg19/tophat/Homo_
 # WGBS
 export WZSEQ_BISCUIT_INDEX=/home/wanding.zhou/references/hg19/biscuit/hg19.fa
 
+export WZSEQ_CGIBED=/primary/vari/genomicdata/genomes/hg19/annotation/cpgisland/cpgIslandExt.bed
+
 export WZSEQ_MACS_SHORT=hs
