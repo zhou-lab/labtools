@@ -38,6 +38,7 @@ if (is.null(opt$TREATMENT)) {
     opt$TREATMENT <- as.integer(unlist(strsplit(opt$TREATMENT,",")))
 }
 
+cat("Loading input..")
 meth.objs <- read(as.list(opt$INPUTFILE), sample.id=opt$SAMPLEID, assembly="hg19", treatment=opt$TREATMENT)
 
 if (opt$summary) {
@@ -62,9 +63,16 @@ if (opt$summary) {
     sink()
 }
 
+cat("OK\n")
+
 if (opt$diff) {
     meth <- unite(meth.objs, destrand=T)
     myDiff <- calculateDiffMeth(meth)
+
+    inputfile <- c("methylKit/APCminSmadh3_vs_APCminNormal/WGBS_APCminSmadh3.methylKit","methylKit/APCminSmadh3_vs_APCminNormal/WGBS_APCmin_normal.methylKit")
+    meth.raw.objs <- read(as.list(inputfile), sample.id=as.list(c("WGBS_APCminSmadh3","WGBS_APCmin_normal")), assembly="mm10", treatment=c(1,0)) # methylRaw class
+    meth.base.obj <- unite(meth.raw.objs, destrand=T) # methylBase class
+    diff <- calculateDiffMeth(meth)
 }
 
 if (opt$cluster) {
@@ -73,3 +81,4 @@ if (opt$cluster) {
     ## meth = unite(myobj, destrand=T)
     ## cat(str(meth))
 }
+cat("Done.\n")

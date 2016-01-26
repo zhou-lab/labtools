@@ -178,9 +178,57 @@ def main_zscore(args):
         else:
             print '%s\t%1.3f' % ('\t'.join(fields), (val - vmean) / vstd)
 
+def main_ttest(args):
+
+    gb = parse_indices(args.groupby)
+
+    if args.skipheader:
+        header = args.table.readline()
+        headerfields = header.strip().split(args.delim)
+        print('stats\t%s' % '\t'.join(indices.extract(headerfields)))
+
+    np.seterr(divide='ignore', invalid='ignore')
+    def format1(c1, c2):
+        if len(c1) > 1 and len(c2) > 1:
+            if set(c1) == set(c2):
+                p = '1.0'
+                t = 'NA'
+            else:
+                t, p = stats.ttest_ind(c1, c2)
+                t = '%1.3f' % t
+                p = '%1.3g' % p
+        else:
+            t = 'NA'
+            p = 'NA'
+
+        if (not args.rmNA) or (p != 'NA' and t != 'NA'):
+            print '%s\t%d\t%1.3f\t%1.3f\t%1.3f\t%s\t%s' % (
+                '\t'.join(k), len(c1), np.median(c1), np.median(c2), np.median(c1)-np.median(c2), t, p)
+        
+    k = None                    # key
+    c1 = []
+    c2 = []
+    for i, line in enumerate(args.table):
+        fields = line.strip().split(args.delim)
+        c1.append(float(fields[args.c1-1]))
+        c2.append(float(fields[args.c2-1]))
+
+        k1 = tuple(gb.extract(fields))
+        if args.groupby is not None and k1 != k:
+            if k is not None and len(c1) > 0 and len(c2) > 0:
+                format1(c1, c2)
+            k = k1
+            c1 = []
+            c2 = []
+
+    if k is not None and len(c1) > 0 and len(c2) > 0:
+        format1(c1, c2)
+        
+    return
+
 def add_std_options(psr):
 
-    psr.add_argument('table', help="data table", type = argparse.FileType('r'), default='-')
+    psr.add_argument('table', help="data table", default='-', type=argparse.FileType('r'))
     psr.add_argument('--delim', default="\t", help="table delimiter [\\t]")
     psr.add_argument('--skipheader', action='store_true', help='skip header')
     psr.add_argument('-p', default=None, help="columns to be printed in the output, 1-based. E.g., -p 1,3,4 [None]")
@@ -211,6 +259,14 @@ if __name__ == '__main__':
     psr_Utest.add_argument('--outz', action="store_true", help="output z-score.")
     add_std_options(psr_Utest)
     psr_Utest.set_defaults(func=main_Utest)
+
+    parser_ttest = subparsers.add_parser('ttest', help='t-test')
+    parser_ttest.add_argument('-c1', type=int, required=True, help='first column to compare')
+    parser_ttest.add_argument('-c2', type=int, required=True, help='second column to compare')
+    parser_ttest.add_argument('--groupby', default=None, help='test is grouped by additional column(s)')
+    parser_ttest.add_argument('--rmNA', action='store_true', help='remove NA')
+    add_std_options(parser_ttest)
+    parser_ttest.set_defaults(func=main_ttest)
 
     p = subparsers.add_parser('rowentropy', help='compute entropy on each row')
     p.add_argument('-c', default=None, help='columns to compute')

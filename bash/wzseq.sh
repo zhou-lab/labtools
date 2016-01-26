@@ -101,11 +101,15 @@ function examplepipeline_wgbs {
 
  => (+) wzseq_GATK_realign (TODO: wgbs_indel_realign) => (+) wzseq_picard_markdup (TODO: wgbs_biscuit_markdup) => (+) wzseq_clean_intermediate => (+) TODO: wgbs_basequal_recal
 
- => [o] wzseq_merge_bam => (+) wzseq_qualimap => (+) wzseq_picard_WGSmetrics
+ => [o] wzseq_merge_bam => (+) wzseq_qualimap => (defunct) wzseq_picard_WGSmetrics => (+) wzseq_bam_coverage
+
+ => (+) wgbs_methpipe
 
  => (+) wgbs_biscuit_pileup => (+) wgbs_vcf2tracks => (+) wgbs_cpgcoverage
 
- => (+) wgbs_biscuit_diffmeth
+ => (+) wgbs_methylKit_summary
+
+ => (+) wgbs_diffmeth_simple
 EOF
 }
 
@@ -179,7 +183,7 @@ function wgbs_biscuit_align_lambdaphage {
   awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples |
     while read sname sread1 sread2; do
       cmd="
-biscuit align $WZSEQ_BISCUIT_INDEX_LAMBDAPHAGE -t 28 $base/fastq/$sread1 $base/fastq/$sread2 | samtools view -h -F 0x4 - | samtools sort -T $base/bam/${sname} -O bam -o $base/bam/${sname}_lamdaphage.bam
+biscuit align $WZSEQ_BISCUIT_INDEX_LAMBDAPHAGE -t 28 $base/fastq/$sread1 $base/fastq/$sread2 | samtools view -h -F 0x4 - | samtools sort -T $base/bam/${sname} -O bam -o $base/bam/${sname}_lambdaphage.bam
 samtools index $base/bam/${sname}_lambdaphage.bam
 samtools flagstat $base/bam/${sname}_lambdaphage.bam > $base/bam/${sname}_lambdaphage.bam.flagstat
 "
@@ -324,6 +328,27 @@ samtools flagstat bam/${sname}_bsmap.bam > bam/${sname}_bsmap.bam.flagstat
 ## section 2: analysis
 ########################
 
+# summary
+function wgbs_methylKit_summary {
+
+  base=$(pwd)
+  [[ -d pbs ]] || mkdir pbs
+  [[ -d methylKit ]] || mkdir methylKit
+  for f in pileup/*.vcf.gz; do
+    bfn=$(basename $f .vcf.gz)
+    cmd="
+cd $base
+biscuit vcf2bed -t cg -u -c $f | pybiscuit.py to_methylKit >methylKit/$bfn.methylKit
+~/wzlib/Rutils/bin/bioinfo/methylKit.r summary methylKit/$bfn.methylKit -o methylKit
+"
+    jobname="methylKit_summary_$bfn"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 50 -ppn 3
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done
+
+}
+
 ## TODO bissnp ####
 
 function wgbs_merge_methlevelaverages {
@@ -406,6 +431,7 @@ function wgbs_biscuit_pileup() {
   [[ -d pileup ]] || mkdir pileup
   [[ $1 == "-nome" ]] && nome="-N" || nome=""; # whether to pileup using the nomeseq mode
   for f in bam/*.bam; do
+    [[ $f =~ "lambdaphage" ]] && continue;
     fn=$(readlink -f $f)
     bfn=$(basename $f .bam)
     cmd="
@@ -448,6 +474,7 @@ function wgbs_vcf2tracks {
 
   # compute 1) base-pair resolution methylation track 2) mean methylation in window track
   [[ -d tracks ]] || mkdir tracks
+  [[ -d qc ]] || mkdir qc
   base=$(pwd)
   [[ -d pbs ]] || mkdir pbs
   [[ $1 == "-nome" ]] && items=(hcg gch) || items=(cg)
@@ -542,83 +569,55 @@ rm -f cpg/$bfn.cg.bedg
   done
 }
 
-function wgbs_biscuit_diffmeth() {
+function wgbs_methylKit_diffmeth {
 
-  # usage: biscuit_diffmeth -t pileup1 -n pileup2 [-b base] [-c mincov]
-  local OPTARG OPTIND opt base pileup1 pileup2 mincov analysis
-
-  while getopts "b:t:n:c:" opt; do
-    case $opt in
-      t) pileup1=$(readlink -f $OPTARG) ;;
-      n) pileup2=$(readlink -f $OPTARG) ;;
-      b) base=$(readlink -f $OPTARG) ;;
-      c) mincov=$OPTARG ;;
-      \?) echo "Invalid option: -$OPTARG" >&2; return 1;;
-      :) echo "Option -$OPTARG requires an argument." >&2; return 1;;
-    esac
-  done
-  
-  local max_hyper_len=500
-  local max_hypo_len=2000
-  local minhypercnt=6
-  local minhypocnt=6
-  
-  [[ -z ${base+x} ]] && base=$(pwd)
-  [[ -z ${mincov+x} ]] && mincov=3
-
-  analysis=$base/diffmeth
-  [[ -d $analysis ]] || mkdir -p $analysis
-  local contrast=$analysis/$(basename $pileup1 .pileup.gz)"_vs_"$(basename $pileup2 .pileup.gz)
-
-  echo "[$(date)] Generating "$contrast.diff
-  bedtools intersect -a <(zcat $pileup1 | awk -v mincov=$mincov '$8!="."&&$9!="."&&$8+$9>=mincov{print $1,$2,$3,$4,$6,$7,$8,$9}') -b <(zcat $pileup2 | awk -v mincov=$mincov '$8!="."&&$9!="."&&$8+$9>=mincov{print $1,$2,$3,$4,$6,$7,$8,$9}') -sorted -wo | awk -f wanding.awk -e '$5~/[ATCG]CG/{bt=$7/($7+$8); bn=$15/($15+$16); print joinr(1,16),bt,bn,bt-bn}' > $contrast.diff
-  echo "[$(date)] Done"
-
-  echo "[$(date)] Plotting delta beta distribution"
-  echo "[$(date)] Generating "$contrast.diff.dist.png
-  cut -f19 $contrast.diff | wzplot hist -c 1 -o $contrast.diff.dist.png --xlabel "delta_beta" --ylabel "#CpG"
-  echo "[$(date)] Done"
-  
-  echo "[$(date)] Generating "$contrast.bw
-  cut -f1,2,3,19 $contrast.diff > $contrast.bedGraph
-  bedGraphToBigWig $contrast.bedGraph ~/genomes_link/mm10/mm10.fa.fai $contrast.bw
-  rm -f $contrast.bedGraph
-  echo "[$(date)] Done"
-  
-  echo "[$(date)] Generating "$contrast.diff.window
-  perl -alne 'BEGIN{my @window; my @poses; my @chrs;}{if (scalar @window == 10) {$p1 = scalar grep {$_>0.3} @window; $n1 = scalar grep {$_<-0.3} @window; print $chrs[0]."\t".$poses[0]."\t".$poses[9]."\t".$p1."\t".$n1; shift(@window); shift(@poses); shift(@chrs);} if (scalar @window>0 && $chrs[scalar @chrs-1] ne $F[0]) {@window=();@chrs=();@poses=();} push(@window,$F[18]); push(@chrs, $F[0]); push(@poses, $F[1]);}' $contrast.diff > $contrast.diff.window
-  echo "[$(date)] Done"
-
-  local windowsizeplot=$contrast"_diffmeth_windowsize_dist.png"
-  echo "[$(date)] Plotting differential methylation window size distribution"
-  echo "[$(date)] Generating "$windowsizeplot
-  awk '{print $3-$2}' $contrast.diff.window | wzplot hist -c 1 -o $windowsizeplot --xlabel "window size (bp)" --ylabel "count"
-  echo "[$(date)] Done"
-
-  decho "Plotting hyper-methylation window size distribution."
-  awk -v p=$minhypercnt '$4>p{print $3-$2}' $contrast.diff.window | wzplot hist -o $contrast"_diff_hyper_window_size_dist.png" --xlabel "window length" --ylabel "#windows" --xlog
-
-  decho "Plotting hypo-methylation window size distribution."
-  awk -v p=$minhypocnt '$5>p{print $3-$2}' $contrast.diff.window | wzplot hist -o $contrast"_diff_hypo_window_size_dist.png" --xlabel "window length" --ylabel "#windows" --xlog
-
-  decho "Combining hyper-methylation segment."
-  awk -v m=$max_hyper_len -v p=$minhypercnt '(($3-$2)<m) && ($4>p)' $contrast.diff.window | bedtools merge -i - -c 4 -o count > $contrast.hyper.bed
-  decho "Combining hypo-methylation segment."
-  awk -v m=$max_hypo_len -v p=$minhypocnt '(($3-$2)<m) && ($5>p)' $contrast.diff.window | bedtools merge -i - -c 4 -o count > $contrast.hypo.bed
-
-  decho "Intersecting CpG Island."
-  
-  bedtools intersect -a $contrast.hyper.bed -b $WZSEQ_REF_CGIBED > $contrast.hyper.cgi.bed
-  bedtools intersect -a $contrast.hypo.bed -b $WZSEQ_REF_CGIBED > $contrast.hypo.cgi.bed
-  decho "There are "$(wc -l $contrast.hyper.cgi.bed | cut -d" " -f1)" hyper-methylated CGIs and "$(wc -l $contrast.hypo.cgi.bed | cut -d" " -f1)" hypo-methylated CGIs."
-
-  decho "TransVar annotation."
-  awk '{print $1":"$2"_"$3}' $contrast.hyper.bed | transvar ganno -l - --refversion $WZSEQ_REFVERSION --ccds >$contrast.hyper.transvar
-  awk '{print $1":"$2"_"$3}' $contrast.hypo.bed | transvar ganno -l - --refversion $WZSEQ_REFVERSION --ccds >$contrast.hypo.transvar
-  
-  decho "All done"
+  base=$(pwd)
+  [[ -d pbs ]] || mkdir pbs
+  [[ -d methylKit ]] || mkdir methylKit
+  awk '/^\[/{p=0}/\[diffmeth\]/{p=1;next} p&&!/^$/' samples |
+    while read sname vcfpath1 vcfpath2; do
+      echo $sname $vcfpath1
+      base1=$(basename $vcfpath1 .vcf.gz) # tumor
+      base2=$(basename $vcfpath2 .vcf.gz) # normal
+      [[ $base1 == $base2 ]] && base2=$base2"_1"
+      dir1=$(dirname $vcfpath1)
+      dir2=$(dirname $vcfpath2)
+      dir1=${dir1%/pileup}
+      dir2=${dir2%/pileup}
+      cmd="
+cd $base
+mkdir methylKit/$sname
+biscuit vcf2bed -t cg -u -c $vcfpath1 | pybiscuit.py to_methylKit >methylKit/$sname/$base1.methylKit
+biscuit vcf2bed -t cg -u -c $vcfpath2 | pybiscuit.py to_methylKit >methylKit/$sname/$base2.methylKit
+~/wzlib/Rutils/bin/bioinfo/methylKit.r diff -t 1,0 -b $base1,$base2 methylKit/$sname/$base1.methylKit,methylKit/$sname/$base2.methylKit -o methylKit/$sname/${base1}_vs_${base2}.diffmeth.tsv -g $WZSEQ_CGIBED_METHYLKIT
+rm -f methylKit/$sname/$base1.methylKit
+rm -f methylKit/$sname/$base2.methylKit
+"
+      jobname="methylKit_diff_$sname"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 50 -ppn 3
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
 }
 
+function wgbs_diffmeth_simple {
+
+  base=$(pwd)
+  [[ -d pbs ]] || mkdir pbs
+  [[ -d diffmeth ]] || mkdir diffmeth
+  awk '/^\[/{p=0}/\[diffmeth\]/{p=1;next} p&&!/^$/' samples |
+    while read sname vcfpath1 vcfpath2; do
+      cmd="
+cd $base
+[[ -d $base/$sname ]] || mkdir -p $base/$sname
+~/wzlib/bash/wzmethdiff.sh -t $vcfpath1 -n $vcfpath2 -b $base/$sname -v $WZSEQ_REFVERSION -g $WZSEQ_CGIBED -r $WZSEQ_REFERENCE 2>$base/$sname/run.log
+"
+      jobname="simple_methdiff_$sname"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 5 -ppn 1
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
+}
 
 ################################################################################
 # ChIP-seq pipeline
@@ -784,11 +783,11 @@ cat<<- EOF
 === pipeline 2016-01-12 ===
 (+) wzseq_fastqc => (+) edit samples [alignment]; rnaseq_tophat2_firststrand => (+) wzseq_qualimap rnaseq_se/rnaseq_pe_stranded
 
- => (o) rnaseq_splitallele => (+) wzseq_bam_coverage
+ => [o] rnaseq_splitallele (for ASE) => (+) wzseq_bam_coverage
 
  => (+) rnaseq_cufflinks => (+) rnaseq_cuffmerge => (+) edit samples [diffexp] ; rnaseq_cuffdiff
 
- => (+) rnaseq_edgeR
+ => (+) rnaseq_edgeR => (+) rnaseq_DESeq2
 
  => (+) rnaseq_allelomePro
 EOF
@@ -1025,7 +1024,6 @@ function rnaseq_edgeR {
       # use merged gtf if available otherwise, use back-up gtf
       gtf=$base/cuffmerge/merged_asm/merged.gtf
       [[ -s $gtf ]] || gtf=$WZSEQ_GTF
-      
       cmd="
 cd $base
 ~/wzlib/Rutils/bin/bioinfo/edgeR.r -g $WZSEQ_REFVERSION -G $WZSEQ_GTF_ENSEMBL -a $cond1 -b $cond2 -A $bams1 -B $bams2 -o edgeR/${cond1}_vs_${cond2}_diffexp.tsv 2> edgeR/${cond1}_vs_${cond2}_diffexp.log
@@ -1041,19 +1039,20 @@ function rnaseq_DESeq2 {
   base=$(pwd)
   [[ -d DESeq2 ]] || mkdir DESeq2
   [[ -d pbs ]] || mkdir pbs
+  grep '\[experiment\] stranded' samples && stranded="" || stranded="--ignoreStrand"
+  grep '\[experiment\] single-end' samples && singleEnd="--singleEnd" || singleEnd=""
   awk '/^\[/{p=0}/\[diffexp\]/{p=1;next} p&&!/^$/' samples |
     while read cond1 cond2 bams1 bams2; do
       # use merged gtf if available otherwise, use back-up gtf
       gtf=$base/cuffmerge/merged_asm/merged.gtf
       [[ -s $gtf ]] || gtf=$WZSEQ_GTF
-      
       cmd="
 cd $base
-~/wzlib/Rutils/bin/bioinfo/DESeq2.r -g $WZSEQ_REFVERSION -a $cond1 -b $cond2 -A $bams1 -B $bams2 -o DESeq2/${cond1}_vs_${cond2}_diffexp.tsv 2> DESeq2/${cond1}_vs_${cond2}_diffexp.log
+~/wzlib/Rutils/bin/bioinfo/DESeq2.r $stranded $singleEnd -g $WZSEQ_REFVERSION -G $WZSEQ_GTF_ENSEMBL -a $cond1 -b $cond2 -A $bams1 -B $bams2 -o DESeq2/${cond1}_vs_${cond2}_diffexp.tsv 2> DESeq2/${cond1}_vs_${cond2}_diffexp.log
 "
       jobname="DESeq2_${cond1}_vs_${cond2}"
       pbsfn=$base/pbs/$jobname.pbs
-      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 20 -ppn 2
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 100 -ppn 14
       [[ $1 == "do" ]] && qsub $pbsfn
     done
 }
@@ -1210,6 +1209,17 @@ done
 function rnaseq_allelomePro {
 
   # see wzlib/other/allelomePro.config for example of config file
+  # abbreviations:
+  # MAT: maternal bias
+  # PAT: paternal bias
+  # strain1 bias, strain2 bias
+  # BAE: Biallelic expression
+  # NI: non-informative (low SNP coverage)
+  # NS: no SNP
+  # I_score: imprinted score, S_score: strain bias score
+  
+  # RPSM: (10^6*A)/(B*C), A: number of mappable reads at the given single nucleotide position
+  # B: number of all mappable reads in the sample, C: read length
   base=$(pwd);
   [[ -d pbs ]] || mkdir pbs
   awk '/^\[/{p=0}/\[allelomePro\]/{p=1;next} p&&!/^$/' samples |
@@ -1540,10 +1550,6 @@ function absolute_path() {
     out+=($(readlink -f $x));
   done
   echo "${out[@]}"
-}
-
-function decho() {
-  echo "[$(date)] "$@ >&2
 }
 
 #############
