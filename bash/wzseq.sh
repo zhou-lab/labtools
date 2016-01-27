@@ -109,7 +109,7 @@ function examplepipeline_wgbs {
 
  => (+) wgbs_methylKit_summary
 
- => (+) wgbs_diffmeth_simple
+ => (+) wgbs_diffmeth_simple => (+) wgbs_methylKit_diff
 EOF
 }
 
@@ -609,8 +609,8 @@ function wgbs_diffmeth_simple {
     while read sname vcfpath1 vcfpath2; do
       cmd="
 cd $base
-[[ -d $base/$sname ]] || mkdir -p $base/$sname
-~/wzlib/bash/wzmethdiff.sh -t $vcfpath1 -n $vcfpath2 -b $base/$sname -v $WZSEQ_REFVERSION -g $WZSEQ_CGIBED -r $WZSEQ_REFERENCE 2>$base/$sname/run.log
+[[ -d diffmeth/$sname ]] || mkdir -p diffmeth/$sname
+~/wzlib/bash/wzmethdiff.sh -t $vcfpath1 -n $vcfpath2 -b $base/diffmeth/$sname -v $WZSEQ_REFVERSION -g $WZSEQ_CGIBED -r $WZSEQ_REFERENCE -s $WZSEQ_TSSBED 2>$base/diffmeth/$sname/run.log
 "
       jobname="simple_methdiff_$sname"
       pbsfn=$base/pbs/$jobname.pbs
@@ -1052,7 +1052,7 @@ cd $base
 "
       jobname="DESeq2_${cond1}_vs_${cond2}"
       pbsfn=$base/pbs/$jobname.pbs
-      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 100 -ppn 14
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 36 -memG 100 -ppn 14
       [[ $1 == "do" ]] && qsub $pbsfn
     done
 }

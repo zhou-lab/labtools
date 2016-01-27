@@ -25,3 +25,4 @@ export WZSEQ_REFERENCE_SPLIT=/primary/vari/genomicdata/genomes/mm10/bowtie1/
 export WZSEQ_MACS_SHORT=mm
 export WZSEQ_CGIBED=/home/wanding.zhou/references/mm10/annotation/cpgisland/cpgIslandExt.bed
 export WZSEQ_CGIBED_METHYLKIT=/home/wanding.zhou/references/mm10/annotation/cpgisland/cpgIslandExt.methylKit.bed
+export WZSEQ_TSSBED=/home/wanding.zhou/references/mm10/annotation/TSS/mm10.refseq.tss.bed

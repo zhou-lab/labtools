@@ -369,7 +369,7 @@ def _hist_oneplot(args):
     dmax = None
     dmin = None
     for i, line in enumerate(args.table):
-        if i > args.maxline:
+        if i > args.maxline and args.maxline > 0:
             break
         pair = line.strip().split(args.delim)
         if pair[args.c-1] == 'NA':
@@ -1133,7 +1133,7 @@ def add_std_options_table(psr):
                      help="table delimiter [\\t]")
     psr.add_argument('--skipheader', action='store_true', help='skip header')
     psr.add_argument('--skipline', default=0, type=int, help='skip line from table')
-    psr.add_argument('--maxline', default=1000000, type=int, help='number of lines to plot [1000000]')
+    psr.add_argument('--maxline', default=-1, type=int, help='number of lines to plot, use negative number if not a requirement [-1]')
 
 
 def add_std_options_out(psr):
