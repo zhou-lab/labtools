@@ -14,7 +14,7 @@
 suppressMessages(library(docopt))
 
 "Usage:
-  DESeq2.r -g REFVERSION [-G GTF] [-s] -a CONDITION1 -b CONDITION2 -A BAMS1 -B BAMS2 -o OUTPUT
+  DESeq2.r [--singleEnd] [--ignoreStrand] -g REFVERSION [-G GTF] [-s] -a CONDITION1 -b CONDITION2 -A BAMS1 -B BAMS2 -o OUTPUT
 
 Options:
   -g REFVERSION   reference version (e.g, hg19, mm10)
@@ -63,7 +63,9 @@ bamfiles <- BamFileList(c(bam.paths1, bam.paths2), yieldSize=2000000)
 library("BiocParallel")
 register(SerialParam())                 # run in serial
 ## paired-end, capture fragments, strand-specific
-se <- summarizeOverlaps(features=exonByGene, reads=bamfiles, mode=Union, singleEnd=opt$singleEnd, ignore.strand=opt$ignoreStrand, fragments=T) # RangedSummarizedExperiment class
+fragments <- T
+if (opt$singleEnd) fragments <- F
+se <- summarizeOverlaps(features=exonByGene, reads=bamfiles, mode=Union, singleEnd=opt$singleEnd, ignore.strand=opt$ignoreStrand, fragments=fragments) # RangedSummarizedExperiment class
 
 cat(format(Sys.time()), "Statistical testing...\n")
 group <- rep(c(opt$a, opt$b), c(length(bam.paths1), length(bam.paths2)))

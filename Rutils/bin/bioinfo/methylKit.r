@@ -15,13 +15,14 @@ suppressMessages(library(docopt))
 "Usage:
   methylKit.r summary [-t TREATMENT] [-b SAMPLEID] <INPUTFILE>... [-o OUTPUT]
   methylKit.r cluster [-t TREATMENT] [-b SAMPLEID] <INPUTFILE>... [-o OUTPUT]
-  methylKit.r diff [-G GTF] -t <TREATMENT> -b <SAMPLEID> <INPUTFILE>... [-o OUTPUT]
+  methylKit.r diff -t <TREATMENT> -b SAMPLEID <INPUTFILE>... [-o OUTPUT] [-w CPGIBED] [-g REFSEQGENE]
 
 Options:
   INPUTFILE       input files, must be of same length as treatment string (if supplied)
   -t TREATMENT    treatment string (e.g., 1,0) separated by ','
-  -G GTF          Ensembl GTF file (if not provided, downloaded from UCSC)   
   -b SAMPLEID     sample id (','-separated, default to basename of file)
+  -w CPGIBED      the UCSC table for CPGIBED
+  -g REFSEQGENE   the UCSC table for REFSEQGENE
   -o OUTPUT       output dir [default: .]
 "-> doc
 
@@ -29,55 +30,43 @@ opt <- docopt(doc)
 
 suppressMessages(library(methylKit))
 
-cat(format(Sys.time()), "Retrieving annotations...\n")
-suppressPackageStartupMessages(library(GenomicFeatures))
-if (is.null(opt$G)) {
-    txdb <- suppressWarnings(makeTxDbFromUCSC(genome=opt$g,tablename='ensGene'))
-} else {
-    txdb <- makeTxDbFromGFF(opt$G, format="gtf",circ_seqs=character())
-    seqlevelsStyle(txdb) <- "UCSC"
-}
-
-intronsByTx <- intronsByTranscript(txdb)
-
 ## cat(str(opt))
 
-file.list <- opt$INPUTFILE
-
-if (is.null(opt$SAMPLEID)) {
-    opt$SAMPLEID = as.list(basename(opt$INPUTFILE))
+## sample id
+if (is.null(opt$b)) {
+    sampleid <- as.list(basename(opt$INPUTFILE))
 } else {
-    opt$SAMPLEID = as.list(unlist(strsplit(opt$SAMPLEID,",")))
+    sampleid <- as.list(unlist(strsplit(opt$b,",")))
 }
 
 n <- length(opt$INPUTFILE)
 
-## if missing treatment
-if (is.null(opt$TREATMENT)) {
-    opt$TREATMENT = rep(0,times=n)
+## treatment
+if (is.null(opt$t)) {
+    treatment <- rep(0,times=n)
 } else {
-    opt$TREATMENT <- as.integer(unlist(strsplit(opt$TREATMENT,",")))
+    treatment <- as.integer(unlist(strsplit(opt$t,",")))
 }
 
 cat("Loading input..")
-meth.objs <- read(as.list(opt$INPUTFILE), sample.id=opt$SAMPLEID, assembly="hg19", treatment=opt$TREATMENT)
+meth.raw.objs <- read(as.list(unlist(strsplit(opt$INPUTFILE,","))), sample.id=sampleid, assembly="NA", treatment=treatment) # methylRawList class
 
 if (opt$summary) {
     suppressMessages(library(graphics))
     sink(paste0(opt$o, "/meth.summary"))
-    for (meth.obj in meth.objs) {
+    for (meth.obj in meth.raw.objs) {
 
         ## calculate summary
         cat(meth.obj@sample.id,"\n","===\n", sep="")
         getMethylationStats(meth.obj, plot=F, both.strands=F)
 
         ## plot methstats
-        bitmap(paste0(opt$o, "/", meth.obj@sample.id, ".methstats.png"), res=500)
+        pdf(paste0(opt$o, "/", meth.obj@sample.id, ".methstats.pdf"))
         getMethylationStats(meth.obj, plot=T, both.strands=F)
         dev.off()
 
         ## plot coverage stats
-        bitmap(paste0(opt$o, "/", meth.obj@sample.id, ".covstats.png"), res=500)
+        pdf(paste0(opt$o, "/", meth.obj@sample.id, ".covstats.pdf"))
         getCoverageStats(meth.obj, plot=T, both.strands=F)
         dev.off()
     }
@@ -87,20 +76,63 @@ if (opt$summary) {
 cat("OK\n")
 
 if (opt$diff) {
-    meth <- unite(meth.objs, destrand=T)
-    myDiff <- calculateDiffMeth(meth)
-
-    inputfile <- c("methylKit/APCminSmadh3_vs_APCminNormal/WGBS_APCminSmadh3.methylKit","methylKit/APCminSmadh3_vs_APCminNormal/WGBS_APCmin_normal.methylKit")
-    meth.raw.objs <- read(as.list(inputfile), sample.id=as.list(c("WGBS_APCminSmadh3","WGBS_APCmin_normal")), assembly="mm10", treatment=c(1,0)) # methylRaw class
+    ## meth.raw.objs <- read(as.list(c("methylKit/APCminSmadh3_vs_APCminNormal/WGBS_APCminSmadh3.methylKit","methylKit/APCminSmadh3_vs_APCminNormal/WGBS_APCmin_normal.methylKit")), sample.id=as.list(c("WGBS_APCminSmadh3","WGBS_APCmin_normal")), assembly="mm10", treatment=opt$TREATMENT) # methylRawList class
+    cat("Merging..\n")
     meth.base.obj <- unite(meth.raw.objs, destrand=T) # methylBase class
-    diff <- calculateDiffMeth(meth)
-    write.table(diff, "mydiff.tsv", sep="\t", quote=F, row.names=F)
+    cat("Calculating differential expression..\n")
+    diff <- calculateDiffMeth(meth.base.obj)          # methylDiff class
+    cat("Outputing single-base level..\n")
+    write.table(cbind(meth.base.obj, diff), paste0(opt$o, "/diffmeth.tsv"), sep="\t", quote=F, row.names=F)
 
-    diffMethPerChr(diff, plot=F, qvalue.cutoff=0.01,meth.cutoff=25)
+    cat("Get hyper/hypo methylated bases")
+    ## get hypermethylated bases
+    diff25p.hyper <- get.methylDiff(diff,difference=25,qvalue=0.01,type="hyper")
+    ## get hypo methylated bases
+    diff25p.hypo <- get.methylDiff(diff,difference=25,qvalue=0.01,type="hypo")
+
+    sink(paste0(opt$o, "/diff.summary"))
+    ## cat("Differential methylation per chromosome:")
+    ## diffMethPerChr(diff, plot=F, qvalue.cutoff=0.01,meth.cutoff=25)
+
+    ## annotate genic parts
+    if (!is.null(opt$g)) {
+        gene.obj <- read.transcript.features(opt$g)
+        diffAnn <- annotate.WithGenicParts(diff, gene.obj) # annotationByGenicParts class
+        ## getAssociationWithTSS(diffAnn)
+        
+        cat("Percentage/number of differentially methylated regions that overlap with intron/exon/promoters:")
+        getTargetAnnotationStats(diffAnn,percentage=TRUE,precedence=TRUE)
+        cat("\n")
+        
+        ## The percentage of differentially methylated bases overlapping with exon/intron/promoters
+        pdf(paste0(opt$o, "/diffmeth_annotation.pdf"))
+        plotTargetAnnotation(diffAnn,precedence=TRUE, main="differential methylation annotation")
+        dev.off()
+
+        cat("Percentage of intron/exon/promoters that overlap with differentially methylated bases.")
+        getFeatsWithTargetsStats(diffAnn,percentage=TRUE)
+
+        ## conglomerate promoter methylation
+        ## promoters <- regionCounts(myobj,gene.obj$promoters)
+        ## write.table(promoters, paste0(opt$o, "/promoter.meth.tsv"), quote=F, sep="\t", row.names=F)
+    }
+    sink()
+
+    ## annotate cpg island
+    if (!is.null(opt$w)) {
+        cpg.obj <- read.feature.flank(opt$w, feature.flank.name=c("CpGi","shores")) # GenomicRangesList
+        diffCpGann <- annotate.WithFeature.Flank(diff, cpg.obj$CpGi, cpg.obj$shores, feature.name="CpGi", flank.name="shores") # annotationByFeature class
+        print(diffCpGann)
+        ## percentage of differentially methylated bases are on CpG islands, CpG island shores and other regions.
+        pdf(paste0(opt$o, "/diff_CpG_methylation.pdf"))
+        plotTargetAnnotation(diffCpGann,col=c("green","gray","white"), main="percentage of diffmeth bases in each cat")
+        dev.off()
+    }
+    cat("\n")
 }
 
 if (opt$cluster) {
-    cat(str(meth.objs))
+    cat(str(meth.raw.objs))
     ## getMethylationStats(myobj[[2]],plot=T,both.strands=F)
     ## meth = unite(myobj, destrand=T)
     ## cat(str(meth))

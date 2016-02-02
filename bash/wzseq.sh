@@ -95,7 +95,9 @@ java -Xmx2g -Djava.io.tmpdir=./indelrealn/ -jar ~/software/GATK/GATK-3.3.0/Genom
 function examplepipeline_wgbs {
   cat <<- EOF
 === pipeline 2015-10-01 ===
-[o] wgbs_adaptor => [o] wzseq_fastqc => (+) wgbs_biscuit_align
+[o] wgbs_adaptor => [o] wzseq_fastqc
+
+ => (+) wgbs_biscuit_align / (+) wgbs_bwameth / (+) wgbs_bismark_bowtie1 / (+) wgbs_bismark_bowtie2 / wgbs_bsmap
 
  => (+) wgbs_biscuit_align_lambdaphage => (+) wgbs_biscuit_pileup_lambdaphage (TODO: exclude human reads)
 
@@ -103,13 +105,13 @@ function examplepipeline_wgbs {
 
  => [o] wzseq_merge_bam => (+) wzseq_qualimap => (defunct) wzseq_picard_WGSmetrics => (+) wzseq_bam_coverage
 
- => (+) wgbs_methpipe
+ => (+) wgbs_methpipe => (+) wgbs_methpipe_methylome => (+) wgbs_methpipe_allele
 
  => (+) wgbs_biscuit_pileup => (+) wgbs_vcf2tracks => (+) wgbs_cpgcoverage
 
  => (+) wgbs_methylKit_summary
 
- => (+) wgbs_diffmeth_simple => (+) wgbs_methylKit_diff
+ => (+) wgbs_diffmeth_simple => (+) wgbs_methylKit_diffmeth => (+) wgbs_methpipe_diff
 EOF
 }
 
@@ -302,6 +304,8 @@ bismark $WZSEQ_BISMARK_BT2_INDEX --bowtie2 --chunkmbs 2000 -p 4 -o $base/bam/${s
 function wgbs_bsmap {
   base=$(pwd);
   [[ -d pbs ]] || mkdir pbs
+  [[ -d bam ]] || mkdir bam
+
   awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples |
     while read sname sread1 sread2; do
       cmd="
@@ -338,8 +342,9 @@ function wgbs_methylKit_summary {
     bfn=$(basename $f .vcf.gz)
     cmd="
 cd $base
-biscuit vcf2bed -t cg -u -c $f | pybiscuit.py to_methylKit >methylKit/$bfn.methylKit
-~/wzlib/Rutils/bin/bioinfo/methylKit.r summary methylKit/$bfn.methylKit -o methylKit
+mkdir methylKit/$bfn
+biscuit vcf2bed -t cg -u -c $f | pybiscuit.py to_methylKit >methylKit/$bfn/$bfn.methylKit
+~/wzlib/Rutils/bin/bioinfo/methylKit.r summary methylKit/$bfn/$bfn.methylKit -o methylKit/$bfn/
 "
     jobname="methylKit_summary_$bfn"
     pbsfn=$base/pbs/$jobname.pbs
@@ -365,7 +370,7 @@ function wgbs_merge_methlevelaverages {
 # note that I use my own version of to-mr which is agnostic of input bam type
 # /home/wanding.zhou/software/methpipe/default/to-mr
 # ~/software/methpipe/default/to-mr -o methpipe/$bfn -m bsmap 
-# ~/software/methpipe/default/to-mr -o methpi bam/Undetermined_bismark_bt2/Undetermined_L000_R1_001_val_1.fq.gz_bismark_bt2_pe.bam -m bismark
+# ~/software/methpipe/default/to-mr -o methpipe bam/Undetermined_bismark_bt2/Undetermined_L000_R1_001_val_1.fq.gz_bismark_bt2_pe.bam -m bismark
 # ~/software/methpipe/default/to-mr -o methpi2 bam/Undetermined_bsmap.bam -m bsmap
 # duplicate-remover -S 
 function wgbs_methpipe {
@@ -376,26 +381,123 @@ function wgbs_methpipe {
   for f in bam/*.bam; do
     fn=$(readlink -f $f)
     bfn=$(basename $f .bam)
+    obfn=methpipe/$bfn
     cmd="
 cd $base
-pybiscuit.py to_mr -i $fn -o methpipe/$bfn.mr
-LC_ALL=C sort -k1,1 -k2,2n -k3,3n -k6,6 -o methpipe/$bfn.mr.sorted_start methpipe/$bfn.mr
-~/software/methpipe/default/duplicate-remover -S methpipe/${bfn}_dremove_stat.txt -o methpipe/$bfn.mr.dremove methpipe/$bfn.mr.sorted_start
-~/software/methpipe/default/bsrate -c $WZSEQ_REFERENCE_SPLIT -o methpipe/$bfn.bsrate methpipe/$bfn.mr.dremove
-LC_ALL=C sort -k1,1 -k3,3n -k2,2n -k6,6 -o ${bfn}.mr.sorted_end_first methpipe/$bfn.mr.dremove
+pybiscuit.py to_mr -i $fn -o $obfn.mr
+LC_ALL=C sort -T methpipe/ -k1,1 -k2,2n -k3,3n -k6,6 -o $obfn.mr.sorted_start $obfn.mr
 
-# remove random contigs and haplotype
-grep -v '^chrUn\|random' Undetermined.mr.sorted_end_first > Undetermined.mr.sorted_end_first.norandom
+echo \"[\$(date)] Remove duplicates...\"
+~/tools/methpipe/default/bin/duplicate-remover -S ${obfn}_dremove_stat.txt -o $obfn.mr.dremove.untrim $obfn.mr.sorted_start
 
-~/software/methpipe/default/methcounts -c $WZSEQ_REFERENCE_SPLIT -o $bfn.meth ${bfn}.mr.sorted_end_first
-~/software/methpipe/default/symmetric-cpgs -m -o $bfn.CpG.meth $bfn.meth
-~/software/methpipe/default/levels -o $bfn.levels $bfn.meth
+echo \"[\$(date)] Remove random contigs and haplotype...\"
+cut -f1 $obfn.mr.dremove.untrim | uniq | while read chrm; do [[ -s $WZSEQ_REFERENCE_SPLIT/\$chrm.fa ]] || echo \"^\"\$chrm; done >$obfn.mr.uchr
+grep -v -f $obfn.mr.uchr $obfn.mr.dremove.untrim > $obfn.mr.dremove
+
+echo \"[\$(date)] Estimate bisulfite conversion rate...\"
+~/tools/methpipe/default/bin/bsrate -c $WZSEQ_REFERENCE_SPLIT -o $obfn.bsrate $obfn.mr.dremove
+LC_ALL=C sort -T methpipe/ -k1,1 -k3,3n -k2,2n -k6,6 -o $obfn.mr.sorted_end_first $obfn.mr.dremove
+
+echo \"[\$(date)] Compute single-site methylation levels...\"
+~/tools/methpipe/default/bin/methcounts -c $WZSEQ_REFERENCE_SPLIT -o $obfn.meth $obfn.mr.sorted_end_first
+
+echo \"[\$(date)] Merge C,G in CpG context...\"
+~/tools/methpipe/default/bin/symmetric-cpgs -m -o $obfn.CpG.meth $obfn.meth
+
+echo \"[\$(date)] Get statistics of methylation levels...\"
+~/tools/methpipe/default/bin/levels -o $obfn.levels $obfn.meth
+
+echo \"[\$(date)] Clean up intermediate files...\"
+rm -f $obfn.mr $obfn.mr.sorted_start $obfn.mr.dremove.untrim $obfn.mr.uchr 
+# not sure if these 2 should be removed as intermediate $obfn.mr.dremove $obfn.mr.sorted_end_first
+echo \"[\$(date)] Done.\"
 "
-    jobname="methpipe_$bfn"
+    jobname="methpipe_basic_$bfn"
     pbsfn=$base/pbs/$jobname.pbs
-    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 10 -ppn 1
     [[ $1 == "do" ]] && qsub $pbsfn
   done
+}
+
+function wgbs_methpipe_methylome {
+  base=$(pwd)
+  [[ -d methpipe ]] || mkdir methpipe
+  for f in methpipe/*.mr; do
+    bfn=$(basename $f .mr)
+    obfn=methpipe/$bfn
+    cmd="
+cd $base
+
+echo \"[\$(date)] Hypomethylated (primarily) and hypermethylated region...\"
+~/tools/methpipe/default/bin/hmr -p $obfn.hmr.params -o $obfn.hmr $obfn.CpG.meth
+
+# use trained parameter
+# echo \"[\$(date)] Train parameters...\"
+# ~/tools/methpipe/default/bin/hmr -p $obfn.hmr.params -o $obfn.hmr $obfn.CpG.meth
+# echo \"[\$(date)] Use trained parameter to call HMR...\"
+# ~/tools/methpipe/default/bin/hmr -P $obfn.hmr.params -o $obfn.hmr $obfn.CpG.meth
+
+echo \"[\$(date)] Partially methylated regions (PMR)...\"
+# not sure what this is
+~/tools/methpipe/default/bin/hmr -partial -o $obfn.hmr $obfn.CpG.meth
+
+# echo \"[\$(date)] Hypermethylated region in plant (HyperMR)...\"
+# ~/tools/methpipe/default/bin/hypermr -o $obfn.hypermr $obfn.CpG.meth
+
+echo \"[\$(date)] Partially methylated domain (PMD, 1kb bin level segmentation).\"
+~/tools/methpipe/default/bin/pmd -o $obfn.pmd $obfn.CpG.meth
+
+echo \"[\$(date)] Done.\"
+"
+    jobname="methpipe_methylome_$bfn"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 10 -ppn 1
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done
+}
+
+function wgbs_methpipe_allele {
+  base=$(pwd)
+  [[ -d methpipe ]] || mkdir methpipe
+  for f in methpipe/*.mr; do
+    bfn=$(basename $f .mr)
+    obfn=methpipe/$bfn
+    cmd="
+cd $base
+
+echo \"[\$(date)] Make read distribution, (.epiread)\"
+~/tools/methpipe/default/bin/methstates -c $WZSEQ_REFERENCE_SPLIT -o ${obfn}.epiread ${obfn}.mr.dremove
+
+echo \"[\$(date)] Single site ASM scoring (.allelic)\"
+~/tools/methpipe/default/bin/allelicmeth -c $WZSEQ_REFERENCE_SPLIT -o ${obfn}.allelic ${obfn}.epiread
+
+echo \"[\$(date)] Allelically methylated region (AMRs)\"
+~/tools/methpipe/default/bin/amrfinder -o $obfn.amr -c $WZSEQ_REFERENCE_SPLIT $obfn.epiread
+
+# echo \"[\$(date)] Test allele-specific methylation at promoter of imprinted region\"
+# amrtester -o ${obfn}.amr -c hg19 target_interval.bed ${obfn}.epiread
+
+echo \"[\$(date)] Calculate meth-entropy\"
+# -v verbose
+~/tools/methpipe/default/bin/methentropy -w 5 -v -o $obfn.entropy $WZSEQ_REFERENCE_SPLIT $obfn.epiread
+
+echo \"[\$(date)] Done.\"
+"
+    jobname="methpipe_allele_$bfn"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 10 -ppn 1
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done
+}
+
+function wgbs_methpipe_diff {
+  # assuming the corresponding methpipe run (mr file) has finished
+  # for each listed vcf file in the corresponding methpipe folder
+  base=$(pwd)
+  awk '/^\[/{p=0}/\[diffmeth\]/{p=1;next} p&&!/^$/' samples |
+    while read sname vcfpath1 vcfpath2; do
+      echo 1
+    done
 }
 
 # TODO: the following gives seg fault now
@@ -589,7 +691,7 @@ cd $base
 mkdir methylKit/$sname
 biscuit vcf2bed -t cg -u -c $vcfpath1 | pybiscuit.py to_methylKit >methylKit/$sname/$base1.methylKit
 biscuit vcf2bed -t cg -u -c $vcfpath2 | pybiscuit.py to_methylKit >methylKit/$sname/$base2.methylKit
-~/wzlib/Rutils/bin/bioinfo/methylKit.r diff -t 1,0 -b $base1,$base2 methylKit/$sname/$base1.methylKit,methylKit/$sname/$base2.methylKit -o methylKit/$sname/${base1}_vs_${base2}.diffmeth.tsv -g $WZSEQ_CGIBED_METHYLKIT
+~/wzlib/Rutils/bin/bioinfo/methylKit.r diff -t 1,0 -b $base1,$base2 methylKit/$sname/$base1.methylKit,methylKit/$sname/$base2.methylKit -o methylKit/$sname -g $WZSEQ_CGIBED_METHYLKIT
 rm -f methylKit/$sname/$base1.methylKit
 rm -f methylKit/$sname/$base2.methylKit
 "
@@ -623,6 +725,17 @@ cd $base
 # ChIP-seq pipeline
 ################################################################################
 
+function examplepipeline_chipseq {
+  cat <<- EOF
+=== pipeline 2015-01-28 ===
+ (+) wzseq_bwa_aln_se / (+) wzseq_bwa_mem =>
+
+ (+) chipseq_bcp => (+) chipseq_macs2 => (+) chipseq_gem => (+) chipseq_sissrs
+ (+) chipseq_HOMER => (+) chipseq_HOMER_peak
+
+EOF
+}
+
 # BWA-aln single-ended
 function wzseq_bwa_aln_se {
 
@@ -634,8 +747,8 @@ function wzseq_bwa_aln_se {
       sfile=$(readlink -f fastq/$sread);
       cmd="
 cd $base
-bwa aln -t 10 $WZSEQ_REFERENCE $sfile >bam/${sname}.sai
-bwa samse $WZSEQ_REFERENCE bam/${sname}.sai $sfile | samtools view -bS - | samtools sort -T $base/bam/$sname -O bam -o bam/${sname}.bam
+bwa aln -t 10 $WZSEQ_BWA_INDEX $sfile >bam/${sname}.sai
+bwa samse $WZSEQ_BWA_INDEX bam/${sname}.sai $sfile | samtools view -bS - | samtools sort -T $base/bam/$sname -O bam -o bam/${sname}.bam
 samtools index bam/${sname}.bam
 samtools flagstat bam/${sname}.bam > bam/${sname}.bam.flagstat
 rm -f bam/${sname}.sai
@@ -647,96 +760,148 @@ rm -f bam/${sname}.sai
     done
 }
 
+# http://homer.salk.edu/homer/
+# got to install seqlogo from webLogo
+# http://weblogo.berkeley.edu/
+# the sequences can be obtained from
+# perl configureHomer.pl -install mm10
+# sequence and annotation gets downloaded to where you install HOMER
+function chipseq_HOMER {
+  awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples |
+  base=$(pwd);
+  [[ -d pbs ]] || mkdir pbs
+  [[ -d bam ]] || mkdir bam;
+  [[ -d HOMER ]] || mkdir HOMER;
+  for f in bam/*.bam; do
+    bfn=$(basename $f .bam)
+    cmd="
+cd $base
+echo Creating Tags for HOMER/$bfn
+~/software/HOMER/default/bin/makeTagDirectory HOMER/$bfn $f
+"
+    jobname="HOMER_$(basename $base)"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 2 -ppn 1
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done
+}
+
+function chipseq_HOMER_peak {
+  ## make sure you have seqlogo, gs, blat and samtools available from command line.
+  ## targettype: factor, histone, super, groseq, tss, dnase, mC
+  base=$(pwd)
+  [[ -d pbs ]] || mkdir pbs
+  awk '/^\[/{p=0}/\[peak\]/{p=1;next} p&&!/^$/' samples |
+    while read targetname controlname targettype; do
+
+      if [[ $targettype == "factor" ]]; then
+        targetsize=100;
+      else
+        targetsize="given"
+      fi
+
+      cmd="
+cd $base
+~/software/HOMER/default/bin/findPeaks HOMER/$targetname -style $targettype -o auto -i HOMER/$controlname
+export PATH=$PATH:~/software/HOMER/default/bin/:~/software/webLogo/weblogo/
+~/software/HOMER/default/bin/findMotifsGenome.pl HOMER/$targetname/peaks.txt $WZSEQ_REFVERSION HOMER/${targetname}/Motif -size $targetsize # -mask? 
+~/software/HOMER/default/bin/annotatePeaks.pl HOMER/$targetname/peaks.txt $WZSEQ_REFVERSION > HOMER/$targetname/peaks.txt.annotation
+"
+      # TODO: there are some more plotting methods to add
+      # see http://homer.salk.edu/homer/ngs/quantification.html
+      jobname="HOMER_peak_$targetname"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 4 -ppn 2
+      [[ $1 == "do" ]] && qsub $pbsfn
+  done
+}
+
 function chipseq_bcp() {
 
-  # need chip_config
-  # ==================
-  # sname tread cread
-  # ==================
   base=$(pwd);
   [[ -d bcp ]] || mkdir bcp
   [[ -d pbs ]] || mkdir pbs
 
-  while read sname tread cread do; do
+  awk '/^\[/{p=0}/\[peak\]/{p=1;next} p&&!/^$/' samples |
+    while read targetname controlname targettype; do
 
-    tfile=$(readlink -f bam/$tread);
-    cfile=$(readlink -f bam/$cread);
+      tfile=$(readlink -f bam/$targetname);
+      cfile=$(readlink -f bam/$controlname);
 
-    mkdir bcp/$sname;
-    tbed=bcp/$sname/$tread.bcp.bed
-    cbed=bcp/$sname/$cread.bcp.bed
+      mkdir bcp/$targetname;
+      tbed=bcp/$targetname/$targetname.bcp.bed
+      cbed=bcp/$targetname/$controlname.bcp.bed
 
-    cmd="
+      if [[ $targettype == "factor" ]]; then
+        runcmd1="~/tools/bcp/BCP_v1.1/BCP_TF -1 $tbed -2 $cbed -3 bcp/$targetname/peaks.tfbs"
+      fi
+
+      if [[ $targettype == "histone" ]]; then
+        runcmd1="~/tools/bcp/BCP_v1.1/BCP_HM -1 $tbed -2 $cbed -3 bcp/$targetname/peaks.hm";
+      fi
+      
+      cmd="
 cd $base
-wzbam bed6 -bam $tfile -o $tbed
-wzbam bed6 -bam $cfile -o $cbed
+wzbam bed6 -bam bam/$targetname.bam -o $tbed
+wzbam bed6 -bam bam/$controlname.bam -o $cbed
 
-~/tools/bcp/BCP_v1.1/BCP_HM -1 $tbed -2 $cbed -3 bcp/$sname/peaks.hm
-~/tools/bcp/BCP_v1.1/BCP_TF -1 $tbed -2 $cbed -3 bcp/$sname/peaks.tfbs
+$runcmd1
 
 rm -f $tbed $cbed
 "
-    jobname="bcp_$sname"
-    pbsfn=$base/pbs/$jobname.pbs
-    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 10 -ppn 1
-    [[ $1 == "do" ]] && qsub $pbsfn
-  done < chip_config
+      jobname="bcp_$targetname"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 10 -ppn 1
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
 }
 
 function chipseq_macs2 {
-  # need chip_config
-  # ==================
-  # sname tread cread
-  # ==================
-  [[ -s macs2 ]] || mkdir macs2
+
   base=$(pwd);
+  [[ -s macs2 ]] || mkdir macs2
   [[ -d pbs ]] || mkdir pbs
-  while read sname tread cread do; do
-    tfile=$(readlink -f bam/$tread);
-    cfile=$(readlink -f bam/$cread);
-    cmd="
+
+  awk '/^\[/{p=0}/\[peak\]/{p=1;next} p&&!/^$/' samples |
+    while read targetname controlname targettype; do
+
+      cmd="
 cd $base
-macs2 callpeak -t $tfile -c $cfile -f BAM -g $WZSEQ_MACS_SHORT -n macs2/$sname -B
+macs2 callpeak -t bam/$targetname.bam -c bam/$controlname.bam -f BAM -g $WZSEQ_MACS_SHORT -n macs2/$targetname -B
 "
-    jobname="macs2_$sname"
-    pbsfn=$base/pbs/$jobname.pbs
-    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
-    [[ $1 == "do" ]] && qsub $pbsfn
-  done < chip_config
+      jobname="macs2_$targetname"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
 }
 
 function chipseq_gem {
-  # need chip_config
-  # ==================
-  # sname tread cread
-  # ==================
 
+  base=$(pwd);
   [[ -d gem ]] || mkdir -p gem
   [[ -d pbs ]] || mkdir -p pbs
 
-  while read sname tread cread do; do
+  awk '/^\[/{p=0}/\[peak\]/{p=1;next} p&&!/^$/' samples |
+    while read targetname controlname targettype; do
 
-    tfile=$(readlink -f bam/$tread);
-    cfile=$(readlink -f bam/$cread);
-
-    [[ -d gem/$sname ]] || mkdir -p gem/$sname;
-    tbed=gem/$sname/$tread.gem.bed
-    cbed=gem/$sname/$cread.gem.bed
-    
-    cmd="
+      [[ -d gem/$targetname ]] || mkdir gem/$targetname;
+      tbed=gem/$targetname/$targetname.bed
+      cbed=gem/$targetname/$controlname.bed
+      cmd="
 cd $base
-wzbam bed6 -bam $tfile -o $tbed
-wzbam bed6 -bam $cfile -o $cbed
+wzbam bed6 -bam bam/$targetname.bam -o $tbed
+wzbam bed6 -bam bam/$controlname.bam -o $cbed
 
-java -Xmx100G -jar ~/tools/gem/gem/gem.jar --d ~/tools/gem/gem/Read_Distribution_default.txt --g $WZSEQ_REFERENCE.fai --genome $WZSEQ_REFERENCE_SPLIT --s 2000000000 --expt $tbed --ctrl $cbed --f BED --out gem/$sname --k_min 6 --k_max 13
+java -Xmx100G -jar ~/tools/gem/gem/gem.jar --d ~/tools/gem/gem/Read_Distribution_default.txt --g $WZSEQ_REFERENCE.fai --genome $WZSEQ_REFERENCE_SPLIT --s 2000000000 --expt $tbed --ctrl $cbed --f BED --out gem/$targetname --k_min 6 --k_max 13
 
 rm -f $tbed $cbed
 "
-    jobname="gem_$sname"
-    pbsfn=$base/pbs/$jobname.pbs
-    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 100 -ppn 1
-    [[ $1 == "do" ]] && qsub $pbsfn
-  done < chip_config
+      jobname="gem_$targetname"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 50 -ppn 1
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
 }
 
 # http://dir.nhlbi.nih.gov/papers/lmi/epigenomes/sissrs/SISSRs-Manual.pdf
@@ -747,27 +912,30 @@ function chipseq_sissrs {
   [[ -d sissrs ]] || mkdir sissrs
   [[ -d pbs ]] || mkdir pbs
   base=$(pwd)
-  while read sname tread cread do; do
-    tfile=$(readlink -f bam/$tread);
-    cfile=$(readlink -f bam/$cread);
+  awk '/^\[/{p=0}/\[peak\]/{p=1;next} p&&!/^$/' samples |
+    while read targetname controlname targettype; do
 
-    [[ -d sissrs/$sname ]] || mkdir sissrs/$sname;
-    tbed=sissrs/$sname/$tread.bed
-    cbed=sissrs/$sname/$cread.bed
-
-    cmd="
+      [[ -d sissrs/$targetname ]] || mkdir sissrs/$targetname;
+      tbed=sissrs/$targetname/$targetname.bed
+      cbed=sissrs/$targetname/$controlname.bed
+      cmd="
 cd $base
-wzbam bed6 -bam $tfile -o $tbed
-wzbam bed6 -bam $cfile -o $cbed
-~/software/SISSERs/v1.4/sissrs.pl -i $tbed -b $cbed -o sissrs/$sname/$sname.bsites -s $WZSEQ_REFERENCE_SIZE
+wzbam bed6 -bam bam/$targetname.bam -o $tbed
+wzbam bed6 -bam bam/$controlname.bam -o $cbed
+~/software/SISSERs/v1.4/sissrs.pl -i $tbed -b $cbed -o sissrs/$targetname/$targetname.bsites -s $WZSEQ_REFERENCE_SIZE
 rm -f $tbed $cbed
 "
-    jobname="sissrs_$sname"
-    pbsfn=$base/pbs/$jobname.pbs
-    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 20 -ppn 1
-    [[ $1 == "do" ]] && qsub $pbsfn
-  done < chip_config
+      jobname="sissrs_$targetname"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 20 -ppn 1
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
 }
+
+################################################################################
+# HiC pipeline
+################################################################################
+# TODO: http://homer.salk.edu/homer/interactions/HiCtagDirectory.html
 
 ################################################################################
 # RNA-seq pipeline
@@ -781,7 +949,11 @@ EOF
 
 cat<<- EOF
 === pipeline 2016-01-12 ===
-(+) wzseq_fastqc => (+) edit samples [alignment]; rnaseq_tophat2_firststrand => (+) wzseq_qualimap rnaseq_se/rnaseq_pe_stranded
+ (+) wzseq_fastqc
+
+ => (+) edit samples [alignment]; (+) editrnaseq_tophat2_firststrand / (+) rnaseq_tophat2 / (+) rnaseq_STAR / (+) rnaseq_gsnap / (+) rnaseq_subjunc
+
+ => (+) wzseq_qualimap rnaseq_se/rnaseq_pe_stranded
 
  => [o] rnaseq_splitallele (for ASE) => (+) wzseq_bam_coverage
 
@@ -859,29 +1031,79 @@ samtools flagstat $sname.bam >$sname.bam.flagstat
 
 # STAR
 # make a genome index first
-# STAR --runThreadN 28 --runMode genomeGenerate --genomeDir $WZSEQ_STAR_INDEX --genomeFastaFiles $WZSEQ_REFERENCE --sjdbGTFfile $WZSEQ_GTF --sjdbOverhang 49
-function rnaseq_star() {
-  if [[ ! -s samples ]]; then
-    echo "file: samples missing. Abort"
-    return 1
-  fi
+# STAR --runThreadN 28 --runMode genomeGenerate --genomeDir $WZSEQ_STAR_INDEX --genomeFastaFiles $WZSEQ_REFERENCE --sjdbGTFfile $WZSEQ_GTF
+# STAR --runThreadN 28 --runMode genomeGenerate --genomeDir . --genomeFastaFiles mm10.fa --sjdbGTFfile ~/references/mm10/gtf/Mus_musculus.GRCm38.82.gtf.UCSCnaming [--sjdbOverhang 49 (default 100)]
+# note that the GTF must be unzipped!!
+# 
+# mapping quality:
+# 255 = uniquely mapped reads
+# 3 = read maps to 2 locations
+# 2 = read maps to 3 locations
+# 1 = reads maps to 4-9 locations
+# 0 = reads maps to 10 or more locations
+function rnaseq_STAR {
+
   base=$(pwd)
   [[ -d bam ]] || mkdir bam
   [[ -d pbs ]] || mkdir pbs
   awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples |
     while read sname sread1 sread2; do
       cmd="
+cd $base
 mkdir $base/bam/$sname
-STAR --runThreadN 28 --genomeDir $WZSEQ_STAR_INDEX --readFilesIn $base/fastq/$sread1 $base/fastq/$sread2 --readFilesCommand zcat --outSAMtype BAM SortedByCoordinate --outFileNamePrefix $base/bam/$sname/$sname
-samtools index $base/bam/$sname/$snameAligned.sortedByCoord.out.bam
+~/software/STAR/default/source/STAR --runThreadN 28 --genomeDir $WZSEQ_STAR_INDEX --readFilesIn $base/fastq/$sread1 $base/fastq/$sread2 --readFilesCommand zcat --outSAMtype BAM SortedByCoordinate --outFileNamePrefix $base/bam/$sname/$sname --outBAMsortingThreadN 6
+cd bam
+ln -s $sname/${sname}Aligned.sortedByCoord.out.bam $sname.bam
+samtools index $sname.bam
+samtools flagstat $sname.bam >$sname.bam.flagstat
 "
-      jobname="star_$sname"
+      jobname="STAR_$sname"
       pbsfn=$base/pbs/$jobname.pbs
       pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 250 -ppn 28
       [[ $1 == "do" ]] && qsub $pbsfn
     done
 }
 
+# gsnap require some prefix setting at compilation, e.g., ./configure --prefix /home/wanding.zhou/software/gsnap/gmap-2015-12-31/
+# indexing: ~/software/gsnap/default/util/gmap_build -D ~/references/mm10/gsnap -k 15 -d mm10 ~/references/mm10/bowtie1/*.fa
+# note: -d gives the name of the reference, -D gives the location where one looks for the reference with the name (supplied from -d)
+# 
+# make splice sites and intron sites
+# cat ~/references/mm10/gtf/Mus_musculus.GRCm38.82.gtf.UCSCnaming | ~/software/gsnap/default/bin/gtf_splicesites > ~/references/mm10/gtf/Mus_musculus.GRCm38.82.gtf.gsnap.splicesites
+# cat ~/references/mm10/gtf/Mus_musculus.GRCm38.82.gtf.UCSCnaming | ~/software/gsnap/default/bin/gtf_introns > ~/references/mm10/gtf/Mus_musculus.GRCm38.82.gtf.gsnap.introns
+# 
+# make splice sites and intron sites from UCSC refGene
+# gunzip -c refGene.txt.gz | psl_splicesites -s 1 > foo.splicesites # -s 1 means skip 1 column from the left
+# gunzip -c refGene.txt.gz | psl_introns -s 1 > foo.introns
+
+# make .iit files
+# cat ~/references/mm10/gtf/Mus_musculus.GRCm38.82.gtf.gsnap.introns ~/references/mm10/gtf/Mus_musculus.GRCm38.82.gtf.gsnap.splicesites | ~/software/gsnap/default/bin/iit_store -o ~/references/mm10/gsnap/mm10/mm10.maps/Mus_musculus.GRCm38.82.gtf.gsnap.splicesites.iit
+# make sure those files are stored within the directory of mm10/gsnap/mm10/mm10.maps/
+# WZSEQ_GSNAP_SPLICE=Mus_musculus.GRCm38.82.gtf.gsnap.splicesites
+
+function rnaseq_gsnap {
+  # GMAP, the original program is designed for mapping cDNA and EST sequences.
+  # GSNAP is the derivative for mapping shot-gun sequencing reads
+  # recommend nthreads not exceed 4, otherwise performance is compromised. program design problem
+  base=$(pwd)
+  [[ -d pbs ]] || mkdir pbs
+  [[ -d bam ]] || mkdir bam
+  awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples |
+    while read sname sread1 sread2; do
+      
+      cmd="
+cd $base
+~/software/gsnap/default/src/gsnap -A sam -t 4 --gunzip --novelsplicing=1 --use-splicing=$WZSEQ_GSNAP_SPLICE -D $WZSEQ_GSNAP_INDEX -d $WZSEQ_REFVERSION $base/fastq/$sread1 $base/fastq/$sread2 -o bam/$sname.sam
+samtools sort -O bam -T bam/$sname.tmp -o bam/$sname.bam bam/$sname.sam
+samtools index bam/$sname.bam
+#rm -f bam/$sname.sam
+"
+      jobname="GSNAP_$sname"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 80 -memG 50 -ppn 4
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
+}
 
 # mapsplice
 # input fastq must be uncompressed and with no space
@@ -1015,6 +1237,7 @@ function rnaseq_cuffnorm() {
   return 1
 }
 
+# TODO: kallisto
 function rnaseq_edgeR {
   base=$(pwd)
   [[ -d edgeR ]] || mkdir edgeR
@@ -1106,17 +1329,24 @@ function rnaseq_subjunc() {
   [[ -d pbs ]] || mkdir pbs
   awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples |
     while read sname sread1 sread2; do
-      sfile1=$(readlink -f fastq/$sread1);
-      sfile2=$(readlink -f fastq/$sread2);
-      mkdir -p bam/${sname}_subjunc;
+
+      if [[ -s bam/$sname.bam ]]; then
+        echo "Bam bam/$sname.bam exists. skip"
+        continue
+      fi
+      
       cmd="
 cd $base
-/primary/home/wanding.zhou/tools/subread/subread-1.4.6-p5-Linux-x86_64/bin/subjunc -T 28 -I 16 -i $WZSEQ_SUBREAD_INDEX -r fastq/$sread1 -R fastq/$sread2 --gzFASTQinput -o bam/${sname}_subjunc/$sname.bam --BAMoutput
-[[ -e bam/${sname}.bam ]] || ln -s ${sname}_subjunc/$sname.bam bam/${sname}.bam
+[[ -d bam/$sname ]] || mkdir bam/$sname
+/primary/home/wanding.zhou/tools/subread/subread-1.4.6-p5-Linux-x86_64/bin/subjunc -T 28 -I 16 -i $WZSEQ_SUBREAD_INDEX -r fastq/$sread1 -R fastq/$sread2 --gzFASTQinput -o bam/$sname/$sname.unsrtd.bam --BAMoutput
+samtools sort -O bam -o bam/${sname}.bam -T bam/$sname/${sname}.tmp bam/$sname/${sname}.unsrtd.bam
+samtools index bam/${sname}.bam
+samtools flagstat bam/${sname}.bam >bam/${sname}.flagstat
+#rm -f bam/$sname/$sname.unsrtd.bam
 "
       jobname="subjunc_${sname}"
       pbsfn=$base/pbs/$jobname.pbs
-      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 250 -ppn 28
       [[ $1 == "do" ]] && qsub $pbsfn
     done
 }
@@ -1135,7 +1365,7 @@ EOF
   pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 2 -ppn 1
 }
 
-# TODO: featureCounts
+# TODO: featureCounts (from subread package)
 function rnaseq_featurecounts {
   base=$(pwd);
   [[ -d pbs ]] || mkdir pbs
@@ -1155,6 +1385,8 @@ featureCounts -T 28 -t exon -g gene_id -a annotation.gtf -o featureCounts/$bfn_c
 }
 
 # TODO: MISO
+
+# TODO: HTseq-count
 
 # TODO: RSEM
 # ~/tools/rsem/rsem-1.2.22/rsem-prepare-reference
@@ -1239,6 +1471,16 @@ mkdir -p allelomePro/$(basename $config .config)
 ################################################################################
 # other utility
 ################################################################################
+
+function wzseq_liftbw {
+  input=$1
+  chain=$2
+  output=$3
+  chromsize=$4
+  bigWigToBedGraph $input $input.bedg.tmp
+  liftOver $input.bedg.tmp $chain $output.bedg.tmp
+  bedGraphToBigWig $output.bedg.tmp $chromsize $output
+}
 
 function wzseq_picard_markdup {
 
@@ -1437,9 +1679,9 @@ rm -f tracks/${bfn}.coverage.q10.bedg
 
 # coverage statistics
 bedtools genomecov -ibam $fn -g ${WZSEQ_REFERENCE}.fai -max 100 >qc/$bfn.coverage_stats.tsv
-grep '^genome' $bfn.coverage_stats.tsv | ~/wzlib/Rutils/bin/basics/wzplot.r barplot -c 5 -n 2 -t 2 -o $bfn.coverage_stats.barplot.pdf --xlab BaseCoverage --ylab BaseFraction
+grep '^genome' qc/$bfn.coverage_stats.tsv | ~/wzlib/Rutils/bin/basics/wzplot.r barplot -c 5 -n 2 -o qc/$bfn.coverage_stats.barplot.pdf --xlab BaseCoverage --ylab BaseFraction
 "
-    jobname="genomecov_$bfn"
+    jobname="bam_coverage_$bfn"
     pbsfn=$base/pbs/$jobname.pbs
     pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 2 -ppn 1
     [[ ${!#} == "do" ]] && qsub $pbsfn
