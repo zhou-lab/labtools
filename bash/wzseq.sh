@@ -1481,9 +1481,12 @@ function wzseq_liftbw {
   bigWigToBedGraph $input $input.bedg.tmp
   echo "Lifting over.."
   liftOver $input.bedg.tmp $chain $output.bedg.tmp $output.tmp.unmapped
-  echo "Converting bedGraph to bigWig"
+  echo "Sorting bedGraph ..."
   sortbed $output.bedg.tmp >$output.bedg.tmp.sorted
+  echo "Converting bedGraph to bigWig"
   bedGraphToBigWig $output.bedg.tmp.sorted $chromsize $output
+  echo "Cleaning"
+  rm -f $input.bedg.tmp $output.tmp.unmapped $output.bedg.tmp $output.bedg.tmp.sorted
 }
 
 function wzseq_picard_markdup {
