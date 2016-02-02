@@ -1478,7 +1478,7 @@ function wzseq_liftbw {
   output=$3
   chromsize=$4
   bigWigToBedGraph $input $input.bedg.tmp
-  liftOver $input.bedg.tmp $chain $output.bedg.tmp
+  liftOver $input.bedg.tmp $chain $output.bedg.tmp $output.tmp.unmapped
   bedGraphToBigWig $output.bedg.tmp $chromsize $output
 }
 
