@@ -1483,10 +1483,13 @@ function wzseq_liftbw {
   liftOver $input.bedg.tmp $chain $output.bedg.tmp $output.tmp.unmapped
   echo "Sorting bedGraph ..."
   sortbed $output.bedg.tmp >$output.bedg.tmp.sorted
-  echo "Converting bedGraph to bigWig"
-  bedGraphToBigWig $output.bedg.tmp.sorted $chromsize $output
+  echo "Taking overlapping mean ..."
+  bedtools groupby -g 1,2,3 -c 4 -o mean $output.bedg.tmp.sorted > $output.bedg.tmp.sorted.mean
+  echo "Converting bedGraph to bigWig .."
+  bedGraphToBigWig $output.bedg.tmp.sorted.mean $chromsize $output
   echo "Cleaning"
   rm -f $input.bedg.tmp $output.tmp.unmapped $output.bedg.tmp $output.bedg.tmp.sorted
+  echo "Done."
 }
 
 function wzseq_picard_markdup {
