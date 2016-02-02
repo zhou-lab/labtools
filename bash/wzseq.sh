@@ -1635,7 +1635,7 @@ function wzseq_fastqc() {
   base=$(pwd);
   [[ -d fastqc ]] || mkdir fastqc
   [[ -d pbs ]] || mkdir pbs
-  for f in fastq/*.+(fastq|fq|fastq.gz|fq.gz); do
+  for f in fastq/*.+\(fastq|fq|fastq.gz|fq.gz\); do
     fn=$(readlink -f $f)
     bfn=$(basename $f)
     bfn=${bfn%.fastq.gz}
