@@ -1473,24 +1473,27 @@ mkdir -p allelomePro/$(basename $config .config)
 ################################################################################
 
 function wzseq_liftbw {
+  # liftOver bigwig file
+  # Usage: wzseq_liftbw input.bigWig ~/tools/liftover/mm9ToMm10.over.chain.gz output.bigWig ~/references/mm10/mm10.fa.fai
   input=$1
   chain=$2
   output=$3
   chromsize=$4
-  echo "Converting bigwig to bedgraph.."
+  echo "[$(date)] Converting bigwig to bedgraph.."
   bigWigToBedGraph $input $input.bedg.tmp
-  echo "Lifting over.."
+  echo "[$(date)] Lifting over.."
   liftOver $input.bedg.tmp $chain $output.bedg.tmp $output.tmp.unmapped
-  echo "$(wc -l $output.bedg.tmp) mapped and $(wc -l $output.tmp.unmapped) unmapped."
-  echo "Sorting bedGraph ..."
-  sortbed $output.bedg.tmp >$output.bedg.tmp.sorted
-  echo "Taking overlapping mean ..."
-  bedtools groupby -g 1,2,3 -c 4 -o mean $output.bedg.tmp.sorted > $output.bedg.tmp.sorted.mean
-  echo "Converting bedGraph to bigWig .."
-  bedGraphToBigWig $output.bedg.tmp.sorted.mean $chromsize $output
-  echo "Cleaning"
-  # rm -f $input.bedg.tmp $output.tmp.unmapped $output.bedg.tmp $output.bedg.tmp.sorted
-  echo "Done."
+  echo "  Mapped:   $(wc -l $output.bedg.tmp)"
+  echo "  Unmapped: $(wc -l $output.tmp.unmapped)"
+  echo "[$(date)] Sorting bedGraph and skip overlapping ..."
+  sortbed $output.bedg.tmp | wzbedtools deoverlap -i - -o $output.bedg.tmp.sorted
+  echo "  Before skipping: "$(wc -l $output.bedg.tmp)
+  echo "  After skipping:  "$(wc -l $output.bedg.tmp.sorted)
+  echo "[$(date)] Converting bedGraph to bigWig .."
+  bedGraphToBigWig $output.bedg.tmp.sorted $chromsize $output
+  echo "[$(date)] Cleaning"
+  rm -f $input.bedg.tmp $output.tmp.unmapped $output.bedg.tmp $output.bedg.tmp.sorted
+  echo "[$(date)] Done."
 }
 
 function wzseq_picard_markdup {

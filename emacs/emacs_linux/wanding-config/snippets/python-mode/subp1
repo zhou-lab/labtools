@@ -6,5 +6,5 @@
 
 parser_$1 = subparsers.add_parser('$1', help='$2')
 parser_$1.add_argument('-i', type=argparse.FileType('r'), default='-', help='input table')
-parser_$1.add_argument('-o', help='output', default=sys.stdout)
+parser_$1.add_argument('-o', type=argparse.FileType('w'), help='output', default=sys.stdout)
 parser_$1.set_defaults(func=main_$1)

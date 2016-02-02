@@ -79,11 +79,12 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 (global-set-key (kbd "<f12>") 'save-buffer)
 
 (global-set-key (kbd "<f11>") 'dabbrev-expand)
-(global-set-key (kbd "<f9>") 'my-switch-to-other-buffer)
+;; (global-set-key (kbd "<f9>") 'my-switch-to-other-buffer)
 (global-set-key (kbd "<f19>") 'my-switch-to-other-buffer)
-(global-set-key (kbd "<f9>") 'switch-to-buffer)
+;; (global-set-key (kbd "<f9>") 'switch-to-buffer)
 (global-set-key (kbd "<f18>") 'switch-to-buffer)
 (global-set-key (kbd "<f10>") 'yas-reload-all)
+;; (global-set-key (kbd "<f9>") 'yas-describe-tables)
 
 (setq sh-basic-offset 2
       sh-indentation 2)

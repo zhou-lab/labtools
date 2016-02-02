@@ -1224,8 +1224,10 @@ jobs
 *** uptime
      tell how long the system has been running and the system load averages for the past 1, 5, and 15 minutes.
 *** ps (= print status)
-     report a snapshot of the current processes. To select all processes use the -A or -e option
-     ps -A
+**** ps show command and argument (complete command)
+ps -u wanding.zhou -o comm,args | less
+**** select all processes
+ps -A
 **** ps summary
       # here -e means every process, -o means user defined format
       # no space is allowed between the format
@@ -3926,6 +3928,9 @@ is.data.frame(df)
 #+END_SRC
 **** "class" is an attribute, class() essentially display that attribute
 *** ls(2) sees the second environment in the search path, usually useful to see what is added from the latest attachment
+*** get (multiple) element from environment
+get("one.element", envir=id2name)
+mget(row.names(tested$table), envir=id2name)
 ** Data IO
 see R wiki for more options
 http://en.wikibooks.org/wiki/R_Programming/Importing_and_exporting_data
@@ -5781,16 +5786,16 @@ colorRampPalette(c("#3794bf", "#FFFFFF", "#df8640"))(5)
 **** common arguments
 ***** cex
 ****** cex.lab
-       change label size relative to the plot
-       magnification of x and y labels relative to cex
-       cex.lab = 1.5
+change label size relative to the plot
+magnification of x and y labels relative to cex
+cex.lab = 1.5
 ****** cex.axis
-       magnification of axis annotation relative to cex
+magnification of axis annotation relative to cex
 ***** xlim, ylim - x, y plotting range
-      plot(x, y, log='y', ylim=c(10, 20))
+plot(x, y, log='y', ylim=c(10, 20))
 ***** pch - plotting character
-      plot character/marker/symbol
-      +: 3
+plot character/marker/symbol
++: 3
 ***** col - border color of the symbol
 ***** bg - fill color of the symbol
 ***** xlab, ylab - put labels
@@ -5803,26 +5808,26 @@ smoothScatter(x, y, log='y')
 see
 https://stat.ethz.ch/pipermail/r-help/2009-July/205922.html
 **** plot
-     plot(x,y) scatter plot
-     plot(... type="h") histogram
-     plot(... type="p") point graph
-     plot(... type="l") line graph
-     plot(... type="b") both line and points
-     plot(density(x)) density plot
+plot(x,y) scatter plot
+plot(... type="h") histogram
+plot(... type="p") point graph
+plot(... type="l") line graph
+plot(... type="b") both line and points
+plot(density(x)) density plot
 **** lines
-     add line using lines
-     x<-c(1,2,5,10,20,50,100)
-     y<-sapply(x, log2)
-     plot(d$numdiffcogs, d$entropy, log='x', xlab='alphabet size', ylab='entropy')
-     lines(x, y, lty='dashed')
+add line using lines
+x<-c(1,2,5,10,20,50,100)
+y<-sapply(x, log2)
+plot(d$numdiffcogs, d$entropy, log='x', xlab='alphabet size', ylab='entropy')
+lines(x, y, lty='dashed')
 ***** lty - line type
-      dashed: 2
+dashed: 2
 ***** lwd - line width
-      relative to the default (default=1). 2 is twice as wide.
+relative to the default (default=1). 2 is twice as wide.
 **** abline
-     abline(0, 1, lty='dashed')
+abline(0, 1, lty='dashed')
 **** title
-     title(main = NULL, sub = NULL, xlab = NULL, ylab = NULL)
+title(main = NULL, sub = NULL, xlab = NULL, ylab = NULL)
 **** hist
 hist(w1$vals)
 hist(w1$vals,breaks=2)	breaks defines how many hists there are.
@@ -5874,7 +5879,6 @@ hist(w1$vals,main='Leaf BioMass in High CO2 Environment',xlab='BioMass of Leaves
 boxplot(w1$vals,horizontal=TRUE,at=15.5,add=TRUE,axes=FALSE)
 boxplot(w1$vals,main='Leaf BioMass in High CO2 Environment',ylab="BioMass of Leaves",horizontal=TRUE)
 boxplot(tree$STBM~tree$C)	tree$C is a factor vector.
-/*FMARK_END*/
 
 layout.show()  显示layout分布和编号
 **** legend
@@ -10481,6 +10485,7 @@ one can do “and” and “or” such as
 #+BEGIN_SRC bash
 if [[ -s "$file" ]]
 #+END_SRC
+Note that the quotation "" is crucial.
 
 ** test string equal
 = (or ==) strings are equal
@@ -13885,6 +13890,19 @@ turn off line number
 
 mark current line
 V
+
+** move forward/backword by words
+w forward
+b backward
+** cut/delete
+d
+** delete until end of line
+D
+
+** search and replace with query in the whole file
+
+:%s/PL/YS/gc
+
 * arch
 ** install
 on a mac OSX

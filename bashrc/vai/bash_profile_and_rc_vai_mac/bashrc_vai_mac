@@ -164,3 +164,4 @@ sort -k1,1 -k2,2n $1
 
 ## circos
 export PATH=~/tools/circos/circos-0.67-7/bin/:$PATH
+alias wzseq='. /Users/wandingzhou/wzlib/bash/wzseq.sh'

@@ -17,6 +17,9 @@ class Bed1(object):
     def __repr__(self):
         return '\t'.join([self.chrm, str(self.beg), str(self.end)] + self.fields)
 
+    def format(self):
+        return '\t'.join(self.fields)
+
     def dup(self):
 
         d = Bed1()
@@ -218,6 +221,26 @@ def main_einclude(args):
     for b in included:
         args.o.write(str(b)+'\n')
 
+def main_deoverlap(args):
+
+    chrm = None
+    end = None
+    a = Bed(args.i)
+
+    while True:
+
+        if a.nxt is None:
+            break
+
+        if a.nxt.chrm != chrm:
+            chrm = a.nxt.chrm
+            end = 0
+
+        if a.nxt.beg >= end:
+            args.o.write(a.nxt.format()+'\n')
+            end = a.nxt.end
+        a.read1()
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Manipulate bed files')
@@ -252,6 +275,12 @@ if __name__ == "__main__":
     parser_einclude.add_argument('-d', type=int, default=100, help='spacing (100bp)')
     parser_einclude.add_argument('-o', help='output', default=sys.stdout)
     parser_einclude.set_defaults(func=main_einclude)
+
+    
+    parser_deoverlap = subparsers.add_parser('deoverlap', help='remove overlapping region from the top')
+    parser_deoverlap.add_argument('-i', type=argparse.FileType('r'), default='-', help='input table')
+    parser_deoverlap.add_argument('-o', type=argparse.FileType('w'), help='output', default=sys.stdout)
+    parser_deoverlap.set_defaults(func=main_deoverlap)
     
     args = parser.parse_args()
 

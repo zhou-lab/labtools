@@ -3,7 +3,10 @@
 # key: pbsg
 # binding: direct-keybinding
 # --
+base=\$(pwd)
+[[ -d pbs ]] || mkdir pbs
 cmd="
+cd $base
 $0
 "
 jobname="$1"
