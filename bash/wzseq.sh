@@ -1481,6 +1481,7 @@ function wzseq_liftbw {
   bigWigToBedGraph $input $input.bedg.tmp
   echo "Lifting over.."
   liftOver $input.bedg.tmp $chain $output.bedg.tmp $output.tmp.unmapped
+  echo "$(wc -l $output.bedg.tmp) mapped and $(wc -l $output.tmp.unmapped) unmapped."
   echo "Sorting bedGraph ..."
   sortbed $output.bedg.tmp >$output.bedg.tmp.sorted
   echo "Taking overlapping mean ..."
@@ -1488,7 +1489,7 @@ function wzseq_liftbw {
   echo "Converting bedGraph to bigWig .."
   bedGraphToBigWig $output.bedg.tmp.sorted.mean $chromsize $output
   echo "Cleaning"
-  rm -f $input.bedg.tmp $output.tmp.unmapped $output.bedg.tmp $output.bedg.tmp.sorted
+  # rm -f $input.bedg.tmp $output.tmp.unmapped $output.bedg.tmp $output.bedg.tmp.sorted
   echo "Done."
 }
 
