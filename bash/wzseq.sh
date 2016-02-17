@@ -1454,7 +1454,7 @@ function rnaseq_kallisto {
 cd $base
 [[ -d kallisto/$sname ]] || mkdir kallisto/$sname
 ~/software/kallisto/kallisto_linux-v0.42.4/kallisto quant -i $WZSEQ_KALLISTO_INDEX -o kallisto/$sname fastq/$fastq1 fastq/$fastq2 -t 4
-~/wzlib/pyutils/wzseqtk.py ensembl2name -g $WZSEQ_GTF_ENSEMBL_UCSCNAMING -i kallisto/$sname/abundance.tsv -o kallisto/$sname/abundance.anno.tsv
+~/wzlib/pyutils/wzseqtk.py ensembl2name --transcript -g $WZSEQ_GTF_ENSEMBL_UCSCNAMING -i kallisto/$sname/abundance.tsv -o kallisto/$sname/abundance.anno.tsv
 "
     jobname="kallisto_$sname"
     pbsfn=$base/pbs/$jobname.pbs
@@ -1469,14 +1469,34 @@ function rnaseq_kallisto_diff {
   [[ -d pbs ]] || mkdir pbs
   awk '/^\[/{p=0}/\[diffexp\]/{p=1;next} p&&!/^$/' samples |
     while read cond1 cond2 bams1 bams2; do
-      cmd="
-cd $base
+      snames1=""
+      n1=0
+      for f in $(echo $bams1 | tr ',' ' '); do
+        [[ -d kallisto/$(basename $f .bam) ]] || continue;
+        [[ ${#snames1} == 0 ]] || snames1=$snames1",";
+        snames1=$snames1$(basename $f .bam);
+        ((n1++))
+      done
+      
+      snames2=""
+      n2=0
+      for f in $(echo $bams1 | tr ',' ' '); do
+        [[ -d kallisto/$(basename $f .bam) ]] || continue;
+        [[ ${#snames2} == 0 ]] || snames2=$snames2",";
+        snames2=$snames2$(basename $f .bam);
+        ((n2++))
+      done
 
+      if [[ $n1 -gt 1 ]] && [[ $n2 -gt 1 ]]; then # voom requires more than 1 replica
+        cmd="
+cd $base
+~/wzlib/Rutils/bin/bioinfo/kallisto_voom.r -a $cond1 -b $cond2 -A $snames1 -B $snames2 -o kallisto/${cond1}_vs_${cond2}.tsv
 "
-      jobname="kallisto_diff_$sname"
-      pbsfn=$base/pbs/$jobname.pbs
-      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 3 -ppn 1
-      [[ $1 == "do" ]] && qsub $pbsfn
+        jobname="kallisto_diff_$sname"
+        pbsfn=$base/pbs/$jobname.pbs
+        pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 3 -ppn 1
+        [[ $1 == "do" ]] && qsub $pbsfn
+      fi
     done
 }
 
@@ -1497,7 +1517,7 @@ function rnaseq_edgeR {
       cmd="
 cd $base
 ~/wzlib/Rutils/bin/bioinfo/edgeR_featureCounts.r -G $WZSEQ_GTF_ENSEMBL_UCSCNAMING -a $cond1 -b $cond2 -A $bams1 -B $bams2 -o edgeR/${cond1}_vs_${cond2}_diffexp.tsv 2> edgeR/${cond1}_vs_${cond2}_diffexp.log
-~/wzlib/pyutils/wzseqtk.py ensembl2name -g $WZSEQ_GTF_ENSEMBL_UCSCNAMING -i edgeR/${cond1}_vs_${cond2}_diffexp.tsv -o edgeR/${cond1}_vs_${cond2}_diffexp.anno.tsv
+~/wzlib/pyutils/wzseqtk.py ensembl2name --gene -g $WZSEQ_GTF_ENSEMBL_UCSCNAMING -i edgeR/${cond1}_vs_${cond2}_diffexp.tsv -o edgeR/${cond1}_vs_${cond2}_diffexp.anno.tsv
 "
       jobname="edgeR_${cond1}_vs_${cond2}"
       pbsfn=$base/pbs/$jobname.pbs

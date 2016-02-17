@@ -310,16 +310,26 @@ def main_ensembl2name(args):
     gtffh=opengz(args.g)
     id2name = {}
     for line in gtffh:
-        m = re.match(r'.*gene_id "([^"]*)"', line)
-        t = re.match(r'.*transcript_id "([^"]*)"', line)
-        n = re.match(r'.*gene_name "([^"]*)"', line)
-        tt = re.match(r'.*transcript_biotype "([^"]*)"', line)
-        if not tt:
+        fields = line.strip('\n').split('\t')
+        if len(fields) < 2:
+            continue
+        ontol = fields[2]
+        if args.gene and ontol == "gene":
+            m = re.match(r'.*gene_id "([^"]*)"', line)
+            n = re.match(r'.*gene_name "([^"]*)"', line)
             tt = re.match(r'.*gene_biotype "([^"]*)"', line)
-        if m and n:
             id2name[m.group(1)] = "%s\t%s" % (n.group(1), tt.group(1) if tt else '.')
-        if t and n:
-            id2name[t.group(1)] = "%s\t%s" % (n.group(1), tt.group(1) if tt else '.')
+            m = None
+            n = None
+            tt = None
+        if args.transcript and ontol == "transcript":
+            m = re.match(r'.*transcript_id "([^"]*)"', line)
+            n = re.match(r'.*gene_name "([^"]*)"', line)
+            tt = re.match(r'.*transcript_biotype "([^"]*)"', line)
+            id2name[m.group(1)] = "%s\t%s" % (n.group(1), tt.group(1) if tt else '.')
+            m = None
+            n = None
+            tt = None
 
     sys.stderr.write("Found %d id-name associations\n" % len(id2name))
 
@@ -393,6 +403,8 @@ if __name__ == '__main__':
     parser_ensembl2name = subparsers.add_parser('ensembl2name', help='convert ENSEMBL id to gene name')
     parser_ensembl2name.add_argument('-i', type=argparse.FileType('r'), default='-', help='input table')
     parser_ensembl2name.add_argument('-g', type=str, default=None, help='GTF file')
+    parser_ensembl2name.add_argument('-G', '--gene', action="store_true", help='map gene id')
+    parser_ensembl2name.add_argument('-T', '--transcript', action="store_true", help='map transcript id')
     parser_ensembl2name.add_argument('-c', type=int, default=1, help='column id for ENSEMBL id in the input table (1-based)')
     parser_ensembl2name.add_argument('-o', type=argparse.FileType('w'), help='output', default=sys.stdout)
     parser_ensembl2name.set_defaults(func=main_ensembl2name)

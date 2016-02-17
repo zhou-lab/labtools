@@ -18,7 +18,7 @@ Options:
 
 opt <- docopt(doc)
 sink(stderr())
-cat(str(opt))
+## cat(str(opt))
 
 ## NOTE: edgeR needs raw counts, not FPKM
 suppressPackageStartupMessages(library(Rsubread))
