@@ -111,6 +111,8 @@ alias st="zstat"
 alias bs=". ~/.bashrc"
 # alias sort="LC_ALL=C /home/wandingzhou/tools/coreutils/coreutils-8.23/src/sort"
 
+alias biscuittest=". ~/tools/biscuit/development/biscuit/test.sh"
+
 # export CC=/home/wandingzhou/tools/gcc/gcc-4.9.2/objdir/bin/gcc
 
 # PS1='\u@\h:\w\$ '
@@ -119,8 +121,6 @@ HOME=/home/wanding.zhou
 
 alias wzseq=". $HOME/wzlib/bash/wzseq.sh"
 alias wzcore=". $HOME/wzlib/bash/wzcore.sh"
-alias mm10generic=". $HOME/wzlib/bash/wzseqsetups/mm10_generic.sh"
-alias hg19generic=". $HOME/wzlib/bash/wzseqsetups/hg19_generic.sh"
 
 export SCREENRC=$HOME/wzlib/screenrc/screenrc_hp
 export PYTHONPATH=$HOME/wzlib/pyutils:$HOME/pythonlib/lib/python2.7/site-packages/

@@ -4,8 +4,91 @@
 # pbsgen one "$cmds" -name $jobname -dest $pbsdir/$jobname $depend
 
 ################################################################################
+# reference configuration
+# on a new machine, you just need to update this section
+################################################################################
+
+###### mouse mm10 #####
+function wzref_mm10 {
+  export WZSEQ_REFVERSION=mm10
+  export WZSEQ_REFERENCE=/primary/vari/genomicdata/genomes/mm10/mm10.fa
+  export WZSEQ_REFERENCE_SIZE=2785373478
+
+  export WZSEQ_REFERENCE_LAMBDAPHAGE=/home/wanding.zhou/references/lambdaphage/biscuit/NC_001416.fa
+  export WZSEQ_GTF=/primary/vari/genomicdata/genomes/mm10/tophat/Mus_musculus/UCSC/mm10/Annotation/Archives/archive-2015-07-17-14-33-26/Genes/genes.gtf
+  export WZSEQ_GTF_ENSEMBL=/primary/vari/genomicdata/genomes/mm10/gtf/Mus_musculus.GRCm38.82.gtf.gz
+  export WZSEQ_GTF_ENSEMBL_UCSCNAMING=/primary/vari/genomicdata/genomes/mm10/gtf/Mus_musculus.GRCm38.82.gtf.UCSCnaming
+  export WZSEQ_BOWTIE2_INDEX=/home/wanding.zhou/references/mm10/bowtie2/mm10
+  export WZSEQ_BOWTIE1_INDEX=/primary/vari/genomicdata/genomes/mm10/bowtie1/mm10
+  export WZSEQ_BWA_INDEX=/home/wanding.zhou/references/mm10/bwa/mm10.fa
+  export WZSEQ_STAR_INDEX=/primary/vari/genomicdata/genomes/mm10/STAR
+  export WZSEQ_GSNAP_INDEX=/primary/vari/genomicdata/genomes/mm10/gsnap
+  # needs $WZSEQ_GSNAP_INDEX/$WZSEQ_GSNAP_SPLICE.iit
+  export WZSEQ_GSNAP_SPLICE=Mus_musculus.GRCm38.82.gtf.gsnap.splicesites
+  export WZSEQ_SUBREAD_INDEX=/primary/vari/genomicdata/genomes/mm10/subread/mm10
+
+  export WZSEQ_KALLISTO_INDEX=/primary/vari/genomicdata/genomes/mm10/kallisto/mm10.kallisto
+
+  # WGBS indices
+  export WZSEQ_BISCUIT_INDEX_LAMBDAPHAGE=/home/wanding.zhou/references/lambdaphage/biscuit/NC_001416.fa
+  export WZSEQ_BISCUIT_INDEX=/home/wanding.zhou/references/mm10/biscuit/mm10.fa
+  export WZSEQ_BWAMETH_INDEX=/home/wanding.zhou/references/mm10/bwameth/mm10.fa
+
+  export WZSEQ_BISMARK_BT1_INDEX=/home/wanding.zhou/references/mm10/bismark_bt1
+  export WZSEQ_BISMARK_BT2_INDEX=/home/wanding.zhou/references/mm10/bismark_bt2
+  export WZSEQ_BSMAP_INDEX=/home/wanding.zhou/references/mm10/bsmap/mm10.fa
+
+  export WZSEQ_REFERENCE_SPLIT=/primary/vari/genomicdata/genomes/mm10/bowtie1/
+
+  export WZSEQ_MACS_SHORT=mm
+  export WZSEQ_CGIBED=/home/wanding.zhou/references/mm10/annotation/cpgisland/cpgIslandExt.bed
+  export WZSEQ_CGIBED_METHYLKIT=/home/wanding.zhou/references/mm10/annotation/cpgisland/cpgIslandExt.methylKit.bed
+  export WZSEQ_TSSBED=/home/wanding.zhou/references/mm10/annotation/TSS/mm10.refseq.tss.bed
+
+  # UCSC table
+  export WZSEQ_UCSC_REFSEQ=/home/wanding.zhou/references/mm10/annotation/mm10_RefSeq_FromUCSC.bed
+  export WZSEQ_UCSC_CGIBED=/home/wanding.zhou/references/mm10/annotation/mm10_cpgIsland_FromUCSC.bed
+}
+
+###### human hg19 ####
+function wzref_hg19 {
+  export WZSEQ_REFVERSION=hg19
+  export WZSEQ_REFERENCE=/primary/vari/genomicdata/genomes/hg19/hg19.fa
+  export WZSEQ_REFERENCE_SIZE=3199901561
+
+  export WZSEQ_GTF=/primary/vari/genomicdata/genomes/hg19/tophat/Homo_sapiens/UCSC/hg19/Annotation/Genes/genes.gtf
+  export WZSEQ_BWA_INDEX=/home/wanding.zhou/references/hg19/bwa/hg19.fa
+  export WZSEQ_BOWTIE2_INDEX=/home/wanding.zhou/references/hg19/bowtie2/hg19
+  export WZSEQ_BOWTIE1_INDEX=/home/wanding.zhou/references/hg19/bowtie1/hg19
+  export WZSEQ_STAR_INDEX=/primary/vari/genomicdata/genomes/hg19/STAR
+  export WZSEQ_RSEQC_GENE_BED=/primary/vari/genomicdata/genomes/hg19/rseqc/hg19_GENCODE_GENE_V19_comprehensive.bed
+  export WZSEQ_SUBREAD_INDEX=/primary/vari/genomicdata/genomes/hg19/subread/hg19
+  export WZSEQ_REFERENCE_SPLIT=/primary/vari/genomicdata/genomes/hg19/tophat/Homo_sapiens/UCSC/hg19/Sequence/Chromosomes
+
+  # WGBS
+  export WZSEQ_BISCUIT_INDEX=/home/wanding.zhou/references/hg19/biscuit/hg19.fa
+  export WZSEQ_CGIBED=/primary/vari/genomicdata/genomes/hg19/annotation/cpgisland/cpgIslandExt.bed
+  export WZSEQ_MACS_SHORT=hs
+}
+
+###### human hg19 rCRS ####
+function wzref_hg19rCRS {
+  export WZSEQ_REFVERSION=hg19
+  export WZSEQ_REFERENCE=/primary/vari/genomicdata/genomes/hg19-rCRS/hg19_rCRS.fa
+}
+
+################################################################################
 # DNA-seq, mutation calling etc.
 ################################################################################
+
+function examplepipeline_dna {
+  cat <<- EOF
+=== pipeline 2016-02-05 ===
+
+=> (+) wzseq_pindel => (+) wzseq_pindel_somatic
+
+EOF
+}
 
 # samtools mpileup call mutation #
 # check http://samtools.sourceforge.net/mpileup.shtml
@@ -88,6 +171,86 @@ java -Xmx2g -Djava.io.tmpdir=./indelrealn/ -jar ~/software/GATK/GATK-3.3.0/Genom
   # -known $(broad_files)/Mills_and_1000G_gold_standard.indels.hg19.vcf -known $(broad_files)/1000G_phase1.indels.hg19.vcf
 }
 
+function wzseq_pindel {
+
+  # call pindel_somatic directly if you want somatic indels
+  base=$(pwd)
+  [[ -d pbs ]] || mkdir pbs
+  [[ -d pindel ]] || mkdir pindel
+
+  awk '/^\[/{p=0}/\[pindel\]/{p=1;next} p&&!/^$/' samples |
+    while read sname bam; do
+      cmd="
+cd $base
+[[ -d pindel/$sname ]] || mkdir pindel/$sname
+echo -e $(readlink -f $bam)\"\\t250\\t\"$sname >pindel/$sname/pindel.config
+~/software/pindel/default/pindel -i pindel/$sname/pindel.config -f $WZSEQ_REFERENCE -o pindel/$sname/$sname -c ALL -T 28 2>&1 > pindel/$sname/$sname.pindel_log
+"
+      jobname="pindel_$sname"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 48 -memG 250 -ppn 28
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
+
+}
+
+function wzseq_pindel_somatic {
+
+  
+  base=$(pwd)
+  [[ -d pbs ]] || mkdir pbs
+  [[ -d pindel ]] || mkdir pindel
+  # sname normal tumor
+  awk '/^\[/{p=0}/\[pindel_somatic\]/{p=1;next} p&&!/^$/' samples |
+    while read sname sname1 sname2; do
+      cmd="
+cd $base
+[[ -d pindel/$sname ]] || mkdir pindel/$sname
+echo -e bam/$sname1.bam\"\\t250\\t\"$sname1 >pindel/$sname/pindel.config
+echo -e bam/$sname2.bam\"\\t250\\t\"$sname2 >>pindel/$sname/pindel.config
+~/software/pindel/default/pindel -i pindel/$sname/pindel.config -f $WZSEQ_REFERENCE -o pindel/$sname/$sname -c ALL -T 28 2>&1 > pindel/$sname/$sname.pindel_log
+
+# filter somatic events
+grep \"ChrID\" pindel/$sname/${sname}_D >pindel/$sname/head_DSI
+grep \"ChrID\" pindel/$sname/${sname}_SI >>pindel/$sname/head_DSI
+cat <<EOT >pindel/$sname/somatic.config
+indel.filter.input = pindel/$sname/head_DSI
+indel.filter.vaf = 0.1
+indel.filter.cov = 5
+indel.filter.hom = 2
+indel.filter.pindel2vcf = /primary/vari/software/pindel/default/pindel2vcf
+indel.filter.reference = $WZSEQ_REFERENCE
+indel.filter.referencename = NA
+indel.filter.referencedate = NA
+indel.filter.output = pindel/$sname/$sname.indel.filter
+EOT
+perl ~/software/pindel/default/somatic_filter/somatic_indelfilter.pl pindel/$sname/somatic.config
+"
+      jobname="pindel_somatic_$sname"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 48 -memG 250 -ppn 28
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
+}
+
+# compute base coverage for both tumor and normal
+function wzseq_basecov_somatic {
+  base=$(pwd)
+  [[ -d pbs ]] || mkdir pbs
+  [[ -d basecov ]] || mkdir basecov
+  awk '/^\[/{p=0}/\[pindel_somatic\]/{p=1;next} p&&!/^$/' samples |
+    while read sname sname1 sname2; do
+      cmd="
+cd $base
+samtools mpileup -s bam/$sname1.bam bam/$sname2.bam | perl -alne 'BEGIN{\$b=0}{\$c=0; foreach(split //, \$F[6]){if (ord(\$_)>53) {\$c++;}} \$d=0; foreach(split //, \$F[10]){if(ord(\$_)>53){\$d++;}} if(\$c>4 && \$d>4){\$b++;}}END{print \$b}' > basecov/${sname1}_vs_${sname2}.cov;
+"
+      jobname="basecov_somatic_$sname"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
+}
+
 ################################################################################
 # Whole Genome Bisulfite Sequencing
 ################################################################################
@@ -111,7 +274,7 @@ function examplepipeline_wgbs {
 
  => (+) wgbs_methylKit_summary
 
- => (+) wgbs_diffmeth_simple => (+) wgbs_methylKit_diffmeth => (+) wgbs_methpipe_diff
+ => (+) wgbs_diffmeth_simple => (+) wgbs_methylKit_diffmeth => (+) wgbs_methpipe_diff => (+) wgbs_metilene
 EOF
 }
 
@@ -119,6 +282,7 @@ EOF
 function wgbs_adaptor() {
   local base=$(pwd);
   [[ -d adaptor ]] || mkdir adaptor;
+  [[ -d pbs ]] || mkdir pbs
   cmd="
 cd $base
 parallel -j 4 ~/wzlib/pyutils/wzadapter.py {} '>' adaptor/{/.}.txt ::: $base/fastq/*R1*.fastq.gz
@@ -126,7 +290,7 @@ for f in adaptor/*.txt; do
   tail -2 \$f | cut -d\":\" -f2 | cut -d\" \" -f2 | awk -v fn=\$f '{a[NR]=\$1}END{print fn,a[1],a[2]}'
 done | awk 'BEGIN{print \"filename\tadaptorC\tadaptorT\tadaptorC2T\"}{print \$1,\$2,\$3,\$3/\$2*100\"%\"}' > adaptor/adaptor.stats
 "
-  jobname="adaptor_analysis"
+  jobname="adaptor_analysis_"$(basename $base)
   pbsfn=$base/pbs/$jobname.pbs
   pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 8 -ppn 4
   [[ ${!#} == "do" ]] && qsub $pbsfn
@@ -409,7 +573,7 @@ echo \"[\$(date)] Get statistics of methylation levels...\"
 
 echo \"[\$(date)] Clean up intermediate files...\"
 rm -f $obfn.mr $obfn.mr.sorted_start $obfn.mr.dremove.untrim $obfn.mr.uchr 
-# not sure if these 2 should be removed as intermediate $obfn.mr.dremove $obfn.mr.sorted_end_first
+# not sure if these 2 should be removed as intermediate: $obfn.mr.dremove $obfn.mr.sorted_end_first
 echo \"[\$(date)] Done.\"
 "
     jobname="methpipe_basic_$bfn"
@@ -459,9 +623,8 @@ echo \"[\$(date)] Done.\"
 function wgbs_methpipe_allele {
   base=$(pwd)
   [[ -d methpipe ]] || mkdir methpipe
-  for f in methpipe/*.mr; do
-    bfn=$(basename $f .mr)
-    obfn=methpipe/$bfn
+  for f in methpipe/*.mr.dremove; do
+    obfn=${f%.mr.dremove}
     cmd="
 cd $base
 
@@ -472,7 +635,8 @@ echo \"[\$(date)] Single site ASM scoring (.allelic)\"
 ~/tools/methpipe/default/bin/allelicmeth -c $WZSEQ_REFERENCE_SPLIT -o ${obfn}.allelic ${obfn}.epiread
 
 echo \"[\$(date)] Allelically methylated region (AMRs)\"
-~/tools/methpipe/default/bin/amrfinder -o $obfn.amr -c $WZSEQ_REFERENCE_SPLIT $obfn.epiread
+~/tools/methpipe/default/bin/amrfinder -o $obfn.amr -c $WZSEQ_REFERENCE_SPLIT $obfn.epiread.tmp
+sort -k1,1 -k2,2n -T methpipe/ $obfn.epiread.tmp > $obfn.epiread
 
 # echo \"[\$(date)] Test allele-specific methylation at promoter of imprinted region\"
 # amrtester -o ${obfn}.amr -c hg19 target_interval.bed ${obfn}.epiread
@@ -483,7 +647,7 @@ echo \"[\$(date)] Calculate meth-entropy\"
 
 echo \"[\$(date)] Done.\"
 "
-    jobname="methpipe_allele_$bfn"
+    jobname="methpipe_allele_"$(basename $obfn)
     pbsfn=$base/pbs/$jobname.pbs
     pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 10 -ppn 1
     [[ $1 == "do" ]] && qsub $pbsfn
@@ -721,6 +885,39 @@ cd $base
     done
 }
 
+function wgbs_metilene {
+
+  base=$(pwd)
+  [[ -d pbs ]] || mkdir pbs
+  [[ -d metilene ]] || mkdir metilene
+  awk '/^\[/{p=0}/\[diffmeth\]/{p=1;next} p&&!/^$/' samples |
+    while read sname vcf1 vcf2; do
+      sname1=$(basename $vcf1 .vcf.gz)
+      sname2=$(basename $vcf2 .vcf.gz)
+      cmd="
+cd $base
+
+echo \"\$(date) Converting to bedgraph\"
+biscuit vcf2bed -t cg $vcf1 >metilene/$sname1.bedg
+biscuit vcf2bed -t cg $vcf2 >metilene/$sname2.bedg
+
+echo \"\$(date) Merge\"
+~/software/metilene/default/metilene_input.pl -in1 metilene/$sname1.bedg -in2 metilene/$sname2.bedg --h1 $sname1 --h2 $sname2 --out metilene/$sname.metilene
+~/software/metilene/default/metilene_linux64 -t 4 -a $sname1 -b $sname2 metilene/$sname1_vs_$sname2.metilene >metilene/$sname.metilene.result
+
+echo \"\$(date) Clean\"
+rm -f metilene/$sname1.bedg
+rm -f metilene/$sname2.bedg
+rm -f metilene/$sname.metilene
+"
+      jobname="metilene_$sname"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 4
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
+
+}
+
 ################################################################################
 # ChIP-seq pipeline
 ################################################################################
@@ -953,15 +1150,18 @@ cat<<- EOF
 
  => (+) edit samples [alignment]; (+) editrnaseq_tophat2_firststrand / (+) rnaseq_tophat2 / (+) rnaseq_STAR / (+) rnaseq_gsnap / (+) rnaseq_subjunc
 
+ => (+) rnaseq_kallisto => rnaseq_kallisto_diff
+
  => (+) wzseq_qualimap rnaseq_se/rnaseq_pe_stranded
 
  => [o] rnaseq_splitallele (for ASE) => (+) wzseq_bam_coverage
 
  => (+) rnaseq_cufflinks => (+) rnaseq_cuffmerge => (+) edit samples [diffexp] ; rnaseq_cuffdiff
 
- => (+) rnaseq_edgeR => (+) rnaseq_DESeq2
+ => (+) rnaseq_edgeR => (+) rnaseq_DESeq2 => (+) rnaseq_featureCounts
 
  => (+) rnaseq_allelomePro
+
 EOF
 }
 
@@ -1096,7 +1296,8 @@ cd $base
 ~/software/gsnap/default/src/gsnap -A sam -t 4 --gunzip --novelsplicing=1 --use-splicing=$WZSEQ_GSNAP_SPLICE -D $WZSEQ_GSNAP_INDEX -d $WZSEQ_REFVERSION $base/fastq/$sread1 $base/fastq/$sread2 -o bam/$sname.sam
 samtools sort -O bam -T bam/$sname.tmp -o bam/$sname.bam bam/$sname.sam
 samtools index bam/$sname.bam
-#rm -f bam/$sname.sam
+samtools flagstat bam/$sname.bam >bam/$sname.bam.flagstat
+rm -f bam/$sname.sam
 "
       jobname="GSNAP_$sname"
       pbsfn=$base/pbs/$jobname.pbs
@@ -1237,8 +1438,54 @@ function rnaseq_cuffnorm() {
   return 1
 }
 
-# TODO: kallisto
+# kallisto
+# make transcript fasta using the tophat's gtf_to_fasta and some postprocessing
+# ~/software/tophat2/default/gtf_to_fasta ~/references/mm10/gtf/Mus_musculus.GRCm38.82.gtf.UCSCnaming ~/references/mm10/mm10.fa ~/references/mm10/kallisto/mm10.transcripts.fa
+# awk 'match($0,/>(\S+)\s+(\w+)/,a){print ">"a[2];next;}1' ~/references/mm10/kallisto/mm10.transcripts.fa | gzip -c >~/references/mm10/kallisto/mm10.transcripts.fa.gz
+# rm ~/references/mm10/kallisto/mm10.transcripts.fa
+# ~/software/kallisto/kallisto_linux-v0.42.4/kallisto index ~/references/mm10/kallisto/mm10.transcripts.fa.gz -i ~/references/mm10/kallisto/mm10.kallisto
+function rnaseq_kallisto {
+  base=$(pwd)
+  [[ -d pbs ]] || mkdir pbs
+  [[ -d kallisto ]] || mkdir kallisto
+
+  while read sname fastq1 fastq2; do
+    cmd="
+cd $base
+[[ -d kallisto/$sname ]] || mkdir kallisto/$sname
+~/software/kallisto/kallisto_linux-v0.42.4/kallisto quant -i $WZSEQ_KALLISTO_INDEX -o kallisto/$sname fastq/$fastq1 fastq/$fastq2 -t 4
+~/wzlib/pyutils/wzseqtk.py ensembl2name -g $WZSEQ_GTF_ENSEMBL_UCSCNAMING -i kallisto/$sname/abundance.tsv -o kallisto/$sname/abundance.anno.tsv
+"
+    jobname="kallisto_$sname"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 4
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done < <(awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples)
+}
+
+function rnaseq_kallisto_diff {
+
+  base=$(pwd)
+  [[ -d pbs ]] || mkdir pbs
+  awk '/^\[/{p=0}/\[diffexp\]/{p=1;next} p&&!/^$/' samples |
+    while read cond1 cond2 bams1 bams2; do
+      cmd="
+cd $base
+
+"
+      jobname="kallisto_diff_$sname"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 3 -ppn 1
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
+}
+
+# TODO: sailfish
+# TODO: salmon
 function rnaseq_edgeR {
+  # 2016-02-16 update:
+  # switch from GenomicAlignment to featureCounts
+  ## original command: ~/wzlib/Rutils/bin/bioinfo/edgeR.r -g $WZSEQ_REFVERSION -G $WZSEQ_GTF_ENSEMBL -a $cond1 -b $cond2 -A $bams1 -B $bams2 -o edgeR/${cond1}_vs_${cond2}_diffexp.tsv 2> edgeR/${cond1}_vs_${cond2}_diffexp.log
   base=$(pwd)
   [[ -d edgeR ]] || mkdir edgeR
   [[ -d pbs ]] || mkdir pbs
@@ -1249,7 +1496,8 @@ function rnaseq_edgeR {
       [[ -s $gtf ]] || gtf=$WZSEQ_GTF
       cmd="
 cd $base
-~/wzlib/Rutils/bin/bioinfo/edgeR.r -g $WZSEQ_REFVERSION -G $WZSEQ_GTF_ENSEMBL -a $cond1 -b $cond2 -A $bams1 -B $bams2 -o edgeR/${cond1}_vs_${cond2}_diffexp.tsv 2> edgeR/${cond1}_vs_${cond2}_diffexp.log
+~/wzlib/Rutils/bin/bioinfo/edgeR_featureCounts.r -G $WZSEQ_GTF_ENSEMBL_UCSCNAMING -a $cond1 -b $cond2 -A $bams1 -B $bams2 -o edgeR/${cond1}_vs_${cond2}_diffexp.tsv 2> edgeR/${cond1}_vs_${cond2}_diffexp.log
+~/wzlib/pyutils/wzseqtk.py ensembl2name -g $WZSEQ_GTF_ENSEMBL_UCSCNAMING -i edgeR/${cond1}_vs_${cond2}_diffexp.tsv -o edgeR/${cond1}_vs_${cond2}_diffexp.anno.tsv
 "
       jobname="edgeR_${cond1}_vs_${cond2}"
       pbsfn=$base/pbs/$jobname.pbs
@@ -1327,6 +1575,8 @@ geneBody_coverage.py -i $fn -r $WZSEQ_RSEQC_GENE_BED -o rseqc/${bfn}_genebody_co
 function rnaseq_subjunc() {
   base=$(pwd);
   [[ -d pbs ]] || mkdir pbs
+  [[ -d bam ]] || mkdir bam
+
   awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples |
     while read sname sread1 sread2; do
 
@@ -1365,23 +1615,28 @@ EOF
   pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 2 -ppn 1
 }
 
-# TODO: featureCounts (from subread package)
-function rnaseq_featurecounts {
+function rnaseq_featureCounts {
   base=$(pwd);
   [[ -d pbs ]] || mkdir pbs
-  for f in bam/*.bam; do
-    fn=$(readlink -f $f)
-    bfn=$(basename $f .bam)
-    cmd="
-featureCounts -T 28 -t exon -g gene_id -a annotation.gtf -o featureCounts/$bfn_counts.txt $fn
-~/tools/subread/subread-1.4.6-p5-Linux-x86_64/bin/featureCounts -a repeatmasker/rmsk7.bed -F SAF -o repeatmasker/aza bam/aza.bam -T 28
-~/tools/subread/subread-1.4.6-p5-Linux-x86_64/bin/featureCounts -t exon -g gene_id -a ~/references/hg19/gtf/Homo_sapiens.GRCh37.75.gtf -o 1 bam/aza.bam
+  [[ -d featureCounts ]] || mkdir featureCounts
+  grep '\[experiment\] single-end' samples && pairEnd="" || pairEnd="-P"
+  # -p paired-end
+  # -g goup by gene_id in GTF
+  # -t exon, together with -g, it means count exon (as feature) and gene_id (as meta_feature)
+  # -T: number of threads
+
+  # optional:
+  # -P -d 50 -D 600 set insert size range to [50,600]
+  # -O allowMultiOverlap
+  # -M allow multi-mapping
+  # -F SAF or GTF, format of annotation file
+  cmd="
+~/tools/subread/default/bin/featureCounts $pairEnd -T 5 -t exon -g gene_id -a $WZSEQ_GTF_ENSEMBL_UCSCNAMING -o featureCount/all.txt bam/*.bam --primary -Q 20 --ignoreDup
 "
-    jobname="featurecounts_$bfn"
-    pbsfn=$base/pbs/$jobname.pbs
-    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
-    [[ $1 == "do" ]] && qsub $pbsfn
-  done
+  jobname="featurecounts_$bfn"
+  pbsfn=$base/pbs/$jobname.pbs
+  pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 5
+  [[ $1 == "do" ]] && qsub $pbsfn
 }
 
 # TODO: MISO
@@ -1649,7 +1904,7 @@ function wzseq_fastqc() {
   base=$(pwd);
   [[ -d fastqc ]] || mkdir fastqc
   [[ -d pbs ]] || mkdir pbs
-  for f in fastq/*.+\(fastq\|fq\|fastq.gz\|fq.gz\); do
+  for f in fastq/*.+(fastq|fq|fastq.gz|fq.gz); do
     fn=$(readlink -f $f)
     bfn=$(basename $f)
     bfn=${bfn%.fastq.gz}
@@ -1657,6 +1912,7 @@ function wzseq_fastqc() {
     bfn=${bfn%.fq.gz}
     bfn=${bfn%.fq}
     cmd="
+cd $base
 [[ -d $base/fastqc/$bfn ]] || mkdir -p $base/fastqc/$bfn
 fastqc -f fastq $fn -o $base/fastqc/$bfn
 "

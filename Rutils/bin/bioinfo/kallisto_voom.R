@@ -1,26 +1,60 @@
 #!/usr/bin/env r
 ## this is memory heavy, since it loads the bam into memory, allow 10G
-## this is using GenomicAlignment, GenomicFeatures and GRangesList packages which is quite unwieldy
-## no filtering of reads based on mapping quality
-## EdgeR.r -g mm10 -a condition1 -b condition2 -A condition1bam.rep1,condition2bam.rep2 -B condition2bam.rep1,condition2bam.rep2 -o edgeRoutput
+## runEdgeR.r -g mm10 -a condition1 -b condition2 -A condition1bam.rep1,condition2bam.rep2 -B condition2bam.rep1,condition2bam.rep2 -o 
 suppressMessages(library(docopt))
 
 "Usage:
-  edgeR.r -g REFVERSION [-G GTF] -a CONDITION1 -b CONDITION2 -A BAMS1 -B BAMS2 -o OUTPUT
+  kallisto_voom.r -g REFVERSION [-G GTF] -a CONDITION1 -b CONDITION2 -A SNAMES1 -B SNAMES2 -o OUTPUT
 
 Options:
   -g REFVERSION   reference version (e.g, hg19, mm10)
   -G GTF          Ensembl GTF file (if not provided, downloaded from UCSC)   
   -a CONDITION1   name of condition1
   -b CONDITION2   name of condition2
-  -A BAMS1        path to bams for condition1 (comma-separated)
-  -B BAMS2        path to bams for condition2 (comma-separated)
+  -A SNAMES1      sample names for condition1 (comma-separated, kallisto/sname/abundance.tsv)
+  -B SNAMES2      sample names for condition2 (comma-separated, kallisto/sname/abundance.tsv)
   -o OUTPUT       output file path
 " -> doc
 
 opt <- docopt(doc)
 sink(stderr())
 ## cat(str(opt))
+
+cat(format(Sys.time()), "Read samples...\n")
+sample_list_n = c("PL_female_mut", "PL_male_mut", "PL_N9_female_mut", "PL_N9_male_mut")
+for (i in 1:length(sample_list_n)) {
+    tmp = read.table(file=paste0("kallisto/",sample_list_n[i],"/abundance.tsv"), header=T)
+    assign(sample_list_n[i], tmp)       # attach each data frame to the current environment
+}
+
+sample_list = mget(sample_list_n)
+
+## give the list unique names 
+sample_list_uni = Map(function(x, i) setNames(x, ifelse(names(x) %in% "target_id",
+      names(x), sprintf('%s.%d', names(x), i))), sample_list, seq_along(sample_list))
+
+full_kalli = Reduce(function(...) merge(..., by = "target_id", all=T), sample_list_uni)
+ 
+tpm_vals = full_kalli[, grep("tpm", names(full_kalli))]
+rownames(tpm_vals) = full_kalli$target_id
+
+## then make a contrast matrix
+groups = c("normal", "colon_cancer", "normal", "colon_cancer")
+condition &lt;- model.matrix(~0 + groups)
+colnames(condition) = c("normal", "colon_cancer")
+cont_matrix = makeContrasts(norm_canc = normal - colon_cancer, levels = condition)
+
+## this spits out an EList object 
+v = voom(counts = tpm_vals, design = condition)
+fit = lmFit(v, condition)
+fit = contrasts.fit(fit, cont_matrix)
+fit = eBayes(fit)
+top_table = topTable(fit, n = 10000, sort.by = "p")
+
+browser()
+
+## TODO
+
 
 cat(format(Sys.time()), "Retrieving annotations...\n")
 suppressPackageStartupMessages(library(GenomicFeatures))

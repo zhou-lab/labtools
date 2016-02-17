@@ -1,5 +1,5 @@
 #!/bin/bash
-# usage: biscuit_diffmeth -t pileup1 -n pileup2 [-b base] [-c mincov] -v $WZSEQ_REFVERSION -g $WZSEQ_CGIBED -r $WZSEQ_REFERENCE -s $WZSEQ_TSSBED
+# usage: wzmethdiff -t pileup1 -n pileup2 [-b base] [-c mincov] -v $WZSEQ_REFVERSION -g $WZSEQ_CGIBED -r $WZSEQ_REFERENCE -s $WZSEQ_TSSBED
 
 function decho() {
   echo "[$(date)] "$@ >&2
