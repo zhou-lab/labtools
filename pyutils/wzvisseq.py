@@ -218,8 +218,6 @@ if __name__ == "__main__":
     subparsers = parser.add_subparsers()
 
     parser_bis = subparsers.add_parser('bis', help='visualize in terminal bisulfite read alignment')
-
-    parser_bis = argparse.ArgumentParser()
     parser_bis.add_argument('-qname', required=True)
     parser_bis.add_argument('-reg')
     parser_bis.add_argument('-ref', required=True)
@@ -230,12 +228,12 @@ if __name__ == "__main__":
     parser_bis.add_argument('-pair', default='12', help='[1,2,12]')
     parser_bis.set_defaults(func=main_bis)
 
-    parser_nome = subparsers.add_parser('nome', help='visualize nome-seq region')
-    parser_nome.add_argument('-reg')
-    parser_nome.add_argument('-bam', required=True, help='bam file')
-    parser_nome.add_argument('-gchpileup', required=True, help='GCH pileup')
-    parser_nome.add_argument('-o', required=True, help='output figure file name')
-    parser_nome.set_defaults(func=main_nome)
+    # parser_nome = subparsers.add_parser('nome', help='visualize nome-seq region')
+    # parser_nome.add_argument('-reg')
+    # parser_nome.add_argument('-bam', required=True, help='bam file')
+    # parser_nome.add_argument('-gchpileup', required=True, help='GCH pileup')
+    # parser_nome.add_argument('-o', required=True, help='output figure file name')
+    # parser_nome.set_defaults(func=main_nome)
 
     args = parser.parse_args()
     args.func(args)

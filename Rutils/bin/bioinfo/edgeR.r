@@ -1,6 +1,8 @@
 #!/usr/bin/env r
 ## this is memory heavy, since it loads the bam into memory, allow 10G
-## runEdgeR.r -g mm10 -a condition1 -b condition2 -A condition1bam.rep1,condition2bam.rep2 -B condition2bam.rep1,condition2bam.rep2 -o 
+## this is using GenomicAlignment, GenomicFeatures and GRangesList packages which is quite unwieldy
+## no filtering of reads based on mapping quality
+## EdgeR.r -g mm10 -a condition1 -b condition2 -A condition1bam.rep1,condition2bam.rep2 -B condition2bam.rep1,condition2bam.rep2 -o edgeRoutput
 suppressMessages(library(docopt))
 
 "Usage:
