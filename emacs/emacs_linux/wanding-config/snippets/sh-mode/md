@@ -1,0 +1,6 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: md
+# key: md
+# binding: direct-keybinding
+# --
+[[ -d $1 ]] || mkdir $1$0

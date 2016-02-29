@@ -108,8 +108,12 @@ function dnarev {
 }
 
 # eval $(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib)
-function getseq {
-    samtools faidx /workspace/zchong/clinsek/test_data/hg19.fa $1
+function getseqh {
+  samtools faidx ~/references/hg19/hg19.fa $1
+}
+
+function getseqm {
+  samtools faidx ~/references/mm10/mm10.fa $1
 }
 
 function tv {

@@ -2127,6 +2127,10 @@ Host ams
 
 remove old host information
 ssh-keygen -f "/home/wanding/.ssh/known_hosts" -R mammoth.rice.edu
+
+**** regenerate (lost) public key using private key
+ssh-keygen -t rsa -y >~/.ssh/id_rsa.pub
+Enter file in which the key is (/home/wanding.zhou/.ssh/id_rsa):
 **** my setup for dqsfacpriv03 passwordless ssh
 ssh-keygen -t rsa
 scp ~/.ssh/id_rsa.pub wzhou1@dqsfacpriv03.mdanderson.edu:/home/wzhou1/.ssh (need to mkdir .ssh on the remote site)
@@ -9785,6 +9789,39 @@ Have fun!
 ** st
     hg st | awk '/\?/{print $2;}' | hg add
 * bash
+** difference between | and <<<
+echo -e $lines | while read line 
+...
+done
+
+the while is loop executed in a subshell. So any changes you do for the variable will not be available once the subshell exits.
+
+Instead you can re-write the while loop to be in a main shell process; only echo -e $lines will run in a subshell:
+
+while read line
+do
+    if [[ "$line" == "second line" ]]
+    then
+    foo=2
+    echo "Variable \$foo updated to $foo inside if inside while loop"
+    fi
+    echo "Value of \$foo in while loop body: $foo"
+done <<< "$(echo -e "$lines")"
+*** better solution
+while read line; do
+...
+done <<EOT
+first line
+second line
+third line
+EOT
+
+or 
+while read line; do
+...
+done <<EOT
+$(echo -e $lines)
+EOT
 ** last element in an array
 
 # require modern bash
@@ -10241,6 +10278,7 @@ a=z
 The ${!variable} notation is more intuitive than the old eval var1=\$$var2
 ** command substitution
 *** assign output of a command to a variable
+
 #+BEGIN_SRC sh
 var=$(command-name-here)
 var=$(command-name-here arg1)
@@ -10259,6 +10297,7 @@ echo "Today is $(date)"
 # or
 printf "Today is %s\n" "$(date)"
 #+END_SRC
+
 ** brace expansion
 echo {a,b}$PATH
 is equivalent to

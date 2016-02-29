@@ -53,7 +53,7 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 (setq mouse-wheel-scroll-amount '(2))
 (setq mouse-wheel-progressive-speed nil)
 ;; (global-visual-line-mode nil)
-(set-default 'truncate-lines t)
+(set-default 'truncate-lines nil)
 ;; (define-key org-mode-map "\M-q" 'toggle-truncate-lines)
 (global-set-key (kbd "M-q") 'toggle-truncate-lines)
 
@@ -84,7 +84,7 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 ;; (global-set-key (kbd "<f9>") 'switch-to-buffer)
 (global-set-key (kbd "<f18>") 'switch-to-buffer)
 (global-set-key (kbd "<f10>") 'yas-reload-all)
-;; (global-set-key (kbd "<f9>") 'yas-describe-tables)
+(global-set-key (kbd "<f9>") 'yas-describe-tables)
 
 (setq sh-basic-offset 2
       sh-indentation 2)

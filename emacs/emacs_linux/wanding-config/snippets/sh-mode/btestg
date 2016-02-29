@@ -1,0 +1,13 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: btestg
+# key: btestg
+# binding: direct-keybinding
+# --
+function biscuittest_$1 {
+  base=$(pwd)
+  cd $2
+  [[ -d tmp_$1 ]] || mkdir tmp_$1
+  rm -f tmp_$1/*
+  $0
+  cd $base
+}

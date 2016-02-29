@@ -1,0 +1,8 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: loops
+# key: loops
+# binding: direct-keybinding
+# --
+awk '/^\[/{p=0}/\[$1\]/{p=1;next} p&&!/^$/' samples |
+  while read $2; do
+  $0

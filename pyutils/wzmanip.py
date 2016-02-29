@@ -65,7 +65,7 @@ def main_reorder(args):
         names = args.n.split(',')
         indices = [i for i, name in enumerate(header.split(args.delim)) if name in names]
         for line in args.table:
-            fields = line.strip().split(args.delim)
+            fields = line.strip('\n').split(args.delim)
             try:
                 print '\t'.join([fields[i] for i in indices])
             except IndexError as e:
@@ -75,7 +75,7 @@ def main_reorder(args):
         indices = parse_indices(args.c)
 
         for i, line in enumerate(args.table):
-            fields = line.strip().split(args.delim)
+            fields = line.strip('\n').split(args.delim)
             try:
                 print '\t'.join(indices.extract(fields))
             except IndexError as e:

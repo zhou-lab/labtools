@@ -116,6 +116,8 @@ M-x customize-variable [RET] [your variable] [RET]
 to view the content of a variable
 C-h v [your variable]
 * basic editting
+** select code block as marked by parentheses
+Mark code block in emacs C-M-u C-M-space
 ** change tab to space
 (setq-default indent-tabs-mode nil)
 C-h x

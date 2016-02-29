@@ -1,0 +1,9 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: loopv
+# key: loopv
+# binding: direct-keybinding
+# --
+for ($1=0; $1<$2->size; ++$1) {
+  $3_t *$4 = ref_$3_v($2, $1);
+  $0
+}

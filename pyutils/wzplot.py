@@ -118,7 +118,7 @@ def main_scatter(args):
     colors = []
     sizes = []
     for i, line in enumerate(args.table):
-        if i > args.maxline:
+        if i > args.maxline and args.maxline > 0:
             break
         field = line.strip().split(args.delim)
         x.append(float(field[args.x-1]))
