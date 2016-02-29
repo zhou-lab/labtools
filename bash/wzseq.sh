@@ -1480,7 +1480,7 @@ function rnaseq_kallisto_diff {
       
       snames2=""
       n2=0
-      for f in $(echo $bams1 | tr ',' ' '); do
+      for f in $(echo $bams2 | tr ',' ' '); do
         [[ -d kallisto/$(basename $f .bam) ]] || continue;
         [[ ${#snames2} == 0 ]] || snames2=$snames2",";
         snames2=$snames2$(basename $f .bam);
@@ -1490,9 +1490,10 @@ function rnaseq_kallisto_diff {
       if [[ $n1 -gt 1 ]] && [[ $n2 -gt 1 ]]; then # voom requires more than 1 replica
         cmd="
 cd $base
-~/wzlib/Rutils/bin/bioinfo/kallisto_voom.r -a $cond1 -b $cond2 -A $snames1 -B $snames2 -o kallisto/${cond1}_vs_${cond2}.tsv
+~/wzlib/Rutils/bin/bioinfo/kallisto_voom.r -a $cond1 -b $cond2 -A $snames1 -B $snames2 -o kallisto/diff_${cond1}_vs_${cond2}.tsv
+~/wzlib/pyutils/wzseqtk.py ensembl2name --transcript -g $WZSEQ_GTF_ENSEMBL_UCSCNAMING -i kallisto/diff_${cond1}_vs_${cond2}.tsv -o kallisto/diff_${cond1}_vs_${cond2}.anno.tsv
 "
-        jobname="kallisto_diff_$sname"
+        jobname="kallisto_diff_${cond1}_vs_${cond2}"
         pbsfn=$base/pbs/$jobname.pbs
         pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 3 -ppn 1
         [[ $1 == "do" ]] && qsub $pbsfn
@@ -2037,7 +2038,8 @@ java -Xmx5g -Djava.io.tmpdir=./tmp/ -jar /home/wanding.zhou/software/picard/pica
   done
 }
 
-# trimming of adaptor and quality 
+# trimming of adaptor and quality
+# see http://www.usadellab.org/cms/?page=trimmomatic for explanation
 function wzseq_trimmomatic {
   base=$(pwd);
   [[ -d pbs ]] || mkdir pbs
@@ -2045,24 +2047,33 @@ function wzseq_trimmomatic {
     echo "file: samples missing"
     return 1;
   fi
-  
+
   [[ -d fastq/trimmed ]] || mkdir -p fastq/trimmed
   [[ -d fastq/untrimmed ]] || mkdir -p fastq/untrimmed
   awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples |
     while read sname sread1 sread2; do
       sread1base=$(basename $sread1 .fastq.gz)
-      sread2base=$(basename $sread2 .fastq.gz)
-      cmd="
-java -jar /primary/home/wanding.zhou/tools/trimmomatic/Trimmomatic-0.33/trimmomatic-0.33.jar PE -phred33 $base/fastq/$sread1 $base/fastq/$sread2 $base/fastq/trimmed/$sread1 $base/fastq/trimmed/${sread1base}_unpaired.fastq.gz $base/fastq/trimmed/$sread2 $base/fastq/trimmed/${sread2base}_unpaired.fastq.gz ILLUMINACLIP:/primary/home/wanding.zhou/tools/trimmomatic/Trimmomatic-0.33/adapters/TruSeq3-PE.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36
+      if [[ "$sread2" == '.' ]]; then
+        cmd="
+java -jar /primary/home/wanding.zhou/tools/trimmomatic/Trimmomatic-0.33/trimmomatic-0.33.jar SE -threads 10 -phred33 $base/fastq/$sread1 $base/fastq/trimmed/$sread1 ILLUMINACLIP:/primary/home/wanding.zhou/tools/trimmomatic/Trimmomatic-0.33/adapters/TruSeq3-SE.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36
+mv $base/fastq/$sread1 $base/fastq/untrimmed
+cd $base/fastq
+ln -s trimmed/$sread1 .
+"
+      else
+        sread2base=$(basename $sread2 .fastq.gz)
+        cmd="
+java -jar /primary/home/wanding.zhou/tools/trimmomatic/Trimmomatic-0.33/trimmomatic-0.33.jar PE -threads 10 -phred33 $base/fastq/$sread1 $base/fastq/$sread2 $base/fastq/trimmed/$sread1 $base/fastq/trimmed/${sread1base}_unpaired.fastq.gz $base/fastq/trimmed/$sread2 $base/fastq/trimmed/${sread2base}_unpaired.fastq.gz ILLUMINACLIP:/primary/home/wanding.zhou/tools/trimmomatic/Trimmomatic-0.33/adapters/TruSeq3-PE.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36
 mv $base/fastq/$sread1 $base/fastq/untrimmed
 mv $base/fastq/$sread2 $base/fastq/untrimmed
 cd $base/fastq
 ln -s trimmed/$sread1 .
 ln -s trimmed/$sread2 .
 "
-      jobname="trimmomatic_$bfn"
+      fi
+      jobname="trimmomatic_$sname"
       pbsfn=$base/pbs/$jobname.pbs
-      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 10
       [[ $1 == "do" ]] && qsub $pbsfn
     done
 }

@@ -15,7 +15,7 @@ Options:
 
 opt <- docopt(doc)
 sink(stderr())
-cat(str(opt))
+# cat(str(opt))
 
 cat(format(Sys.time()), "Read samples...\n")
 snames1 <- unlist(strsplit(opt$A,','))
@@ -55,5 +55,5 @@ top_table = topTable(fit, n = 100000000, sort.by = "p")
 
 colnames(tpm_vals) <- names(sample_list)
 
-write.table(merge(tpm_vals,top_table,by=0), file=opt$o, sep="\t", quote=F, col.names=NA)
-cat(format(Sys.time()), "Done.")
+write.table(merge(tpm_vals,top_table,by=0), file=opt$o, sep="\t", quote=F, row.names=F)
+cat(format(Sys.time()), "Done.\n")
