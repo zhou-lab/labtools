@@ -249,7 +249,7 @@ function hist {
 
 ### git ###
 
-# alias gs="git status" # this interfere with ghostscript program gs
+alias gst="git status" # this interfere with ghostscript program gs
 alias gu="git pull"
 alias gp="git pull"
 alias gh="git push"

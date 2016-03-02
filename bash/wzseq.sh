@@ -17,7 +17,13 @@ function wzref_mm10 {
   export WZSEQ_REFERENCE_LAMBDAPHAGE=/home/wanding.zhou/references/lambdaphage/biscuit/NC_001416.fa
   export WZSEQ_GTF=/primary/vari/genomicdata/genomes/mm10/tophat/Mus_musculus/UCSC/mm10/Annotation/Archives/archive-2015-07-17-14-33-26/Genes/genes.gtf
   export WZSEQ_GTF_ENSEMBL=/primary/vari/genomicdata/genomes/mm10/gtf/Mus_musculus.GRCm38.82.gtf.gz
+
+  # $ zcat ~/references/mm10/gtf/Mus_musculus.GRCm38.82.gtf.gz | awk '$1~/^#/{print}$1~/^[0-9XYM]/{if ($1=="MT"){$1="chrM"}else{$1="chr"$1};print $0}' | gzip -c >~/references/mm10/gtf/Mus_musculus.GRCm38.82.gtf.UCSCnaming.gz
   export WZSEQ_GTF_ENSEMBL_UCSCNAMING=/primary/vari/genomicdata/genomes/mm10/gtf/Mus_musculus.GRCm38.82.gtf.UCSCnaming
+
+  # [~/references/mm10/gtf]$ python ~/.Renv/versions/3.2.3/lib64/R/library/DEXSeq/python_scripts/dexseq_prepare_annotation.py Mus_musculus.GRCm38.82.gtf.UCSCnaming Mus_musculus.GRCm38.82.gtf.UCSCnaming.DEXSeq.gff
+  export WZSEQ_GTF_DEXSEQ=/home/wanding.zhou/references/mm10/gtf/Mus_musculus.GRCm38.82.gtf.UCSCnaming.DEXSeq.gff
+
   export WZSEQ_BOWTIE2_INDEX=/home/wanding.zhou/references/mm10/bowtie2/mm10
   export WZSEQ_BOWTIE1_INDEX=/primary/vari/genomicdata/genomes/mm10/bowtie1/mm10
   export WZSEQ_BWA_INDEX=/home/wanding.zhou/references/mm10/bwa/mm10.fa
@@ -48,6 +54,11 @@ function wzref_mm10 {
   # UCSC table
   export WZSEQ_UCSC_REFSEQ=/home/wanding.zhou/references/mm10/annotation/mm10_RefSeq_FromUCSC.bed
   export WZSEQ_UCSC_CGIBED=/home/wanding.zhou/references/mm10/annotation/mm10_cpgIsland_FromUCSC.bed
+
+  # rmsk
+  export WZSEQ_RMSK=/primary/vari/genomicdata/genomes/mm10/annotation/rmsk/rmsk.bed
+  # build the following using UCSC table builder
+  export WZSEQ_RMSK_GTF=/home/wanding.zhou/references/mm10/annotation/rmsk/rmsk.mm10.gtf
 }
 
 ###### human hg19 ####
@@ -69,6 +80,9 @@ function wzref_hg19 {
   export WZSEQ_BISCUIT_INDEX=/home/wanding.zhou/references/hg19/biscuit/hg19.fa
   export WZSEQ_CGIBED=/primary/vari/genomicdata/genomes/hg19/annotation/cpgisland/cpgIslandExt.bed
   export WZSEQ_MACS_SHORT=hs
+
+  # rmsk
+  export WZSEQ_RMSK=/primary/vari/genomicdata/genomes/hg19/annotation/rmsk/rmsk.txt.bed
 }
 
 ###### human hg19 rCRS ####
@@ -519,7 +533,6 @@ biscuit vcf2bed -t cg -u -c $f | pybiscuit.py to_methylKit >methylKit/$bfn/$bfn.
 }
 
 ## TODO bissnp ####
-
 function wgbs_merge_methlevelaverages {
   # usage: biscuit_merge_methlevelaverages data/methlevelaverage
 
@@ -999,7 +1012,7 @@ function chipseq_HOMER_peak {
 
       cmd="
 cd $base
-~/software/HOMER/default/bin/findPeaks HOMER/$targetname -style $targettype -o auto -i HOMER/$controlname
+~/software/HOMER/default/bin/findPeaks HOMER/$targetname -style $targettype -o HOMER/$targetname/peaks.txt -i HOMER/$controlname
 export PATH=$PATH:~/software/HOMER/default/bin/:~/software/webLogo/weblogo/
 ~/software/HOMER/default/bin/findMotifsGenome.pl HOMER/$targetname/peaks.txt $WZSEQ_REFVERSION HOMER/${targetname}/Motif -size $targetsize # -mask? 
 ~/software/HOMER/default/bin/annotatePeaks.pl HOMER/$targetname/peaks.txt $WZSEQ_REFVERSION > HOMER/$targetname/peaks.txt.annotation
@@ -1155,12 +1168,16 @@ cat<<- EOF
  => (+) wzseq_qualimap rnaseq_se/rnaseq_pe_stranded
 
  => [o] rnaseq_splitallele (for ASE) => (+) wzseq_bam_coverage
+ => (+) rnaseq_allelomePro
 
  => (+) rnaseq_cufflinks => (+) rnaseq_cuffmerge => (+) edit samples [diffexp] ; rnaseq_cuffdiff
 
  => (+) rnaseq_edgeR => (+) rnaseq_DESeq2 => (+) rnaseq_featureCounts
 
- => (+) rnaseq_allelomePro
+ => (+) rnaseq_splitstrand => (+) rnaseq_count_rmsk_stranded
+ => (+) rnaseq_count_rmsk_unstranded
+
+ => (+) rnaseq_dexseq
 
 EOF
 }
@@ -1549,7 +1566,7 @@ cd $base
     done
 }
 
-# TODO: DESeq2, EBSeq, Voom
+# TODO: EBSeq, Voom
 
 # RSeQC
 # need to define WZSEQ_RSEQ_GENE_BED
@@ -1622,18 +1639,97 @@ samtools flagstat bam/${sname}.bam >bam/${sname}.flagstat
     done
 }
 
-function rnaseq_count_rmsk {
-  bam=$1
-  cmd=$(cat<<EOF
-cd $(pwd)
-bedtools coverage -a ~/references/hg19/annotation/rmsk.txt.bed -b bam/${bam}.bam -sorted -split -counts > repeatmasker/$bam.rmsk
-awk '{a[\$5]+=\$8;b[\$6]+=\$8;c[\$7]+=\$8}END{for(i in a){print "1\t"i"\t"a[i]}; for(i in b){print "2\t"i"\t"b[i]}; for(i in c){print "3\t"i"\t"c[i]}}' repeatmasker/${bam}.rmsk | sort -k1,1 -k2,2nr > repeatmasker/${bam}.rmsk.cat
-EOF
-     )
+function rnaseq_splitstrand {
+  # split stranded RNAseq into 2 strands
 
-  jobname="rmsk_${bam}"
-  pbsfn=pbs/$jobname.pbs
-  pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 2 -ppn 1
+  base=$(pwd)
+  [[ -d pbs ]] || mkdir pbs
+  [[ -d stranded ]] || mkdir stranded
+  for bam in bam/*.bam; do
+    sname=$(basename $bam .bam)
+    cmd="
+cd $base
+minmapq=10
+
+# first read, positive strand
+samtools view -H bam/${sname}.bam > stranded/${sname}_p.sam
+samtools view -q \$minmapq -f 0x60 -F 0x110 bam/${sname}.bam >> stranded/${sname}_p.sam
+# second read, reverse strand
+samtools view -q \$minmapq -f 0x90 -F 0x120 bam/${sname}.bam >> stranded/${sname}_p.sam
+samtools view -b stranded/${sname}_p.sam | samtools sort -o stranded/${sname}_p.bam -O bam -T stranded/${sname}_tmp
+
+# first read, reverse strand
+samtools view -H bam/${sname}.bam > stranded/${sname}_r.sam
+samtools view -q \$minmapq -f 0x50 -F 0x120 bam/${sname}.bam >> stranded/${sname}_r.sam
+# second read, positive strand
+samtools view -q \$minmapq -f 0xa0 -F 0x110 bam/${sname}.bam >> stranded/${sname}_r.sam
+samtools view -b stranded/${sname}_r.sam | samtools sort -o stranded/${sname}_r.bam -O bam -T stranded/${sname}_tmp
+
+bedtools genomecov -ibam stranded/${sname}_p.bam -g ${WZSEQ_REFERENCE}.fai -d -split | LC_COLLATE=C sort -k1,1 -k2,2n -T stranded/ >stranded/${sname}_p.bedg
+bedGraphToBigWig stranded/${sname}_p.bedg ${WZSEQ_REFERENCE}.fai stranded/${sname}_p.bw
+
+bedtools genomecov -ibam stranded/${sname}_r.bam -g ${WZSEQ_REFERENCE}.fai -d -split | LC_COLLATE=C sort -k1,1 -k2,2n -T stranded/ | awk -F\"\\t\" -v OFS=\"\t\" '{print \$1,\$2,\$3,-\$4}' >stranded/${sname}_r.bedg
+bedGraphToBigWig stranded/${sname}_r.bedg ${WZSEQ_REFERENCE}.fai stranded/${sname}_r.bw
+rm -f stranded/${sname}_p.sam stranded/${sname}_r.sam
+rm -f stranded/${sname}_p.bam stranded/${sname}_r.bam
+"
+    jobname="splitstrand_${sname}"
+    pbsfn=pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
+    [[ ${!#} == "do" ]] && qsub $pbsfn
+  done
+}
+
+function rnaseq_count_rmsk_stranded {
+  # require stranded/, this actually gives the cumulative
+  # base counts, not the read counts
+  base=$(pwd)
+  [[ -d pbs ]] || mkdir pbs
+  [[ -d rmsk ]] || mkdir rmsk
+  for bedg_r in stranded/*_r.bedg; do
+    sname=$(basename $bedg_r _r.bedg)
+    cmd="
+cd $base
+bedtools intersect -a $WZSEQ_RMSK -b stranded/${sname}_r.bedg -wao -sorted | awk -f wanding.awk -e '{print joinr(1,7)\"\\t\"\$11*\$12;}' | bedtools groupby -g 1-7 -c 8 -o sum > rmsk/${sname}_r.tsv
+
+bedtools intersect -a $WZSEQ_RMSK -b stranded/${sname}_p.bedg -wao -sorted | awk -f wanding.awk -e '{print joinr(1,7)\"\\t\"\$11*\$12;}' | bedtools groupby -g 1-7 -c 8 -o sum > rmsk/${sname}_p.tsv
+
+paste rmsk/${sname}_p.tsv rmsk/${sname}_r.tsv | awk '\$2==\$10 && \$5==\$13' | cut -f1-7,8,16 >rmsk/$sname.tsv
+rm rmsk/${sname}_p.tsv rmsk/${sname}_r.tsv
+"
+    # for locating double-strand transcription
+    # awk -v OFS="\t" -f wanding.awk -e 'max($14,-$15)>0 && min($14,-$15)/max($14,-$15)>0.5 && min($14,-$15)>100{print $_"\t"($14-$15)/($8-$9+10)}' merged.rmsk.bed | sort -k16,16nr >merged.rmsk.bed.double.up
+    jobname="rmsk_${sname}"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 2 -ppn 1
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done
+}
+
+function rnaseq_count_rmsk_unstranded {
+
+  # this count the cumulative base coverage
+  base=$(pwd)
+  [[ -d pbs ]] || mkdir pbs
+  [[ -d rmsk ]] || mkdir rmsk
+  for bam in bam/*.bam; do
+    sname=$(basename $bam .bam)
+    cmd="
+cd $base
+minmapq=10
+samtools view -q \$minmapq -b $bam | bedtools genomecov -ibam - -g ${WZSEQ_REFERENCE}.fai -bga -split | LC_COLLATE=C sort -k1,1 -k2,2n -T rmsk/ >rmsk/${sname}.bedg
+
+bedtools intersect -a $WZSEQ_RMSK -b stranded/${sname}.bedg -wao -sorted | awk -f wanding.awk -e '{print joinr(1,7)\"\\t\"\$11*\$12;}' | bedtools groupby -g 1-7 -c 8 -o sum > rmsk/${sname}.tsv
+
+rm -f rmsk/${sname}.bedg
+"
+    # The following only count reads
+    # bedtools coverage -a $WZSEQ_RMSK -b bam/${bam}.bam -sorted -split -counts > repeatmasker/$bam.rmsk
+    # awk '{a[\$5]+=\$8;b[\$6]+=\$8;c[\$7]+=\$8}END{for(i in a){print "1\t"i"\t"a[i]}; for(i in b){print "2\t"i"\t"b[i]}; for(i in c){print "3\t"i"\t"c[i]}}' repeatmasker/${bam}.rmsk | sort -k1,1 -k2,2nr > repeatmasker/${bam}.rmsk.cat
+    jobname="rmsk_${sname}"
+    pbsfn=pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 2 -ppn 1
+  done
 }
 
 function rnaseq_featureCounts {
@@ -1641,6 +1737,8 @@ function rnaseq_featureCounts {
   [[ -d pbs ]] || mkdir pbs
   [[ -d featureCounts ]] || mkdir featureCounts
   grep '\[experiment\] single-end' samples && pairEnd="" || pairEnd="-P"
+  grep '\[experiment\] unstranded' samples && stranded="-s 0" || stranded="-s 1"
+  [[ -z "$pairEnd" ]] && stranded=""
   # -p paired-end
   # -g goup by gene_id in GTF
   # -t exon, together with -g, it means count exon (as feature) and gene_id (as meta_feature)
@@ -1651,22 +1749,96 @@ function rnaseq_featureCounts {
   # -O allowMultiOverlap
   # -M allow multi-mapping
   # -F SAF or GTF, format of annotation file
+  prog=~/tools/subread/default/bin/featureCounts
   cmd="
-~/tools/subread/default/bin/featureCounts $pairEnd -T 5 -t exon -g gene_id -a $WZSEQ_GTF_ENSEMBL_UCSCNAMING -o featureCount/all.txt bam/*.bam --primary -Q 20 --ignoreDup
+cd $base
+
+function featurecnt {
+
+  bamdir=\$1  
+  [[ -d \$bamdir ]] || return;
+
+  bambase=\$(basename \$bamdir)
+
+  # count genes
+  $prog $pairEnd $stranded -T 5 -t exon -g gene_id -a $WZSEQ_GTF_ENSEMBL_UCSCNAMING -o featureCounts/\${bambase}_genes.txt \$bamdir/*.bam --primary -Q 20 --ignoreDup
+
+  # count repeat category
+  $prog $pairEnd $stranded -T 5 -t exon -g gene_id -a $WZSEQ_RMSK_GTF -f -o featureCounts/\${bambase}_rmsk_tmp \$bamdir/*.bam --primary -Q 20 --ignoreDup
+  cut -f1,6- featureCounts/\${bambase}_rmsk_tmp > featureCounts/\${bambase}_rmsk_categories
+  rm -f featureCounts/\${bambase}_rmsk_tmp
+
+  # count repeat loci, -f suppresses meta-feature counts
+  $prog $pairEnd $stranded -T 5 -t exon -g gene_id -f -a $WZSEQ_RMSK_GTF -o featureCounts/\${bambase}_rmsk_loci \$bamdir/*.bam --primary -Q 20 --ignoreDup
+}
+
+featurecnt bam
+featurecnt bam_allele
 "
-  jobname="featurecounts_$bfn"
+  jobname="featurecounts_"$(basename $base)
   pbsfn=$base/pbs/$jobname.pbs
-  pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 5
+  pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 10 -ppn 5
   [[ $1 == "do" ]] && qsub $pbsfn
 }
 
-# TODO: MISO
+###################################
+# section 3: alternative splicing
+###################################
+
+function rnaseq_dexseq {
+
+  base=$(pwd)
+  [[ -d pbs ]] || mkdir pbs
+  [[ -d DEXSeq ]] || mkdir DEXSeq
+  awk '/^\[/{p=0}/\[diffexp\]/{p=1;next} p&&!/^$/' samples |
+    while read cond1 cond2 bams1 bams2; do
+      outdir=DEXSeq/${cond1}_vs_${cond2}
+      cmd="
+cd $base
+[[ -d $outdir ]] || mkdir $outdir
+
+quant1=\"\"
+for b in $(echo $bams1 | sed 's/,/ /g'); do
+  bb=\$(basename \$b .bam)
+  python ~/.Renv/versions/3.2.3/lib64/R/library/DEXSeq/python_scripts/dexseq_count.py -f bam $WZSEQ_GTF_DEXSEQ \$b $outdir/\$bb.quant.txt
+  [[ -z \"\$quant1\" ]] || quant1=\$quant1\",\"
+  quant1=\$quant1\"$outdir/\$bb.quant.txt\"
+done
+
+quant2=\"\"
+for b in $(echo $bams2 | sed 's/,/ /g'); do
+  bb=\$(basename \$b .bam)
+  python ~/.Renv/versions/3.2.3/lib64/R/library/DEXSeq/python_scripts/dexseq_count.py -f bam $WZSEQ_GTF_DEXSEQ \$b $outdir/\$bb.quant.txt
+  [[ -z \"\$quant2\" ]] || quant2=\$quant2\",\"
+  quant2=\$quant2\"$outdir/\$bb.quant.txt\"
+done
+
+echo \$quant1
+echo \$quant2
+
+~/wzlib/Rutils/bin/bioinfo/DEXSeq.r -G $WZSEQ_GTF_DEXSEQ -a mut -b wt -A \$quant1 -B \$quant2 -o $outdir/${cond1}_vs_${cond2}.tsv
+"
+      jobname="dexseq_${cond1}_vs_${cond2}"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
+}
+
+# TODO: MATS 
+
+# TODO: MISO (pretty old)
 
 # TODO: HTseq-count
 
 # TODO: RSEM
 # ~/tools/rsem/rsem-1.2.22/rsem-prepare-reference
 # rsem-calculate-expression -p 20 --calc-ci --ci-memory 12294 --bowtie-chunkmbs 2000 --paired-end --bowtie-path $WZSEQ_BOWTIE1 --rsem-index RSEM
+
+# TODO: ALEXA-Seq http://www.alexaplatform.org/alexa_seq/
+
+# TODO: Trinity for RNA-seq
+# de novo assembly
 
 ##########################################
 # section 3: allele-specific expression
