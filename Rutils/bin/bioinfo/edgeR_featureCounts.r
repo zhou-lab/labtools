@@ -1,6 +1,6 @@
 #!/usr/bin/env r
 ## EdgeR_featureCounts.r -g mm10 -a condition1 -b condition2 -A condition1bam.rep1,condition2bam.rep2 -B condition2bam.rep1,condition2bam.rep2 -o edgeRoutput
-suppressMessages(library(docopt))
+suppressPackageStartupMessages(library(docopt))
 
 "Usage:
   edgeR.r -G GTF [-P] [-T NTHREADS] -a CONDITION1 -b CONDITION2 -A BAMS1 -B BAMS2 -o OUTPUT

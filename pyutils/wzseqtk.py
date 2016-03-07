@@ -318,7 +318,7 @@ def main_ensembl2name(args):
             m = re.match(r'.*gene_id "([^"]*)"', line)
             n = re.match(r'.*gene_name "([^"]*)"', line)
             tt = re.match(r'.*gene_biotype "([^"]*)"', line)
-            id2name[m.group(1)] = "%s\t%s" % (n.group(1), tt.group(1) if tt else '.')
+            id2name[m.group(1)] = (n.group(1), tt.group(1) if tt else '.')
             m = None
             n = None
             tt = None
@@ -326,7 +326,7 @@ def main_ensembl2name(args):
             m = re.match(r'.*transcript_id "([^"]*)"', line)
             n = re.match(r'.*gene_name "([^"]*)"', line)
             tt = re.match(r'.*transcript_biotype "([^"]*)"', line)
-            id2name[m.group(1)] = "%s\t%s" % (n.group(1), tt.group(1) if tt else '.')
+            id2name[m.group(1)] = (n.group(1), tt.group(1) if tt else '.')
             m = None
             n = None
             tt = None
@@ -335,8 +335,24 @@ def main_ensembl2name(args):
 
     for line in args.i:
         fields = line.strip('\n').split('\t')
+        if len(fields) <= args.c:
+            sys.stderr.write(line+"not recognized\n")
+            sys.exit()
+            continue
         k = fields[args.c-1]
-        args.o.write("%s\t%s\n" % (line.strip('\n'), id2name[k] if k in id2name else '.\t.'))
+
+        gg = []
+        tt = []
+        for kk in k.split('+'):
+            if kk in id2name:
+                gg.append(id2name[kk][0])
+                tt.append(id2name[kk][1])
+            else:
+                gg.append('.')
+                tt.append('.')
+        
+        args.o.write("%s\t%s\t%s\n" % (
+            line.strip('\n'), '+'.join(gg), '+'.join(tt)))
 
 if __name__ == '__main__':
     

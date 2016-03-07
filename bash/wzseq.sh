@@ -1172,9 +1172,9 @@ cat<<- EOF
 
  => (+) rnaseq_cufflinks => (+) rnaseq_cuffmerge => (+) edit samples [diffexp] ; rnaseq_cuffdiff
 
- => (+) rnaseq_edgeR => (+) rnaseq_DESeq2 => (+) rnaseq_featureCounts
+ => (+) rnaseq_featureCounts => (+) rnaseq_edgeR => (+) rnaseq_DESeq2(+) => (+) rnaseq_edgeR_rmsk
 
- => (+) rnaseq_splitstrand => (+) rnaseq_count_rmsk_stranded
+ => (+) rnaseq_splitstrand => (+) rnaseq_count_rmsk_stranded => rnaseq_count_rmsk_stranded_edgeR
  => (+) rnaseq_count_rmsk_unstranded
 
  => (+) rnaseq_dexseq
@@ -1665,10 +1665,10 @@ samtools view -q \$minmapq -f 0x50 -F 0x120 bam/${sname}.bam >> stranded/${sname
 samtools view -q \$minmapq -f 0xa0 -F 0x110 bam/${sname}.bam >> stranded/${sname}_r.sam
 samtools view -b stranded/${sname}_r.sam | samtools sort -o stranded/${sname}_r.bam -O bam -T stranded/${sname}_tmp
 
-bedtools genomecov -ibam stranded/${sname}_p.bam -g ${WZSEQ_REFERENCE}.fai -d -split | LC_COLLATE=C sort -k1,1 -k2,2n -T stranded/ >stranded/${sname}_p.bedg
+bedtools genomecov -ibam stranded/${sname}_p.bam -g ${WZSEQ_REFERENCE}.fai -bga -split | LC_COLLATE=C sort -k1,1 -k2,2n -T stranded/ >stranded/${sname}_p.bedg
 bedGraphToBigWig stranded/${sname}_p.bedg ${WZSEQ_REFERENCE}.fai stranded/${sname}_p.bw
 
-bedtools genomecov -ibam stranded/${sname}_r.bam -g ${WZSEQ_REFERENCE}.fai -d -split | LC_COLLATE=C sort -k1,1 -k2,2n -T stranded/ | awk -F\"\\t\" -v OFS=\"\t\" '{print \$1,\$2,\$3,-\$4}' >stranded/${sname}_r.bedg
+bedtools genomecov -ibam stranded/${sname}_r.bam -g ${WZSEQ_REFERENCE}.fai -bga -split | LC_COLLATE=C sort -k1,1 -k2,2n -T stranded/ | awk -F\"\\t\" -v OFS=\"\t\" '{print \$1,\$2,\$3,-\$4}' >stranded/${sname}_r.bedg
 bedGraphToBigWig stranded/${sname}_r.bedg ${WZSEQ_REFERENCE}.fai stranded/${sname}_r.bw
 rm -f stranded/${sname}_p.sam stranded/${sname}_r.sam
 rm -f stranded/${sname}_p.bam stranded/${sname}_r.bam
@@ -1704,6 +1704,59 @@ rm rmsk/${sname}_p.tsv rmsk/${sname}_r.tsv
     pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 2 -ppn 1
     [[ $1 == "do" ]] && qsub $pbsfn
   done
+}
+
+function rnaseq_count_rmsk_stranded_edgeR {
+
+  base=$(pwd)
+  [[ -d pbs ]] || mkdir pbs
+  [[ -d rmsk ]] || mkdir rmsk
+  [[ -d rmsk/diff ]] || mkdir rmsk/diff
+  awk '/^\[/{p=0}/\[diffexp\]/{p=1;next} p&&!/^$/' samples |
+    while read cond1 cond2 bams1 bams2; do
+      # skip non-replicated designs
+      # Remark: I haven't figured out how to make DEX-seq
+      # work without replica
+      [[ -n $(grep -o "," <<< "$bams1") ]] || continue
+      [[ -n $(grep -o "," <<< "$bams2") ]] || continue
+
+      # make sure the tsv all exists
+      allexist=1
+      tsv1=""
+      for i in ${bams1//,/ }; do
+        _tsv=rmsk/$(basename $i .bam).tsv 
+        if [[ ! -e $_tsv ]]; then
+          allexist=0;
+          break;
+        fi
+        [[ -n $tsv1 ]] && tsv1=$tsv1","
+        tsv1=$tsv1""$_tsv;
+      done
+
+      tsv2=""
+      for i in ${bams2//,/ }; do
+        _tsv=rmsk/$(basename $i .bam).tsv
+	      if [[ ! -e $_tsv ]]; then
+          allexist=0;
+          break;
+        fi
+        [[ -n $tsv2 ]] && tsv2=$tsv2","
+        tsv2=$tsv2""$_tsv;
+      done
+
+      [[ $allexist == 0 ]] && continue;
+
+      # compare rmsk
+      cmd="
+cd $base
+~/wzlib/Rutils/bin/bioinfo/edgeR_rmsk.r -a $cond1 -b $cond2 -A $tsv1 -B $tsv2 -o rmsk/diff/${cond1}_vs_${cond2}.diff.tsv
+"
+      jobname="rmsk_diff_${cond1}_vs_${cond2}"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
+      [[ $1 == "do" ]] && qsub $pbsfn
+
+    done
 }
 
 function rnaseq_count_rmsk_unstranded {
@@ -1750,35 +1803,42 @@ function rnaseq_featureCounts {
   # -M allow multi-mapping
   # -F SAF or GTF, format of annotation file
   prog=~/tools/subread/default/bin/featureCounts
+  allbams="bam/*.bam"
+  [[ -d bam_allele ]] && allbams=$allbams" bam_allele/*.bam"
   cmd="
 cd $base
 
-function featurecnt {
+# count genes
+$prog $pairEnd $stranded -T 5 -t exon -g gene_id -a $WZSEQ_GTF_ENSEMBL_UCSCNAMING -o featureCounts/genes.tsv $allbams --primary -Q 20 --ignoreDup
 
-  bamdir=\$1  
-  [[ -d \$bamdir ]] || return;
+# count repeat category
+$prog $pairEnd $stranded -T 5 -t exon -g gene_id -a $WZSEQ_RMSK_GTF -f -o featureCounts/rmsk_tmp $allbams --primary -Q 20 --ignoreDup
+cut -f1,6- featureCounts/rmsk_tmp > featureCounts/rmsk_categories.tsv
+rm -f featureCounts/rmsk_tmp
 
-  bambase=\$(basename \$bamdir)
-
-  # count genes
-  $prog $pairEnd $stranded -T 5 -t exon -g gene_id -a $WZSEQ_GTF_ENSEMBL_UCSCNAMING -o featureCounts/\${bambase}_genes.txt \$bamdir/*.bam --primary -Q 20 --ignoreDup
-
-  # count repeat category
-  $prog $pairEnd $stranded -T 5 -t exon -g gene_id -a $WZSEQ_RMSK_GTF -f -o featureCounts/\${bambase}_rmsk_tmp \$bamdir/*.bam --primary -Q 20 --ignoreDup
-  cut -f1,6- featureCounts/\${bambase}_rmsk_tmp > featureCounts/\${bambase}_rmsk_categories
-  rm -f featureCounts/\${bambase}_rmsk_tmp
-
-  # count repeat loci, -f suppresses meta-feature counts
-  $prog $pairEnd $stranded -T 5 -t exon -g gene_id -f -a $WZSEQ_RMSK_GTF -o featureCounts/\${bambase}_rmsk_loci \$bamdir/*.bam --primary -Q 20 --ignoreDup
-}
-
-featurecnt bam
-featurecnt bam_allele
+# count repeat loci, -f suppresses meta-feature counts
+$prog $pairEnd $stranded -T 5 -t exon -g gene_id -f -a $WZSEQ_RMSK_GTF -o featureCounts/rmsk_loci.tsv $allbams --primary -Q 20 --ignoreDup
 "
   jobname="featurecounts_"$(basename $base)
   pbsfn=$base/pbs/$jobname.pbs
   pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 10 -ppn 5
   [[ $1 == "do" ]] && qsub $pbsfn
+}
+
+function rnaseq_edgeR_rmsk {
+
+  base=$(pwd)
+  [[ -d pbs ]] || mkdir pbs
+  [[ -d featureCounts ]] || mkdir featureCounts
+  awk '/^\[/{p=0}/\[diffexp\]/{p=1;next} p&&!/^$/' samples |
+    while read cond1 cond2 bams1 bams2; do
+      [[ -n $(grep -o "," <<< "$bams1") ]] || continue
+      [[ -n $(grep -o "," <<< "$bams2") ]] || continue
+
+      allexits
+
+    done
+  
 }
 
 ###################################
@@ -1792,6 +1852,11 @@ function rnaseq_dexseq {
   [[ -d DEXSeq ]] || mkdir DEXSeq
   awk '/^\[/{p=0}/\[diffexp\]/{p=1;next} p&&!/^$/' samples |
     while read cond1 cond2 bams1 bams2; do
+      # skip non-replicated designs
+      # Remark: I haven't figured out how to make DEX-seq
+      # work without replica
+      [[ -n $(grep -o "," <<< "$bams1") ]] || continue
+      [[ -n $(grep -o "," <<< "$bams2") ]] || continue
       outdir=DEXSeq/${cond1}_vs_${cond2}
       cmd="
 cd $base
@@ -1813,14 +1878,16 @@ for b in $(echo $bams2 | sed 's/,/ /g'); do
   quant2=\$quant2\"$outdir/\$bb.quant.txt\"
 done
 
-echo \$quant1
-echo \$quant2
+echo \"input quants:\" \$quant1
+echo \"input quants:\" \$quant2
 
 ~/wzlib/Rutils/bin/bioinfo/DEXSeq.r -G $WZSEQ_GTF_DEXSEQ -a mut -b wt -A \$quant1 -B \$quant2 -o $outdir/${cond1}_vs_${cond2}.tsv
+
+~/wzlib/pyutils/wzseqtk.py ensembl2name --gene -g $WZSEQ_GTF_ENSEMBL_UCSCNAMING -c 2 -i $outdir/${cond1}_vs_${cond2}.tsv -o $outdir/${cond1}_vs_${cond2}.anno.tsv
 "
       jobname="dexseq_${cond1}_vs_${cond2}"
       pbsfn=$base/pbs/$jobname.pbs
-      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 10 -ppn 1
       [[ $1 == "do" ]] && qsub $pbsfn
     done
 }

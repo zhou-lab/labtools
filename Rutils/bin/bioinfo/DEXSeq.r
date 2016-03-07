@@ -45,7 +45,21 @@ dxd <- testForDEU(dxd)
 dxd <- estimateExonFoldChanges(dxd, fitExpToVar="condition")
 
 cat(format(Sys.time()), "Outputing...\n")
-dxr1 <- DEXSeqResults(dxd)
-write.table(dxr1, opt$o, sep="\t", quote=F, col.names=NA)
+dxr <- DEXSeqResults(dxd)
+
+dxr.sorted <- dxr[order(dxr$padj),]
+write.table(dxr.sorted[,names(dxr.sorted)!="transcripts"], opt$o, sep="\t", quote=F, col.names=NA)
+
+plot.dir <- file.path(dirname(opt$o), "plots")
+dir.create(plot.dir, showWarnings = FALSE)
+gnames <- unique(dxr[dxr$padj<0.01 & !is.na(dxr$padj), ]$groupID)
+for (i in seq_along(gnames)) {
+    if (i>=100) break
+    gname <- gnames[i];
+    cat(format(Sys.time()), "Plotting", gname, "...\n");
+    pdf(paste0(plot.dir,"/DEU_",gsub("\\+","_",gname),".pdf"))
+    plotDEXSeq(dxr, gname, legend=T, cex.axis=1.2, cex=1.3, lwd=2)
+    dev.off()
+}
 
 cat(format(Sys.time()), "Done.\n")
