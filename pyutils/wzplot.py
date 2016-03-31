@@ -12,6 +12,8 @@ import numpy as np
 import operator
 import re
 
+mpl.rcParams['font.family'] = 'Arial Narrow'
+
 class Indices:
 
     def __init__(self):

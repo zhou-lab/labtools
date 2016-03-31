@@ -62,6 +62,79 @@ def round_to_10(n):
             n/=10
     return n
 
+class CircosTrack(object):
+
+    def __init__(self, df, layout):
+        self.df = df
+        self.layout = layout
+        self.track_height = None
+        self.track_bottom = None
+        
+    def plot(self):
+        pass
+
+def polar2cart(theta, r):
+    return (r*np.cos(theta/180.*np.pi), r*np.sin(theta/180.*np.pi));
+
+class CircosTrackBar(CircosTrack):
+
+    def __init__(self, df, layout, **plot_kwargs):
+
+        # summarize value distribution
+        CircosTrack.__init__(self, df, layout)
+        self.vals = [v for k,(c,beg,end,v) in df.iterrows()]
+        self.minval = np.min(self.vals)
+        self.maxval = np.max(self.vals)
+        self.valrange = float(self.maxval - self.minval)
+        self.direction = 'inner'
+        self.plot_kwargs = plot_kwargs
+        
+    def plot(self):
+
+        kwargs1 = {}
+        kwargs2 = {}
+        if 'fc' in self.plot_kwargs:
+            kwargs1['fc'] = self.plot_kwargs['fc']
+
+        if 'alpha' in self.plot_kwargs:
+            kwargs1['alpha'] = self.plot_kwargs['alpha']
+            
+        if 'label_fontsize' in self.plot_kwargs:
+            kwargs2['fontsize'] = self.plot_kwargs['label_fontsize']
+        else:
+            kwargs2['fontsize'] = 9
+
+        if 'label' in self.plot_kwargs:
+            label = self.plot_kwargs['label']
+        else:
+            label = self.df.columns[3]
+
+        ly = self.layout
+        
+        angle1s = []
+        anglewids = []
+        heights = []
+        for k, (chrm, beg, end, value) in self.df.iterrows():
+            if chrm not in ly.chrm2angles:
+                continue
+            angle1 = ly.loc2angle(chrm, beg)
+            anglewid = ly.loc2angle(chrm, end) - angle1
+            angle1s.append(angle1)
+            anglewids.append(anglewid)
+            heights.append(self.track_height*(value-self.minval)/self.valrange)
+
+        # ha='center', va='center', rotation=normalize_text_angle(text_angle/(np.pi*2)*360,tangent=True), 
+        ly.ax.bar(angle1s, heights, anglewids, bottom=self.track_bottom, ec='none', **kwargs1)
+        ly.ax.text(ly.angle_beg, self.track_bottom, label, fontname=ly.fontname, **kwargs2)
+
+        if 'labelside_circle' in self.plot_kwargs:
+            fc = self.plot_kwargs['fc'] if 'fc' in self.plot_kwargs else 'r'
+            circ_angle = self.plot_kwargs['labelside_circ_angle'] if 'labelside_circ_angle' in self.plot_kwargs else ly.angle_beg
+            ly.ax.add_artist(mpatches.Circle(
+                polar2cart(circ_angle, self.track_bottom),
+                self.plot_kwargs['labelside_circle'],
+                edgecolor=fc, color=fc, alpha=0.4, lw=0.1, transform=ly.ax.transData._b))
+
 # usage:
 # cl = CircosLayout("/Users/wandingzhou/reference/hg19/hg19.fa")
 # cl = CircosLayout(faidx.RefGenome("/Users/wandingzhou/reference/hg19/hg19.fa"))
@@ -119,6 +192,8 @@ class CircosLayout:
         self.inner_track_inner_radius = self.inner_track_outer_radius - self.track_height
         self.outer_track_inner_radius = self.outer_radius + self.track_space
         self.outer_track_outer_radius = self.outer_track_inner_radius + self.track_height
+
+        self.tracks = []
 
         return
 
@@ -375,43 +450,52 @@ class CircosLayout:
                          self.loc2angle(_target_chrm, _target_beg),
                          self.loc2angle(_target_chrm, _target_end),)
 
-    def plot_tracks(self, track, track_inner_radius=None, track_outer_radius=None,
-                    direction='inner', fc='b', alpha=0.8,
-                    label_fontsize=9, label=None):
+    def add_bar_track(self, df, direction='inner', track_height=None, **plot_kwargs):
 
-        """ track is [(chrm, beg, end, value)] """
+        """ track is [(chrm, beg, end, value)]
+        norm_fac is the normalization factor for the height, sometimes we want
+        different track to have different height
 
-        vals = [v for k,(c,beg,end,v) in track.iterrows()]
-        minval = np.min(vals)
-        maxval = np.max(vals)
-        valrange = float(maxval - minval)
+        @ params: fc, alpha, label_fontsize (9), label
+        """
 
-        angle1s = []
-        anglewids = []
-        heights = []
-        for k, (chrm, beg, end, value) in track.iterrows():
-            if chrm not in self.chrm2angles:
-                continue
-            angle1 = self.loc2angle(chrm, beg)
-            anglewid = self.loc2angle(chrm, end) - angle1
-            angle1s.append(angle1)
-            anglewids.append(anglewid)
-            heights.append(self.track_height*(value-minval)/valrange)
-            
-            # if direction == 'outer':
-            #     ax.plot([angle, angle],[track_inner_radius+(value-minval)/valrange*track_height])
-            # else:
-            #     ax.plot([angle, angle],[track_inner_radius+(1.0-(value-minval)/valrange)*track_height])
+        t = CircosTrackBar(df, self, **plot_kwargs)
+        self.tracks.append(t)
+        t.direction = direction
 
-        self.ax.bar(angle1s, heights, anglewids, bottom=self.inner_track_inner_radius, ec='none', fc=fc, alpha=alpha)
-        self.ax.text(self.angle_beg, self.inner_track_inner_radius, label if label else track.columns[3], fontname=self.fontname, fontsize=label_fontsize)
-        # ha='center', va='center', rotation=normalize_text_angle(text_angle/(np.pi*2)*360,tangent=True), 
-
-        if direction == 'inner':
-            self.inner_track_outer_radius -= self.track_height + self.track_space
-            self.inner_track_inner_radius -= self.track_height + self.track_space
-        if direction == 'outer':
-            self.outer_track_inner_radius += self.track_height + self.track_space
-            self.outer_track_outer_radius += self.track_height + self.track_space
+        # set track_height
+        if track_height is None:
+            t.track_height = self.track_height
+        else:
+            t.track_height = track_height
 
         return
+
+    def plot(self, track_height_proportion=False):
+
+        """ plot everything """
+
+        # renormalize height of all the inner tracks
+        inner_tracks = [t for t in self.tracks if t.direction == 'inner']
+        total_track_heights = 0
+        for t in inner_tracks:
+            if track_height_proportion:
+                t.track_height = t.df.iloc[:,3].max()
+            total_track_heights += t.track_height
+        inner_track_height_range = self.inner_radius*0.8
+        _inner_track_inner_radius = self.inner_radius
+        for t in inner_tracks:
+            t.track_height = inner_track_height_range/float(total_track_heights)*t.track_height
+            _inner_track_inner_radius -= t.track_height
+            t.track_bottom = _inner_track_inner_radius
+
+        # set height and bottom of outer tracks
+        outer_tracks = [t for t in self.tracks if t.direction == 'outer']
+        _outer_track_inner_radius = self.outer_radius
+        for t in outer_tracks:
+            t.track_height = self.track_height
+            _outer_track_inner_radius += self.track_height
+            t.track_bottom = _outer_track_inner_radius
+
+        for t in self.tracks:
+            t.plot()

@@ -26,7 +26,7 @@ high level plotting:
 * WZCbarCollection
 """
 
-def plot_heatmap_discrete(data, dim=None, fig=None, xlabels=None, ylabels=None, label_fontsize=8, level2color=None):
+def plot_heatmap_discrete(data, dim=None, fig=None, xlabels=None, ylabels=None, label_fontsize=8, level2color=None, alpha=1.0):
 
     """ plot heatmap for data frame with categorical value """
 
@@ -58,7 +58,7 @@ def plot_heatmap_discrete(data, dim=None, fig=None, xlabels=None, ylabels=None, 
 
     ax = fig.add_axes(dim, frameon=False)
     # ax.pcolor(data, cmap=cmap)
-    ax.imshow(dataplot, aspect='auto', origin='lower', cmap=cmap, interpolation='none')
+    ax.imshow(dataplot, aspect='auto', origin='lower', cmap=cmap, interpolation='none', alpha=alpha)
 
     if ylabels is None:
         ax.set_yticks([])
@@ -71,7 +71,7 @@ def plot_heatmap_discrete(data, dim=None, fig=None, xlabels=None, ylabels=None, 
     return ax, level2color
 
 def plot_heatmap(data, dim=None, fig=None, xlabels=None, ylabels=None, label_fontsize=8,
-                 axhlines=None, cmap=None, interpolation=None, dmin=None, dmax=None):
+                 axhlines=None, cmap=None, interpolation=None, dmin=None, dmax=None, alpha=1.0):
 
     """ plot heatmap for data frame with continuous value """
 
@@ -96,7 +96,7 @@ def plot_heatmap(data, dim=None, fig=None, xlabels=None, ylabels=None, label_fon
     ax = fig.add_axes(dim, frameon=False)
     # ax.pcolor(data, cmap=cmap)
     norm = mcolors.Normalize(vmin=dmin, vmax=dmax)
-    ax.imshow(data, aspect='auto', origin='lower', cmap=cmap, norm=norm, interpolation=interpolation)
+    ax.imshow(data, aspect='auto', origin='lower', cmap=cmap, norm=norm, interpolation=interpolation, alpha=alpha)
 
     # ax.imshow(data, extent=[0,data.shape[0],0,data.shape[1]], aspect='equal', cmap=cmap, interpolation=interpolation)
     
@@ -262,6 +262,8 @@ class WZHmap():
                  xticklabel_side = 'bottom',
                  xticklabel_rotat = 90,
                  xticklabel_pad=0.1,
+                 xticklabel_aln='center',
+                 xticklabel_shift=0,
 
                  ytickposes = None,
                  yticklabels = None,
@@ -273,6 +275,8 @@ class WZHmap():
                  # data min max
                  dmin = None,
                  dmax = None,
+
+                 alpha = 1,
                  
                  # title
                  label = None,
@@ -307,14 +311,14 @@ class WZHmap():
 
         # heat map
         if self.continuous:
-            self.ax, self.colormap, self.norm = plot_heatmap(self.data, dim, fig, dmin=self.dmin, dmax=self.dmax, interpolation=self.interpolation, cmap=self.cmap)
+            self.ax, self.colormap, self.norm = plot_heatmap(self.data, dim, fig, dmin=self.dmin, dmax=self.dmax, interpolation=self.interpolation, cmap=self.cmap, alpha=self.alpha)
         else:
             if self.label2color is not None:
                 levels = sorted(list(set(self.data.values.flatten())))
                 for level in levels:
                     if level not in self.label2color:
                         self.label2color[level] = '#E6E6E6'
-            self.ax, self.label2color = plot_heatmap_discrete(self.data, dim, fig, level2color=self.label2color)
+            self.ax, self.label2color = plot_heatmap_discrete(self.data, dim, fig, level2color=self.label2color, alpha=self.alpha)
 
         height = self.data.shape[0]
         # xtick labels
@@ -325,9 +329,9 @@ class WZHmap():
                 if i%self.xticklabel_space != 0:
                     continue
                 if self.xticklabel_side in ['bottom', 'b']:
-                    self.ax.text(i, -self.xticklabel_pad, self.xticklabels[i], rotation=self.xticklabel_rotat, horizontalalignment='center', verticalalignment='top', fontsize=self.xticklabel_fontsize)
+                    self.ax.text(i+self.xticklabel_shift, -self.xticklabel_pad, self.xticklabels[i], rotation=self.xticklabel_rotat, horizontalalignment=self.xticklabel_aln, verticalalignment='top', fontsize=self.xticklabel_fontsize)
                 elif self.xticklabel_side in ['top', 't']:
-                    self.ax.text(i, height+self.xticklabel_pad, self.xticklabels[i], rotation=self.xticklabel_rotat, horizontalalignment='center', verticalalignment='bottom', fontsize=self.xticklabel_fontsize)
+                    self.ax.text(i+self.xticklabel_shift, height+self.xticklabel_pad, self.xticklabels[i], rotation=self.xticklabel_rotat, horizontalalignment=self.xticklabel_aln, verticalalignment='bottom', fontsize=self.xticklabel_fontsize)
 
         if self.yticklabels is not None:
             if self.ytickposes is None:
@@ -1568,8 +1572,31 @@ def normal_tumor_with_contrast_layout(cd_tumor, cd_normal=None, cd_tumor_contras
     print "Done."
 
 
-def savefig(fn):
-    plt.savefig(fn, bbox_inches='tight', dpi=150)
+def savefig(fn, dpi=200):
+    plt.savefig(fn, bbox_inches='tight', dpi=dpi)
+
+def density(df, bw=0.1, gridsize=100, legend=None, support=None, **kw):
+
+    from scipy.stats import gaussian_kde
+    # kw = {}
+    # if color is not None:
+    #     kw['color'] = color
+
+    if isinstance(df, pd.Series):
+        df = [df]
+        diter = enumerate(df)
+    else:
+        diter = df.iteritems()
+        
+    for i, dat in diter:
+        kde = gaussian_kde(dat.dropna(), bw)
+        smin = np.min(dat) if support is None else support[0]
+        smax = np.max(dat) if support is None else support[1]
+        s = np.linspace(smin, smax, gridsize)
+        line, = plt.plot(s, kde.evaluate(s),'-', **kw)
+
+    if legend:
+        plt.legend(df.columns.format())
 
 def violin(data, colors=None, labels=None, bw=0.4, cut=2, gridsize=1000, poses=None, dwidth=0.5, dmin=None, dmax=None):
     # data must be [pd.Series/[],]
@@ -1586,7 +1613,12 @@ def violin(data, colors=None, labels=None, bw=0.4, cut=2, gridsize=1000, poses=N
     supports = []
     densities = []
     max_dens = 0
+    if isinstance(data, pd.DataFrame):
+        labels, data = zip(*data.iteritems())
+        
     for i, datum in enumerate(data):
+        if isinstance(datum, pd.Series):
+            datum = datum.dropna()
         kde = gaussian_kde(datum, bw)
         bw2 = bw*np.std(datum, ddof=1)
         support_min = (np.min(datum) - bw2 * cut) if dmin is None else dmin
@@ -1676,3 +1708,35 @@ def boxplot(data, figsize=(8,5), labels=None, figfn=None, alpha=0.7, outlier=Tru
 
     if figfn:
         plt.savefig(figfn, bbox_inches='tight', dpi=200)
+
+def barplot(df, new=True, figsize=(6,3), figfn=None, linewidth=0.5, xticklabel_rotat=0, xticklabel_pos='b', alpha=0.8, **kwargs):
+
+    if new:
+        plt.figure(figsize=figsize)
+        
+    lefts = range(len(df))
+    plt.bar(lefts,df, width=0.9, linewidth=linewidth, **kwargs)
+    plt.gca().xaxis.set_ticks_position('top')
+    plt.xticks([_+0.45 for _ in lefts], df.index.format(), rotation=xticklabel_rotat)
+    plt.xlim(-0.2,len(lefts))
+
+
+    if figfn is not None:
+        plt.savefig(figfn, dpi=300, bbox_inches='tight')
+
+    
+def text(s,pos='topleft',x=None,y=None,ax=None):
+
+    """ label text based on figure coordinates """
+    kw = {}
+    if pos=='topleft':
+        if x is None:
+            x = 0
+        if y is None:
+            y = 1.01
+            
+        if ax is None:
+            ax=plt.gca()
+            
+        plt.text(x,y,s,transform=ax.transAxes, **kw)
+

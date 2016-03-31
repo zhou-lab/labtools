@@ -3,6 +3,9 @@ import numpy as np
 import wzcore
 # def cluster_sample_by_variable_probes(betas):
 
+def where(s):
+    return [k for k,v in s.iteritems() if v]
+
 def makedict(df, k, v):
 
     d = df[v].copy()
@@ -42,12 +45,27 @@ def remove_snps(df):
 
     return df
 
+def get_cph(df):
+
+    df = df.loc[df.index.str(startswith('ch'))]
+
+    wzcore.err_print('Get %d CpH probes.' % df.shape[0])
+    return df
+
 def clean_450k(df, nahow='strong', probe_fn='/Users/wandingzhou/projects/hs-tcga/data/2015_03_05_TCGA_450/450k_probes', verbose=True):
 
     probe_loc = pd.read_table(probe_fn,index_col=3,header=None, names=['chrm','beg','end','gene'])
 
+    if verbose:
+        if len(df.shape) == 1:
+            wzcore.err_print("Before: %d probes" % df.shape[0])
+        else:
+            wzcore.err_print("Before: %d probes and %d samples" % df.shape)
+    
     # remove X,Y chromosome
     df = df[(~probe_loc.chrm.isin(['chrX','chrY']))[df.index]]
+    df = df.loc[df.index.str.startswith('cg')]
+
     # remove NA
     if nahow == 'strong':
         df = df.dropna(how='any')
@@ -58,9 +76,9 @@ def clean_450k(df, nahow='strong', probe_fn='/Users/wandingzhou/projects/hs-tcga
 
     if verbose:
         if len(df.shape) == 1:
-            wzcore.err_print("Kept %d probes after remov" % df.shape[0])
+            wzcore.err_print("After: %d probes after removal" % df.shape[0])
         else:
-            wzcore.err_print("Kept %d probes and %d samples" % df.shape)
+            wzcore.err_print("After: %d probes and %d samples" % df.shape)
         
     return df
 
@@ -123,6 +141,14 @@ def uniformly_unmethylated(df, thres=0.2):
     print 'Selected %d uniformly unmethylated probes (<%1.3f) from %d samples' % (dfu.shape[0], thres, dfu.shape[1])
     return dfu
 
+def mostly_methylated(df, min_beta=0.7, min_frac=0.8):
+
+    return where(df.apply(lambda x: (x>min_beta).sum() > len(x)*min_frac, axis=1))
+
+def mostly_unmethylated(df, max_beta=0.3, min_frac=0.8):
+
+    return where(df.apply(lambda x: (x<max_beta).sum() > len(x)*min_frac, axis=1))
+
 """ filter uniformly methylated and uniformly unmethylated probes """
 def nonuniform(df, maxbeta=0.7, minbeta=0.3, maxsupp=0.95):
 
@@ -140,7 +166,7 @@ def split_tumor_normal(df):
     dft = df.loc[:,df.columns.map(lambda x:x[13]=='0')]
     dfn = df.loc[:,df.columns.map(lambda x:x[13]=='1')]
     dfc = df.loc[:,df.columns.map(lambda x:x[13]=='2')]
-    
+
     wzcore.err_print('Found %d tumor, %d normal, %d cell line and %d others.' % (dft.shape[1], dfn.shape[1], dfc.shape[1], df.shape[1]-dft.shape[1]-dfn.shape[1]-dfc.shape[1]))
     return dft, dfn, dfc
 
@@ -157,7 +183,6 @@ def get_cellline(df):
     
     dft, dfn, dfc = split_tumor_normal(df)
     return dfc
-
 
 # class BloodTest:
 
@@ -582,6 +607,14 @@ class ExpData():
 
 def data_load_tissue(source):
 
+    if source == 'ESC':
+        # this has H1, H9, H9ESC, HUES6 and ICM
+        betas = pd.read_pickle('/Users/wandingzhou/projects/hs-tcga/2016_03_29_TGCT/data/ESC_and_ICM.pkl')
+
+    if source == 'PGC':
+        # this has PGC and AGC
+        betas = pd.read_pickle('/Users/wandingzhou/projects/hs-tcga/2016_03_29_TGCT/data/PGC.pkl')
+
     if source == 'Laird':
         betas = pd.read_table('/Users/wandingzhou/projects/hs-tcga/data/2015_06_03_AML_normal_sorted/GSE49618_betas.tsv')
         samples = pd.read_table('/Users/wandingzhou/projects/hs-tcga/data/2015_06_03_AML_normal_sorted/samples', index_col='barcode')
@@ -704,6 +737,13 @@ def data_load_samples(samples, probes=None):
     wzcore.err_print('Loaded %d probes and %d samples' % betas.shape)
 
     return betas, cancer_types
+
+def data_load_all450k(probes=None):
+
+    import os
+    data_home = '/Users/wandingzhou/projects/hs-tcga/data/2015_03_05_TCGA_450/dat/'
+    cancer_types = [pkl.strip('.pkl') for pkl in os.listdir(data_home)]
+    return data_load_samples(cancer_types, probes)
 
 def data_load_rnaseq_all(genes=None):
 

@@ -7,7 +7,7 @@ alias ls='ls -G'
 alias rm='rm -i'
 alias lc="wc -l"
 alias ll="ls -l"
-alias rf="readlink -f"
+alias rf="greadlink -f"
 alias parallel="parallel --gnu --progress"
 alias sort="LC_ALL=C /Users/wandingzhou/tools/coreutils/coreutils-8.23/src/sort"
 alias hs="history | sed 's/^ *[0-9]* *//' | tail -r | less -S"
@@ -140,7 +140,7 @@ function mkdircd {
 
 ### git ###
 
-alias gs="git status"
+alias gst="git status"
 alias gu="git pull"
 alias gp="git pull"
 alias gh="git push"
@@ -169,3 +169,6 @@ sort -k1,1 -k2,2n $1
 ## circos
 export PATH=~/tools/circos/circos-0.67-7/bin/:$PATH
 alias wzseq='. /Users/wandingzhou/wzlib/bash/wzseq.sh'
+alias wzutils='. /Users/wandingzhou/wzlib/bash/wzutils.sh'
+
+alias wzmouse='. ~/wzprojects/meth/2016_03_22_mouse_array_figures.sh'
