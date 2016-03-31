@@ -95,7 +95,3 @@ write.table(cbind(res, as.data.frame(fpkm(dds)), data.frame(symbol=symbol)), opt
 
 cat(format(Sys.time()), "Done.")
 sink()
-
-
-
-

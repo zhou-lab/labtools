@@ -271,3 +271,4 @@ sortbed ()
 export sortbed
 
 export TMPDIR=/secondary/projects/shen/tmp
+export TEMP=/secondary/projects/shen/tmp
