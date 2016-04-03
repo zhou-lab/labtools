@@ -94,10 +94,24 @@ function joinr(start, end,    sep, result, i) {
         sep = "\t"
     result = ""
     for (i=start; i<=end; ++i) {
-	if (i != start) {
-	    result = result sep;
-	}
-	result = result $i;
+        if (i != start) {
+            result = result sep;
+        }
+        result = result $i;
+    }
+    return result
+}
+
+function sumr(start, end,    sep, result, i) {
+
+    if (sep == "")
+        sep = "\t"
+    result = 0
+    for (i=start; i<=end; ++i) {
+        if (i != start) {
+            result = result sep;
+        }
+        result = result+$i;
     }
     return result
 }
