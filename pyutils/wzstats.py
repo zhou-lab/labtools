@@ -49,12 +49,12 @@ def main_Utest(args):
         args.table.readline()
 
     if args.p:
-        prn_indices = [int(_)-1 for _ in args.p.split(',')]
+        indices = parse_indices(args.p)
 
     for i, line in enumerate(args.table):
-        pair = line.strip().split(args.delim)
-        c1 = map(float,pair[args.c1-1].split(args.eldelim))
-        c2 = map(float,pair[args.c2-1].split(args.eldelim))
+        fields = line.strip().split(args.delim)
+        c1 = map(float,fields[args.c1-1].split(args.eldelim))
+        c2 = map(float,fields[args.c2-1].split(args.eldelim))
 
         z, p = stats.ranksums(c1, c2)
         if args.onetail:
@@ -65,10 +65,16 @@ def main_Utest(args):
 
         op = []
         if args.p:
-            op += [pair[_] for _ in prn_indices]
-            
+            op += indices.extract(fields)
+        else:
+            op += fields
+
         op.append("%.3g" % p)
 
+        if args.outfc:
+            op.append("%.3f" % np.log2((np.mean(c2)+args.fcpad)/(np.mean(c1)+args.fcpad)))
+        
+        # output U-statistics
         if args.outz:
             op.append("%.3f" % z)
 
@@ -257,6 +263,8 @@ if __name__ == '__main__':
     psr_Utest.add_argument('--eldelim', default=",", help="delimiter between elements, only effective under row mode [,]")
     psr_Utest.add_argument('--onetail', action="store_true", help="perform one-tailed analysis, c1<c2.")
     psr_Utest.add_argument('--outz', action="store_true", help="output z-score.")
+    psr_Utest.add_argument('--outfc', action="store_true", help="output fold change")
+    psr_Utest.add_argument('--fcpad', type=float, default=0.0000001, help="padding used in computing fold change")
     add_std_options(psr_Utest)
     psr_Utest.set_defaults(func=main_Utest)
 

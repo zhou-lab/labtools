@@ -970,13 +970,34 @@ function wgbs_repeat_diff {
       cmd="
 cd $base
 mkdir -p rmsk/$sname
-biscuit vcf2bed -t cg -k 5 $f > rmsk/$sname/$bfn.cg.bedg
-bedtools map -a $WZSEQ_RMSK -b rmsk/$bfn.cg.bedg -c 4 -o count,mean,collapse >rmsk/$sname1.cg.bedg.rmsk
-biscuit vcf2bed -t cg -k 5 $f > rmsk/$sname/$bfn.cg.bedg
-bedtools map -a $WZSEQ_RMSK -b rmsk/$bfn.cg.bedg -c 4 -o count,mean,collapse >rmsk/$sname2.cg.bedg.rmsk
-paste rmsk/$sname1.cg.bedg.rmsk 
+biscuit vcf2bed -t cg -k 5 $vcf1 > rmsk/$sname/$sname1.cg.bedg
+bedtools map -a $WZSEQ_RMSK -b rmsk/$sname/$sname1.cg.bedg -c 4 -o count,mean,collapse >rmsk/$sname/$sname1.cg.bedg.rmsk
+biscuit vcf2bed -t cg -k 5 $vcf2 > rmsk/$sname/$sname2.cg.bedg
+bedtools map -a $WZSEQ_RMSK -b rmsk/$sname/$sname2.cg.bedg -c 4 -o count,mean,collapse >rmsk/$sname/$sname2.cg.bedg.rmsk
+paste rmsk/$sname/$sname1.cg.bedg.rmsk rmsk/$sname/$sname2.cg.bedg.rmsk >rmsk/$sname/merged.rmsk
+awk -f wanding.awk -e '\$9!=\".\"&&\$19!=\".\"{print joinr(1,9)\"\\t\"\$10\"\\t\"\$19\"\\t\"\$20}' rmsk/$sname/merged.rmsk | wzstats Utest -c1 10 -c2 12 - -p 1-9,11 --outfc >rmsk/$sname/$sname.tsv
+
+# awk '\$11<0.01&&\$12>1' rmsk/$sname/$sname.tsv | sort -k12,12nr > rmsk/$sname/$sname.top_hyper.tsv
+# awk '\$11<0.01&&\$12<-1' rmsk/$sname/$sname.tsv | sort -k12,12n > rmsk/$sname/$sname.top_hypo.tsv
+
+rm -f rmsk/$sname/$sname1.cg.bedg
+rm -f rmsk/$sname/$sname1.cg.bedg.rmsk
+rm -f rmsk/$sname/$sname2.cg.bedg
+rm -f rmsk/$sname/$sname2.cg.bedg.rmsk
+rm -f rmsk/$sname/merged.rmsk
 "
-      jobname="rmsk_diffmeth"
+
+      # output format
+      # 1-7 basic repeat info
+      # 8: mean beta of sample 1
+      # 9: mean beta of sample 2
+      # 10: p-value
+      # 11: log2(fold change)
+      # chr1 3000000 3002128 - L1_Mus3 LINE L1  5   0.9028  0.8968  0.917  -0.010
+      # chr1 3003152 3003994 - L1Md_F  LINE L1  8   0.90775 0.94025 0.345   0.051
+      # chr1 3004270 3005001 + L1_Rod  LINE L1  1   0.895   0.859   0.317   -0.059
+      # chr1 3005570 3006764 + Lx9     LINE L1  3   0.95    0.957   0.663   0.011
+      jobname="rmsk_diffmeth_$sname"
       pbsfn=$base/pbs/$jobname.pbs
       pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
       [[ $1 == "do" ]] && qsub $pbsfn
@@ -1354,6 +1375,10 @@ samtools flagstat $sname.bam >$sname.bam.flagstat
 
 # rnaseq_tophat2_firststrand samplefn
 # first strand
+# fr-firststrand:dUTP, NSR, NNSR Same as above except we enforce the rule that
+# the right-most end of the fragment (in transcript coordinates) is the first
+# sequenced (or only sequenced for single-end reads).
+# F2R1 for forward transcript
 function rnaseq_tophat2_firststrand() {
   if [[ ! -s samples ]]; then
     echo "file: samples missing. Abort."
@@ -1817,16 +1842,16 @@ minmapq=10
 
 # first read, positive strand
 samtools view -H bam/${sname}.bam > stranded/${sname}_p.sam
-samtools view -q \$minmapq -f 0x60 -F 0x110 bam/${sname}.bam >> stranded/${sname}_p.sam
+samtools view -q \$minmapq -f 0x50 -F 0x120 bam/${sname}.bam >> stranded/${sname}_p.sam
 # second read, reverse strand
-samtools view -q \$minmapq -f 0x90 -F 0x120 bam/${sname}.bam >> stranded/${sname}_p.sam
+samtools view -q \$minmapq -f 0xa0 -F 0x110 bam/${sname}.bam >> stranded/${sname}_p.sam
 samtools view -b stranded/${sname}_p.sam | samtools sort -o stranded/${sname}_p.bam -O bam -T stranded/${sname}_tmp
 
 # first read, reverse strand
 samtools view -H bam/${sname}.bam > stranded/${sname}_r.sam
-samtools view -q \$minmapq -f 0x50 -F 0x120 bam/${sname}.bam >> stranded/${sname}_r.sam
+samtools view -q \$minmapq -f 0x60 -F 0x110 bam/${sname}.bam >> stranded/${sname}_r.sam
 # second read, positive strand
-samtools view -q \$minmapq -f 0xa0 -F 0x110 bam/${sname}.bam >> stranded/${sname}_r.sam
+samtools view -q \$minmapq -f 0x90 -F 0x120 bam/${sname}.bam >> stranded/${sname}_r.sam
 samtools view -b stranded/${sname}_r.sam | samtools sort -o stranded/${sname}_r.bam -O bam -T stranded/${sname}_tmp
 
 bedtools genomecov -ibam stranded/${sname}_p.bam -g ${WZSEQ_REFERENCE}.fai -bga -split | LC_COLLATE=C sort -k1,1 -k2,2n -T stranded/ >stranded/${sname}_p.bedg
