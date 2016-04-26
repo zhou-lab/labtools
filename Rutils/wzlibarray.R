@@ -64,13 +64,20 @@ positive_diff <- function(b1, b2, thres=0.4) {
 GetTCGA <- function(
   category=NULL,
   cancer.type=NULL,
-  target=c('raw.signal','noob.signal','betas'), n.max=NULL, nprob.max=NULL) {
+  tcga.id.map.fn='/Users/wandingzhou/projects/hs-tcga/data/2015_03_05_TCGA_450/merged_mapping',
+  base.dir='/Volumes/projects_primary/laird/projects/2016_01_29_NIH_3T3_run2/IDAT_merge/dyebias/',
+  ## '/Volumes/projects_primary/laird/projects/2016_01_29_NIH_3T3_run2/IDAT_merge/betas_bycancertype/'
+  ## '/primary/projects/laird/projects/2016_01_29_NIH_3T3_run2/magetab/merged_mapping'
+  target=c('raw.signal','signalset','betas'),
+  n.max=NULL, nprob.max=NULL) {
 
   ## category can be tumor, normal or cellline
   target <- match.arg(target)
 
   ## read meta information
-  tcga.id.map <- read.table('/primary/projects/laird/projects/2016_01_29_NIH_3T3_run2/magetab/merged_mapping', col.names=c('cancertype','barcode','idatname'), stringsAsFactors=FALSE)
+  tcga.id.map <- read.table(
+    tcga.id.map.fn,
+    col.names=c('cancertype','barcode','idatname'), stringsAsFactors=FALSE)
   tcga.id.map$catgry <- as.factor(sapply(substr(tcga.id.map$barcode,14,14), function(x) switch(x, '2'='cellline','0'='tumor','1'='normal')))
 
   ## filtering subsets
@@ -84,30 +91,62 @@ GetTCGA <- function(
     tcga.id.map <- tcga.id.map[1:min(nrow(tcga.id.map),n.max),,drop=FALSE]
 
   message('Loading ',nrow(tcga.id.map),' sample(s).')
+  uniq.idats <- unique(tcga.id.map$idatname)
+  message('There are ', length(uniq.idats), ' unique idats.')
+  rda.fns <- list.files(base.dir, pattern='*.rda')
+  rda.fns <- rda.fns[substr(rda.fns,1,nchar(rda.fns)-4) %in% uniq.idats]
+  
   ## retrieve target
   if (target == 'raw.signal') {
 
     library(devtools)
     load_all('/home/wanding.zhou/tools/biscuitr/biscuitr',export_all=FALSE)
-    dms <- ReadIDATs(tcga.id.map$idatname, base.dir='/primary/projects/laird/projects/2016_01_29_NIH_3T3_run2/IDAT_merge/all/')
+    dms <- ReadIDATs(
+      tcga.id.map$idatname,
+      base.dir='/Volumes/projects_primary/laird/projects/2016_01_29_NIH_3T3_run2/IDAT_merge/all/')
     names(dms) <- tcga.id.map$barcode
     dmps <- lapply(dms, ChipAddressToSignal)
     ## pvals <- lapply(dmps, DetectPvalue)
     return(dmps)
 
+  } else if (target == 'signalset') {
+
+    ssets <- lapply(rda.fns, function(rda.fn) {
+      message('Loading ',rda.fn, '.')
+      load(file.path(base.dir, rda.fn))
+      sset
+    })
+    names(ssets) <- substr(rda.fns,1,nchar(rda.fns)-4)
+    message('Loaded ', length(ssets), ' signalsets')
+    return(ssets)
+    
   } else if (target == 'betas') {
-    return(do.call(cbind, lapply(unique(tcga.id.map$cancertype), function(ct) {
-      gc()
-      load(paste0('/primary/projects/laird/projects/2016_01_29_NIH_3T3_run2/IDAT_merge/betas_bycancertype/', ct,'.rda'))
 
-      ## filtering probes
-      if (!is.null(nprob.max))
-        betas <- betas[1:min(nrow(betas),nprob.max),,drop=FALSE]
+    all.betas <- lapply(rda.fns, function(rda.fn) {
+      message('Loading ', rda.fn, '.')
+      load(file.path(base.dir, rda.fn))
+      betas
+    })
+    names(all.betas) <- substr(rda.fns,1,nchar(rda.fns)-4)
+    message('Loaded ', length(all.betas), ' betas')
+    return(all.betas)
+    
+  } else if (target == 'betasbycancertype') {
+    all.betas <- do.call(cbind, lapply(
+      unique(tcga.id.map$cancertype),
+      function(ct) {
+        gc()
+        load(paste0(base.dir, ct,'.rda'))
 
-      message('Retrieved ', sum(tcga.id.map$cancertype==ct), ' samples from cancertype ', ct)
-      b <- betas[,subset(tcga.id.map, cancertype==ct)$barcode,drop=FALSE]
-      b
-    })))
+        ## filtering probes
+        if (!is.null(nprob.max))
+          betas <- betas[1:min(nrow(betas),nprob.max),,drop=FALSE]
+        
+        message('Retrieved ', sum(tcga.id.map$cancertype==ct), ' samples from cancertype ', ct)
+        b <- betas[,subset(tcga.id.map, cancertype==ct)$barcode,drop=FALSE]
+        b
+      }))
+    return(all.betas)
   } else {
     stop('target not implemented')
   }

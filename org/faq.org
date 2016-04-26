@@ -3160,6 +3160,13 @@ Renv shell 3.2.2
 export JAVA_HOME=/primary/vari/software/java/jdk1.7.0_40 # somehow the java home is not correctly setup
 make
 make install
+*** example add R3.2.5
+./configure --prefix=/home/wanding.zhou/.Renv/versions/3.2.5 -with-recommended-packages=no --without-x --with-cairo --with-libpng --with-libtiff --with-jpeglib --enable-R-shlib
+export JAVA_HOME=/primary/vari/software/java/jdk1.7.0_40 # somehow the java home is not correctly setup
+make
+make install
+
+./configure --prefix=/home/wanding.zhou/.Renv/versions/3.2.5 --without-x --with-cairo --with-libpng --with-libtiff --with-jpeglib --enable-R-shlib
 
 ** Bioconductor
 *** basics
