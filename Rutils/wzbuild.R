@@ -1,3 +1,4 @@
-#!/usr/bin/env r
+#!/usr/bin/env Rscript
 library(devtools)
-document('.')
+
+document(commandArgs(trailingOnly=TRUE))

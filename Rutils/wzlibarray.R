@@ -61,9 +61,56 @@ positive_diff <- function(b1, b2, thres=0.4) {
   return(na.omit(rownames(b1)[(b1-b2)>thres]))
 }
 
+GetTCGA <- function(
+  category=NULL,
+  cancer.type=NULL,
+  target=c('raw.signal','noob.signal','betas'), n.max=NULL, nprob.max=NULL) {
 
+  ## category can be tumor, normal or cellline
+  target <- match.arg(target)
 
+  ## read meta information
+  tcga.id.map <- read.table('/primary/projects/laird/projects/2016_01_29_NIH_3T3_run2/magetab/merged_mapping', col.names=c('cancertype','barcode','idatname'), stringsAsFactors=FALSE)
+  tcga.id.map$catgry <- as.factor(sapply(substr(tcga.id.map$barcode,14,14), function(x) switch(x, '2'='cellline','0'='tumor','1'='normal')))
 
+  ## filtering subsets
+  if (!is.null(cancer.type))
+    tcga.id.map <- subset(tcga.id.map, cancertype==cancer.type)
 
+  if (!is.null(category))
+    tcga.id.map <- subset(tcga.id.map, catgry==category)
 
+  if (!is.null(n.max))
+    tcga.id.map <- tcga.id.map[1:min(nrow(tcga.id.map),n.max),,drop=FALSE]
 
+  message('Loading ',nrow(tcga.id.map),' sample(s).')
+  ## retrieve target
+  if (target == 'raw.signal') {
+
+    library(devtools)
+    load_all('/home/wanding.zhou/tools/biscuitr/biscuitr',export_all=FALSE)
+    dms <- ReadIDATs(tcga.id.map$idatname, base.dir='/primary/projects/laird/projects/2016_01_29_NIH_3T3_run2/IDAT_merge/all/')
+    names(dms) <- tcga.id.map$barcode
+    dmps <- lapply(dms, ChipAddressToSignal)
+    ## pvals <- lapply(dmps, DetectPvalue)
+    return(dmps)
+
+  } else if (target == 'betas') {
+    return(do.call(cbind, lapply(unique(tcga.id.map$cancertype), function(ct) {
+      gc()
+      load(paste0('/primary/projects/laird/projects/2016_01_29_NIH_3T3_run2/IDAT_merge/betas_bycancertype/', ct,'.rda'))
+
+      ## filtering probes
+      if (!is.null(nprob.max))
+        betas <- betas[1:min(nrow(betas),nprob.max),,drop=FALSE]
+
+      message('Retrieved ', sum(tcga.id.map$cancertype==ct), ' samples from cancertype ', ct)
+      b <- betas[,subset(tcga.id.map, cancertype==ct)$barcode,drop=FALSE]
+      b
+    })))
+  } else {
+    stop('target not implemented')
+  }
+}
+
+# TCGA-07-0227-20A-01D-A418-05
