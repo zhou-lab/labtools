@@ -384,3 +384,12 @@ Then move to that line and indent according to mode"
 
 (setq ess-default-style 'OWN)
 (setq ess-indent-level 2)
+
+;; (defun rmd-mode ()
+;;  "ESS Markdown mode for rmd files"
+;;  (interactive)
+;;  (require 'poly-R)
+;;  (require 'poly-markdown)     
+;;  (poly-markdown+r-mode))
+
+(add-to-list 'auto-mode-alist '("\\.Rmd" . poly-markdown+r-mode))

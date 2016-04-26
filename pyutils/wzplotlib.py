@@ -112,7 +112,7 @@ def plot_heatmap(data, dim=None, fig=None, xlabels=None, ylabels=None, label_fon
 
     return ax, cmap, norm
 
-def discrete_colorshow(data, dim, fig, orientation='horizontal',
+def discrete_colorshow(data, dim, fig, orientation='horizontal', colors=None,
                        greyscale=False, greyscale_range=(0.1,0.9), level2color=None, dmin=None, dmax=None):
 
     """ color bar of discrete values """
@@ -132,11 +132,17 @@ def discrete_colorshow(data, dim, fig, orientation='horizontal',
     import wzcolors
     # reload(wzcolors)
     ax = fig.add_axes(dim, frameon=False)
-    if level2color is None:     # if level2color is not given
+    if level2color is not None:
+        colors = [level2color[datum] if datum in level2color else '#E6E6E6' for datum in data]        
+    elif colors is not None:
+        levels = list(set(data))
+        if len(levels) != len(colors):
+            raise Exception('Specified color number should match levels in data')
+        level2color = dict(zip(levels, colors))
+        colors = [level2color[datum] for datum in data]
+    else:
         colors, level2color = wzcolors.map_distinct_colors_hex(
             data, other2grey=True, greyscale=greyscale, greyscale_range=greyscale_range)
-    else:                       # if level2color is given
-        colors = [level2color[datum] if datum in level2color else '#E6E6E6' for datum in data]
     color2patches = {}
     for i, color in enumerate(colors):
         if color not in color2patches:
@@ -446,6 +452,7 @@ class WZCbar(object):
 
                  # discrete color bar
                  label2color = None,
+                 colors = None,
                  greyscale = False,
                  greyscale_range = (0.1,0.9),
 
@@ -516,7 +523,7 @@ class WZCbar(object):
                 orientation=orientation, cmap=self.cmap, dmin=self.dmin, dmax=self.dmax)
         else:
             self.ax, self.label2color = discrete_colorshow(
-                self.data, dim, fig, orientation=orientation, level2color=self.label2color)
+                self.data, dim, fig, orientation=orientation, colors=self.colors, level2color=self.label2color)
 
         if self.lineanno == 'topleft' and self.title is not None:
             if self.annhei is None and self.annlft is None:
