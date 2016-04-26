@@ -112,23 +112,25 @@ GetTCGA <- function(
   } else if (target == 'signalset') {
 
     ssets <- lapply(rda.fns, function(rda.fn) {
-      message('Loading ',rda.fn, '.')
+      message('\rLoading ',rda.fn, '.', appendLF=FALSE)
       load(file.path(base.dir, rda.fn))
       sset
     })
     names(ssets) <- substr(rda.fns,1,nchar(rda.fns)-4)
-    message('Loaded ', length(ssets), ' signalsets')
+    attr(ssets, 'barcode') <- tcga.id.map$barcode[match(names(ssets), tcga.id.map$idatname)]
+    message('\nLoaded ', length(ssets), ' signalsets')
     return(ssets)
     
   } else if (target == 'betas') {
 
     all.betas <- lapply(rda.fns, function(rda.fn) {
-      message('Loading ', rda.fn, '.')
+      message('\rLoading ', rda.fn, '.', appendLF=FALSE)
       load(file.path(base.dir, rda.fn))
       betas
     })
     names(all.betas) <- substr(rda.fns,1,nchar(rda.fns)-4)
-    message('Loaded ', length(all.betas), ' betas')
+    attr(all.betas, 'barcode') <- tcga.id.map$barcode[match(names(all.betas), tcga.id.map$idatname)]
+    message('\nLoaded ', length(all.betas), ' betas')
     return(all.betas)
     
   } else if (target == 'betasbycancertype') {
