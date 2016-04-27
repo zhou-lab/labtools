@@ -273,3 +273,4 @@ export sortbed
 
 export TMPDIR=/secondary/projects/shen/tmp
 export TEMP=/secondary/projects/shen/tmp
+alias R="LANG=en_US.UTF-8 R"
