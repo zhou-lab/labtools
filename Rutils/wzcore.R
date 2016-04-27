@@ -7,21 +7,16 @@ wz <- function(df) {
     printf("%d rows %d columns\n", df.dim[1], df.dim[2]);
 }
 
-PBS <- function(
-  jobname=NULL,
+pbsgen <- function(
   dest=NULL,
+  commands=NULL, args=NULL,
+  jobname='WandingJob',
   queue='shortq',
   ppn=5,
   memG=2,
   walltime=12,
-  commands=NULL) {
-  pbsf <- list(jobname=jobname, dest=dest, queue=queue,
-               ppn=ppn,memG=memG,walltime=walltime,command=command)
-  class(pbsf) <- 'PBSFile'
-  pbsf
-}
-
-pbsgen <- function(f, submit=FALSE) {
+  submit=FALSE) {
+  
   sink(paste0(f$dest,'.pbs'))
   cat(sprintf("
 #!/bin/bash
@@ -32,11 +27,16 @@ pbsgen <- function(f, submit=FALSE) {
 #PBS -o %s.stdout
 #PBS -q %s
 #PBS -l nodes=1:ppn=%s,mem=%sgb,walltime=%s:00:00
-%s
+Rscript -e \"load('%s.rda'); myfun(args);\"
 ", f$jobname, f$dest, f$dest, f$queue,
-              f$ppn, f$memG, f$walltime, f$command))
+              f$ppn, f$memG, f$walltime, f$dest))
   sink()
-  cat('pbsfile: ', f$dest, '.pbs\n')
+
+  myfun <- f$commands
+  args <- f$args
+  save(myfun, args, file=paste0(f$dest,'.rda'))
+
+  cat('pbsfile: ', f$dest, '.pbs\n', sep='')
   if(submit) {
     system(paste0('qsub ', f$dest, '.pbs'))
   }
