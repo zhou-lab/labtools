@@ -17,27 +17,26 @@ pbsgen <- function(
   walltime=12,
   submit=FALSE) {
   
-  sink(paste0(f$dest,'.pbs'))
+  sink(paste0(dest,'.pbs'))
   cat(sprintf("
 #!/bin/bash
 ###
 #PBS -S /bin/bash
 #PBS -N %s
-#PBS -e %s.stderr
-#PBS -o %s.stdout
+#PBS -e %s.pbs.stderr
+#PBS -o %s.pbs.stdout
 #PBS -q %s
 #PBS -l nodes=1:ppn=%s,mem=%sgb,walltime=%s:00:00
 Rscript -e \"load('%s.rda'); myfun(args);\"
-", f$jobname, f$dest, f$dest, f$queue,
-              f$ppn, f$memG, f$walltime, f$dest))
+", jobname, dest, dest, queue, ppn, memG, walltime, dest))
   sink()
 
-  myfun <- f$commands
-  args <- f$args
-  save(myfun, args, file=paste0(f$dest,'.rda'))
+  myfun <- commands
+  args <- args
+  save(myfun, args, file=paste0(dest,'.rda'))
 
-  cat('pbsfile: ', f$dest, '.pbs\n', sep='')
+  cat('pbsfile: ', dest, '.pbs\n', sep='')
   if(submit) {
-    system(paste0('qsub ', f$dest, '.pbs'))
+    system(paste0('qsub ', dest, '.pbs'))
   }
 }

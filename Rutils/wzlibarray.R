@@ -64,11 +64,12 @@ positive_diff <- function(b1, b2, thres=0.4) {
 GetTCGA <- function(
   category=NULL,
   cancer.type=NULL,
-  tcga.id.map.fn='/Users/wandingzhou/projects/hs-tcga/data/2015_03_05_TCGA_450/merged_mapping',
-  base.dir='/Volumes/projects_primary/laird/projects/2016_01_29_NIH_3T3_run2/IDAT_merge/dyebias/',
+  tcga.id.map.fn='/primary/projects/laird/projects/2016_04_05_TCGA_pancan_renormalization/450k/merged_mapping',
+  base.dir='/primary/projects/laird/projects/2016_04_05_TCGA_pancan_renormalization/450k/betas',
+  probes=NULL,
   ## '/Volumes/projects_primary/laird/projects/2016_01_29_NIH_3T3_run2/IDAT_merge/betas_bycancertype/'
   ## '/primary/projects/laird/projects/2016_01_29_NIH_3T3_run2/magetab/merged_mapping'
-  target=c('raw.signal','signalset','betas'),
+  target=c('betas','raw.signal','signalset'),
   n.max=NULL, nprob.max=NULL) {
 
   ## category can be tumor, normal or cellline
@@ -112,7 +113,7 @@ GetTCGA <- function(
   } else if (target == 'signalset') {
 
     ssets <- lapply(rda.fns, function(rda.fn) {
-      message('\rLoading ',rda.fn, '.', appendLF=FALSE)
+      message('\r',rda.fn, '.', appendLF=FALSE)
       load(file.path(base.dir, rda.fn))
       sset
     })
@@ -124,9 +125,13 @@ GetTCGA <- function(
   } else if (target == 'betas') {
 
     all.betas <- lapply(rda.fns, function(rda.fn) {
-      message('\rLoading ', rda.fn, '.', appendLF=FALSE)
+      message('\r', rda.fn, '.', appendLF=FALSE)
       load(file.path(base.dir, rda.fn))
-      betas
+      if (is.null(probes)) {
+        return(betas)
+      } else {
+        return(betas[probes])
+      }
     })
     names(all.betas) <- substr(rda.fns,1,nchar(rda.fns)-4)
     attr(all.betas, 'barcode') <- tcga.id.map$barcode[match(names(all.betas), tcga.id.map$idatname)]
