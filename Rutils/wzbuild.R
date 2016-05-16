@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-
+library(R6)
 target <- commandArgs(trailingOnly=TRUE)
 format <- "html"
 if (length(target) > 1) {
@@ -10,6 +10,7 @@ if (length(target) > 1) {
 if (dir.exists(target)) {
   library(devtools)
   document()
+  check()
 } else {
   if (format == 'pdf') {
     library(rmarkdown)

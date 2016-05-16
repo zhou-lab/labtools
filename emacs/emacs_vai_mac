@@ -393,3 +393,5 @@ Then move to that line and indent according to mode"
 ;;  (poly-markdown+r-mode))
 
 (add-to-list 'auto-mode-alist '("\\.Rmd" . poly-markdown+r-mode))
+
+(setq column-number-mode t)

@@ -44,7 +44,7 @@ function div(denom, divd) {
     return (divd == 0? "NA" : denom/divd);
 }
 
-function dnarev(string,        chars, dic, new_string) {
+function dnarev(string,        i, chars, dic, new_string) {
     dic["A"] = "T";
     dic["T"] = "A";
     dic["G"] = "C";
@@ -53,7 +53,10 @@ function dnarev(string,        chars, dic, new_string) {
     new_string = "";
     split(string, chars, "");
     for (i=length(chars);i>=0;i--) {
-        new_string = new_string dic[chars[i]];
+        if (chars[i] in dic)
+            new_string = new_string dic[chars[i]];
+        else
+            new_string = new_string chars[i];
     }
 
     return new_string;

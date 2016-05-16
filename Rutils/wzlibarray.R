@@ -69,7 +69,7 @@ GetTCGA <- function(
   probes=NULL,
   ## '/Volumes/projects_primary/laird/projects/2016_01_29_NIH_3T3_run2/IDAT_merge/betas_bycancertype/'
   ## '/primary/projects/laird/projects/2016_01_29_NIH_3T3_run2/magetab/merged_mapping'
-  target=c('betas','raw.signal','signalset'),
+  target=c('betas','raw.signal','signalset','rnaseq'),
   n.max=NULL, nprob.max=NULL) {
 
   ## category can be tumor, normal or cellline
@@ -79,7 +79,9 @@ GetTCGA <- function(
   tcga.id.map <- read.table(
     tcga.id.map.fn,
     col.names=c('cancertype','barcode','idatname'), stringsAsFactors=FALSE)
-  tcga.id.map$catgry <- as.factor(sapply(substr(tcga.id.map$barcode,14,14), function(x) switch(x, '2'='cellline','0'='tumor','1'='normal')))
+  tcga.id.map$catgry <- as.factor(sapply(
+    substr(tcga.id.map$barcode,14,14), 
+    function(x) switch(x, '2'='cellline','0'='tumor','1'='normal')))
 
   ## filtering subsets
   if (!is.null(cancer.type))
@@ -118,13 +120,15 @@ GetTCGA <- function(
       sset
     })
     names(ssets) <- substr(rda.fns,1,nchar(rda.fns)-4)
-    attr(ssets, 'barcode') <- tcga.id.map$barcode[match(names(ssets), tcga.id.map$idatname)]
+    ## attr(ssets, 'barcode') <- tcga.id.map$barcode[match(names(ssets), tcga.id.map$idatname)]
+    lapply(seq_along(ssets), function(i) 
+      attr(ssets[[i]],'barcode') <<- tcga.id.map$barcode[match(names(ssets)[i], tcga.id.map$idatname)])
     message('\nLoaded ', length(ssets), ' signalsets')
     return(ssets)
     
   } else if (target == 'betas') {
 
-    all.betas <- lapply(rda.fns, function(rda.fn) {
+    all.betas <- sapply(rda.fns, function(rda.fn) {
       message('\r', rda.fn, '.', appendLF=FALSE)
       load(file.path(base.dir, rda.fn))
       if (is.null(probes)) {
@@ -137,7 +141,7 @@ GetTCGA <- function(
     attr(all.betas, 'barcode') <- tcga.id.map$barcode[match(names(all.betas), tcga.id.map$idatname)]
     message('\nLoaded ', length(all.betas), ' betas')
     return(all.betas)
-    
+
   } else if (target == 'betasbycancertype') {
     all.betas <- do.call(cbind, lapply(
       unique(tcga.id.map$cancertype),
