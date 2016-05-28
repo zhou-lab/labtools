@@ -353,6 +353,9 @@ lftp -e 'mirror -R -r -i "\.(html?|css|js)$" /local/path/ /' -u user,password ft
 *** special characters in username and password
 lftp -e 'put /local/path/yourfile.mp4; bye' -u user,password\!\! ftp.foo.com
 
+** ncftp
+ncftp ftp://ftp.ncbi.nlm.nih.gov/1000genomes/ftp/release/20130502/supporting/GRCh38_positions/
+get *.gz
 ** find
 *** let find -regex support [ [:digit:]]
 does not support POSIX character classes like [ [:digit:] ]
