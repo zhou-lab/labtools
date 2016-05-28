@@ -40,3 +40,23 @@ Rscript -e \"load('%s.rda'); myfun(args);\"
     system(paste0('qsub ', dest, '.pbs'))
   }
 }
+
+rowMax <- function(x) {apply(x,1,max)}
+
+library(ggplot2)
+theme_wz <- theme_set(theme_classic(15))
+theme_wz <- theme_update(
+  axis.line.x = element_line(colour = "grey20"),
+  axis.line.y = element_line(colour = "grey20"))
+
+wzbind.list <- function(x) {
+  data.frame(x=do.call(c, x), cat=rep(names(x), sapply(x,length)))
+}
+
+wzbind <- function(..., names=NULL) {
+  x <- list(...)
+  if (is.null(names))
+    names <- paste0('V',1:length(x))
+  data.frame(x=do.call(c, x), cat=rep(names, sapply(x, length)))
+}
+

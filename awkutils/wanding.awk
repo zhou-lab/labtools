@@ -106,6 +106,19 @@ function joinr(start, end,    sep, result, i) {
     return result
 }
 
+function rep(s, n, sep,   i) {
+    if (sep == "")
+        sep = "\t"
+    result = ""
+    for (i=1; i<=n; ++i) {
+        if (i != start) {
+            result = result sep;
+        }
+        result = result s;
+    }
+    return result
+}
+
 function sumr(start, end,    sep, result, i) {
 
     if (sep == "")

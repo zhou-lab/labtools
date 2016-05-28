@@ -6,9 +6,9 @@
 kstring_t line;
 line.l = line.m = 0; line.s = 0;
 
-FILE *fh = open(argv[1],"r");
+FILE *fh = open($1,"r");
 while (1) {
-  int c=fgetc($1);
+  int c=fgetc(fh);
   if (c=='\n' || c==EOF) {
     $0
     line.l = 0;
@@ -18,5 +18,5 @@ while (1) {
   } else {
     kputc(c, &line);
   }
-  free(line.s);
 }
+free(line.s);
