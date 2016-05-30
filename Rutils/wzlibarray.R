@@ -72,6 +72,7 @@ GetTCGA <- function(
   ## '/Volumes/projects_primary/laird/projects/2016_01_29_NIH_3T3_run2/IDAT_merge/betas_bycancertype/'
   ## '/primary/projects/laird/projects/2016_01_29_NIH_3T3_run2/magetab/merged_mapping'
   target=c('betas','signalset','rnaseq'),
+  mc=FALSE, mc.cores=8,
   n.max=NULL, nprob.max=NULL) {
 
   ## category can be tumor, normal or cellline
@@ -109,7 +110,7 @@ GetTCGA <- function(
   ## retrieve target
   if (target == 'signalset') {
 
-    ssets <- lapply(rda.fns, function(rda.fn) {
+    .processTarget <- function(rda.fn) {
       message('\r',rda.fn, '.', appendLF=FALSE)
       load(file.path(base.dir, rda.fn))
       if (is.null(probes)) {
@@ -118,7 +119,13 @@ GetTCGA <- function(
         sset <- sset[probes]
         return(sset)
       }
-    })
+    }
+    if (mc) {
+      library(parallel)
+      ssets <- mclapply(rda.fns, .processTarget, mc.cores=mc.cores)
+    } else {
+      ssets <- lapply(rda.fns, .processTarget)
+    }
     names(ssets) <- substr(rda.fns,1,nchar(rda.fns)-4)
     ## attr(ssets, 'barcode') <- tcga.id.map$barcode[match(names(ssets), tcga.id.map$idatname)]
     lapply(seq_along(ssets), function(i) 
