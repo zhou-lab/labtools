@@ -139,7 +139,7 @@ alias scp='rsync -Pravdtze ssh'
 # alias awk='$HOME/tools/awk4.01/gawk-4.01-install/bin/awk -F"\t" -v OFS="\t"'
 alias awk='awk -F"\t" -v OFS="\t"'
 alias les="less -S"
-alias qsuball="find $HOME/htcpbs/ -type f | sort | xargs -I {} qsub {}"
+alias qsuball="find pbs/ -type f -name '*.pbs' | sort | xargs -I {} qsub {}"
 alias rdf="readlink -f"
 alias qsubi='qsub -I -l nodes=1:ppn=1 -l mem=10gb'
 alias qsubim='qsub -I -l nodes=1:ppn=6 -l mem=10gb'

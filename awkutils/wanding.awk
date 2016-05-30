@@ -49,6 +49,7 @@ function dnarev(string,        i, chars, dic, new_string) {
     dic["T"] = "A";
     dic["G"] = "C";
     dic["C"] = "G";
+    dic["-"] = "-";
 
     new_string = "";
     split(string, chars, "");
