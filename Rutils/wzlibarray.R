@@ -122,7 +122,7 @@ GetTCGA <- function(
     }
     if (mc) {
       library(parallel)
-      ssets <- mclapply(rda.fns, .processTarget, mc.cores=mc.cores)
+      ssets <- mclapply(rda.fns, .processTarget, mc.cores=mc.cores, mc.preschedule=FALSE)
     } else {
       ssets <- lapply(rda.fns, .processTarget)
     }
