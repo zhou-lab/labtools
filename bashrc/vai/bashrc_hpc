@@ -141,9 +141,9 @@ alias awk='awk -F"\t" -v OFS="\t"'
 alias les="less -S"
 alias qsuball="find pbs/ -type f -name '*.pbs' | sort | xargs -I {} qsub {}"
 alias rdf="readlink -f"
-alias qsubi='qsub -I -l nodes=1:ppn=1 -l mem=10gb'
-alias qsubim='qsub -I -l nodes=1:ppn=6 -l mem=10gb'
-alias qsubil='qsub -I -l nodes=1:ppn=28 -l walltime=24:00:00'
+alias qsubi='qsub -I -l nodes=1:ppn=1 -l mem=10gb -l walltime=8:00:00'
+alias qsubim='qsub -I -l nodes=1:ppn=6 -l mem=10gb -l walltime=8:00:00'
+alias qsubil='qsub -I -l nodes=1:ppn=28 -l walltime=8:00:00'
 
 function qdelall {
    qstat | grep 'wanding.zhou' | awk '{split($1,a,".");print a[1]}' | xargs -I {} qdel {}
