@@ -24,7 +24,8 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 						
 ;; (load-theme 'ample-zen t)
 ;; (load-theme 'tsdh-light t)
-(load-theme 'leuven t)
+;; (load-theme 'leuven t)
+(load-theme 'deeper-blue t)
 
 (setq-default indent-tabs-mode nil)
 

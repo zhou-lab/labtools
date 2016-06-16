@@ -40,6 +40,14 @@ function minabs(a,b,  aa, ab) {
         return b;
 }
 
+function samIsRead1(flag) {
+    return and(flag, 0x40);
+}
+
+function samIsRead2(flag) {
+    return and(flag, 0x80);
+}
+
 function div(denom, divd) {
     return (divd == 0? "NA" : denom/divd);
 }
