@@ -135,7 +135,7 @@ GetTCGA <- function(
     
   } else if (target == 'betas') {
 
-    all.betas <- sapply(rda.fns, function(rda.fn) {
+    all.betas <- do.call(cbind, lapply(rda.fns, function(rda.fn) {
       message('\r', rda.fn, '.', appendLF=FALSE)
       load(file.path(base.dir, rda.fn))
       if (is.null(probes)) {
@@ -143,7 +143,7 @@ GetTCGA <- function(
       } else {
         return(betas[probes])
       }
-    })
+    }))
     colnames(all.betas) <- substr(rda.fns,1,nchar(rda.fns)-4)
     attr(all.betas, 'barcode') <- tcga.id.map$barcode[match(colnames(all.betas),
                                                             tcga.id.map$idatname)]

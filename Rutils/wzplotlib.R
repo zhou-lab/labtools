@@ -52,3 +52,27 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
     }
   }
 }
+
+
+lm_eqn <- function(df){
+  m <- lm(y ~ x, df);
+  eq <- substitute(italic(y) == a + b %.% italic(x)*","~~italic(r)^2~"="~r2, 
+                   list(a = format(coef(m)[1], digits = 2), 
+                        b = format(coef(m)[2], digits = 2), 
+                        r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));
+}
+
+## p1 <- p + geom_text(x = 25, y = 300, label = lm_eqn(df), parse = TRUE)
+
+plotdens <- function(x, normalize=FALSE, add=FALSE, ...) {
+  d <- density(na.omit(x))
+  if (normalize) {
+    d$y <- d$y / max(d$y)
+  }
+  if (add) {
+    lines(d, ...)
+  } else {
+    plot(d, ...)
+  }
+}

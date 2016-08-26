@@ -12,13 +12,13 @@ setMethod("$<-", "GRanges", function(x, name, value) {
   return(x)
 })
 
-GR2bed <- function(gr, fnm, rangeOnly=FALSE) {
+GR2bed <- function(gr, fnm, rangeOnly=FALSE, col.names=F) {
   start(gr) <- start(gr)-1
   if (rangeOnly) {
     mcols(gr) <- NULL
   }
   gr$probeID <- names(gr)
-  write.table(as.data.frame(gr), file=fnm, quote=F, sep="\t", row.names=F, col.names=F)
+  write.table(as.data.frame(gr), file=fnm, quote=F, sep="\t", row.names=F, col.names=col.names)
 }
 
 ## intersection
@@ -37,5 +37,6 @@ setMethod('%s%', c('GRanges','GRanges'), function(x, y) {subsetByOverlaps(x, y)}
 ## can be very handy at times, and all of these operators are rather naturally associative IMHO.
 
 
-
-
+reverse.complement <- function(s) {
+  chartr("ACGT","TGCA",s)
+}

@@ -63,16 +63,17 @@ def clean_450k(df, nahow='strong', probe_fn='/Users/wandingzhou/projects/hs-tcga
             wzcore.err_print("Before: %d probes and %d samples" % df.shape)
     
     # remove X,Y chromosome
+    wzcore.err_print('Removing sex chromosomes')
     df = df[(~probe_loc.chrm.isin(['chrX','chrY']))[df.index]]
+    wzcore.err_print('Removing cph and rs probes')
     df = df.loc[df.index.str.startswith('cg')]
 
     # remove NA
+    wzcore.err_print('Removing NA probes')
     if nahow == 'strong':
         df = df.dropna(how='any')
     if nahow == 'weak':
         df = df.dropna(how='all')
-    # remove SNP
-    df = df[df.index.map(lambda x: not x.startswith('rs'))]
 
     if verbose:
         if len(df.shape) == 1:

@@ -9,7 +9,13 @@ import matplotlib.path as mpath
 import matplotlib.collections as mcollections
 import pandas as pd
 
-cytoband_color = {'gneg':0,'gpos33':0.3,'gpos66':0.6,'gpos75':0.75,'gpos100':1.0}
+cytoband_color = {'gneg':'k',
+                  'gpos25':'k','gpos33':'k','gpos50':'k','gpos66':'k','gpos75':'k','gpos100':'k',
+                  'gvar':'k','acen':'k','stalk':'k'}
+
+cytoband_alpha = {'gneg':0,
+                  'gpos25':0.25,'gpos33':0.3,'gpos50':0.50,'gpos66':0.6,'gpos75':0.75,'gpos100':1.0,
+                  'gvar':0,'acen':0.9,'stalk':1.0}
 
 def wzpolygon(angle_beg, angle_end, inner_radius, outer_radius, angle_inc=0.01, fc='blue', alpha=0.8, ec='none'):
     angle_num = max(3,int(float(angle_end - angle_beg) / angle_inc))
@@ -87,9 +93,10 @@ class CircosTrackBar(CircosTrack):
         self.maxval = np.max(self.vals)
         self.valrange = float(self.maxval - self.minval)
         self.direction = 'inner'
+        self.maxr = 0.9         # scale the actual plot area
         self.plot_kwargs = plot_kwargs
         
-    def plot(self):
+    def plot(self, background=False):
 
         kwargs1 = {}
         kwargs2 = {}
@@ -110,7 +117,7 @@ class CircosTrackBar(CircosTrack):
             label = self.df.columns[3]
 
         ly = self.layout
-        
+
         angle1s = []
         anglewids = []
         heights = []
@@ -121,15 +128,37 @@ class CircosTrackBar(CircosTrack):
             anglewid = ly.loc2angle(chrm, end) - angle1
             angle1s.append(angle1)
             anglewids.append(anglewid)
-            heights.append(self.track_height*(value-self.minval)/self.valrange)
+            heights.append(self.track_height*(value-self.minval)/self.valrange*self.maxr)
 
-        # ha='center', va='center', rotation=normalize_text_angle(text_angle/(np.pi*2)*360,tangent=True), 
+        # ha='center', va='center', rotation=normalize_text_angle(text_angle/(np.pi*2)*360,tangent=True),
+        
+        # plotting background
+        bg_start = []
+        bg_width = []
+        bg_height = []
+        if background:
+            for chrm in ly.chrm2angles:
+                angle_beg = ly.loc2angle(chrm,0)
+                angle_end = ly.loc2angle(chrm,ly.chrm2len[chrm])
+                bg_start.append(angle_beg)
+                bg_width.append(angle_end-angle_beg)
+                bg_height.append(self.track_height*self.maxr)
+        ly.ax.bar(bg_start, bg_height, bg_width, bottom=self.track_bottom, ec='none', fc='grey', alpha=0.1)
+        
+        # plot data
         ly.ax.bar(angle1s, heights, anglewids, bottom=self.track_bottom, ec='none', **kwargs1)
-        ly.ax.text(ly.angle_beg, self.track_bottom, label, fontname=ly.fontname, **kwargs2)
+        if 'labelside_text_angle' in self.plot_kwargs:
+            text_angle = self.plot_kwargs['labelside_text_angle'] / 180.0 * np.pi
+        else:
+            text_angle = ly.angle_beg
+        ly.ax.text(text_angle, self.track_bottom + self.track_height/2.0, label, fontname=ly.fontname, va='center', ha='left', **kwargs2)
 
         if 'labelside_circle' in self.plot_kwargs:
             fc = self.plot_kwargs['fc'] if 'fc' in self.plot_kwargs else 'r'
-            circ_angle = self.plot_kwargs['labelside_circ_angle'] if 'labelside_circ_angle' in self.plot_kwargs else ly.angle_beg
+            if 'labelside_circ_angle' in self.plot_kwargs:
+                circ_angle = self.plot_kwargs['labelside_circ_angle']
+            else:
+                circ_angle = ly.angle_beg
             ly.ax.add_artist(mpatches.Circle(
                 polar2cart(circ_angle, self.track_bottom),
                 self.plot_kwargs['labelside_circle'],
@@ -147,7 +176,7 @@ class CircosLayout:
                  genome,        # faidx.RefGenome
                  cytoband=None,
                  angle_beg=0, angle_end=360,
-                 angle_chrm_space=0.02, inner_radius=98, outer_radius=104,
+                 angle_chrm_space=0.02, inner_radius=98, outer_radius=101,
                  angle_inc=0.01, # when plotting an arc, this is the increment
                  bezier_anchor = 15.0, # higher the number the higher the peak
                  track_height = 10,
@@ -155,6 +184,7 @@ class CircosLayout:
                  fontname = 'Arial Narrow',
     ):
 
+        genome_path = genome
         if isinstance(genome, str):
             genome = faidx.RefGenome(genome)
         if isinstance(genome, list):
@@ -163,7 +193,10 @@ class CircosLayout:
             chrms = getsortedchrms(genome)
 
         if cytoband:
-            self.cytoband_table = pd.read_table('/Users/wandingzhou/references/mm10/cytoband.tsv',header=None, names=['_','chrm','band','band2','beg','end','bandtype'])[['chrm','beg','end','bandtype']]
+            if re.search('mm10', genome_path) is not None:
+                self.cytoband_table = pd.read_table('/Users/wandingzhou/references/mm10/cytoband.tsv',header=None, names=['_','chrm','band','band2','beg','end','bandtype'])[['chrm','beg','end','bandtype']]
+            elif re.search('hg38', genome_path) is not None:
+                self.cytoband_table = pd.read_table('/Users/wandingzhou/references/hg38/cytoBand.txt', header=None, names=['chrm','beg','end','band','bandtype'])[['chrm','beg','end','bandtype']]
         else:
             self.cytoband_table = None
 
@@ -187,7 +220,7 @@ class CircosLayout:
         
         ## derived parameters
         self.connect_radius = inner_radius*0.95
-        self.ax_radius = self.outer_radius*1.05
+        # self.ax_radius = self.outer_radius*1.05
         self.inner_track_outer_radius = self.inner_radius - self.track_space
         self.inner_track_inner_radius = self.inner_track_outer_radius - self.track_height
         self.outer_track_inner_radius = self.outer_radius + self.track_space
@@ -209,10 +242,10 @@ class CircosLayout:
 
         return self.chrm2angles[chrm][0] + self.angle_per_base*pos
     
-    def plot_chromosomes(self, ax=None, figsize=(12,12), fc='blue',
+    def plot_chromosomes(self, ax=None, figsize=(10,10), fc='blue',
                          chrms_plot=None, # which chromosome to plot
-                         shade=False,
-                         ticks=False, tickspace=10000000, chrmtext_padding=10):
+                         shade=False, fontsize=10,
+                         ticks=False, tickspace=10000000, chrmtext_padding=5):
 
         if ax is not None:
             self.ax = ax
@@ -244,8 +277,9 @@ class CircosLayout:
             self.ax.add_patch(wzpolygon(angles[0], angles[1], self.inner_radius, self.outer_radius, ec='k', fc=self.chrm2color[chrm]))
             if shade:
                 self.ax.bar(angles[0],self.inner_radius,angles[1]-angles[0],bottom=0.0, ec='none', fc='grey', alpha=0.1)
+            # plot text
             text_angle = (angles[0]+angles[1])/2.0
-            self.ax.text(text_angle, self.outer_radius+chrmtext_padding, chrm, ha='center', va='center', rotation=normalize_text_angle(text_angle/(np.pi*2)*360,tangent=True), fontsize=10, fontname=self.fontname)
+            self.ax.text(text_angle, self.outer_radius+chrmtext_padding, chrm, ha='center', va='center', rotation=normalize_text_angle(text_angle/(np.pi*2)*360,tangent=True), fontsize=fontsize, fontname=self.fontname)
 
         # cytoband
         if self.cytoband_table is not None:
@@ -256,7 +290,7 @@ class CircosLayout:
                 angle_end = self.loc2angle(chrm,end)
                 self.ax.bar(angle_beg, self.outer_radius-self.inner_radius,
                             width=angle_end-angle_beg, bottom=self.inner_radius,
-                            ec='none', fc='k', alpha=cytoband_color[bandtype])
+                            ec='none', fc=cytoband_color[bandtype], alpha=cytoband_alpha[bandtype])
 
         if ticks:
             tickheight_major = 2
@@ -279,7 +313,7 @@ class CircosLayout:
             self.ax.add_collection(mcollections.LineCollection(ticklines, colors='k', linewidth=0.5))
 
         # self.ax.set_xlim(-self.ax_radius,self.ax_radius)
-        self.ax.set_ylim(0,self.ax_radius)
+        # self.ax.set_ylim(0,self.ax_radius)
 
     def _plot_arc(self, angle1, angle2, radius):
         angle_num = max(3,int(float(angle2 - angle1) / self.angle_inc))
@@ -471,7 +505,7 @@ class CircosLayout:
 
         return
 
-    def plot(self, track_height_proportion=False):
+    def plot(self, track_height_proportion=False, track_background=True, inner_plot_frac=0.8):
 
         """ plot everything """
 
@@ -482,7 +516,7 @@ class CircosLayout:
             if track_height_proportion:
                 t.track_height = t.df.iloc[:,3].max()
             total_track_heights += t.track_height
-        inner_track_height_range = self.inner_radius*0.8
+        inner_track_height_range = self.inner_radius*inner_plot_frac
         _inner_track_inner_radius = self.inner_radius
         for t in inner_tracks:
             t.track_height = inner_track_height_range/float(total_track_heights)*t.track_height
@@ -498,4 +532,4 @@ class CircosLayout:
             t.track_bottom = _outer_track_inner_radius
 
         for t in self.tracks:
-            t.plot()
+            t.plot(background=track_background)
