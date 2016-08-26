@@ -76,16 +76,57 @@ function wzref_hg19 {
   export WZSEQ_BOWTIE1_INDEX=/home/wanding.zhou/references/hg19/bowtie1/hg19
   export WZSEQ_STAR_INDEX=/primary/vari/genomicdata/genomes/hg19/STAR
   export WZSEQ_RSEQC_GENE_BED=/primary/vari/genomicdata/genomes/hg19/rseqc/hg19_GENCODE_GENE_V19_comprehensive.bed
+  export WZSEQ_BISMARK_BT2_INDEX=/home/wanding.zhou/references/hg19/bismark_bt2
+  export WZSEQ_BWAMETH_INDEX=/home/wanding.zhou/references/hg19/bwameth/hg19.fa
   export WZSEQ_SUBREAD_INDEX=/primary/vari/genomicdata/genomes/hg19/subread/hg19
   export WZSEQ_REFERENCE_SPLIT=/primary/vari/genomicdata/genomes/hg19/tophat/Homo_sapiens/UCSC/hg19/Sequence/Chromosomes
 
   # WGBS
   export WZSEQ_BISCUIT_INDEX=/home/wanding.zhou/references/hg19/biscuit/hg19.fa
+  export WZSEQ_BSMAP_INDEX=/home/wanding.zhou/references/hg19/bsmap/hg19.fa
   export WZSEQ_CGIBED=/primary/vari/genomicdata/genomes/hg19/annotation/cpgisland/cpgIslandExt.bed
   export WZSEQ_MACS_SHORT=hs
 
   # rmsk
   export WZSEQ_RMSK=/primary/vari/genomicdata/genomes/hg19/annotation/rmsk/rmsk.txt.bed
+}
+
+###### human hg19_noContig ####
+function wzref_hg19_noContig {
+  export WZSEQ_REFVERSION=hg19
+  export WZSEQ_REFERENCE=/primary/vari/genomicdata/genomes/hg19_noContig/hg19_noContig.fa
+
+  export WZSEQ_BISMARK_BT2_INDEX=/home/wanding.zhou/references/hg19_noContig/bismark_bt2
+  export WZSEQ_BWAMETH_INDEX=/home/wanding.zhou/references/hg19_noContig/bwameth/hg19_noContig.fa
+
+  # WGBS
+  export WZSEQ_BISCUIT_INDEX=/home/wanding.zhou/references/hg19_noContig/biscuit/hg19_noContig.fa
+  export WZSEQ_BSMAP_INDEX=/home/wanding.zhou/references/hg19_noContig/bsmap/hg19_noContig.fa
+}
+
+
+function wzref_hg38 {
+  export WZSEQ_REFVERSION=hg38
+  export WZSEQ_REFERENCE=/primary/vari/genomicdata/genomes/hg38/hg38.fa
+  # export WZSEQ_REFERENCE_SIZE=3199901561
+
+  # export WZSEQ_GTF=/primary/vari/genomicdata/genomes/hg19/tophat/Homo_sapiens/UCSC/hg19/Annotation/Genes/genes.gtf
+  # export WZSEQ_BWA_INDEX=/home/wanding.zhou/references/hg19/bwa/hg19.fa
+  # export WZSEQ_BOWTIE2_INDEX=/home/wanding.zhou/references/hg19/bowtie2/hg19
+  # export WZSEQ_BOWTIE1_INDEX=/home/wanding.zhou/references/hg19/bowtie1/hg19
+  # export WZSEQ_STAR_INDEX=/primary/vari/genomicdata/genomes/hg19/STAR
+  # export WZSEQ_RSEQC_GENE_BED=/primary/vari/genomicdata/genomes/hg19/rseqc/hg19_GENCODE_GENE_V19_comprehensive.bed
+  export WZSEQ_BISMARK_BT2_INDEX=/home/wanding.zhou/references/hg38/bismark_bt2
+  # export WZSEQ_SUBREAD_INDEX=/primary/vari/genomicdata/genomes/hg19/subread/hg19
+  # export WZSEQ_REFERENCE_SPLIT=/primary/vari/genomicdata/genomes/hg19/tophat/Homo_sapiens/UCSC/hg19/Sequence/Chromosomes
+
+  # WGBS
+  # export WZSEQ_BISCUIT_INDEX=/home/wanding.zhou/references/hg19/biscuit/hg19.fa
+  # export WZSEQ_CGIBED=/primary/vari/genomicdata/genomes/hg19/annotation/cpgisland/cpgIslandExt.bed
+  # export WZSEQ_MACS_SHORT=hs
+
+  # rmsk
+  # export WZSEQ_RMSK=/primary/vari/genomicdata/genomes/hg19/annotation/rmsk/rmsk.txt.bed
 }
 
 ###### human hg19 rCRS ####
@@ -344,13 +385,17 @@ function wgbs_biscuit_align {
     while read sname sread1 sread2; do
       # while read samplecode fastq1 fastq2 _junk_; do
       cmd="
-biscuit align $WZSEQ_BISCUIT_INDEX -t 28 $base/fastq/$sread1 $base/fastq/$sread2 | samtools sort -T $base/bam/${sname} -O bam -o $base/bam/${sname}.bam
+if [[ \"$sread2\" == \".\" ]]; then
+  ~/tools/biscuit/development/biscuit/bin/biscuit align $WZSEQ_BISCUIT_INDEX -t 28 $base/fastq/$sread1 | samtools sort -T $base/bam/${sname} -O bam -o $base/bam/${sname}.bam
+else
+  ~/tools/biscuit/development/biscuit/bin/biscuit align $WZSEQ_BISCUIT_INDEX -t 28 $base/fastq/$sread1 $base/fastq/$sread2 | samtools sort -T $base/bam/${sname} -O bam -o $base/bam/${sname}.bam
+fi
 samtools index $base/bam/${sname}.bam
 samtools flagstat $base/bam/${sname}.bam > $base/bam/${sname}.bam.flagstat
 "
       jobname="biscuit_align_$sname"
       pbsfn=$base/pbs/$jobname.pbs
-      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 100 -memG 250 -ppn 28
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 8 -memG 250 -ppn 28
       [[ $1 == "do" ]] && qsub $pbsfn
 
       # biscuit_bwameth -b -s $samplecode -j jid_bwameth $base/fastq/$fastq1 $base/fastq/$fastq2
@@ -398,12 +443,16 @@ function wgbs_bwameth() {
     while read sname sread1 sread2; do
       cmds="
 cd $base
-bwameth --reference $WZSEQ_BWAMETH_INDEX fastq/$sread1 fastq/$sread2 -t 28 --prefix bam/${sname}_bwameth
+if [[ \"$sread2\" == \".\" ]]; then
+  bwameth --reference $WZSEQ_BWAMETH_INDEX fastq/$sread1 -t 28 --prefix bam/${sname}_bwameth
+else
+  bwameth --reference $WZSEQ_BWAMETH_INDEX fastq/$sread1 fastq/$sread2 -t 28 --prefix bam/${sname}_bwameth
+fi
 samtools flagstat bam/${sname}_bwameth.bam > bam/${sname}_bwameth.bam.flagstat
 "
       jobname="bwameth_$sname"
       pbsfn=$base/pbs/$jobname.pbs
-      pbsgen one "$cmds" -name $jobname -dest $pbsfn -hour 24 -ppn 28 -memG 250
+      pbsgen one "$cmds" -name $jobname -dest $pbsfn -hour 8 -ppn 28 -memG 250
       [[ $1 == "do" ]] && qsub $pbsfn
     done
 }
@@ -433,7 +482,7 @@ bismark $WZSEQ_BISMARK_BT1_INDEX --chunkmbs 2000 -1 $base/fastq/$sread1 -2 $base
 "
       jobname="bismark_bt1_$sname"
       pbsfn=$base/pbs/$jobname.pbs
-      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 250 -ppn 28
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 100 -memG 250 -ppn 28
       [[ $1 == "do" ]] && qsub $pbsfn
     done
 }
@@ -464,19 +513,37 @@ function wgbs_bismark_bowtie2 {
 export PATH=~/tools/bismark/default:~/tools/bowtie2/default:$PATH
 cd $base
 
+[[ -d bam ]] || mkdir bam
+
 # trim reads
 # this produce fastq/${base1}_val_1* and fastq/${base2}_val_2*
 if [[ ! -d fastq/${sname}_trim_galore/ ]]; then
   mkdir -p fastq/${sname}_trim_galore/
-  ~/software/trim_galore/default/trim_galore --paired fastq/$sread1 fastq/$sread2 -o fastq/${sname}_trim_galore/
+  if [[ \"$base2\" == \".\" ]]; then
+   ~/software/trim_galore/default/trim_galore fastq/$sread1 -o fastq/${sname}_trim_galore/
+  else
+    ~/software/trim_galore/default/trim_galore --paired fastq/$sread1 fastq/$sread2 -o fastq/${sname}_trim_galore/
+  fi 
 fi
 
-bismark $WZSEQ_BISMARK_BT2_INDEX --bowtie2 --chunkmbs 2000 -p 4 -o $base/bam/${sname}_bismark_bt2/ -1 $base/fastq/${sname}_trim_galore/${base1}_val_1* -2 $base/fastq/${sname}_trim_galore/${base2}_val_2 --temp_dir $base/bam/${sname}_bismark_bt2/*
+if [[ \"$base2\" == \".\" ]]; then
+  rm -rf $base/bam/${sname}_bismark_bt2/
+  bismark $WZSEQ_BISMARK_BT2_INDEX --bowtie2 --chunkmbs 2000 -p 28 -o $base/bam/${sname}_bismark_bt2/ $base/fastq/${sname}_trim_galore/${sname}_trimmed.fq --temp_dir $base/bam/${sname}_bismark_bt2/temp
+  samtools sort -O bam -o bam/${sname}_bismark_bt2.bam -T bam/${sname}_bismark_bt2.bam_tmp bam/${sname}_bismark_bt2/${sname}_trimmed.fq_bismark_bt2.bam
+  samtools index bam/${sname}_bismark_bt2.bam
+  samtools flagstat bam/${sname}_bismark_bt2.bam > bam/${sname}_bismark_bt2.bam.flagstat
+else
+  bismark $WZSEQ_BISMARK_BT2_INDEX --bowtie2 --chunkmbs 2000 -p 28 -o $base/bam/${sname}_bismark_bt2/ -B ${sname} -1 $base/fastq/${sname}_trim_galore/${base1}_val_1* -2 $base/fastq/${sname}_trim_galore/${base2}_val_2* --temp_dir $base/bam/${sname}_bismark_bt2/temp
+  ## TODO: modify the following
+  samtools sort -O bam -o bam/${sname}_bismark_bt2.bam -T bam/${sname}_bismark_bt2.bam_tmp bam/${sname}_bismark_bt2/${sname}_pe.bam
+  samtools index bam/${sname}_bismark_bt2.bam
+  samtools flagstat bam/${sname}_bismark_bt2.bam > bam/${sname}_bismark_bt2.bam.flagstat
+fi
 "
       jobname="bismark_bt2_$sname"
       pbsfn=$base/pbs/$jobname.pbs
       # it seems that bismark with bowtie2 can never reach full potential of parallelization
-      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 60 -memG 50 -ppn 8
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 8 -memG 50 -ppn 28
       [[ $1 == "do" ]] && qsub $pbsfn
     done
 }
@@ -491,7 +558,12 @@ function wgbs_bsmap {
     while read sname sread1 sread2; do
       cmd="
 cd $base
-~/tools/bsmap/default/bsmap -a fastq/$sread1 -b fastq/$sread2 -d $WZSEQ_BSMAP_INDEX -o bam/${sname}_bsmap_unsorted.bam -p 28 -s 16 -v 10 -q 2 -A AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT -A AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT
+if [[ \"$sread2\" == \".\" ]]; then
+  ~/tools/bsmap/default/bsmap -a fastq/$sread1 -d $WZSEQ_BSMAP_INDEX -o bam/${sname}_bsmap_unsorted.bam -p 28 -s 16 -v 10 -q 2 -A AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT -A AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT
+else
+  ~/tools/bsmap/default/bsmap -a fastq/$sread1 -b fastq/$sread2 -d $WZSEQ_BSMAP_INDEX -o bam/${sname}_bsmap_unsorted.bam -p 28 -s 16 -v 10 -q 2 -A AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT -A AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT
+fi
+
 samtools sort -O bam -o bam/${sname}_bsmap.bam -T bam/${sname}_bsmap.tmp bam/${sname}_bsmap_unsorted.bam
 rm -f bam/${sname}_bsmap_unsorted.bam
 samtools index bam/${sname}_bsmap.bam
@@ -499,7 +571,7 @@ samtools flagstat bam/${sname}_bsmap.bam > bam/${sname}_bsmap.bam.flagstat
 "
       jobname="bsmap_$sname"
       pbsfn=$base/pbs/$jobname.pbs
-      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 250 -ppn 28
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 8 -memG 250 -ppn 28
       [[ $1 == "do" ]] && qsub $pbsfn
     done
 }
@@ -685,22 +757,31 @@ function wgbs_biscuit_markdup {
   base=$(pwd);
   [[ -d pbs ]] || mkdir pbs
   [[ -d bam/before_mdup ]] || mkdir -p bam/before_mdup
-  for f in bam/*.bam; do
-    bfn=$(basename $f .bam)
-    cmd="
+  awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples |
+    while read bfn sread1 sread2; do
+      f=bam/$bfn.bam
+      cmd="
 cd $base
-mv $f bam/before_mdup/$bfn.bam
-[[ -e $f.bai ]] && mv $f.bai bam/before_mdup/$bfn.bam.bai
-[[ -e $f.flagstat ]] && mv $f.flagstat bam/before_mdup/$bfn.bam.flagstat
-biscuit markdup -q bam/before_mdup/$bfn.bam $f 2>bam/before_mdup/$bfn.mdup.stats
-samtools index $f
-samtools flagstat $f
+if [[ ! -e bam/before_mdup/$bfn.bam ]]; then
+  mv $f bam/before_mdup/$bfn.bam
+  [[ -e $f.bai ]] && mv $f.bai bam/before_mdup/$bfn.bam.bai
+  [[ -e $f.flagstat ]] && mv $f.flagstat bam/before_mdup/$bfn.bam.flagstat
+fi
+[[ -d bam/biscuit_mdup ]] || mkdir bam/biscuit_mdup
+biscuit markdup -q bam/before_mdup/$bfn.bam bam/biscuit_mdup/$bfn.bam 2>bam/biscuit_mdup/$bfn.mdup.stats
+samtools index bam/biscuit_mdup/$bfn.bam
+samtools flagstat bam/biscuit_mdup/$bfn.bam >bam/biscuit_mdup/$bfn.bam.flagstat
+
+cd bam
+[[ -h $bfn.bam ]] || [[ ! -e $bfn.bam ]] && ln -sf biscuit_mdup/$bfn.bam .
+[[ -h $bfn.bam.bai ]] || [[ ! -e $bfn.bam.bai ]] && ln -sf biscuit_mdup/$bfn.bam.bai .
+[[ -h $bfn.bam.flagstat ]] || [[ ! -e $bfn.bam.flagstat ]] && ln -sf biscuit_mdup/$bfn.bam.flagstat .
 "
-    jobname="biscuit_markdup_$bfn"
-    pbsfn=$base/pbs/$jobname.pbs
-    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 60 -memG 50 -ppn 5
-    [[ $1 == "do" ]] && qsub $pbsfn
-  done
+      jobname="biscuit_markdup_$bfn"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 8 -memG 50 -ppn 5
+      [[ $1 == "do" ]] && qsub $pbsfn
+    done
 }
 
 function wgbs_biscuit_pileup() {
@@ -710,22 +791,19 @@ function wgbs_biscuit_pileup() {
   [[ -d pbs ]] || mkdir pbs
   [[ -d pileup ]] || mkdir pileup
   [[ $1 == "-nome" ]] && nome="-N" || nome=""; # whether to pileup using the nomeseq mode
-  for f in bam/*.bam; do
-    [[ $f =~ "lambdaphage" ]] && continue;
-    fn=$(readlink -f $f)
-    bfn=$(basename $f .bam)
-    cmd="
+  awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples |
+    while read bfn sread1 sread2; do
+      cmd="
 cd $base
-biscuit pileup -r $WZSEQ_REFERENCE $nome -i $fn -o pileup/$bfn.vcf -q 28
+biscuit pileup -r $WZSEQ_REFERENCE $nome -i bam/$bfn.bam -o pileup/$bfn.vcf -q 28
 bgzip pileup/$bfn.vcf
 tabix -p vcf pileup/$bfn.vcf.gz
 "
-    jobname="biscuit_pileup_$bfn"
-    pbsfn=$base/pbs/$jobname.pbs
-    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 28
-    [[ ${!#} == "do" ]] && qsub $pbsfn
-  done
-
+      jobname="biscuit_pileup_$bfn"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 8 -memG 10 -ppn 28
+      [[ ${!#} == "do" ]] && qsub $pbsfn
+    done
 }
 
 function wgbs_biscuit_pileup_lambdaphage() {
@@ -2196,31 +2274,31 @@ function wzseq_picard_markdup {
   [[ -d pbs ]] || mkdir pbs
   [[ -d bam/before_mdup ]] || mkdir -p bam/before_mdup
   [[ -d tmp ]] || mkdir tmp
-  for f in bam/*.bam; do
-    bfn=$(basename $f .bam)
-    cmd="
+  awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples |
+    while read bfn sread1 sread2; do
+      f=bam/$bfn.bam
+      cmd="
 cd $base
-mv $f bam/before_mdup/$bfn.bam
-[[ -e $f.bai ]] && mv $f.bai bam/before_mdup/$bfn.bam.bai
-[[ -e $f.flagstat ]] && mv $f.flagstat bam/before_mdup/$bfn.bam.flagstat
-java -Xmx10g -Djava.io.tmpdir=./tmp/ -jar /home/wanding.zhou/software/picard/picard-tools-1.138/picard.jar MarkDuplicates CREATE_INDEX=true ASSUME_SORTED=true VALIDATION_STRINGENCY=SILENT METRICS_FILE=bam/before_mdup/$bfn.mdup.stats READ_NAME_REGEX=null INPUT=bam/before_mdup/$bfn.bam OUTPUT=$f TMP_DIR=tmp
-(cd bam; ln -s $bfn.bai $bfn.bam.bai;)
-samtools flagstat $f >$f.flagstat
+if [[ ! -e bam/before_mdup/$bfn.bam ]]; then
+  mv $f bam/before_mdup/$bfn.bam
+  [[ -e $f.bai ]] && mv $f.bai bam/before_mdup/$bfn.bam.bai
+  [[ -e $f.flagstat ]] && mv $f.flagstat bam/before_mdup/$bfn.bam.flagstat
+fi
+[[ -d bam/picard_mdup ]] || mkdir bam/picard_mdup
+java -Xmx10g -Djava.io.tmpdir=./tmp/ -jar /home/wanding.zhou/software/picard/picard-tools-1.138/picard.jar MarkDuplicates CREATE_INDEX=true ASSUME_SORTED=true VALIDATION_STRINGENCY=SILENT METRICS_FILE=bam/picard_mdup/$bfn.mdup.stats READ_NAME_REGEX=null INPUT=bam/before_mdup/$bfn.bam OUTPUT=bam/picard_mdup/$bfn.bam TMP_DIR=tmp
+samtools flagstat bam/picard_mdup/$bfn.bam >bam/picard_mdup/$bfn.bam.flagstat
+
+cd bam; 
+[[ -h $bfn.bam ]] || [[ ! -e $bfn.bam ]] && ln -sf picard_mdup/$bfn.bam .
+[[ -h $bfn.bam.bai ]] || [[ ! -e $bfn.bam.bai ]] && ln -sf picard_mdup/$bfn.bai $bfn.bam.bai
+[[ -h $bfn.bam.flagstat ]] || [[ ! -e $bfn.bam.flagstat ]] && ln -sf picard_mdup/$bfn.bam.flagstat .
+
 " # other options: REMOVE_DUPLICATES=true
     jobname="picard_markdup_$bfn"
     pbsfn=$base/pbs/$jobname.pbs
     pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 60 -memG 50 -ppn 5
     [[ $1 == "do" ]] && qsub $pbsfn
   done
-}
-
-function wzseq_clean_intermediate {
-
-  if [[ -d bam/before_mdup ]]; then
-    echo "Remove mark duplicate intermediate"
-    [[ -n $(compgen -G bam/before_mdup/*.bam) ]] && rm -i bam/before_mdup/*.bam
-    [[ -n $(compgen -G bam/before_mdup/*.bai) ]] && rm -i bam/before_mdup/*.bai
-  fi
 }
 
 function wzseq_check_failure {
