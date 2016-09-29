@@ -543,7 +543,7 @@ fi
       jobname="bismark_bt2_$sname"
       pbsfn=$base/pbs/$jobname.pbs
       # it seems that bismark with bowtie2 can never reach full potential of parallelization
-      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 8 -memG 50 -ppn 28
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 100 -memG 50 -ppn 28
       [[ $1 == "do" ]] && qsub $pbsfn
     done
 }
