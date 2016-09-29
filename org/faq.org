@@ -1,6 +1,523 @@
 #+STARTUP: overview
 #+STARTUP: indent
 #+TAGS: memorize(a) unknown(u)
+
+* TypeScript
+
+** typings
+
+typings install debug --save
+# update typings.json
+
+typings list
+
+typings init
+
+# if you install typings locally, you should do
+node_modules/.bin/typings search jasmine
+
+* Javascript / TypeScript
+everything is a reference
+
+** start simple http server for d3
+sudo npm install -g http-server
+cd [your folder with both html and your data]
+http-server -c-1
+** browser-sync
+browser-sync start --server --index myfile.html --files *.html
+** typescript transpile
+tsc *.ts
+
+# Initializes a watcher process that will keep main.js up to date.
+tsc main.ts --watch
+
+# use tsconfig.json to organize the transpilation
+tsconfig.json
+
+** gulp
+npm install --global gulp-cli
+npm init
+npm install --save-dev gulp
+
+#+BEGIN_SRC javascript
+var gulp = require('gulp');
+gulp.task('default', function() {
+
+});
+#+END_SRC
+
+# to run task
+gulp <task> <othertask>
+** express
+
+npm install express
+npm install jade
+
+node app.js -p port number
+
+** npm
+*** install package
+
+# -g install globally
+npm install -g jshint
+
+# usually new packages will be installed to npm_modules
+
+# read packaeg.json and install everything in it
+npm install
+
+# write dependency to package.json
+npm init -y
+# or npm init --yes
+npm install underscore --save
+# save to package.json
+
+# or in short
+npm i -S
+# equivalent to npm install --save
+
+npm i -D
+# npm install --save-dev
+# --dev-save: developmental dependency
+# dev-dependency : essential for development and deployment, not for real use
+*** npm version
+npm -v
+*** find npm install dir
+npm config get prefix
+*** change npm install dir
+npm config set prefix [yourprefix]
+*** put everything under node_modules to package.json
+npm init --yes
+*** n
+# install version 6.2.0
+n 6.2.0
+
+# install latest version
+n latest
+*** secret node_modules/.bin
+# when script runs some software, it looks for node_modules/.bin
+# you can see by
+npm bin
+
+** webpack
+
+# webpack allows bundling every dependencies into one file, and make execution faster
+npm i -g webpack webpack-dev-server
+
+*** pack
+webpack ./entry.js bundle.js
+
+*** watch
+webpack -w ./entry.js bundle.js
+
+*** source map
+web
+
+** babel
+
+the transpiler to javascript
+
+npm i -D babel-loader babel-preset-es2015
+
+** install typescript
+
+npm install -g typescript
+
+** bower
+
+sudo npm install -g bower
+
+bower list
+
+# list path so that I can copy paste
+bower list --paths 
+
+# install
+bowser install jquery
+
+# unintsall
+bower uninstall jquery
+
+# install a specific version
+bower install jquery#1.9.2
+
+# can install css as well
+bower install -S bootstrap
+
+# can search a package using title
+bower search jquery
+
+# install mutliple packages
+bower install bootstrap-css angular underscore
+
+*** create bower.json - the package.json in npm
+bower init
+
+bower install
+
+# install from a specific url
+bower install url
+
+# saev to bower.json
+bower install -S bootstrap
+
+bower uninstall angular --save
+
+bower install codejoust/session.js --save
+
+** yeoman
+
+npm install -g yo
+
+npm install -g web-generator-webapp
+
+grunt server
+
+** sass
+
+scss file
+
+Sass and Compass are Ruby gems, Scout bundles these two with Ruby. A windows installer?
+
+** javascript engine outside browser
+*** spidermonkey from mozilla
+js24 (for version 24 of Firefox)
+*** v8 from google
+*** nodejs
+*** JavaScriptCore (jsc) from WebKit
+*** usage
+$ cat foo.js 
+#!/usr/bin/js
+
+console.log("Hello, world!");
+$ ls -lAF /usr/bin/js /etc/alternatives/js /usr/bin/nodejs
+lrwxrwxrwx 1 root root      15 Jul 16 04:26 /etc/alternatives/js -> /usr/bin/nodejs*
+lrwxrwxrwx 1 root root      20 Jul 16 04:26 /usr/bin/js -> /etc/alternatives/js*
+-rwxr-xr-x 1 root root 1422004 Apr 28 20:31 /usr/bin/nodejs*
+$ chmod a+x foo.js 
+$ ./foo.js 
+Hello, world!
+$ js ./foo.js
+Hello, world!
+** basic syntax
+*** switch
+#+BEGIN_SRC javascript
+switch (o) {
+   case 'option1':
+      console.log('seen option1');
+   case 'option2':
+      console.log('seen option2');
+   default:
+      console.log('non of above');
+}
+#+END_SRC
+
+*** function
+#+BEGIN_SRC javascript
+var multiply = function (x, y) {
+   return x * y;
+};
+//Note the ";" at the end. compare this with "def multiply(x,y)" python way and "int multiply(int x, int y)" the C way.
+// or
+function multiply(x,y) {
+   return x * y;
+}
+//Note the absence of ";"
+#+END_SRC
+Any function without an explicit return is going to return "undefined"
+
+The difference between assigning an anonymous function to a function and defining a function with the same name is that one can assign variable to another function.
+*** object definition
+
+#+BEGIN_SRC javascript
+var myobj = {
+   age: 30,
+   country: "China"
+}
+
+// or equivalently, 
+
+var myobj = new Object();
+myobj.name = 'Bob Smith';
+myobj.age = 30;
+
+var me = new Object();
+me.name = "waa";
+me["age"] = 30;
+var newArray = [[1,2,3],[1,2],[{a:4}]];
+
+// JavaScript object is like a dictionary (Python) or hash (Perl)
+#+END_SRC
+
+*** class definition
+class is defined as a "function" in JavaScript!!!
+#+BEGIN_SRC javascript
+function Person(name, age) {
+    this.name = name;
+    this.age = age;
+}
+
+var bob = new Person('Bob Smith', 30);
+#+END_SRC
+
+class can have method defined to constructor
+#+BEGIN_SRC javascript
+function Rectange(height, width) {
+    this.height = height;
+    this.width = width;
+    this.calcArea = function() {
+        return this.height * this.width;
+    };
+};
+#+END_SRC
+
+*** object method definition
+
+#+BEGIN_SRC javascript
+var Bucky = {
+  printFirstName: function(){
+    console.log("My name is Bucky");
+    console.log(this === Bucky);
+  }
+};
+// to call
+Bucky.printFirstName();
+
+function doSomethingWorthless() {
+  console.log(this === global); // default "this" is global
+}
+doSomethingWorthless()
+#+END_SRC
+
+#+BEGIN_SRC javascript
+var bob = new Object();
+bob.name = 'Bob Smith';
+bob.age = 30;
+bob.setAge = function(newAge) {
+    this.age = newAge;
+}
+
+bob.setAge(40);
+
+bob.getYearOfBirth = function () {
+   return 2014 - this.age;
+};
+#+END_SRC
+
+another example
+#+BEGIN_SRC javascript
+var square = new Object();
+square.sideLength = 6;
+square.calcPerimeter = function() {
+    return this.sideLength * 4;
+};
+// help us define an area method here
+square.calcArea = function() {
+    return this.sideLength * this.sideLength;
+};
+#+END_SRC
+
+*** define class method and class object using "prototype"
+#+BEGIN_SRC javascript
+
+function User() {
+  this.name = "";
+  this.life = 100;
+  this.giveLife = function giveLife(targetPlayer) {
+    targetPlayer.life += 1;
+    console.log(this.name + " gave 1 life to "+targetPlayer.name);
+  }
+}
+
+var Bucky = new User();
+var Wendy = new User();
+Bucky.name = "Bucky";
+Wendy.name = "Wendy";
+
+Bucky.giveLife(Wendy);
+console.log("Bucky: "+Bucky.life);
+console.log("Wendy: "+Wendy.life);
+
+// You can add functions to all objects
+User.prototype.uppercut = function uppercut(targetPlayer) {
+  targetPlayer.life -= 3;
+  console.log(this.name + " just uppercutted "+targetPlayer.name);
+};
+
+Wendy.uppercut(Bucky);
+
+// You can add properties to all objects
+User.prototype.magic = 60;
+
+console.log(Bucky.magic);
+console.log(Wendy.magic);
+
+#+END_SRC
+*** accessing object properties
+There are 2 ways of accessing properties in Javascript.
+
+1. the dot notation
+var name = bob.name;
+
+2. the bracket notation
+var name = bob["name"];
+
+*** setTimeout()
+is not pausing the program, is setting schedule.
+
+** window object
+every property in "window" object is a global variable.
+#+BEGIN_SRC js
+window.foo = 42;
+alert(foo); //alerts 42
+var bar = 3;
+alert(window["bar"]); //alerts 3
+
+if(window.prompt("Enter Password") === "secret") {
+  window.location.hash = "authorized";
+  window.open("secretPage.html");
+}
+// is the same as
+if(prompt("Enter Password") === "secret") {
+  location.hash = "authorized";
+  open("secretPage.html");
+}
+#+END_SRC
+** module import/export
+
+modules imported are shared, multiple "require" results in the same import
+
+movies.js
+#+BEGIN_SRC javascript
+function func_a() {
+  console.log("a");
+}
+function func_b() {
+  console.log("b");
+}
+module.exports.var_a = func_a;
+#+END_SRC
+
+app.js
+#+BEGIN_SRC javascript
+var movies = require("./movies"); // no ".js" suffix
+movies.var_a();
+#+END_SRC
+
+*** another way
+since every file has 
+module.exports = {}
+in the top implicitly
+
+so one can also do
+#+BEGIN_SRC javascript
+module.exports = {
+
+  func_a: function(){
+     console.log("a");
+  }, // note the , instead of ;
+  favMovie: "theMatrix",
+};
+#+END_SRC
+
+*** make a non-shared "object factory"
+movies.js
+#+BEGIN_SRC javascript
+module.exports = function() {
+  return{
+    favMovie: ""
+  };
+};
+#+END_SRC
+
+emily.js
+#+BEGIN_SRC javascript
+var movies = require('./movies');
+var emilyMovies = movies();
+#+END_SRC
+** string concatenation
+
+#+BEGIN_SRC javascript
+var name='Sally Bowles';
+console.log("sally's name " + name);
+#+END_SRC
+
+string concatenation works for non-string variables, e.g.,
+#+BEGIN_SRC javascript
+var age = 16;
+console.log("sally's age " + age);
+#+END_SRC
+
+** confirm
+confirm('This is an example of using JS to create some interaction on a website. Click OK to continue!');
+** prompt
+var p=prompt("where are you from");
+** console.log
+console.log(2*5)
+console.log("hello")
+** if else
+if ("Wanding".length < 7) {
+    console.log("Let's go down the first road!");
+} else {
+    console.log("Let's go to the second road!");
+}
+** substring
+s.substring(x,y)
+x: 0-based first index
+y: 0-based first index unwanted
+** var
+var myAge=19;
+** function
+var divideByThree = function (number) {
+    var val = number / 3;
+    console.log(val);
+    return false;
+};
+** for loop
+for (var i = 1; i < 11; i = i + 1){
+console.log(i);
+}
+** array
+var mixed = [34, "candy", "blue", 11];
+*** create an array of people
+#+BEGIN_SRC javascript
+
+function Person (name, age) {
+    this.name = name;
+    this.age = age;
+}
+
+var family = new Array();
+family[0] = new Person('alice', 40);
+family[1] = new Person('bob', 42);
+family[2] = new Person('michelle', 8);
+#+END_SRC
+
+*** loop over array
+for (var i = 0; i < cities.length; i++) {
+    console.log("I would like to visit " + cities[i]);
+}
+** do while
+do {
+console.log("something");
+} while (cond);
+** not a number
+var isEven = function(number) {
+  // Your code goes here!
+  if (number % 2 == 0) {
+      return true;
+  } else if (isNaN(number)) {
+      return "not a number";
+  } else {
+      return false;
+  }
+};
+** == vs ===
+console.log(19=='19'); //true
+console.log(19==='19'); //false
+
+== compare only values
+=== compare values and types
 * bioinformatics
 ** circos
 > cd example
@@ -148,7 +665,368 @@ use --version-sort see:
 sort -V
 it sorts natural numbers within text
 see also vcf-sort which uses sort -V
+* mongoDB
+# start server
+mongod --dbpath ~/data/db
+
+restart and stop using "service".
+$ brew services restart mongodb
+$ brew services stop mongodb
+
+Then I ran mongod --config /usr/local/etc/mongod.conf, and the problem was gone.
+
+waiting for connections on port 27017
+
+> show dbs
+local  0.000GB
+# create and use database (new) contactlist
+> use contactlist
+switched to db contactlist
+> db.contactlist.insert({name: 'Tom', email: 'tom@email.com', number: '(444) 444-4444'})
+WriteResult({ "nInserted" : 1 })
+> db.contactlist.find()
+{ "_id" : ObjectId("57defa3801238164ed59e404"), "name" : "Tom", "email" : "tom@email.com", "number" : "(444) 444-4444" }
+> show dbs
+contactlist  0.000GB
+local        0.000GB
+>
+
+# pretty print .pretty()
+> db.contactlist.find().pretty()
+{
+        "_id" : ObjectId("57defa3801238164ed59e404"),
+        "name" : "Tom",
+        "email" : "tom@email.com",
+        "number" : "(444) 444-4444"
+}
+
+> db.contactlist.insert([{name:'Tracy',email:'tracy@testemail2.com',number:'(555) 555-5555'}, {name:'Tucker',email:'tucker@testemail3.com',number:'(777) 777-7777'}])
+
+> db.contactlist.find()
+{ "_id" : ObjectId("57defa3801238164ed59e404"), "name" : "Tom", "email" : "tom@email.com", "number" : "(444) 444-4444" }
+{ "_id" : ObjectId("57defb2e01238164ed59e405"), "name" : "Tracy", "email" : "tracy@testemail2.com", "number" : "(555) 555-5555" }
+{ "_id" : ObjectId("57defb2e01238164ed59e406"), "name" : "Tucker", "email" : "tucker@testemail3.com", "number" : "(777) 777-7777" }
+
+> db.contactlist.remove({_id:"57df10d65f75b548d941088e"})
+WriteResult({ "nRemoved" : 1 })
+
+# populate existing data
+mongoimport --db test --collection users --drop --file user_list.json
+
 * unix
+** use telnet to send http request
+telnet appliance 80
+GET /process.php?email=malan&password1=asasasas&password2=z HTTP/1.1 Host: appliance
+** amazon EC2 setup
+
+.ssh
+Host ams
+     HostName ec2-107-22-102-40.compute-1.amazonaws.com
+     Port 22
+     User ubuntu
+     IdentityFile ~/Dropbox/personal/2016_AWS_pem/wandingVAI.pem
+
+** enable CGI
+
+# in /etc/apaches/httpd.conf
+
+LoadModule cgi_module modules/mod_cgi.so
+
+# The ScriptAlias directive tells Apache that a particular directory is set aside for CGI programs. Apache will assume that every file in this directory is a CGI program, and will attempt to execute it, when that particular resource is requested by a client.
+ScriptAlias /cgi-bin/ /user/local/apache2/cgi-bin/
+
+# the Options directive to specify that CGI execution was permitted in a particular directory:
+<Directory /usr/local/apache2/htdocs/your-cgi-dir>
+  Options +ExecCGI
+</Directory>
+
+# AddHandler directive tells the server to treat all files with the cgi or pl extension as CGI programs:
+AddHandler cgi-script .cgi .pl
+
+** apache2 on ubuntu
+*** basic setup
+go to /etc/apache2
+apache2.conf - main configuration for the server
+ports.conf - ports that virtual hosts should listen on
+conf.d/ - control specific aspects of apache, e.g. SSL
+sites-available/ - This directory contains all of the virtual host files that define different web sites. 
+sites-enabled/:
+mods-[enabled, available]
+*** apache2.conf - ROOT CONFIG FILE
+turn off the mentioning of apache in HTTP header
+
+*** start, stop and check status of apache2
+
+# start
+sudo service apache2 start
+sudo /etc/init.d/apache2 start
+sudo start apache2 # Upstart/initctl way, doesn't work for me!
+
+# stop
+sudo service apache2 stop
+sudo /etc/init.d/apache2 stop
+
+# status
+sudo service apache2 status
+or
+sudo /etc/init.d/apache2 status
+
+# reload config files
+sudo service apache2 reload
+
+# note that service command runs what is inside /etc/init.d
+service --status-all
+# checks all status of all the services.
+
+*** /etc/apache2
+**** Timeout
+server has a maximum of 300 seconds to fulfill each request
+**** KeepAlive
+"On": allow each connection to remain open to handle multiple requests from the same client
+"Off": each request will have to establish a new connection
+**** MaxKeepAliveRequests
+**** KeepAliveTimeOut
+**** MPM Configuration (Multi-Processing Module)
+apache2 -l - 
+
+*** apache2ctl
+sudo apache2ctl graceful
+sudo apache2ctl graceful-stop
+
+These commands wait until all requests for web pages have been served before restarting/stopping the web server so that your user's don't get half a web page.
+
+*** virtual host file
+/etc/apache2/sites-available/000-default.conf
+
+The default Virtual Host is configured to handle any request on port 80, the standard http port. This is defined in the declaration header where it says "*:80", meaning port 80 on any interface.
+
+This does not mean that it will necessarily handle each request to the server on this port however. Apache uses the most specific Virtual Host definition that matches the request. This means that if there was a more specific definition, it could supersede this definition.
+
+ServerAdmin : contact email when there is server problem
+This can be inserted into an error page if you have "ServerSignature" set to "Email" in the "/etc/apache2/conf.d/security" file, so make sure you are willing to receive the mail if you adjust that setting.
+
+**** ServerName: the domain name or IP address the request should handle
+
+**** ServerAlias : A good use-case for this is adding the same domain preceded by "www."
+
+**** DocumentRoot : location of the content, default to /var/www on ubuntu
+
+You can 
+sudo vi /etc/apache2/sites-available/000-default.conf
+and change DocumentRoot to 
+
+*** log of apache
+
+tail /var/log/apache2/access.log
+
+*** error of apache
+
+tail /var/log/apache2/error.log
+
+*** set Directory access privilege
+
+apache2 >= 2.4
+#+BEGIN_SRC plain
+<Directory /home/ubuntu/>
+  Require all granted
+</Directory>
+#+END_SRC
+
+apache2 <= 2.2
+#+BEGIN_SRC plain
+<Directory /home/ubuntu/>
+  Order allow,deny
+  Allow from all
+</Directory>
+#+END_SRC
+
+*** set host DNS association
+sudo vi /etc/hosts
+
+#+BEGIN_SRC plain
+127.0.0.1        localhost
+255.255.255.255  broadcasthost
+::1              localhost
+fe80::1%lo0      localhost
+192.168.151.128  davidsecretwebsite.com # private IP associated with customized website
+#+END_SRC
+
+*** cookies are stored on /tmp of the server
+
+*** allow symlinks to access to another directory
+<VirtualHost....>
+
+..... stuff .....
+
+Alias /mydir /a/b/c
+
+</VirtualHost>
+then you could access the text file like so:
+
+domain.com/mydir/myfile.txt
+Note that this needs to take place in the central configuration file, not a .htaccess file.
+
+Symlinks are an option too. Make sure you have
+
+Options +FollowSymlinks
+
+** apache2 on mac
+
+# on a mac, sometimes, apache is called httpd
+sudo /usr/sbin/apachectl start/stop/restart/status/graceful/configtest/graceful-stop
+or
+sudo apachectl start/stop/restart/status/graceful/configtest/graceful-stop
+
+# use ps -eaf | grep httpd to check if httpd is running
+
+# based on manual, apachectl restart is equivalent to apachectl -k restart
+
+http://localhost
+
+# check syntax of apachectl
+apachectl configtest
+
+# default config
+/etc/apache2/httpd.conf
+
+# check apache version
+httpd -v
+
+*** user sites
+
+mkdir ~/Sites
+
+# check /etc/apache2/users/wandingzhou.conf
+# create one if you don't have (very likely)
+
+#+BEGIN_SRC plain
+<Directory "/Users/wandingzhou/Sites/">
+AllowOverride All
+Options Indexes MultiViews FollowSymLinks
+Require all granted
+</Directory>
+#+END_SRC
+# "AllowOverride All" allows .htaccess file to override the access permission
+
+chmod 644 wandingzhou.conf
+
+uncomment the following in /etc/apache2/httpd.conf
+#+BEGIN_SRC plain
+LoadModule authz_core_module libexec/apache2/mod_authz_core.so
+LoadModule authz_host_module libexec/apache2/mod_authz_host.so
+LoadModule userdir_module libexec/apache2/mod_userdir.so
+
+LoadModule php5_module libexec/apache2/libphp5.so
+Include /private/etc/apache2/extra/httpd-userdir.conf
+#+END_SRC
+# first 2 should be uncommented from clean install, you just need to uncomment the 3rd.
+
+uncomment the following in /etc/apache2/extra/httpd-userdir.conf
+#+BEGIN_SRC plain
+Include /private/etc/apache2/users/*.conf
+#+END_SRC
+
+then the document /Users/wandingzhou/sites/
+is viewable at http://localhost/~wandingzhou
+
+"LoadModule php5_module libexec/apache2/libphp5.so" in httpd.conf enables php
+to test put
+#+BEGIN_SRC php
+<?php phpinfo(); ?>
+#+END_SRC
+into phpinfo.php
+and open
+http://localhost/~wandingzhou/phpinfo.php
+
+*** mysql insall
+
+mysql.server start
+
+**** set root password
+/usr/local/mysql/bin/mysqladmin -u root password 'yourpasswordhere'
+
+**** autostart mysql on reboot
+
+sudo nano /Library/LaunchDaemons/com.mysql.mysql.plist
+
+#+BEGIN_SRC xml
+<!--?xml version="1.0" encoding="UTF-8"?-->
+<plist version="1.0">
+  <dict>
+    <key>KeepAlive</key>
+    <true />
+    <key>Label</key>
+    <string>com.mysql.mysqld</string>
+    <key>ProgramArguments</key>
+    <array>
+      <string>/usr/local/mysql/bin/mysqld_safe</string>
+      <string>--user=mysql</string>
+    </array>        
+  </dict>
+</plist>
+#+END_SRC
+
+then
+sudo chown root:wheel /Library/LaunchDaemons/com.mysql.mysql.plist
+sudo chmod 644 /Library/LaunchDaemons/com.mysql.mysql.plist
+sudo launchctl load -w /Library/LaunchDaemons/com.mysql.mysql.plist
+
+**** fix to 2002 MySQL Socket error
+
+Fix the looming 2002 socket error – which is linking where MySQL places the socket and where OSX thinks it should be, MySQL puts it in /tmp and OSX looks for it in /var/mysql the socket is a type of file that allows mysql client/server communication.
+
+sudo mkdir /var/mysql
+sudo ln -s /tmp/mysql.sock /var/mysql/mysql.sock
+
+*** phpmyadmin
+
+tar zxvf phpMyAdmin-4.6.4-english.tar.gz
+to ~/Sites/phpmyadmin # rename to this
+
+mkdir ~/Sites/phpmyadmin/config
+chmod o+w ~/Sites/phpmyadmin/config
+
+http://localhost/~wandingzhou/phpmyadmin/setup/
+
+new server > Authentication > User / Password > save
+
+Make sure you click on save, then a config.inc.php is now in the /config directory of phpmyadmin directory, move this file to the root level of /phpmyadmin and then remove the now empty /config directory.
+
+http://localhost/~wandingzhou/phpmyadmin/
+
+**** alternative (using config.sample.inc.php)
+
+cd /Library/WebServer/Documents/
+tar -xvf ~/Downloads/phpMyAdmin-3.5.2.2-english.tar.gz
+mv phpMyAdmin-3.5.2.2-english/ phpmyadmin
+cd phpmyadmin
+mv config.sample.inc.php config.inc.php
+
+*** upgrade phpmyadmin
+To upgrade phpmyadmin just download the latest version and copy the older ‘config.inc.php‘ from the existing directory into the new folder and replace – backup the older one just in case.
+
+*** set _www user
+
+sudo chown -R _www ~/Sites/testsite
+or
+sudo chown -R _www /Library/WebServer/Documents/testsite
+
+sudo chmod -R a+w ~/Sites/testsite
+
+** pigz
+
+tar cf - paths-to-archive | pigz > archive.tar.gz
+
+-9 gives better compression, and -p 32 gives 32 cores
+
+tar cf - paths-to-archive | pigz -9 -p 32 > archive.tar.gz
+
+tar -xvf --use-compress-program=pigz filenamehere.
+
+(-z amounts to --use-compress-program=gzip)
+
+pigz -dc target.tar.gz | tar xf -
+
 ** "readlink -f" and realpath
 realpath is deprecated, use "readlink -f"
 ** split
@@ -2095,6 +2973,30 @@ The most relevant attribute while checking the health of our SSD, is Wear Leveli
 When this value falls below 20, you should start considering backing up your data and buying a new disk.
 ===
 ** network
+*** ifconfig
+check IP
+
+*** netstat (scan ports works on Linux)
+netstat -a -p tcp | less
+check port usage
+-p [protocol]
+
+netstat -ban
+*** lsof (scan ports, works in Mac)
+
+# find all ports
+sudo lsof -i -n -P | grep LISTEN | les
+
+# check just port 80
+sudo lsof -i :80
+
+# This command shows a list of open files. The -i option checks for internet addresses with the colon symbol representing a port (instead of an actual IP address). Note, I've only used this on Mac OS X
+sudo lsof -n -i:80 | grep LISTEN
+
+# sudo is important if you need information on ports below 1024
+
+# The -n flag is for displaying IP addresses instead of host names. This makes the command execute much faster, because DNS lookups to get the host names can be slow (several seconds or a minute for many hosts).
+
 *** ssh/scp
 **** ssh relay through proxy
 
@@ -2169,8 +3071,6 @@ TTL: time to live. this indicates the amount of time after which a package would
 *** ipfwadm-wrapper -F -p deny
 *** ipfwadm-wrapper -F -a m -S xxx.xxx.xxx.0/24 -D 0.0.0.0/0
      (three commands, RH6.0). Does the same as the previous command. Substitute  the "x"s  with digits of your class "C" IP address that you assigned to your home network. See here for more details. In RH6.1, masquarading seems broken to me--I think I will install Mandrake Linux:).
-*** ifconfig
-     (as root) Display info on the network interfaces currently active (ethernet, ppp, etc). Your first ethernet should show up as eth0, second as eth1, etc, first ppp over modem as ppp0, second as ppp1, etc. The "lo" is the "loopback only" interface which should be always active. Use the options (see ifconfig --help) to configure the interfaces.
 *** ifup interface_name
      (/sbin/ifup to it run as a user) Startup a network interface. E.g.:
 *** ifup eth0
@@ -2178,8 +3078,6 @@ TTL: time to live. this indicates the amount of time after which a package would
      Users can start up or shutdown the ppp interface only when the right permission was checked during the ppp setup (using netconf ). To start a ppp interface (dial-up connection), I normally use kppp available under kde menu "internet".
 *** ifdown interface_name
      (/sbin/ifdown to run it as a user). Shut down the network interface. E.g.: ifdown ppp0 Also, see the previous command.
-*** netstat | more
-     Displays a lot (too much?) information on the status of your network.
 *** wireless card troubleshooting
 **** solve the wireless card problem of HP desktop
       http://askubuntu.com/questions/38143/ralink-5390-card-in-laptop-does-not-work-after-installing-driver  
@@ -7959,330 +8857,6 @@ http://www.catonmat.net/blog/perl-one-liners-explained-part-four/
 http://www.catonmat.net/blog/perl-one-liners-explained-part-five/
 http://www.catonmat.net/blog/perl-one-liners-explained-part-six/
 http://www.catonmat.net/blog/perl-one-liners-explained-part-seven/
-* Javascript
-everything is a reference
-
-** javascript engine outside browser
-*** spidermonkey from mozilla
-js24 (for version 24 of Firefox)
-*** v8 from google
-*** nodejs
-*** JavaScriptCore (jsc) from WebKit
-*** usage
-$ cat foo.js 
-#!/usr/bin/js
-
-console.log("Hello, world!");
-$ ls -lAF /usr/bin/js /etc/alternatives/js /usr/bin/nodejs
-lrwxrwxrwx 1 root root      15 Jul 16 04:26 /etc/alternatives/js -> /usr/bin/nodejs*
-lrwxrwxrwx 1 root root      20 Jul 16 04:26 /usr/bin/js -> /etc/alternatives/js*
--rwxr-xr-x 1 root root 1422004 Apr 28 20:31 /usr/bin/nodejs*
-$ chmod a+x foo.js 
-$ ./foo.js 
-Hello, world!
-$ js ./foo.js
-Hello, world!
-** basic syntax
-*** switch
-#+BEGIN_SRC javascript
-switch (o) {
-   case 'option1':
-      console.log('seen option1');
-   case 'option2':
-      console.log('seen option2');
-   default:
-      console.log('non of above');
-}
-#+END_SRC
-
-*** function
-#+BEGIN_SRC javascript
-var multiply = function (x, y) {
-   return x * y;
-};
-//Note the ";" at the end. compare this with "def multiply(x,y)" python way and "int multiply(int x, int y)" the C way.
-// or
-function multiply(x,y) {
-   return x * y;
-}
-//Note the absence of ";"
-#+END_SRC
-Any function without an explicit return is going to return "undefined"
-
-The difference between assigning an anonymous function to a function and defining a function with the same name is that one can assign variable to another function.
-*** object definition
-
-#+BEGIN_SRC javascript
-var myobj = {
-   age: 30,
-   country: "China"
-}
-
-// or equivalently, 
-
-var myobj = new Object();
-myobj.name = 'Bob Smith';
-myobj.age = 30;
-
-var me = new Object();
-me.name = "waa";
-me["age"] = 30;
-var newArray = [[1,2,3],[1,2],[{a:4}]];
-
-// JavaScript object is like a dictionary (Python) or hash (Perl)
-#+END_SRC
-
-*** class definition
-class is defined as a "function" in JavaScript!!!
-#+BEGIN_SRC javascript
-function Person(name, age) {
-    this.name = name;
-    this.age = age;
-}
-
-var bob = new Person('Bob Smith', 30);
-#+END_SRC
-
-class can have method defined to constructor
-#+BEGIN_SRC javascript
-function Rectange(height, width) {
-    this.height = height;
-    this.width = width;
-    this.calcArea = function() {
-        return this.height * this.width;
-    };
-};
-#+END_SRC
-
-*** object method definition
-
-#+BEGIN_SRC javascript
-var Bucky = {
-  printFirstName: function(){
-    console.log("My name is Bucky");
-    console.log(this === Bucky);
-  }
-};
-// to call
-Bucky.printFirstName();
-
-function doSomethingWorthless() {
-  console.log(this === global); // default "this" is global
-}
-doSomethingWorthless()
-#+END_SRC
-
-#+BEGIN_SRC javascript
-var bob = new Object();
-bob.name = 'Bob Smith';
-bob.age = 30;
-bob.setAge = function(newAge) {
-    this.age = newAge;
-}
-
-bob.setAge(40);
-
-bob.getYearOfBirth = function () {
-   return 2014 - this.age;
-};
-#+END_SRC
-
-another example
-#+BEGIN_SRC javascript
-var square = new Object();
-square.sideLength = 6;
-square.calcPerimeter = function() {
-    return this.sideLength * 4;
-};
-// help us define an area method here
-square.calcArea = function() {
-    return this.sideLength * this.sideLength;
-};
-#+END_SRC
-
-*** define class method and class object using "prototype"
-#+BEGIN_SRC javascript
-
-function User() {
-  this.name = "";
-  this.life = 100;
-  this.giveLife = function giveLife(targetPlayer) {
-    targetPlayer.life += 1;
-    console.log(this.name + " gave 1 life to "+targetPlayer.name);
-  }
-}
-
-var Bucky = new User();
-var Wendy = new User();
-Bucky.name = "Bucky";
-Wendy.name = "Wendy";
-
-Bucky.giveLife(Wendy);
-console.log("Bucky: "+Bucky.life);
-console.log("Wendy: "+Wendy.life);
-
-// You can add functions to all objects
-User.prototype.uppercut = function uppercut(targetPlayer) {
-  targetPlayer.life -= 3;
-  console.log(this.name + " just uppercutted "+targetPlayer.name);
-};
-
-Wendy.uppercut(Bucky);
-
-// You can add properties to all objects
-User.prototype.magic = 60;
-
-console.log(Bucky.magic);
-console.log(Wendy.magic);
-
-#+END_SRC
-*** accessing object properties
-There are 2 ways of accessing properties in Javascript.
-
-1. the dot notation
-var name = bob.name;
-
-2. the bracket notation
-var name = bob["name"];
-
-*** setTimeout()
-is not pausing the program, is setting schedule.
-
-** module import/export
-
-modules imported are shared, multiple "require" results in the same import
-
-movies.js
-#+BEGIN_SRC javascript
-function func_a() {
-  console.log("a");
-}
-function func_b() {
-  console.log("b");
-}
-module.exports.var_a = func_a;
-#+END_SRC
-
-app.js
-#+BEGIN_SRC javascript
-var movies = require("./movies"); // no ".js" suffix
-movies.var_a();
-#+END_SRC
-
-*** another way
-since every file has 
-module.exports = {}
-in the top implicitly
-
-so one can also do
-#+BEGIN_SRC javascript
-module.exports = {
-
-  func_a: function(){
-     console.log("a");
-  }, // note the , instead of ;
-  favMovie: "theMatrix",
-};
-#+END_SRC
-
-*** make a non-shared "object factory"
-movies.js
-#+BEGIN_SRC javascript
-module.exports = function() {
-  return{
-    favMovie: ""
-  };
-};
-#+END_SRC
-
-emily.js
-#+BEGIN_SRC javascript
-var movies = require('./movies');
-var emilyMovies = movies();
-#+END_SRC
-** string concatenation
-
-#+BEGIN_SRC javascript
-var name='Sally Bowles';
-console.log("sally's name " + name);
-#+END_SRC
-
-string concatenation works for non-string variables, e.g.,
-#+BEGIN_SRC javascript
-var age = 16;
-console.log("sally's age " + age);
-#+END_SRC
-
-** confirm
-confirm('This is an example of using JS to create some interaction on a website. Click OK to continue!');
-** prompt
-var p=prompt("where are you from");
-** console.log
-console.log(2*5)
-console.log("hello")
-** if else
-if ("Wanding".length < 7) {
-    console.log("Let's go down the first road!");
-} else {
-    console.log("Let's go to the second road!");
-}
-** substring
-s.substring(x,y)
-x: 0-based first index
-y: 0-based first index unwanted
-** var
-var myAge=19;
-** function
-var divideByThree = function (number) {
-    var val = number / 3;
-    console.log(val);
-    return false;
-};
-** for loop
-for (var i = 1; i < 11; i = i + 1){
-console.log(i);
-}
-** array
-var mixed = [34, "candy", "blue", 11];
-*** create an array of people
-#+BEGIN_SRC javascript
-
-function Person (name, age) {
-    this.name = name;
-    this.age = age;
-}
-
-var family = new Array();
-family[0] = new Person('alice', 40);
-family[1] = new Person('bob', 42);
-family[2] = new Person('michelle', 8);
-#+END_SRC
-
-*** loop over array
-for (var i = 0; i < cities.length; i++) {
-    console.log("I would like to visit " + cities[i]);
-}
-** do while
-do {
-console.log("something");
-} while (cond);
-** not a number
-var isEven = function(number) {
-  // Your code goes here!
-  if (number % 2 == 0) {
-      return true;
-  } else if (isNaN(number)) {
-      return "not a number";
-  } else {
-      return false;
-  }
-};
-** == vs ===
-console.log(19=='19'); //true
-console.log(19==='19'); //false
-
-== compare only values
-=== compare values and types
 * JQuery
 fadeIn, fadeOut, fadeTo, mouseenter,
 ** $(this)
@@ -8776,6 +9350,70 @@ var main = function () {
 *** .children() get all children
 to select a particular child, one can use
 $('ul').children('.pubdate')
+* PHP
+** php --ini
+find php.ini file
+** /etc/php.ini or .user.ini or .htaccess- to allow file upload
+
+Check php.ini for:
+#+BEGIN_SRC
+file_uploads = On
+post_max_size = 100M
+upload_max_filesize = 100M
+#+END_SRC
+You might need to use .htaccess or .user.ini if you are on shared hosting and don't have access to php.ini.
+Make sure you’re editing the correct ini file – use the phpinfo() function to verify your settings are actually being applied.
+Also make sure you don’t misspell the sizes - it should be 100M not 100MB.
+
+Make sure your <form> tag has the enctype="multipart/form-data" attribute
+
+*** note if you are using apache php, .user.ini is ignored, use .htaccess instead
+e.g.,
+#+BEGIN_SRC 
+php_value file_uploads On
+php_value memory_limit 30M
+php_value post_max_size 1G
+php_value upload_max_filesize 1G
+#+END_SRC
+
+** /etc/php.ini
+error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT
+# show me everything except from deprecated functions
+
+expose_php = Off # do not 
+# do not show the version of php in the HTTP response header
+
+** <?= ?>
+<?= $_GET["name"] ?>
+is equivalent to
+<?php print $_GET["name"] ?>
+
+** @$error
+put @ suppress notice
+
+** define constant
+define("USER", "jharvard");
+define("PASS", "crimson");
+
+** class object
+
+#+BEGIN_SRC
+class SimpleClass
+{
+    // property declaration
+    public $var = 'a default value';
+
+    // method declaration
+    public function displayVar() {
+        echo $this->var;
+    }
+}
+
+$a = new SimpleClass();
+echo $a->var;
+$a->displayVar();
+#+END_SRC
+
 * Java
 ** Basic concepts
 *** Java version history

@@ -194,7 +194,7 @@ function wzseq_bwa_mem {
     while read sname sread1 sread2; do
       cmd="
 cd $base
-bwa mem -M -R \"@RG\tLB:$WZSEQ_REFVERSION\tID:${sname}\tPL:Illumina\tPU:hiseq2500\tSM:${sname}\" -t 28 $WZSEQ_BWA_INDEX $sread1 $sread2 | samtools sort -O bam -T bam/$sname.tmp -o bam/$sname.bam -
+bwa mem -M -R \"@RG\tLB:$WZSEQ_REFVERSION\tID:${sname}\tPL:Illumina\tPU:hiseq2500\tSM:${sname}\" -t 28 $WZSEQ_BWA_INDEX fastq/$sread1 fastq/$sread2 | samtools sort -O bam -T bam/$sname.tmp -o bam/$sname.bam -
 samtools index bam/$sname.bam
 samtools flagstat bam/${sname}.bam > bam/$sname.bam.flagstat
 "
