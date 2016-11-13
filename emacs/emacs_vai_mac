@@ -7,7 +7,7 @@
   )
 
 ;; (add-to-list 'default-frame-alist '(font . "Source Code Pro 10"))
-(add-to-list 'default-frame-alist '(font . "Monaco-11"))
+(add-to-list 'default-frame-alist '(font . "Monaco-12"))
 
 ;; (require 'ess)
 (load "ess-site")
@@ -21,10 +21,14 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
             '("\\.emacs" . emacs-lisp-mode)
 						)
 						auto-mode-alist)
-						
-;; (load-theme 'ample-zen t)
+
+(setenv "PATH" (concat (getenv "PATH") ":/usr/local/texlive/2014/bin/x86_64-darwin/"))
+(setq exec-path (append exec-path '("/usr/local/texlive/2014/bin/x86_64-darwin/")))
+
+(load-theme 'ample-zen t)
+;; (load-theme 'airline-badwolf t)
 ;; (load-theme 'tsdh-light t)
-(load-theme 'leuven t)
+;; (load-theme 'leuven t)
 ;; (load-theme 'deeper-blue t)
 
 (setq-default indent-tabs-mode nil)
@@ -88,6 +92,7 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 (global-set-key (kbd "<f18>") 'switch-to-buffer)
 (global-set-key (kbd "<f10>") 'yas-reload-all)
 (global-set-key (kbd "<f9>") 'yas-describe-tables)
+(global-set-key (kbd "<f8>") 'jao-copy-line)
 
 (setq sh-basic-offset 2
       sh-indentation 2)

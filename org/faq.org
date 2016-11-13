@@ -714,6 +714,9 @@ WriteResult({ "nRemoved" : 1 })
 mongoimport --db test --collection users --drop --file user_list.json
 
 * unix
+
+** rasterize pdf from R
+convert -density 300 largeVectorFileFromR.pdf out.pdf
 ** use telnet to send http request
 telnet appliance 80
 GET /process.php?email=malan&password1=asasasas&password2=z HTTP/1.1 Host: appliance
@@ -1062,6 +1065,7 @@ curl -OL 'https://www.encodeproject.org/metadata/type=experiment&replicates.libr
 
 encrypt:
 tar cz target_folder | openssl enc -aes-256-cbc -e > target.tar.gz.enc
+openssl enc -aes-256-cbc -e -in test.csv -out test.csv.enc
 
 decrypt
 openssl aes-256-cbc -d -in out.tar.gz.enc -out decrypted.tar.gz
@@ -7058,6 +7062,13 @@ Error in eval(expr, envir, enclos) : object 'y' not found
 1: lm(y ~ x)
 
 *** notice that Rstudio breakpoint cannot be set inside packaged sources (source file inside a package).
+
+*** trace S4 method (use signature= argument)
+setMethod("plot", signature(x = "track", y = "missing"), 
+
+R> trace("plot", browser, exit=browser, signature = c("track",
+"missing"))
+
 ** other
 
 *** littler
