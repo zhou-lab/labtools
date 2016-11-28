@@ -274,3 +274,6 @@ export sortbed
 export TMPDIR=/secondary/projects/shen/tmp
 export TEMP=/secondary/projects/shen/tmp
 alias R="LANG=en_US.UTF-8 R"
+export TRANSVAR_CFG=/primary/vari/software/transvar/TransVar-2.1.9/transvar.cfg
+
+source /home/wanding.zhou/tools/EMAN2/EMAN2/eman2.bashrc

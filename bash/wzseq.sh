@@ -80,6 +80,8 @@ function wzref_hg19 {
   export WZSEQ_BWAMETH_INDEX=/home/wanding.zhou/references/hg19/bwameth/hg19.fa
   export WZSEQ_SUBREAD_INDEX=/primary/vari/genomicdata/genomes/hg19/subread/hg19
   export WZSEQ_REFERENCE_SPLIT=/primary/vari/genomicdata/genomes/hg19/tophat/Homo_sapiens/UCSC/hg19/Sequence/Chromosomes
+  export WZSEQ_HISAT2_INDEX=/primary/vari/genomicdata/genomes/hg19/hisat/genome
+  export WZSEQ_EXOME_CAPTURE=/primary/vari/genomicdata/genomes/hg19/annotation/hg19.exomes.bed
 
   # WGBS
   export WZSEQ_BISCUIT_INDEX=/home/wanding.zhou/references/hg19/biscuit/hg19.fa
@@ -133,6 +135,8 @@ function wzref_hg38 {
 function wzref_hg19rCRS {
   export WZSEQ_REFVERSION=hg19
   export WZSEQ_REFERENCE=/primary/vari/genomicdata/genomes/hg19-rCRS/hg19_rCRS.fa
+  export WZSEQ_DBSNP=/primary/vari/genomicdata/genomes/hg19-rCRS/dbsnp_137.hg19.vcf
+  export WZSEQ_EXOME_CAPTURE=/primary/vari/genomicdata/genomes/hg19/annotation/hg19.exomes.bed
 }
 
 ################################################################################
@@ -307,6 +311,49 @@ samtools mpileup -s bam/$sname1.bam bam/$sname2.bam | perl -alne 'BEGIN{\$b=0}{\
       pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
       [[ $1 == "do" ]] && qsub $pbsfn
     done
+}
+
+function wzseq_lofreq {
+
+  base=$(pwd)
+  [[ -d lofreq ]] || mkdir lofreq
+  [[ -d pbs ]] || mkdir pbs
+
+  for bam in bam/*.bam; do
+    sname=$(basename $bam .bam)
+    cmd="
+cd $base
+~/software/lofreq/default/bin/lofreq call -f $WZSEQ_REFERENCE -s -S $WZSEQ_DBSNP -o lofreq/$sname.vcf $bam -b 1
+transvar ganno --vcf lofreq/$sname.vcf --ccds >lofreq/$sname.vcf.transvar
+"
+    jobname="lofreq_$sname"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 60 -memG 10 -ppn 1
+    [[ ${!#} == "do" ]] && qsub $pbsfn
+  done
+}
+
+function wzseq_vardict {
+  base=$(pwd)
+  [[ -d vardict ]] || mkdir vardict
+  [[ -d pbs ]] || mkdir pbs
+  bedregion=""
+  for bam in bam/*.bam; do
+    sname=$(basename $bam .bam)
+    cmd="
+cd $base
+export PATH=/primary/vari/software/vardict/VarDict:$PATH
+## AF_THR=0.001 # minimum allele frequency
+# vardict -G $WZSEQ_REFERENCE -f 0.001 -N ${sname} -b $bam -c 1 -S 2 -E 3 -g 4 $WZSEQ_EXOME_CAPTURE > vardict/${sname}_out.raw
+# cat vardict/${sname}_out.raw | teststrandbias.R >vardict/${sname}_out.strandbias
+# cat vardict/${sname}_out.strandbias | var2vcf_valid.pl -N sample_name -E -f 0.001 >vardict/${sname}_out.vcf
+transvar ganno --vcf vardict/${sname}_out.vcf --ccds >vardict/${sname}_out.vcf.transvar
+"
+    jobname="vardict_$sname"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 48 -memG 10 -ppn 1
+    [[ ${!#} == "do" ]] && qsub $pbsfn
+  done
 }
 
 ################################################################################
@@ -543,7 +590,7 @@ fi
       jobname="bismark_bt2_$sname"
       pbsfn=$base/pbs/$jobname.pbs
       # it seems that bismark with bowtie2 can never reach full potential of parallelization
-      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 8 -memG 50 -ppn 28
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 100 -memG 50 -ppn 28
       [[ $1 == "do" ]] && qsub $pbsfn
     done
 }
@@ -1395,7 +1442,7 @@ cat<<- EOF
 === pipeline 2016-01-12 ===
  (+) wzseq_fastqc
 
- => (+) edit samples [alignment]; (+) editrnaseq_tophat2_firststrand / (+) rnaseq_tophat2 / (+) rnaseq_STAR / (+) rnaseq_gsnap / (+) rnaseq_subjunc / (+) rnaseq_mapsplice
+ => (+) edit samples [alignment]; (+) editrnaseq_tophat2_firststrand / (+) rnaseq_tophat2 / (+) rnaseq_STAR / (+) rnaseq_gsnap / (+) rnaseq_subjunc / (+) rnaseq_mapsplice / (+) rnaseq_hisat2
 
  => (+) rnaseq_kallisto => rnaseq_kallisto_diff
 
@@ -1408,8 +1455,8 @@ cat<<- EOF
 
  => (+) rnaseq_featureCounts => (+) rnaseq_edgeR => (+) rnaseq_DESeq2 => (+) rnaseq_edgeR_rmsk
 
- => (+) rnaseq_splitstrand => (+) rnaseq_count_rmsk_stranded => rnaseq_count_rmsk_stranded_edgeR
- => (+) rnaseq_count_rmsk_unstranded
+ => (+) rnaseq_splitstrand_pe / rnaseq_splitstrand_se => (+) rnaseq_count_rmsk_stranded => (+) rnaseq_count_rmsk_stranded_edgeR
+ => (+) rnaseq_count_rmsk_unstranded => (+) rnaseq_count_rmsk_unstranded_edgeR
 
  => (+) rnaseq_dexseq
 
@@ -1482,6 +1529,26 @@ samtools flagstat $sname.bam >$sname.bam.flagstat
       pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 250 -ppn 28
       [[ $1 == "do" ]] && qsub $pbsfn
     done
+}
+
+function rnaseq_hisat2 {
+  base=$(pwd)
+  [[ -d pbs ]] || mkdir pbs
+  awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples |
+  while read sname sread1 sread2; do
+    [[ $sread2 == "." ]] && input="-U fastq/$sread1" || input="-1 fastq/$sread1 -2 fastq/$sread2"
+    cmd="
+cd $base
+export PATH=$PATH:/primary/vari/software/hisat/hisat2-2.0.4
+hisat2 -x $WZSEQ_HISAT2_INDEX $input -p 14 | samtools view -bS - | samtools sort -T bam/$sname.tmp -O bam -o bam/$sname.bam
+samtools index bam/$sname.bam
+samtools flagstat bam/$sname.bam >bam/$sname.bam.flagstat
+"
+    jobname="hisat_$sname"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 30 -ppn 14
+    [[ $1 == "do" ]] && qsub $pbsfn
+  done  
 }
 
 # STAR
@@ -1906,9 +1973,9 @@ cd $base
 ## section 3: repeats
 ##############################
 
-function rnaseq_splitstrand {
+function rnaseq_splitstrand_pe {
   # split stranded RNAseq into 2 strands
-
+  # that only works for paired-end
   base=$(pwd)
   [[ -d pbs ]] || mkdir pbs
   [[ -d stranded ]] || mkdir stranded
@@ -1937,6 +2004,44 @@ bedGraphToBigWig stranded/${sname}_p.bedg ${WZSEQ_REFERENCE}.fai stranded/${snam
 
 bedtools genomecov -ibam stranded/${sname}_r.bam -g ${WZSEQ_REFERENCE}.fai -bga -split | LC_COLLATE=C sort -k1,1 -k2,2n -T stranded/ | awk -F\"\\t\" -v OFS=\"\t\" '{print \$1,\$2,\$3,-\$4}' >stranded/${sname}_r.bedg
 bedGraphToBigWig stranded/${sname}_r.bedg ${WZSEQ_REFERENCE}.fai stranded/${sname}_r.bw
+rm -f stranded/${sname}_p.sam stranded/${sname}_r.sam
+rm -f stranded/${sname}_p.bam stranded/${sname}_r.bam
+"
+    jobname="splitstrand_${sname}"
+    pbsfn=pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
+    [[ ${!#} == "do" ]] && qsub $pbsfn
+  done
+}
+
+function rnaseq_splitstrand_se {
+  # split stranded RNAseq into 2 strands
+  # that only works for paired-end
+  base=$(pwd)
+  [[ -d pbs ]] || mkdir pbs
+  [[ -d stranded ]] || mkdir stranded
+  for bam in bam/*.bam; do
+    sname=$(basename $bam .bam)
+    cmd="
+cd $base
+minmapq=10
+
+# first read, positive strand
+samtools view -H bam/${sname}.bam > stranded/${sname}_p.sam
+samtools view -q \$minmapq -F 0x110 bam/${sname}.bam >> stranded/${sname}_p.sam
+samtools view -b stranded/${sname}_p.sam | samtools sort -o stranded/${sname}_p.bam -O bam -T stranded/${sname}_tmp
+
+# first read, reverse strand
+samtools view -H bam/${sname}.bam > stranded/${sname}_r.sam
+samtools view -q \$minmapq -f 0x10 -F 0x100 bam/${sname}.bam >> stranded/${sname}_r.sam
+samtools view -b stranded/${sname}_r.sam | samtools sort -o stranded/${sname}_r.bam -O bam -T stranded/${sname}_tmp
+
+bedtools genomecov -ibam stranded/${sname}_p.bam -g ${WZSEQ_REFERENCE}.fai -bga -split | LC_COLLATE=C sort -k1,1 -k2,2n -T stranded/ >stranded/${sname}_p.bedg
+bedGraphToBigWig stranded/${sname}_p.bedg ${WZSEQ_REFERENCE}.fai stranded/${sname}_p.bw
+
+bedtools genomecov -ibam stranded/${sname}_r.bam -g ${WZSEQ_REFERENCE}.fai -bga -split | LC_COLLATE=C sort -k1,1 -k2,2n -T stranded/ | awk -F\"\\t\" -v OFS=\"\t\" '{print \$1,\$2,\$3,-\$4}' >stranded/${sname}_r.bedg
+bedGraphToBigWig stranded/${sname}_r.bedg ${WZSEQ_REFERENCE}.fai stranded/${sname}_r.bw
+
 rm -f stranded/${sname}_p.sam stranded/${sname}_r.sam
 rm -f stranded/${sname}_p.bam stranded/${sname}_r.bam
 "
@@ -2045,7 +2150,12 @@ cd $base
 minmapq=10
 samtools view -q \$minmapq -b $bam | bedtools genomecov -ibam - -g ${WZSEQ_REFERENCE}.fai -bga -split | LC_COLLATE=C sort -k1,1 -k2,2n -T rmsk/ >rmsk/${sname}.bedg
 
-bedtools intersect -a $WZSEQ_RMSK -b stranded/${sname}.bedg -wao -sorted | awk -f wanding.awk -e '{print joinr(1,7)\"\\t\"\$11*\$12;}' | bedtools groupby -g 1-7 -c 8 -o sum > rmsk/${sname}.tsv
+bedGraphToBigWig rmsk/${sname}.bedg ${WZSEQ_REFERENCE}.fai rmsk/${sname}.bw
+
+bedtools intersect -a $WZSEQ_RMSK -b rmsk/${sname}.bedg -wao -sorted | awk -f wanding.awk -e '{print joinr(1,7)\"\\t\"\$11*\$12;}' | bedtools groupby -g 1-7 -c 8 -o sum > rmsk/${sname}.tsv
+
+all=\$(awk '{a+=(\$3-\$2)*\$4}END{print a}' rmsk/${sname}.bedg)
+awk -v all=\$all '{a[\$5]+=\$8; b[\$6]+=\$8; c[\$7]+=\$8;} END{print \"Genome\t0\t\"all\"\t1.0\"; for (i in a) {print i\"\t1\t\"a[i]\"\t\"a[i]/all} for(i in b){print i\"\t2\t\"b[i]\"\t\"b[i]/all} for(i in c){print i\"\t3\t\"c[i]\"\t\"c[i]/all}}' rmsk/$sname.tsv | sort -k2,2n -k1,1 >rmsk/$sname.tsv.categories
 
 rm -f rmsk/${sname}.bedg
 "
@@ -2055,7 +2165,63 @@ rm -f rmsk/${sname}.bedg
     jobname="rmsk_${sname}"
     pbsfn=pbs/$jobname.pbs
     pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 2 -ppn 1
+    [[ ${!#} == "do" ]] && qsub $pbsfn
   done
+}
+
+function rnaseq_count_rmsk_unstranded_edgeR {
+
+  base=$(pwd)
+  [[ -d pbs ]] || mkdir pbs
+  [[ -d rmsk ]] || mkdir rmsk
+  [[ -d rmsk/diff ]] || mkdir rmsk/diff
+  awk '/^\[/{p=0}/\[diffexp\]/{p=1;next} p&&!/^$/' samples |
+    while read cond1 cond2 bams1 bams2; do
+      # skip non-replicated designs
+      # Remark: At non-replicated design, we would sometimes have
+      # "f() values at end points not of opposite sign" error
+      # for "deviance" estimate of common dispersion
+      # othertimes, it may work (usually for genes but not rmsk)
+      # [[ -n $(grep -o "," <<< "$bams1") ]] || continue
+      # [[ -n $(grep -o "," <<< "$bams2") ]] || continue
+
+      # make sure the tsv all exists
+      allexist=1
+      tsv1=""
+      for i in ${bams1//,/ }; do
+        _tsv=rmsk/$(basename $i .bam).tsv 
+        if [[ ! -e $_tsv ]]; then
+          allexist=0;
+          break;
+        fi
+        [[ -n $tsv1 ]] && tsv1=$tsv1","
+        tsv1=$tsv1""$_tsv;
+      done
+
+      tsv2=""
+      for i in ${bams2//,/ }; do
+        _tsv=rmsk/$(basename $i .bam).tsv
+	      if [[ ! -e $_tsv ]]; then
+          allexist=0;
+          break;
+        fi
+        [[ -n $tsv2 ]] && tsv2=$tsv2","
+        tsv2=$tsv2""$_tsv;
+      done
+
+      [[ $allexist == 0 ]] && continue;
+
+      # compare rmsk
+      cmd="
+cd $base
+~/wzlib/Rutils/bin/bioinfo/edgeR_rmsk.r -U -a $cond1 -b $cond2 -A $tsv1 -B $tsv2 -o rmsk/diff/${cond1}_vs_${cond2}.diff.tsv
+"
+      jobname="rmsk_diff_${cond1}_vs_${cond2}"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
+      [[ $1 == "do" ]] && qsub $pbsfn
+
+    done
 }
 
 ###################################
@@ -2456,13 +2622,15 @@ cd $base
 # coverge to bw tracks
 bedtools genomecov -ibam $fn -g ${WZSEQ_REFERENCE}.fai -bga -split | LC_ALL=C sort -k1,1 -k2,2n -T tracks/  >tracks/${bfn}.coverage.bedg
 bedGraphToBigWig tracks/${bfn}.coverage.bedg ${WZSEQ_REFERENCE}.fai tracks/${bfn}.coverage.bw
-rm -f tracks/${bfn}.coverage.bedg
+# leave .bedg for future use
+# rm -f tracks/${bfn}.coverage.bedg
 
 # unique reads
 minmapq=10
 samtools view -q \$minmapq -b $fn | bedtools genomecov -ibam stdin -g ${WZSEQ_REFERENCE}.fai -bga -split | LC_ALL=C sort -k1,1 -k2,2n -T tracks/  >tracks/${bfn}.coverage.q10.bedg
 bedGraphToBigWig tracks/${bfn}.coverage.q10.bedg ${WZSEQ_REFERENCE}.fai tracks/${bfn}.coverage.q\$minmapq.bw
-rm -f tracks/${bfn}.coverage.q10.bedg
+# leave .bedg for future use
+# rm -f tracks/${bfn}.coverage.q10.bedg
 
 # coverage statistics
 bedtools genomecov -ibam $fn -g ${WZSEQ_REFERENCE}.fai -max 100 >qc/$bfn.coverage_stats.tsv
