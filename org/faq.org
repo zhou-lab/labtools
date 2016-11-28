@@ -1597,6 +1597,8 @@ pr -t -e15 your_file | less
 -e15 replace tab stops to the next 15 spaces column
 
 ** gnu screen
+*** resume an attached screen
+screen -d -r
 *** gnu screen set window title to be working directory
 http://unix.stackexchange.com/questions/28430/screen-status-bar-to-display-current-directory-for-zsh-bash-shell
 http://vim.wikia.com/wiki/Automatically_set_screen_title
@@ -6479,6 +6481,12 @@ chisq.test(x[,2],p=dbinom(x[,1],5,0.5))
 
 Spearman's Correlation
 cor.test(method='spearman')
+
+*** ave - take average over a factor
+
+ave(breaks, wool)
+
+breaks
 
 *** cmdscale
 #+BEGIN_SRC R
@@ -14507,6 +14515,44 @@ CMAKE_SOURCE_DIR
 *** scripts
      gnuplot> load "force.p"
 * mac admin
+** reindex spotlight
+sudo mdutil -i on /
+sudo rm -R /.Spotlight-V100
+sudo mdutil -E /
+the mds_store process is the spotlight indexing process
+** use mdfind (the CUI version of Spotlight)
+
+mdfind doesn't find dot files/hidden files.
+
+mdfind kMDItemFSName = ".bashrc"
+
+mdfind -name ".bashrc"
+
+mdfind "kMDItemDisplayName == 'test*.pdf'c"
+
+# case insensitive
+mdfind -onlyin ~/wzprojects/ 'kMDItemFSName="*minmin*"cd'
+
+http://osxnotes.net/spotlight.html
+** show file location in spotlight
+
+just hold Command will show the file path in the bottom.
+
+Command+Return
+
+Command+double-click
+
+show file in finder
+
+** locate and updatedb
+sudo launchctl load -w /System/Library/LaunchDaemons/com.apple.locate.plist
+
+sudo /usr/libexec/locate.updatedb
+
+locate -i *.jpg
+
+locate *.jpg
+
 ** how to remap mac iterm2 key binding
 http://stackoverflow.com/questions/6205157/iterm2-how-to-get-jump-to-beginning-end-of-line-in-bash-shell
 preferences -> keys
@@ -14537,7 +14583,6 @@ install packages
 fink install bioperl-pm1546
 
 there would be a separate version of perl5.16.2 instead of the default perl
-
 ** code sign GDB
 http://andresabino.com/2015/04/14/codesign-gdb-on-mac-os-x-yosemite-10-10-2/
 Mac OS X 10.10.2 does not come with gdb pre installed. It is available on homebrew:

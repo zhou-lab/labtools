@@ -1,3 +1,4 @@
+
 (when (>= emacs-major-version 24)
   (require 'package)
   (add-to-list 'package-archives '("melpa" . "http://melpa.milkbox.net/packages/") t)
@@ -21,6 +22,9 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
             '("\\.emacs" . emacs-lisp-mode)
 						)
 						auto-mode-alist)
+
+;; open file in existing frame
+(setq ns-pop-up-frames nil)
 
 (setenv "PATH" (concat (getenv "PATH") ":/usr/local/texlive/2014/bin/x86_64-darwin/"))
 (setq exec-path (append exec-path '("/usr/local/texlive/2014/bin/x86_64-darwin/")))
@@ -67,7 +71,7 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 (setq word-wrap nil)
 (setq mac-command-modifier 'control)
 
-(add-to-list 'default-frame-alist '(height . 80))
+(add-to-list 'default-frame-alist '(height . 50))
 (add-to-list 'default-frame-alist '(width . 100))
 
 (show-paren-mode 1)

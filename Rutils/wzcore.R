@@ -44,6 +44,7 @@ Rscript -e \"load('%s.rda'); myfun(args);\"
 rowMax <- function(x) {apply(x,1,max)}
 
 library(ggplot2)
+library(reshape2)
 theme_wz <- theme_set(theme_classic(15))
 theme_wz <- theme_update(
   axis.line.x = element_line(colour = "grey20"),
@@ -72,4 +73,3 @@ wzvenn <- function(..., dnames=NULL) {
   grid.draw(g)
 }
 
-library(devtools)
