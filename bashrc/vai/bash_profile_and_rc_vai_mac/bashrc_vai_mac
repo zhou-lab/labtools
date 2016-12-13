@@ -173,3 +173,5 @@ alias wzseq='. /Users/wandingzhou/wzlib/bash/wzseq.sh'
 alias wzutils='. /Users/wandingzhou/wzlib/bash/wzutils.sh'
 
 alias wzmouse='. ~/wzprojects/meth/2016_03_22_mouse_array_figures.sh'
+
+test -r ~/tools/EMAN2/eman2.bashrc && source ~/tools/EMAN2/eman2.bashrc

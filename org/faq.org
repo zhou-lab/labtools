@@ -714,6 +714,9 @@ WriteResult({ "nRemoved" : 1 })
 mongoimport --db test --collection users --drop --file user_list.json
 
 * unix
+
+** rasterize pdf from R
+convert -density 300 largeVectorFileFromR.pdf out.pdf
 ** use telnet to send http request
 telnet appliance 80
 GET /process.php?email=malan&password1=asasasas&password2=z HTTP/1.1 Host: appliance
@@ -1062,6 +1065,7 @@ curl -OL 'https://www.encodeproject.org/metadata/type=experiment&replicates.libr
 
 encrypt:
 tar cz target_folder | openssl enc -aes-256-cbc -e > target.tar.gz.enc
+openssl enc -aes-256-cbc -e -in test.csv -out test.csv.enc
 
 decrypt
 openssl aes-256-cbc -d -in out.tar.gz.enc -out decrypted.tar.gz
@@ -1593,6 +1597,8 @@ pr -t -e15 your_file | less
 -e15 replace tab stops to the next 15 spaces column
 
 ** gnu screen
+*** resume an attached screen
+screen -d -r
 *** gnu screen set window title to be working directory
 http://unix.stackexchange.com/questions/28430/screen-status-bar-to-display-current-directory-for-zsh-bash-shell
 http://vim.wikia.com/wiki/Automatically_set_screen_title
@@ -6476,6 +6482,12 @@ chisq.test(x[,2],p=dbinom(x[,1],5,0.5))
 Spearman's Correlation
 cor.test(method='spearman')
 
+*** ave - take average over a factor
+
+ave(breaks, wool)
+
+breaks
+
 *** cmdscale
 #+BEGIN_SRC R
 
@@ -7058,6 +7070,13 @@ Error in eval(expr, envir, enclos) : object 'y' not found
 1: lm(y ~ x)
 
 *** notice that Rstudio breakpoint cannot be set inside packaged sources (source file inside a package).
+
+*** trace S4 method (use signature= argument)
+setMethod("plot", signature(x = "track", y = "missing"), 
+
+R> trace("plot", browser, exit=browser, signature = c("track",
+"missing"))
+
 ** other
 
 *** littler
@@ -14496,6 +14515,44 @@ CMAKE_SOURCE_DIR
 *** scripts
      gnuplot> load "force.p"
 * mac admin
+** reindex spotlight
+sudo mdutil -i on /
+sudo rm -R /.Spotlight-V100
+sudo mdutil -E /
+the mds_store process is the spotlight indexing process
+** use mdfind (the CUI version of Spotlight)
+
+mdfind doesn't find dot files/hidden files.
+
+mdfind kMDItemFSName = ".bashrc"
+
+mdfind -name ".bashrc"
+
+mdfind "kMDItemDisplayName == 'test*.pdf'c"
+
+# case insensitive
+mdfind -onlyin ~/wzprojects/ 'kMDItemFSName="*minmin*"cd'
+
+http://osxnotes.net/spotlight.html
+** show file location in spotlight
+
+just hold Command will show the file path in the bottom.
+
+Command+Return
+
+Command+double-click
+
+show file in finder
+
+** locate and updatedb
+sudo launchctl load -w /System/Library/LaunchDaemons/com.apple.locate.plist
+
+sudo /usr/libexec/locate.updatedb
+
+locate -i *.jpg
+
+locate *.jpg
+
 ** how to remap mac iterm2 key binding
 http://stackoverflow.com/questions/6205157/iterm2-how-to-get-jump-to-beginning-end-of-line-in-bash-shell
 preferences -> keys
@@ -14526,7 +14583,6 @@ install packages
 fink install bioperl-pm1546
 
 there would be a separate version of perl5.16.2 instead of the default perl
-
 ** code sign GDB
 http://andresabino.com/2015/04/14/codesign-gdb-on-mac-os-x-yosemite-10-10-2/
 Mac OS X 10.10.2 does not come with gdb pre installed. It is available on homebrew:
