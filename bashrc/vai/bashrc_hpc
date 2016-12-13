@@ -144,6 +144,7 @@ alias rdf="readlink -f"
 alias qsubi='qsub -I -l nodes=1:ppn=1 -l mem=10gb -l walltime=8:00:00'
 alias qsubim='qsub -I -l nodes=1:ppn=6 -l mem=10gb -l walltime=8:00:00'
 alias qsubil='qsub -I -l nodes=1:ppn=28 -l walltime=8:00:00'
+alias qsubill='qsub -I -l nodes=1:ppn=40 -l walltime=24:00:00'
 
 function qdelall {
    qstat | grep 'wanding.zhou' | awk '{split($1,a,".");print a[1]}' | xargs -I {} qdel {}
@@ -276,4 +277,7 @@ export TEMP=/secondary/projects/shen/tmp
 alias R="LANG=en_US.UTF-8 R"
 export TRANSVAR_CFG=/primary/vari/software/transvar/TransVar-2.1.9/transvar.cfg
 
-source /home/wanding.zhou/tools/EMAN2/EMAN2/eman2.bashrc
+#source /home/wanding.zhou/tools/EMAN2/EMAN2/eman2.bashrc
+#source /primary/vari/software/eman2/default/eman2.bashrc
+
+export SESAMEHOME=/secondary/projects/shen/projects/2016_12_06_sesame_home
