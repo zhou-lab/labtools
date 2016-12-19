@@ -310,6 +310,7 @@ def main_ensembl2name(args):
     gtffh=opengz(args.g)
     id2name = {}
     for line in gtffh:
+
         fields = line.strip('\n').split('\t')
         if len(fields) < 2:
             continue
@@ -333,8 +334,13 @@ def main_ensembl2name(args):
 
     sys.stderr.write("Found %d id-name associations\n" % len(id2name))
 
-    for line in args.i:
+    for ii, line in enumerate(args.i):
+
         fields = line.strip('\n').split('\t')
+        if args.header and ii==0:
+            args.o.write('\t'.join(fields)+'\tGeneName\tGeneType\n')
+            continue
+
         if len(fields) <= args.c:
             sys.stderr.write(line+"not recognized\n")
             sys.exit()
@@ -353,6 +359,35 @@ def main_ensembl2name(args):
         
         args.o.write("%s\t%s\t%s\n" % (
             line.strip('\n'), '+'.join(gg), '+'.join(tt)))
+
+
+def main_cnt2rpkm(args):
+
+    totalreads = []
+    for i, line in enumerate(args.i):
+        if i==0:
+            continue
+        elif i==1:
+            fields = line.strip().split('\t')
+            bams = fields[6:]
+            args.o.write('ID\tchrm\tbeg\tend\tlength')
+            for bam in bams:
+                
+                with open(bam+'.flagstat') as flagstat:
+                    for _line in flagstat:
+                        m = re.match(r'(\d+) \+ \d+ mapped \(', _line)
+                        if m:
+                            totalreads.append(int(m.group(1)))
+                args.o.write('\t'+bam)
+            args.o.write('\n')
+        else:
+            fields = line.strip().split('\t')
+            tlen = int(fields[5])
+            beg_coords = map(int, fields[2].split(';'))
+            end_coords = map(int, fields[3].split(';'))
+            args.o.write('%s\t%s\t%d\t%d\t%d\t%s\n' % (
+                fields[0], fields[1].split(';')[0],  min(beg_coords), max(end_coords), tlen,
+                '\t'.join(['%1.3f' % (float(cnt)/tlen*1000/totalreads[j]*1000000) for j,cnt in enumerate(fields[6:])])))
 
 if __name__ == '__main__':
     
@@ -415,16 +450,20 @@ if __name__ == '__main__':
     parser_runningcomp.add_argument('-o', help='output', default=None)
     parser_runningcomp.set_defaults(func=main_runningcomp)
 
-    
     parser_ensembl2name = subparsers.add_parser('ensembl2name', help='convert ENSEMBL id to gene name')
     parser_ensembl2name.add_argument('-i', type=argparse.FileType('r'), default='-', help='input table')
     parser_ensembl2name.add_argument('-g', type=str, default=None, help='GTF file')
     parser_ensembl2name.add_argument('-G', '--gene', action="store_true", help='map gene id')
     parser_ensembl2name.add_argument('-T', '--transcript', action="store_true", help='map transcript id')
+    parser_ensembl2name.add_argument('-H', '--header', action='store_true', help='treat first row as header')
     parser_ensembl2name.add_argument('-c', type=int, default=1, help='column id for ENSEMBL id in the input table (1-based)')
     parser_ensembl2name.add_argument('-o', type=argparse.FileType('w'), help='output', default=sys.stdout)
     parser_ensembl2name.set_defaults(func=main_ensembl2name)
 
+    parser_cnt2rpkm = subparsers.add_parser('cnt2rpkm', help='count table from feature count to rpkm')
+    parser_cnt2rpkm.add_argument('-i', type=argparse.FileType('r'), default='-', help='count table')
+    parser_cnt2rpkm.add_argument('-o', type=argparse.FileType('w'), help='output', default=sys.stdout)
+    parser_cnt2rpkm.set_defaults(func=main_cnt2rpkm)
 
     args = parser.parse_args()
     try:

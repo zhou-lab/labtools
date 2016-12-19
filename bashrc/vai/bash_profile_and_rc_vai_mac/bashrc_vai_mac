@@ -12,6 +12,7 @@ alias parallel="parallel --gnu --progress"
 alias sort="LC_ALL=C /Users/wandingzhou/tools/coreutils/coreutils-8.23/src/sort"
 alias hs="history | sed 's/^ *[0-9]* *//' | tail -r | less -S"
 alias wget='wget --no-check-certificate'
+alias du="du -sh"
 
 PS1='\u@\h:\w\$ '
 
@@ -172,3 +173,5 @@ alias wzseq='. /Users/wandingzhou/wzlib/bash/wzseq.sh'
 alias wzutils='. /Users/wandingzhou/wzlib/bash/wzutils.sh'
 
 alias wzmouse='. ~/wzprojects/meth/2016_03_22_mouse_array_figures.sh'
+
+test -r ~/tools/EMAN2/eman2.bashrc && source ~/tools/EMAN2/eman2.bashrc

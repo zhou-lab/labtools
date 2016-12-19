@@ -4,7 +4,7 @@
 suppressPackageStartupMessages(library(docopt))
 
 "Usage:
-  edgeR_rmsk.r -a CONDITION1 -b CONDITION2 -A BAMS1 -B BAMS2 -o OUTPUT
+  edgeR_rmsk.r [-U] -a CONDITION1 -b CONDITION2 -A BAMS1 -B BAMS2 -o OUTPUT
 
 Options:
   -a CONDITION1   name of condition1
@@ -12,6 +12,7 @@ Options:
   -A BAMS1        path to bams for condition1 (comma-separated)
   -B BAMS2        path to bams for condition2 (comma-separated)
   -o OUTPUT       output file path
+  -U              whether the input is unstranded
 " -> doc
 
 opt <- docopt(doc)
@@ -28,7 +29,11 @@ t <- sapply(c(bam.paths1, bam.paths2), read.table, simplify=F)
 suppressPackageStartupMessages(library(edgeR))
 
 cat(format(Sys.time()), "Normalizing ...\n")
-toc <- sapply(t, function(x) {ifelse(x$V4=="-", -x$V9, x$V8)})
+if (opt$U) {
+  toc <- sapply(t, function(x) {x$V8})
+} else {
+  toc <- sapply(t, function(x) {ifelse(x$V4=="-", -x$V9, x$V8)})
+}
 normFactors <- calcNormFactors(as.matrix(toc))
 metacol <- t[[1]][,1:7]
 row.names(toc) <- paste0(metacol$V1,"_",metacol$V2,"_",metacol$V3,"_",metacol$V5)
