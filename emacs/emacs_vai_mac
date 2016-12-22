@@ -51,7 +51,7 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 
 (setq tab-width 2)
 (setq-default tab-width 2)
-(setq indent-tabs-mode nil)
+(setq-default indent-tabs-mode nil)
 
 (setq org-startup-indented t)
 (setq org-startup-folded 'content)
@@ -96,7 +96,9 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 (global-set-key (kbd "<f18>") 'switch-to-buffer)
 (global-set-key (kbd "<f10>") 'yas-reload-all)
 (global-set-key (kbd "<f9>") 'yas-describe-tables)
-(global-set-key (kbd "<f8>") 'jao-copy-line)
+(global-set-key (kbd "<f13>") 'kill-whole-line)
+(global-set-key (kbd "<f14>") 'jao-copy-line)
+
 
 (setq sh-basic-offset 2
       sh-indentation 2)
@@ -405,3 +407,9 @@ Then move to that line and indent according to mode"
 (add-to-list 'auto-mode-alist '("\\.Rmd" . poly-markdown+r-mode))
 
 (setq column-number-mode t)
+
+(defun create-tags (dir-name)
+     "Create tags file."
+     (interactive "DDirectory: ")
+     (eshell-command 
+      (format "find %s -type f -name \"*.[ch]\" | etags -" dir-name)))
