@@ -11,7 +11,7 @@ pbsgen <- function(
   dest=NULL,
   commands=NULL, args=NULL,
   jobname='WandingJob',
-  queue='shortq',
+  queue='default',
   ppn=5,
   memG=2,
   walltime=12,
@@ -43,14 +43,26 @@ Rscript -e \"load('%s.rda'); myfun(args);\"
 
 rowMax <- function(x) {apply(x,1,max)}
 
-library(ggplot2)
-library(reshape2)
+suppressWarnings(library(ggplot2))
+suppressWarnings(library(reshape2))
+suppressWarnings(suppressPackageStartupMessages(library(devtools)))
+suppressWarnings(suppressPackageStartupMessages(library(wheatmap)))
+suppressWarnings(suppressPackageStartupMessages(library(sesame)))
+suppressWarnings(suppressPackageStartupMessages(library(dplyr, quiet=TRUE)))
+suppressWarnings(suppressPackageStartupMessages(library(tidyr)))
+suppressWarnings(suppressPackageStartupMessages(library(GenomicRanges, quiet=TRUE)))
+suppressWarnings(suppressPackageStartupMessages(library(limma)))
 theme_wz <- theme_set(theme_classic(15))
 theme_wz <- theme_update(
-  axis.line.x = element_line(colour = "grey20"),
-  axis.line.y = element_line(colour = "grey20"))
+  axis.line.x = element_line(colour = "black"),
+  axis.line.y = element_line(colour = "black"),
+  axis.text = element_text(colour='black'))
 
-wzbind.list <- function(x) {
+wzbind.list <- function(x, cat.names=NULL) {
+  if (!is.null(cat.names))
+    names(x) <- cat.names
+  if (is.null(names(x)))
+    stop('list has no names, please provide cat.names=')
   data.frame(x=do.call(c, x), cat=rep(names(x), sapply(x,length)))
 }
 

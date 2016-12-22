@@ -3641,6 +3641,10 @@ Linux
 exclude ending pattern
 sed -n '/chrM/,/GL000207.1/{/GL000207.1/!p}' /scratch/bcb/wzhou1/reference/hs37d5/hs37d5.fa > hs37d5.fa.chrM
 * C
+** use etags, ctags and exuberant tags
+etags:
+find . -type f -iname "*.[ch]" | etags -
+
 ** gdb
 *** output "artificial" array
 p *array@10
@@ -9743,6 +9747,46 @@ fixed
 ** rounded corner look for div
 border-radius: 5px
 * git
+** subtree
+*** add - git fetch + git read-tree + git commit
+git remote add plugin ../remotes/plugin
+git fetch plugin
+git read-tree --prefix=vendor/plugins/demo -u plugin/master
+git commit -m "Added demo plugin subtree in vendor/plugins/demo"
+*** add - git subtree add
+git remote add plugin ../remotes/plugin/
+git subtree add --prefix=vendor/plugins/demo plugin master --squash
+# with --squash to squash the subtree history
+*** update from remote - git fetch + git merge + git commit
+git fetch plugin
+git merge -s subtree --squash plugin/master
+# you can explicit reset subtree prefix
+# git merge -X subtree=vendor/plugins/demo --squash plugin/master
+git status
+# we can insert additional change to the rest of the code
+git commit -m "Updated the plugin"
+*** update from remote - git subtree pull
+git subtree pull --prefix=vendor/plugins/demo --squash plugin master
+*** backport to remote - git checkout + git cherry-pick + git push
+git checkout -b backport-plugin plugin/master
+git cherry-pick -x master~3
+git cherry-pick -x --strategy=subtree master^
+git push plugin backport-plugin
+*** backport to remote - git subtree push
+git subtree push -P vendor/plugins/demo plugin master
+*** turn a subfolder into a subtree - git filter-branch
+git checkout -b split-plugin
+git filter-branch --subdirectory-filter lib/plugins/myown
+git remote add myown ../remotes/myown
+# push the local "split-plugin" branch as the remote's (myown's) "master" branch
+git push -u myown split-plugin:master
+*** turn a subfolder into a subtree - git subtree split + git push
+git subtree split -P lib/plugins/myown -b split-plugin
+git push -u myown split-plugin:master
+
+** git push --rebase
+** pretty log
+git log --oneline --graph --decorate
 ** to change previous git commit message (not necessarily the most recent one) :unknown:
 If the commit you want to fix isn’t the most recent one:
 
@@ -10150,6 +10194,62 @@ git push origin --tags
 ** to inspect a remote
 git remote show [remote-name]
 git remote show origin
+
+** where the remote info stored on disk
+cat .git/config
+
+# "fetch = +refs/heads/*:refs/remotes/origin/*"
+# means fetch all branches (*) from remote to refs/remotes/origin at local
+
+# can also be just one branch, in that case, something like
+# "fetch = +refs/heads/master:refs/remotes/origin/master"
+
+
+refs/remotes/
+
+** show all the remote branches
+git remote -v
+
+** what are remote?
+
+they are implemented as just references to the commits
+like other "local" references
+compare "refs/remotes" to "refs/heads" (local branches)
+
+** what is HEAD
+
+is the last commit (tip) of the current branch. can be not tip. in that case, it is a "detached HEAD"
+
+Each branch has a HEAD, that's why the branches are stored at "refs/heads/
+
+** what's refspec
+
++[src/remote]:[dst/local]
+
+https://git-scm.com/book/en/v2/Git-Internals-The-Refspec
+an optional +, followed by <src>:<dst>, where <src> is the pattern for references on the remote side and <dst> is where those references will be written locally.
+
+** push a new branch
+git push origin mybranch
+git push origin mybranch:mybranch
+git push origin mybranch:refs/heads/mybranch
+git push origin HEAD^:mybranch
+git push origin :mybranch
+
+# Because the refspec is <src>:<dst>, by leaving off the <src> part, this basically says to make the topic branch on the remote nothing, which deletes it. source - last paragraph
+
+** remove a branch (local or remote)
+
+*** local
+git branch -d [branchname]
+(use -D instead to force deletion without checking merged status)
+
+*** remote
+git push origin --delete [branchname]
+or
+git push origin :[branchname]
+
+
 ** to see the difference between local and remote
 git diff <local branch> <remote-tracking branch>
 ** to push to remote
@@ -10303,7 +10403,14 @@ If you run into a merge conflict you cannot resolve, or if you decide to quit th
 ** what is equivalent to git pull
 git pull is a shortcut for git fetch and git merge
 e.g., 
+** fetch refspec
+git fetch origin master:refs/remotes/origin/mymaster
 
+# or several mutliple refspecs
+# the following pulls 2 branches (master and topic)
+git fetch origin master:refs/remotes/origin/mymaster topic:refs/remotes/origin/topic
+** push refspec
+git push origin master:refs/heads/qa/master
 ** to show remote
 git remote
 origin
