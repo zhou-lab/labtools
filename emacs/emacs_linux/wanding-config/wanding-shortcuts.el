@@ -39,3 +39,9 @@
 ;; (global-set-key '[M-kp-8]  'pager-row-up)
 ;; (global-set-key '[M-down]  'pager-row-down)
 ;; (global-set-key '[M-kp-2]  'pager-row-down)
+
+(global-set-key (kbd "<mouse-6>") 'scroll-down-line)
+(global-set-key (kbd "<mouse-7>") 'scroll-up-line)
+
+;; (global-set-key [wheel-right] 'scroll-left)
+;; (global-set-key [wheel-left] 'scroll-right)

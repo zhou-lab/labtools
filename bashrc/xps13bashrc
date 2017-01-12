@@ -161,7 +161,7 @@ alias wa='ssh wanding@wallace.cs.rice.edu'
 alias sugar='ssh wz4@sugar.rice.edu'
 alias es='/usr/bin/emacs --daemon'
 alias m='caja .'
-alias n="nautilus ."
+#alias n="nautilus ."
 alias lp='lp -o sides=two-sided-long-edge -d phast '
 alias gtsave='gnome-terminal --save-config=/home/wanding/Dropbox/config/gnometerminalsession'
 alias update-tags="find . -type f -name '*py' | xargs createtags -o TAGS -a -l python"
@@ -180,6 +180,7 @@ function dnarev {
 }
 
 export PATH=$PATH:/home/wanding/bin
+export PATH=/home/wanding/anaconda2/bin:$PATH
 export SCREENRC=/home/wanding/wzlib/screenrc/screenrc_hp
 
 # for SCREEN
@@ -225,9 +226,9 @@ if [ -x /usr/bin/dircolors ]; then
     alias dir='dir --color=auto'
     alias vdir='vdir --color=auto'
 
-    alias grep='grep --color=auto'
-    alias fgrep='fgrep --color=auto'
-    alias egrep='egrep --color=auto'
+    alias grep='grep -n --color=auto'
+    alias fgrep='fgrep -n --color=auto'
+    alias egrep='egrep -n --color=auto'
 fi
 
 # Alias definitions.
@@ -261,4 +262,16 @@ function gl {
   if [ -z "$1" ]; then message="minor, message omitted"; else message="$1"; fi;
   git commit -a -m "$message";
   git push;
+}
+
+
+# source /home/wanding/Downloads/EMAN2/eman2.bashrc
+
+function findc {
+  symbol=$1;
+  find . -regex '.*\.\(h\|c\)' -exec grep $symbol {} -H \;
+}
+
+function etagsc {
+  find . -regex '.*\.\(c\|h\)' | xargs etags
 }
