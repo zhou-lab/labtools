@@ -1,6 +1,25 @@
 #+STARTUP: overview
 #+STARTUP: indent
 #+TAGS: memorize(a) unknown(u)
+* Excel VBA
+** color cell by hex (e.g., column D and E)
+Sub SetHexColors()
+Dim i, LastRow
+LastRow = Range("A" & Rows.Count).End(xlUp).Row
+For i = 1 To LastRow
+Cells(i, "D").Interior.Color = HEXCOL2RGB(Cells(i, "D"))
+Cells(i, "E").Interior.Color = HEXCOL2RGB(Cells(i, "E"))
+Next
+End Sub
+
+Public Function HEXCOL2RGB(ByVal HexColor As String) As String
+Dim Red As String, Green As String, Blue As String
+HexColor = Replace(HexColor, "#", "")
+Red = Val("&H" & Mid(HexColor, 1, 2))
+Green = Val("&H" & Mid(HexColor, 3, 2))
+Blue = Val("&H" & Mid(HexColor, 5, 2))
+HEXCOL2RGB = RGB(Red, Green, Blue)
+End Function
 
 * TypeScript
 
@@ -9658,7 +9677,7 @@ but you shoudl set JAVA_HOME by
 export $JAVA_HOME=/path/to/oracle/java/ # without /bin, which will be appended afterwards
 mvn is smart enough to follow the JAVA_HOME
 *** build project
-mvn package
+mvn package 
 * CSS
 ** create font-face in CSS
 @font-face {
@@ -9747,6 +9766,18 @@ fixed
 ** rounded corner look for div
 border-radius: 5px
 * git
+** submodule
+*** add submodule
+git submodule add github.com/<user>/rock rock
+*** remove submodule
+// Remove the submodule entry from .git/config
+git submodule deinit -f path/to/submodule
+
+// Remove the submodule directory from the superproject's .git/modules directory
+rm -rf .git/modules/path/to/submodule
+
+// Remove the entry in .gitmodules and remove the submodule directory located at path/to/submodule
+git rm -f path/to/submodule
 ** subtree
 *** add - git fetch + git read-tree + git commit
 git remote add plugin ../remotes/plugin
