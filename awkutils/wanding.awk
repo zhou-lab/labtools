@@ -253,3 +253,12 @@ function repeats( str, n,    rep, i )
         rep = rep str   
     return rep
 }
+
+function basename(file) {
+    sub(".*/", "", file)
+    return file
+}
+
+function capFirst(s) {
+	return toupper(substr(s,1,1))tolower(substr(s,2))
+}
