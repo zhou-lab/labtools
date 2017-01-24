@@ -185,3 +185,4 @@ function findc {
 }
 
 
+source ~/tools/git-subrepo/.rc

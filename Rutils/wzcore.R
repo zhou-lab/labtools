@@ -52,11 +52,18 @@ suppressWarnings(suppressPackageStartupMessages(library(dplyr, quiet=TRUE)))
 suppressWarnings(suppressPackageStartupMessages(library(tidyr)))
 suppressWarnings(suppressPackageStartupMessages(library(GenomicRanges, quiet=TRUE)))
 suppressWarnings(suppressPackageStartupMessages(library(limma)))
-theme_wz <- theme_set(theme_classic(15))
+## theme_wz <- theme_set(theme_classic(15))
+## theme_wz <- theme_update(
+##   axis.line.x = element_line(colour = "black"),
+##   axis.line.y = element_line(colour = "black"),
+##   axis.text = element_text(colour='black'))
+
+theme_wz <- theme_set(theme_linedraw(15))
 theme_wz <- theme_update(
   axis.line.x = element_line(colour = "black"),
   axis.line.y = element_line(colour = "black"),
-  axis.text = element_text(colour='black'))
+  axis.text = element_text(colour='black'),
+  panel.grid.major = element_blank(), panel.grid.minor = element_blank())
 
 wzbind.list <- function(x, cat.names=NULL) {
   if (!is.null(cat.names))
@@ -85,3 +92,20 @@ wzvenn <- function(..., dnames=NULL) {
   grid.draw(g)
 }
 
+mergeOv <- function(a, b) {
+  index <- findOverlaps(a, b)
+  ans <- a[queryHits(index)]
+  mcols(ans) <- c(mcols(ans), mcols(b[subjectHits(index)]))
+  ans
+}
+
+## http://coleoguy.blogspot.com/2014/04/sliding-window-analysis.html
+slideMean <- function(data, window, step){
+  total <- length(data)
+  spots <- seq(from=1, to=(total-window), by=step)
+  result <- vector(length = length(spots))
+  for(i in 1:length(spots)){
+    result[i] <- mean(data[spots[i]:(spots[i]+window)])
+  }
+  return(result)
+}
