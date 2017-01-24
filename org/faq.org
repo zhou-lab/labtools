@@ -9747,6 +9747,12 @@ fixed
 ** rounded corner look for div
 border-radius: 5px
 * git
+
+** what's git push -u
+
+-u == --set-upstream
+set the upstream source of a particular branch
+
 ** subtree
 *** add - git fetch + git read-tree + git commit
 git remote add plugin ../remotes/plugin
@@ -9783,6 +9789,9 @@ git push -u myown split-plugin:master
 *** turn a subfolder into a subtree - git subtree split + git push
 git subtree split -P lib/plugins/myown -b split-plugin
 git push -u myown split-plugin:master
+
+*** subtree diff
+git diff remote-sgsl/master master:lib/sgsl/
 
 ** git push --rebase
 ** pretty log
@@ -10224,10 +10233,16 @@ Each branch has a HEAD, that's why the branches are stored at "refs/heads/
 
 ** what's refspec
 
+for fetch
+
 +[src/remote]:[dst/local]
 
 https://git-scm.com/book/en/v2/Git-Internals-The-Refspec
 an optional +, followed by <src>:<dst>, where <src> is the pattern for references on the remote side and <dst> is where those references will be written locally.
+
+for push
+
++[src/local]:[dst/remote]
 
 ** push a new branch
 git push origin mybranch
