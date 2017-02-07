@@ -1,6 +1,7 @@
 
 # somehow max.print default setting never works
 options(max.print=200); # note this is not the maximum "rows" but maximum records
+options(stringsAsFactors = FALSE)
 source('~/wzlib/Rutils/wzcore.R')
 
 

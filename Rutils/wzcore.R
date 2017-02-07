@@ -48,8 +48,8 @@ suppressWarnings(library(reshape2))
 suppressWarnings(suppressPackageStartupMessages(library(devtools)))
 suppressWarnings(suppressPackageStartupMessages(library(wheatmap)))
 suppressWarnings(suppressPackageStartupMessages(library(sesame)))
-suppressWarnings(suppressPackageStartupMessages(library(dplyr, quiet=TRUE)))
-suppressWarnings(suppressPackageStartupMessages(library(tidyr)))
+## suppressWarnings(suppressPackageStartupMessages(library(dplyr, quiet=TRUE)))
+## suppressWarnings(suppressPackageStartupMessages(library(tidyr)))
 suppressWarnings(suppressPackageStartupMessages(library(GenomicRanges, quiet=TRUE)))
 suppressWarnings(suppressPackageStartupMessages(library(limma)))
 ## theme_wz <- theme_set(theme_classic(15))
@@ -58,11 +58,13 @@ suppressWarnings(suppressPackageStartupMessages(library(limma)))
 ##   axis.line.y = element_line(colour = "black"),
 ##   axis.text = element_text(colour='black'))
 
-theme_wz <- theme_set(theme_linedraw(15))
+theme_wz <- theme_set(theme_linedraw(16))
 theme_wz <- theme_update(
-  axis.line.x = element_line(colour = "black"),
-  axis.line.y = element_line(colour = "black"),
-  axis.text = element_text(colour='black'),
+  text = element_text(face='bold'),
+  ## axis.line.x = element_line(colour = "black", size=1.2),
+  ## axis.line.y = element_line(colour = "black", size=1.2),
+  axis.text = element_text(colour='black', size=16),
+  panel.border = element_rect(linetype = "solid", colour = "black", size=1.2),
   panel.grid.major = element_blank(), panel.grid.minor = element_blank())
 
 wzbind.list <- function(x, cat.names=NULL) {
@@ -97,6 +99,11 @@ mergeOv <- function(a, b) {
   ans <- a[queryHits(index)]
   mcols(ans) <- c(mcols(ans), mcols(b[subjectHits(index)]))
   ans
+}
+
+excludeOv <- function(a, b) {
+  index <- findOverlaps(a, b)
+  a[-queryHits(index)]
 }
 
 ## http://coleoguy.blogspot.com/2014/04/sliding-window-analysis.html
