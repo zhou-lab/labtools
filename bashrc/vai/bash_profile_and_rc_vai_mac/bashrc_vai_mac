@@ -186,3 +186,11 @@ function findc {
 
 
 source ~/tools/git-subrepo/.rc
+
+function bedview {
+  awk -v target=$2 'BEGIN{match(target, "([^:]*):([0-9]*)-([0-9]*)", a)}($1==a[1] && $2<a[3] && $3>a[2])' $1;
+}
+
+function bedsumbases {
+  awk '{a += $3-$2;}END{print a}' $1
+}
