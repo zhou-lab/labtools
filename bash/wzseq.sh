@@ -439,16 +439,16 @@ function wgbs_biscuit_align {
       # while read samplecode fastq1 fastq2 _junk_; do
       cmd="
 if [[ \"$sread2\" == \".\" ]]; then
-  ~/tools/biscuit/development/biscuit/bin/biscuit align $WZSEQ_BISCUIT_INDEX -t 28 $base/fastq/$sread1 | samtools sort -T $base/bam/${sname} -O bam -o $base/bam/${sname}.bam
+  ~/tools/biscuit/development/biscuit/biscuit align $WZSEQ_BISCUIT_INDEX -t 28 $base/fastq/$sread1 | samtools sort -T $base/bam/${sname} -O bam -o $base/bam/${sname}.bam
 else
-  ~/tools/biscuit/development/biscuit/bin/biscuit align $WZSEQ_BISCUIT_INDEX -t 28 $base/fastq/$sread1 $base/fastq/$sread2 | samtools sort -T $base/bam/${sname} -O bam -o $base/bam/${sname}.bam
+  ~/tools/biscuit/development/biscuit/biscuit align $WZSEQ_BISCUIT_INDEX -t 28 $base/fastq/$sread1 $base/fastq/$sread2 | samtools sort -T $base/bam/${sname} -O bam -o $base/bam/${sname}.bam
 fi
 samtools index $base/bam/${sname}.bam
 samtools flagstat $base/bam/${sname}.bam > $base/bam/${sname}.bam.flagstat
 "
       jobname="biscuit_align_$sname"
       pbsfn=$base/pbs/$jobname.pbs
-      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 8 -memG 250 -ppn 28
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 48 -memG 250 -ppn 28
       [[ $1 == "do" ]] && qsub $pbsfn
 
       # biscuit_bwameth -b -s $samplecode -j jid_bwameth $base/fastq/$fastq1 $base/fastq/$fastq2
@@ -1291,7 +1291,7 @@ function chipseq_macs2 {
 
       cmd="
 cd $base
-macs2 callpeak -t bam/$targetname.bam -c bam/$controlname.bam -f BAM -g $WZSEQ_MACS_SHORT -n macs2/$targetname -B
+macs2 callpeak -t bam/$targetname.bam -c bam/$controlname.bam -f BAM -g $WZSEQ_MACS_SHORT -n macs2/$targetname -B --broad
 "
       jobname="macs2_$targetname"
       pbsfn=$base/pbs/$jobname.pbs
@@ -1926,6 +1926,8 @@ $prog $pairEnd $stranded -T 5 -t exon -g gene_id -a $WZSEQ_GTF_ENSEMBL_UCSCNAMIN
 $prog $pairEnd $stranded -T 5 -t exon -g gene_id -f -a $WZSEQ_RMSK_GTF -o featureCounts/rmsk_loci.tsv $allbams --primary -Q 20 --ignoreDup
 
 ~/wzlib/pyutils/wzseqtk.py cnt2rpkm -i featureCounts/rmsk_loci.tsv >featureCounts/rmsk_loci.rpkm.tsv
+
+awk -f wanding.awk -e 'NR==FNR{\$2+=1; a[\$1\":\"\$2\"-\"\$3]=joinr(4,NF)}NR!=FNR{if(\$1==\"ID\") print \"strand\tfam1\tfam2\tfam3\t\"\$0; else {ak=\$2\":\"\$3\"-\"\$4; print a[ak],\$0;}}' $WZSEQ_RMSK featureCounts/rmsk_loci.rpkm.tsv >featureCounts/rmsk_loci.rpkm.fam.tsv
 "
   jobname="featurecounts_"$(basename $base)
   pbsfn=$base/pbs/$jobname.pbs
@@ -2456,6 +2458,24 @@ geneBody_coverage.py -i $fn -r $WZSEQ_RSEQC_GENE_BED -o rseqc/${bfn}_genebody_co
 # other utility
 ################################################################################
 
+##########################################
+##### thresholding bed files by coverage
+##########################################
+
+## assume chrm, beg, end, beta, coverage
+function wzseq_cov5 {
+  f=$1
+  zcat $f | awk '$5>=5' | gzip -c >${f%.bed.gz}.cov5.bed.gz
+  echo `zcat ${f%.bed.gz}.cov5.bed.gz | wc -l` "CpGs covered 5X"
+}
+
+## assume chrm, beg, end, beta, coverage
+function wzseq_cov10 {
+  f=$1
+  zcat $f | awk '$5>=10' | gzip -c >${f%.bed.gz}.cov10.bed.gz
+  echo `zcat ${f%.bed.gz}.cov10.bed.gz | wc -l` "CpGs covered 10X"
+}
+
 function wzseq_liftbw {
   # liftOver bigwig file
   # Usage: wzseq_liftbw input.bigWig ~/tools/liftover/mm9ToMm10.over.chain.gz output.bigWig ~/references/mm10/mm10.fa.fai
@@ -2517,6 +2537,56 @@ function wzseq_check_failure {
   grep 'job killed' pbs/*.stderr
 }
 
+# fetch all SRR using SRX 
+# wzseq_srx2srr SRX306253
+function wzseq_srx2srr {
+  curl "https://www.ncbi.nlm.nih.gov/sra?term=$1" | grep -o "SRR[[:digit:]]*" | sort | uniq | paste -d, -s
+}
+
+# download using fastq-dump with accession numbers
+# section
+# [sra]
+# HUES64_derived_CD56_Mesoderm  SRR1067566,SRR1067568,SRR1067569,SRR1067570
+function wzseq_fastq_dump() {
+  base=$(pwd);
+  [[ -d pbs ]] || mkdir pbs
+  [[ -d fastq ]] || mkdir fastq
+  pairEnd="YES"
+  grep '\[experiment\] single-end' samples && pairEnd=""
+  awk '/^\[/{p=0}/\[sra\]/{p=1;next} p&&!/^$/' samples |
+    while read target srr_ids; do
+      srr_ids=${srr_ids//,/ };
+      if [[ -z "$pairEnd" ]]; then
+        cmd="
+cd $base/fastq
+rm -f ${target}.fastq.gz
+for f in $srr_ids; do
+  ~/software/sra-toolkit/default/bin/fastq-dump --gzip \$f;
+  cat \${f}.fastq.gz >>${target}.fastq.gz
+  rm -f \${f}.fastq.gz
+done
+";
+      else
+        cmd="
+cd $base/fastq
+rm -f ${target}_1.fastq.gz ${target}_2.fastq.gz
+for f in $srr_ids; do
+  ~/software/sra-toolkit/default/bin/fastq-dump --split-files --gzip \$f;
+  cat \${f}_1.fastq.gz >>${target}_1.fastq.gz
+  cat \${f}_2.fastq.gz >>${target}_2.fastq.gz
+  rm -f \${f}_1.fastq.gz \${f}_2.fastq.gz
+done
+";
+
+      fi
+      jobname="fastqdump_$target"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 48 -memG 10 -ppn 1
+      [[ ${!#} == "do" ]] && qsub $pbsfn
+    done
+}
+
+# convert downloaded sra to fastq
 function wzseq_sra_to_fastq() {
   base=$(pwd);
   [[ -d pbs ]] || mkdir pbs
@@ -2650,6 +2720,24 @@ fastqc -f fastq $fn -o $base/fastqc/$bfn
     pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 5 -ppn 1
     [[ $1 == "do" ]] && qsub $pbsfn
   done
+}
+
+##########################
+# reverse bam to fastq
+##########################
+#
+# bam2fastq
+#
+# wzseq_bam2fastq
+function wzseq_bam2fastq {
+  cd ~/projects/laird-primary/2015-05-05-CpH-brain
+  # group reads by read names, collate is faster than sort
+  #
+  # remove suffix _1, _2, mark read info to flag and
+  # remove secondary alignments
+  samtools view -h bam/SRR1029055.bam chr19 | awk '!/^@/{inpair=substr($1,length($1),1);$1=substr($1,1,length($1)-2);if(inpair==1) {$2=or($2,0x40);} else {$2=or($2,0x80);} $2=or($2,0x1); if (!(and($2, 0x100))) print $0}/^@/' | samtools collate -uO - SRR1029055tmp >SRR1029055.collate.bam
+  samtools view -h SRR1029055.collate.bam | awk 'BEGIN{key=""; line=""}!/^@/{if (key==$1) {print line; print $0;} key=$1; line=$0;}/^@/' | samtools fastq - -1 fastq_chr19/read1.fastq -2 fastq_chr19/read2.fastq -0 fastq_chr19/unpaired.fastq
+  cp -a fastq_chr19 ~/tools/biscuit/development/biscuit/test/HumanBrainCpH/
 }
 
 # create coverage track, unique and nonunique mapping
@@ -3002,3 +3090,4 @@ function auto_setup_links() {
 #     echo "Submitted "$_jobid;
 #   fi
 # }
+

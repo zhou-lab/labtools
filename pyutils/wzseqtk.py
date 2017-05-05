@@ -212,12 +212,12 @@ def main_orphan(args):
 
             if gseq[i] == 'C' and gseq[i+1] == 'G':
                 if prev and prev_is_good_left and i-prev >= args.l:
-                    tprint([c, prev, prev+1, '+'], out)
+                    tprint([c, prev, prev+2, '+'], out)
                 if prev:
                     prev_is_good_left = i-prev >= args.l
                 prev = i
         if prev_is_good_left and prev is not None:
-            tprint([c, prev, prev+1, '+'], out)
+            tprint([c, prev, prev+2, '+'], out)
 
 def main_internal(args):
 

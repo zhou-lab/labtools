@@ -127,7 +127,7 @@ export PYTHONPATH=$HOME/wzlib/pyutils:$HOME/pythonlib/lib/python2.7/site-package
 export AWKPATH=$HOME/wzlib/awkutils
 
 # /home/wanding.zhou/tools/anaconda/anaconda/bin, instead put python as a symlink to that location
-export PATH=~/bin:~/pythonlib/bin::/primary/vari/software/UCSC_Browser_Tools/default/:/home/wanding.zhou/.local/bin/:/home/pbs/bin/:/primary/vari/software/valgrind/default/bin:/primary/shared/production/software/python/default/bin/:$HOME/.Renv/bin:/primary/vari/software/latex/20160405/bin/x86_64-linux/:$PATH
+export PATH=~/bin:~/pythonlib/bin::/primary/vari/software/UCSC_Browser_Tools/default/:/home/wanding.zhou/.local/bin/:/home/pbs/bin/:/primary/vari/software/valgrind/default/bin:/primary/shared/production/software/python/default/bin/:$HOME/.Renv/bin:/primary/vari/software/latex/20160405/bin/x86_64-linux/:$HOME/software/zacks_usc_devel/zacks_PBS_Tools/:$PATH
 eval "$(Renv init -)"
 
 # % cpan
@@ -268,12 +268,12 @@ function gl {
 
 sortbed ()
 {
-    LC_ALL=C sort -k1,1 -k2,2n -T /secondary/projects/shen/tmp $1
+    LC_ALL=C sort -k1,1 -k2,2n -T /secondary/projects/jones/tmp $1
 }
 export sortbed
 
-export TMPDIR=/secondary/projects/shen/tmp
-export TEMP=/secondary/projects/shen/tmp
+export TMPDIR=/secondary/projects/jones/tmp
+export TEMP=/secondary/projects/jones/tmp
 alias R="LANG=en_US.UTF-8 R"
 export TRANSVAR_CFG=/primary/vari/software/transvar/TransVar-2.1.9/transvar.cfg
 
@@ -281,3 +281,18 @@ export TRANSVAR_CFG=/primary/vari/software/transvar/TransVar-2.1.9/transvar.cfg
 #source /primary/vari/software/eman2/default/eman2.bashrc
 
 export SESAMEHOME=/secondary/projects/shen/projects/2016_12_06_sesame_home
+export WZARDHOME=/secondary/projects/laird/projects/2016_12_14_wzard_home
+
+function findc {
+   find . -regex '.*\.\(c\|h\)' -exec grep -H "$1" {} \;
+}
+
+function etagsc {
+   find . -regex '.*\.\(c\|h\)' | xargs etags -
+}
+
+source ~/tools/git-subrepo/.rc
+
+alias wget="wget --limit-rate 4M"
+source ~/perl5/perlbrew/etc/bashrc
+

@@ -317,6 +317,25 @@ def main_untabulate(args):
     
     return
 
+def main_linejoin(args):
+
+    """ file must be pre-sorted by key!!! """
+    
+    prevkey = None
+    content = []
+    for line in args.table:
+        fields = line.strip().split('\t')
+        key = fields[args.k-1]
+        if prevkey is None:
+            prevkey = key
+        elif key != prevkey:
+            print '%s\t%d\t%s' % (prevkey, len(content), '\t'.join(content))
+            prevkey = key
+            content = []
+        content.append(line.strip())
+
+    if prevkey is None or prevkey != key:
+        print '%s\t%d\t%s' % (prevkey, len(content), '\t'.join(content))
 
 def main_match(args):
 
@@ -797,25 +816,32 @@ if __name__ == '__main__':
     parser_compare.add_argument('--caseinsensitive', action='store_true', help='case insensitive')
     parser_compare.set_defaults(func=main_compare)
 
-
-    parser_tabulate = subparsers.add_parser("tabulate", help="tabulate list")
-    parser_tabulate.add_argument("-r", type=int, required=True, 
+    p = subparsers.add_parser("tabulate", help="tabulate list")
+    p.add_argument("-r", type=int, required=True, 
                                  help="column for row names (1-based)")
-    parser_tabulate.add_argument("-c", type=int, required=True,
+    p.add_argument("-c", type=int, required=True,
                                  help="column for column names (1-based)")
-    parser_tabulate.add_argument("-d", type=int, help="column for data (1-based, optional)")
-    parser_tabulate.add_argument("list", type=argparse.FileType('r'),
+    p.add_argument("-d", type=int, help="column for data (1-based, optional)")
+    p.add_argument("list", type=argparse.FileType('r'),
                                  default='-')
-    parser_tabulate.add_argument('--delim', default="\t", help="table delimiter [\\t]")
-    parser_tabulate.add_argument('-s', action="store_true", help="have the rows and columns sorted by their names")
-    parser_tabulate.add_argument('--cnt', action="store_true", help="count occurrence as data")
-    parser_tabulate.set_defaults(func=main_tabulate)
+    p.add_argument('--delim', default="\t", help="table delimiter [\\t]")
+    p.add_argument('-s', action="store_true", help="have the rows and columns sorted by their names")
+    p.add_argument('--cnt', action="store_true", help="count occurrence as data")
+    p.set_defaults(func=main_tabulate)
 
-    parser_untabulate = subparsers.add_parser("untabulate", help="untabulate a table into list")
-    parser_untabulate.add_argument("table", type=argparse.FileType('r'), default='-')
-    parser_untabulate.set_defaults(func=main_untabulate)
+    ###### line join #######
+    ## file must be pre-sorted by key
+    p = subparsers.add_parser("linejoin", help="put multiple adjacent lines with a common key into one line")
+    p.add_argument('k', type=int, help='key column (1-based)')
+    p.add_argument('table', type=argparse.FileType('r'), default='-', help='input table')
+    p.set_defaults(func=main_linejoin)
 
-    # this function is similar to compare, but not exactly
+    p = subparsers.add_parser("untabulate", help="untabulate a table into list")
+    p.add_argument("table", type=argparse.FileType('r'), default='-')
+    p.set_defaults(func=main_untabulate)
+
+    ######## obsolete #######
+    # this function is similar to compare, but not exactly, should consider removing this because of redundancy
     parser_match = subparsers.add_parser("match", help="help match two table by common column")
     parser_match.add_argument("-t1", type=argparse.FileType('r'), required=True, help='table 1 (used as key-value map)')
     parser_match.add_argument("-t2", type=argparse.FileType('r'), required=True, help='table 2 (one to be translated)')
