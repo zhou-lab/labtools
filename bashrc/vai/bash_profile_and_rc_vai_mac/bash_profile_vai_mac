@@ -5,3 +5,17 @@ fi
 test -r /sw/bin/init.sh && . /sw/bin/init.sh
 
 test -e "${HOME}/.iterm2_shell_integration.bash" && source "${HOME}/.iterm2_shell_integration.bash"
+
+##
+# Your previous /Users/wandingzhou/.bash_profile file was backed up as /Users/wandingzhou/.bash_profile.macports-saved_2017-02-19_at_12:43:44
+##
+
+# MacPorts Installer addition on 2017-02-19_at_12:43:44: adding an appropriate PATH variable for use with MacPorts.
+export PATH="/opt/local/bin:/opt/local/sbin:$PATH"
+# Finished adapting your PATH environment variable for use with MacPorts.
+
+
+# MacPorts Installer addition on 2017-02-19_at_12:46:56: adding an appropriate PATH variable for use with MacPorts.
+export PATH="/opt/local/bin:/opt/local/sbin:$PATH"
+# Finished adapting your PATH environment variable for use with MacPorts.
+
