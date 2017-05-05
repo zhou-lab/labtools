@@ -127,7 +127,7 @@ export PYTHONPATH=$HOME/wzlib/pyutils:$HOME/pythonlib/lib/python2.7/site-package
 export AWKPATH=$HOME/wzlib/awkutils
 
 # /home/wanding.zhou/tools/anaconda/anaconda/bin, instead put python as a symlink to that location
-export PATH=~/bin:~/pythonlib/bin::/primary/vari/software/UCSC_Browser_Tools/default/:/home/wanding.zhou/.local/bin/:/home/pbs/bin/:/primary/vari/software/valgrind/default/bin:/primary/shared/production/software/python/default/bin/:$HOME/.Renv/bin:/primary/vari/software/latex/20160405/bin/x86_64-linux/:$PATH
+export PATH=~/bin:~/pythonlib/bin::/primary/vari/software/UCSC_Browser_Tools/default/:/home/wanding.zhou/.local/bin/:/home/pbs/bin/:/primary/vari/software/valgrind/default/bin:/primary/shared/production/software/python/default/bin/:$HOME/.Renv/bin:/primary/vari/software/latex/20160405/bin/x86_64-linux/:$HOME/software/zacks_usc_devel/zacks_PBS_Tools/:$PATH
 eval "$(Renv init -)"
 
 # % cpan
@@ -294,3 +294,5 @@ function etagsc {
 source ~/tools/git-subrepo/.rc
 
 alias wget="wget --limit-rate 4M"
+source ~/perl5/perlbrew/etc/bashrc
+

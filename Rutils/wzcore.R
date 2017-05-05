@@ -106,6 +106,13 @@ excludeOv <- function(a, b) {
   a[-queryHits(index)]
 }
 
+lojOv <- function(a, b) {
+  index <- findOverlaps(a, b)
+  ans <- logical(length(a))
+  ans[queryHits(index)] <- TRUE
+  ans
+}
+
 ## http://coleoguy.blogspot.com/2014/04/sliding-window-analysis.html
 slideMean <- function(data, window, step){
   total <- length(data)

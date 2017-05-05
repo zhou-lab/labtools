@@ -1,0 +1,15 @@
+syntax on
+set mouse=a
+
+let MRU_Max_Entries = 100000
+let MRU_Include_Files = '\.c$\|\.h\$\|Makefile\$\|\.org$\|\.R$\|'
+let MRU_Use_Current_Window = 1
+let MRU_Max_Submenu_Entries = 15
+
+set tabstop=2 softtabstop=0 expandtab shiftwidth=2 smarttab
+set wildmenu
+set wildmode=list:longest,full
+
+set number
+
+nnoremap <C-r> :MRU<CR>
