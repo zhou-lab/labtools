@@ -1821,7 +1821,11 @@ C-x C-m f change the default encoding of the file while saving
    basic editting
    http://www.wlindley.com/gnu/vi.htm
 * vim
-** setting (see dot_vimrc_hpc for detail)
+** what is useless
+
+disable netrw
+
+** setting (see dot_vimrc_hpc)
 
 # space for tab
 
@@ -1850,18 +1854,15 @@ let g:netrw_browse_split = 1
 # 3 - open files in a new tab
 # 4 - open in previous window
 
-# all vim goes to one instance, REQUIRE X11 installation of vim!!
-vim --remote-silent
-
 # toggle highligh search
 nnoremap <F3> :set hlsearch!<CR>
 
-# turn on line number
-:set number
-:set nu
-# turn off line number
-:set nonumber
-:set nu!
+*** map
+
+nmap, imap, vmap - map under normal, insert, and visual modes
+nnoremap, inoremap, vnoremap - non-recursive mapping
+nunmap, iunmap, vunmap - disable mapping
+mapclear - disable all maps
 
 ** basics
 
@@ -1930,10 +1931,12 @@ z. - cursor in middle of screen
 zt - cursor on top of screen
 zb - cursor at bottom of screen
 
-*** select
+*** select / visual
 
 vi{ - select code block
 va{
+
+gv - reselect last visual block
 
 *** delete
 
@@ -2125,12 +2128,18 @@ vim -S ~/today.ses - reload session
 
 :! ls -lF
 
-** MRU mode
+** CtrlP mode
 
-o - open file under cursor
-t - open file under cursor in new tab
-q - quit
-u - update file list
+# no need of separate MRU mode
+<C-p> - start
+<C-f> / <C-b> - circle among "file", "MRU" and "path"
+<F5> - reload cache
+<C-d> - file name search instead of full path
+<C-r> - regex mode
+<C-j> / <C-k> - navigate regult
+
+<C-z> - mark multiple files 
+<C-o> - open multiple files
 
 ** NERD commenter
 
