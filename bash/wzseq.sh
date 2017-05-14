@@ -448,7 +448,7 @@ samtools flagstat $base/bam/${sname}.bam > $base/bam/${sname}.bam.flagstat
 "
       jobname="biscuit_align_$sname"
       pbsfn=$base/pbs/$jobname.pbs
-      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 48 -memG 250 -ppn 28
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 60 -memG 250 -ppn 28
       [[ $1 == "do" ]] && qsub $pbsfn
 
       # biscuit_bwameth -b -s $samplecode -j jid_bwameth $base/fastq/$fastq1 $base/fastq/$fastq2
@@ -921,6 +921,41 @@ done
     [[ ${!#} == "do" ]] && qsub $pbsfn
   done
 
+}
+
+function wgbs_vcf2chtracks {
+
+  # compute 1) base-pair resolution methylation track 2) mean methylation in window track
+  [[ -d tracks ]] || mkdir tracks
+  [[ -d pbs ]] || mkdir pbs
+  items=(cg ch)
+  base=$(pwd)
+  for f in pileup/*.vcf.gz; do
+    fn=$(readlink -f $f)
+    bfn=$(basename $f .vcf.gz)
+    cmd="
+cd $base
+for pt in ${items[@]}; do
+  echo processing pileup type \$pt >&2
+  biscuit vcf2bed -k 5 -t \${pt} pileup/${bfn}.vcf.gz | LC_ALL=C sort -k1,1 -k2,2n -T tracks > tracks/${bfn}.\${pt}.bedg
+  bedGraphToBigWig tracks/${bfn}.\${pt}.bedg ${WZSEQ_REFERENCE}.fai tracks/${bfn}.\${pt}.bw
+
+  for i in 100000,100k 1000,1k 100,100; do 
+    IFS=\",\"; set \$i; 
+    echo processing \$i >&2
+    bedtools makewindows -g ${WZSEQ_REFERENCE}.fai -w \$1 | LC_ALL=C sort -k1,1 -k2,2n -T tracks/ | bedtools intersect -a - -b tracks/${bfn}.\${pt}.bedg -wo | bedtools groupby -i - -g 1-3 -c 7 -o mean >tracks/${bfn}.\${pt}.window\$2.bedg;
+
+    bedGraphToBigWig tracks/${bfn}.\${pt}.window\$2.bedg ${WZSEQ_REFERENCE}.fai tracks/${bfn}.\${pt}.window\$2.bw
+    rm -f tracks/${bfn}.\${pt}.window\$2.bedg
+    unset IFS
+  done
+done
+"
+    jobname="vcf2chtracks_$bfn"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
+    [[ ${!#} == "do" ]] && qsub $pbsfn
+  done
 }
 
 # obsolete make tracks from USC format beds
@@ -1442,6 +1477,55 @@ bedGraphToBigWig tracks/${sname}.coverage.q10.bedg ${WZSEQ_REFERENCE}.fai tracks
 # HiC pipeline
 ################################################################################
 # TODO: http://homer.salk.edu/homer/interactions/HiCtagDirectory.html
+
+function examplepipeline_hic {
+cat<<- EOF
+=== pipeline ===
+(+) hic_hicpro
+EOF
+}
+
+## generate fragments Hind-III A^AGCTT, Mbol: ^GATC
+## utils/digest_genome.py -r A^AGCTT -o mm9_hindiii.bed mm9.fasta
+## [~/software/HiC_Pro/default/annotation]$ ../bin/utils/digest_genome.py -r ^GATC -o Mbol_resfrag_hg19.bed ~/references/hg19_noContig/hg19_noContig.fa
+function hic_hicpro {
+
+  base=$(pwd)
+  [[ -d pbs ]] || mkdir -p pbs;
+  [[ -d hicpro ]] || mkdir -p hicpro;
+  awk '/^\[/{p=0}/\[hicpro\]/{p=1;next} p&&!/^$/' samples |
+    while read sname fastqs; do
+      ## need config file with name $sname.hicpro
+      mkdir -p hicpro/${sname}_input/$sname;
+
+      ## check whether to overwrite existing output
+      if [[ -d hicpro/${sname}_output ]]; then
+        read -p "Do you wish to replace existing output: hicpro/${sname}_output [yn]? " yn </dev/tty
+        case $yn in
+          [Yy]* ) rm -rf hicpro/${sname}_output; ;;
+          [Nn]* ) exit;;
+              * ) echo "Please answer yes or no."; exit;;
+        esac
+      fi
+
+      ## hicpro_config file, sample-specific config file has higher precedence 
+      for fastq in ${fastqs//,/ }; do
+        ln -sf `rf fastq/$fastq` hicpro/${sname}_input/$sname/$fastq;
+      done
+      configfile=hicpro/${sname}_hicpro_config
+      if [[ ! -e $configfile ]]; then configfile=hicpro/hicpro_config; fi;
+
+      ## write pbs file
+    cmd="
+cd $base
+/home/wanding.zhou/software/HiC_Pro/default/bin/HiC-Pro -c $configfile -i hicpro/${sname}_input -o hicpro/${sname}_output
+"
+      jobname="hicpro_${sname}"
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 48 -memG 100 -ppn 28
+      [[ ${!#} == "do" ]] && qsub $pbsfn
+    done
+}
 
 ################################################################################
 # RNA-seq pipeline
@@ -2729,15 +2813,36 @@ fastqc -f fastq $fn -o $base/fastqc/$bfn
 # bam2fastq
 #
 # wzseq_bam2fastq
+# unmark secondary (some bam have only secondary mapping but primary mapping missing)
+# samtools view -h in.bam | awk '!/^@/{$2=and($2,compl(0x100)); print $0}/^@/' | samtools view -bo tmp0.bam
+
+# remove suffix _1, _2, mark read info to flag and
+#  samtools view -h bam/SRR1029055.bam chr19 | awk '!/^@/{inpair=substr($1,length($1),1);$1=substr($1,1,length($1)-2);if(inpair==1) {$2=or($2,0x40);} else {$2=or($2,0x80);} $2=or($2,0x1); if (!(and($2, 0x100))) print $0}/^@/' | samtools collate -uO - SRR1029055tmp >SRR1029055.collate.bam
+#  samtools view -h SRR1029055.collate.bam | awk 'BEGIN{key=""; line=""}!/^@/{if (key==$1) {print line; print $0;} key=$1; line=$0;}/^@/' | samtools fastq - -1 fastq_chr19/read1.fastq -2 fastq_chr19/read2.fastq -0 fastq_chr19/unpaired.fastq
 function wzseq_bam2fastq {
-  cd ~/projects/laird-primary/2015-05-05-CpH-brain
-  # group reads by read names, collate is faster than sort
-  #
-  # remove suffix _1, _2, mark read info to flag and
-  # remove secondary alignments
-  samtools view -h bam/SRR1029055.bam chr19 | awk '!/^@/{inpair=substr($1,length($1),1);$1=substr($1,1,length($1)-2);if(inpair==1) {$2=or($2,0x40);} else {$2=or($2,0x80);} $2=or($2,0x1); if (!(and($2, 0x100))) print $0}/^@/' | samtools collate -uO - SRR1029055tmp >SRR1029055.collate.bam
-  samtools view -h SRR1029055.collate.bam | awk 'BEGIN{key=""; line=""}!/^@/{if (key==$1) {print line; print $0;} key=$1; line=$0;}/^@/' | samtools fastq - -1 fastq_chr19/read1.fastq -2 fastq_chr19/read2.fastq -0 fastq_chr19/unpaired.fastq
-  cp -a fastq_chr19 ~/tools/biscuit/development/biscuit/test/HumanBrainCpH/
+  base=$(pwd);
+  [[ -d bam ]] || mkdir bam
+  [[ -d pbs ]] || mkdir pbs
+  awk '/^\[/{p=0}/\[bam2fastq\]/{p=1;next} p&&!/^$/' samples |
+    while read sample sourcebams; do
+      cmd="
+# group reads by read names, collate is faster than sort
+cd $base;
+mkdir -p bam/collate;
+i=1;
+for sourcebam in ${sourcebams//,/ }; do
+  samtools view -h \$sourcebam | awk -F\"\\t\" -v OFS=\"\t\" '!/^@/{\$2=and(\$2,compl(0x100)); print \$0}/^@/' > bam/collate/${sample}_\${i}_tmp1.sam
+  samtools collate -u bam/collate/${sample}_\${i}_tmp1.sam bam/collate/${sample}_\${i}_tmp2
+  # samtools collate -u \$sourcebam collate/${sample}_\$i.bam;
+  samtools fastq -On -0 fastq/${sample}_\$i.paired_nolabel.fq -1 fastq/${sample}_\$i.pe1.fq -2 fastq/${sample}_\$i.pe2.fq -s fastq/${sample}_\$i.se.fq bam/collate/${sample}_\${i}_tmp2.bam;
+  i=\$((i+1))
+done
+"
+    jobname="bam2fastq_$sample"
+    pbsfn=$base/pbs/$jobname.pbs
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 48 -memG 5 -ppn 1
+    [[ ${!#} == "do" ]] && qsub $pbsfn
+  done
 }
 
 # create coverage track, unique and nonunique mapping
