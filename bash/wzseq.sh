@@ -11,6 +11,9 @@
 # on a new machine, you just need to update this section
 ################################################################################
 
+##########
+## mouse
+##########
 ###### mouse mm10 #####
 function wzref_mm10 {
   export WZSEQ_REFVERSION=mm10
@@ -63,6 +66,10 @@ function wzref_mm10 {
   # build the following using UCSC table builder
   export WZSEQ_RMSK_GTF=/home/wanding.zhou/references/mm10/annotation/rmsk/rmsk.mm10.gtf
 }
+
+#############
+## Human
+#############
 
 ###### human hg19 ####
 function wzref_hg19 {
@@ -144,6 +151,48 @@ function wzref_hg19rCRS {
   export WZSEQ_DBSNP=/primary/vari/genomicdata/genomes/hg19-rCRS/dbsnp_137.hg19.vcf
   export WZSEQ_EXOME_CAPTURE=/primary/vari/genomicdata/genomes/hg19/annotation/hg19.exomes.bed
 }
+
+
+##################
+## lancelet
+##################
+
+function wzref_braFlo1 {
+  export WZSEQ_REFERENCE=/primary/vari/genomicdata/genomes/braFlo1/braFlo1.fa
+  export WZSEQ_BISCUIT_INDEX=/primary/vari/genomicdata/genomes/braFlo1/biscuit/braFlo1.fa
+}
+
+function wzref_braFlo2 {
+  export WZSEQ_REFERENCE=/primary/vari/genomicdata/genomes/braFlo2/braFlo2.fa
+  export WZSEQ_BISCUIT_INDEX=/primary/vari/genomicdata/genomes/braFlo2/biscuit/braFlo2.fa
+}
+
+##################
+## Elephant Shark
+##################
+
+function wzref_calMil1 {
+  export WZSEQ_REFERENCE=/primary/vari/genomicdata/genomes/calMil1/calMil1.fa
+  export WZSEQ_BISCUIT_INDEX=/primary/vari/genomicdata/genomes/calMil1/biscuit/calMil1.fa
+}
+
+############
+## Lamprey
+############
+
+function wzref_petMar2 {
+  export WZSEQ_REFERENCE=/primary/vari/genomicdata/genomes/petMar2/petMar2.fa
+  export WZSEQ_BISCUIT_INDEX=/primary/vari/genomicdata/genomes/petMar2/biscuit/petMar2.fa
+}
+
+##############
+## Sea Squirt
+##############
+
+function wzref_ci2 {
+  export WZSEQ_REFERENCE=/primary/vari/genomicdata/genomes/ci2/ci2.fa
+}
+
 
 ################################################################################
 # DNA-seq, mutation calling etc.
@@ -434,14 +483,15 @@ function wgbs_biscuit_align {
   base=$(pwd)
   [[ -d bam ]] || mkdir bam
   [[ -d pbs ]] || mkdir pbs
+  [[ $1 == "-both" ]] && both=" -b 1 " || both="";
   awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples |
     while read sname sread1 sread2; do
       # while read samplecode fastq1 fastq2 _junk_; do
       cmd="
 if [[ \"$sread2\" == \".\" ]]; then
-  ~/tools/biscuit/development/biscuit/biscuit align $WZSEQ_BISCUIT_INDEX -t 28 $base/fastq/$sread1 | samtools sort -T $base/bam/${sname} -O bam -o $base/bam/${sname}.bam
+  ~/tools/biscuit/development/biscuit/biscuit align $WZSEQ_BISCUIT_INDEX $both -t 28 $base/fastq/$sread1 | samtools sort -T $base/bam/${sname} -O bam -o $base/bam/${sname}.bam
 else
-  ~/tools/biscuit/development/biscuit/biscuit align $WZSEQ_BISCUIT_INDEX -t 28 $base/fastq/$sread1 $base/fastq/$sread2 | samtools sort -T $base/bam/${sname} -O bam -o $base/bam/${sname}.bam
+  ~/tools/biscuit/development/biscuit/biscuit align $WZSEQ_BISCUIT_INDEX $both -t 28 $base/fastq/$sread1 $base/fastq/$sread2 | samtools sort -T $base/bam/${sname} -O bam -o $base/bam/${sname}.bam
 fi
 samtools index $base/bam/${sname}.bam
 samtools flagstat $base/bam/${sname}.bam > $base/bam/${sname}.bam.flagstat
@@ -449,7 +499,7 @@ samtools flagstat $base/bam/${sname}.bam > $base/bam/${sname}.bam.flagstat
       jobname="biscuit_align_$sname"
       pbsfn=$base/pbs/$jobname.pbs
       pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 60 -memG 250 -ppn 28
-      [[ $1 == "do" ]] && qsub $pbsfn
+      [[ ${!#} == "do" ]] && qsub $pbsfn
 
       # biscuit_bwameth -b -s $samplecode -j jid_bwameth $base/fastq/$fastq1 $base/fastq/$fastq2
       # biscuit_mdup -j jid_mdup -d $jid_bwameth -i bam/$samplecode
@@ -887,7 +937,6 @@ function wgbs_vcf2tracks {
 
   # compute 1) base-pair resolution methylation track 2) mean methylation in window track
   [[ -d tracks ]] || mkdir tracks
-  [[ -d qc ]] || mkdir qc
   base=$(pwd)
   [[ -d pbs ]] || mkdir pbs
   [[ $1 == "-nome" ]] && items=(hcg gch) || items=(cg)
@@ -1187,12 +1236,13 @@ function examplepipeline_chipseq {
   cat <<- EOF
 === pipeline 2015-01-28 ===
  (+) wzseq_bwa_aln_se / (+) wzseq_bwa_mem =>
+ => (+) wzseq_bam_coverage
 
  (+) chipseq_bcp => (+) chipseq_macs2 => (+) chipseq_gem => (+) chipseq_sissrs
  (+) chipseq_HOMER => (+) chipseq_HOMER_peak
 
-  => (+) chipseq_diffbind_window
-  => (+) chipseq_bam2track
+  => (+) chipseq_diffbind_window_with_internal_control
+  => (+) chipseq_bam2track_with_internal_control
 EOF
 }
 
@@ -1391,7 +1441,7 @@ rm -f $tbed $cbed
     done
 }
 
-function chipseq_diffbind_window {
+function chipseq_diffbind_window_with_internal_control {
   [[ -d pbs ]] || mkdir pbs
   [[ -d diffbind ]] || mkdir diffbind
 
@@ -1423,14 +1473,17 @@ wc -l $odir/$sname2.bed
 # control fold change and maximum of the two
 paste $odir/$sname1.bed $odir/$sname2.bed | awk -f wanding.awk -e '{rawma=max(\$4,\$8); n1=(\$4+1); n2=(\$8+1)*$control1/$control2; ma=max(n1,n2); mi=min(n1,n2); strand=n1<n2?\"+\":\"-\"; if (rawma>1000 && (ma/mi)>5) print \$1\"\t\"\$2\"\t\"\$3\"\t.\t0\t\"strand\"\t\"log(n2/n1)/log(2)\"\t\"\$4\"\t\"\$8}' | sort -k1,1 -k2,2n -T $odir | bedtools merge -s -i - -delim \";\" -c 7,7,8,9 -o mean,count,mean,mean >$odir/${cond1}_vs_${cond2}_diffbind.tsv
 "
-      jobname="diffbind_${cond1}_vs_${cond2}"
+      jobname="diffbind_${cond1}_vs_${cond2}_with_internal_control"
       pbsfn=$base/pbs/$jobname.pbs
       pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 80 -ppn 7
       [[ $1 == "do" ]] && qsub $pbsfn
     done
 }
 
-function chipseq_bam2track {
+##################################################
+## normalize chipseq signal with internal control
+##################################################
+function chipseq_bam2track_with_internal_control {
 
   [[ -d pbs ]] || mkdir pbs
   [[ -d tracks ]] || mkdir tracks
@@ -1465,7 +1518,7 @@ bedGraphToBigWig tracks/${sname}.coverage.q10.bedg ${WZSEQ_REFERENCE}.fai tracks
 
 # rm -f tracks/${sname}.coverage.q10.bedg
 "
-      jobname="chipseq_bam2track_${sname}"
+      jobname="chipseq_bam2track_with_internal_control_${sname}"
       pbsfn=$base/pbs/$jobname.pbs
       pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 5 -ppn 2
       [[ $1 == "do" ]] && qsub $pbsfn
@@ -2835,8 +2888,18 @@ for sourcebam in ${sourcebams//,/ }; do
   samtools collate -u bam/collate/${sample}_\${i}_tmp1.sam bam/collate/${sample}_\${i}_tmp2
   # samtools collate -u \$sourcebam collate/${sample}_\$i.bam;
   samtools fastq -On -0 fastq/${sample}_\$i.paired_nolabel.fq -1 fastq/${sample}_\$i.pe1.fq -2 fastq/${sample}_\$i.pe2.fq -s fastq/${sample}_\$i.se.fq bam/collate/${sample}_\${i}_tmp2.bam;
+  gzip -c fastq/${sample}_\$i.paired_nolabel.fq >>fastq/${sample}.paired_nolabel.fq.gz
+  gzip -c fastq/${sample}_\$i.pe1.fq >>fastq/${sample}.pe1.fq.gz
+  gzip -c fastq/${sample}_\$i.pe2.fq >>fastq/${sample}.pe2.fq.gz
+  gzip -c fastq/${sample}_\$i.se.fq >>fastq/${sample}.se.fq.gz 
+  rm -f fastq/${sample}_\$i.paired_nolabel.fq fastq/${sample}_\$i.pe1.fq fastq/${sample}_\$i.pe2.fq fastq/${sample}_\$i.se.fq
   i=\$((i+1))
+  rm -f bam/collate/${sample}_\${i}_tmp{1,2}*;
 done
+[[ -z \$(gunzip -c fastq/${sample}.paired_nolabel.fq.gz | head -c1) ]] && rm -f fastq/${sample}.paired_nolabel.fq.gz
+[[ -z \$(gunzip -c fastq/${sample}.pe1.fq.gz | head -c1) ]] && rm -f fastq/${sample}.pe1.fq.gz
+[[ -z \$(gunzip -c fastq/${sample}.pe2.fq.gz | head -c1) ]] && rm -f fastq/${sample}.pe2.fq.gz
+[[ -z \$(gunzip -c fastq/${sample}.se.fq.gz | head -c1) ]] && rm -f fastq/${sample}.se.fq.gz
 "
     jobname="bam2fastq_$sample"
     pbsfn=$base/pbs/$jobname.pbs
@@ -2858,20 +2921,16 @@ function wzseq_bam_coverage {
     cmd="
 cd $base
 
-# coverge to bw tracks
+### coverge to bw tracks
 bedtools genomecov -ibam $fn -g ${WZSEQ_REFERENCE}.fai -bga -split | LC_ALL=C sort -k1,1 -k2,2n -T tracks/  >tracks/${bfn}.coverage.bedg
 bedGraphToBigWig tracks/${bfn}.coverage.bedg ${WZSEQ_REFERENCE}.fai tracks/${bfn}.coverage.bw
-# leave .bedg for future use
-# rm -f tracks/${bfn}.coverage.bedg
 
-# unique reads
+### unique reads
 minmapq=10
 samtools view -q \$minmapq -b $fn | bedtools genomecov -ibam stdin -g ${WZSEQ_REFERENCE}.fai -bga -split | LC_ALL=C sort -k1,1 -k2,2n -T tracks/  >tracks/${bfn}.coverage.q10.bedg
 bedGraphToBigWig tracks/${bfn}.coverage.q10.bedg ${WZSEQ_REFERENCE}.fai tracks/${bfn}.coverage.q\$minmapq.bw
-# leave .bedg for future use
-# rm -f tracks/${bfn}.coverage.q10.bedg
 
-# coverage statistics
+### coverage statistics
 bedtools genomecov -ibam $fn -g ${WZSEQ_REFERENCE}.fai -max 100 >qc/$bfn.coverage_stats.tsv
 grep '^genome' qc/$bfn.coverage_stats.tsv | ~/wzlib/Rutils/bin/basics/wzplot.r barplot -c 5 -n 2 -o qc/$bfn.coverage_stats.barplot.pdf --xlab BaseCoverage --ylab BaseFraction
 "
