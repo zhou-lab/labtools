@@ -421,18 +421,6 @@ def main_colindex(args):
         if not args.all:
             break
 
-def main_headerexp(args):
-
-    headerline = args.table.readline()
-    fields = headerline.strip().split(args.delim)
-    exp = args.e
-    if args.list:
-        for i, field in enumerate(fields):
-            print i+1, field
-    for i, field in enumerate(fields):
-        exp = re.sub('\|'+field+'\|', '$'+str(i+1), exp)
-    print exp
-    
 def main_classify(args):
 
     k2v = {}
@@ -553,6 +541,26 @@ def main_number(args):
 def div(denom, divid):
 
     return 'NA' if divid == 0 else denom / divid
+
+###############################
+# expand header into indices ##
+###############################
+def main_headerexp(args):
+    """ 
+    wzmanip headerexp --list table # list indices of all header
+    wzmanip headerexp -e "|Chromosome|\t|Start|" table # replace the |*| field by the index
+    """
+
+    headerline = args.table.readline()
+    fields = headerline.strip().split(args.delim)
+    exp = args.e
+    if args.list:
+        for i, field in enumerate(fields):
+            print i+1, field
+    if exp is not None:
+        for i, field in enumerate(fields):
+            exp = re.sub('\|'+field+'\|', '$'+str(i+1), exp)
+        print exp
 
 def main_nameawk(args):
 

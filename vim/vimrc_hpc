@@ -1,23 +1,41 @@
 syntax on
 set mouse=a
 
-let MRU_Max_Entries = 100000
-let MRU_Include_Files = '\.c$\|\.h\$\|Makefile\$\|\.org$\|\.R$\|'
-let MRU_Use_Current_Window = 0
-let MRU_Max_Submenu_Entries = 15
+" move line up and down
+nnoremap <C-j> :m .+1<CR>==
+nnoremap <C-k> :m .-2<CR>==
+inoremap <C-j> <Esc>:m .+1<CR>==gi
+inoremap <C-k> <Esc>:m .-2<CR>==gi
+vnoremap <C-j> :m '>+1<CR>gv=gv
+vnoremap <C-k> :m '<-2<CR>gv=gv
 
+" remap ESC
+inoremap jk <ESC>
+
+" remap K
+nnoremap K :update<CR>
+
+" tab by spaces
 set tabstop=2 softtabstop=0 expandtab shiftwidth=2 smarttab
+
+" turn on line number, :set nu! turns off
+set number 
+
+" menu length
 set wildmenu
 set wildmode=list:longest,full
 
-set number
+" autoindent
+set autoindent
+set cindent " indent after 'for' and 'if'
 
-nnoremap <C-r> :MRU<CR>
+" visual move
+:nnoremap j gj
+:nnoremap k gk
 
 " ----- status line -----
 " set statusline=%f
 set laststatus=2 " always show status line, otherwise, only show when file opens
-
 set statusline=%t       "tail of the filename
 set statusline+=[%{strlen(&fenc)?&fenc:'none'}, "file encoding
 set statusline+=%{&ff}] "file format
@@ -31,7 +49,6 @@ set statusline+=%l/%L   "cursor line/total lines
 set statusline+=\ %P    "percent through file
 
 " ---- NERD commenter -----
-
 filetype plugin on
 
 let mapleader=","
@@ -50,10 +67,21 @@ let g:NERDDefaultAlign = 'left'
 let g:NERDAltDelims_java = 1
 
 " Add your own custom formats or override the defaults
-let g:NERDCustomDelimiters = { 'c': { 'left': '/**','right': '*/' } }
+" let g:NERDCustomDelimiters = { 'c': { 'left': '/*','right': '*/' } }
 
 " Allow commenting and inverting empty lines (useful when commenting a region)
 let g:NERDCommentEmptyLines = 1
 
+" Allow buffer switching without saving
+set hidden
+
 " Enable trimming of trailing whitespace when uncommenting
 let g:NERDTrimTrailingWhitespace = 1
+
+" ----- Ctrl-p -----
+set runtimepath^=~/.vim/bundle/ctrlp.vim
+let g:ctrlp_mruf_max = 100000
+set wildignore += ".swp,*.zip,*.exe,*/tmp/*,*.bam
+let g:ctrlp_working_path_mode = 'ra'
+let g:ctrlp_cmd = "CtrlPMRU"
+
