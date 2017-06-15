@@ -1,5 +1,9 @@
 startup_message off
 caption always "%{= kw}%-w%{= BW}%n %t%{-}%+w %-= %c"
+# hardstatus on
+# hardstatus string "%{= KW} %H [%`] %{= Kw}|%{-} %-Lw%{= bW}%n%f %t%{-}%+Lw %=%C%a %Y-%M-%d"
+# caption string "%w"
+
 defscrollback 5000
 
 # NOTE: item2 should enable "Save lines to scrollback when an app status bar is present"
@@ -8,7 +12,7 @@ termcapinfo xterm* ti@:te@
 # termcapinfo xterm* 'hs:ts=\E]2;:fs=07:ds=\E]2;screen07'
 # termcapinfo vt* ti@:te@
 
-shell "/bin/bash"
+# shell "/bin/bash"
 altscreen on
 
 bindkey ^[[1;3D prev

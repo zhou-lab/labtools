@@ -21,7 +21,8 @@ HOME=/Users/wandingzhou
 
 export PATH=~/bin:~/tools/circos/current/bin:$PATH
 export SCREENRC=$HOME/wzlib/screenrc/screenrc_hp
-export PYTHONPATH=/usr/local/lib/python2.7/site-packages/:$HOME/wzlib/pyutils:$HOME/pythonlib/lib/python2.7/site-packages/:$HOME/pythonlib/Library/Python/2.7/site-packages/:/usr/local/Cellar/pyqt/4.11.3/lib/python2.7/site-packages/:/System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/:$PYTHONPATH
+export PYTHONPATH=$HOME/wzlib/pyutils:$PYTHONPATH
+# /usr/local/lib/python2.7/site-packages/:$HOME/wzlib/pyutils:$HOME/pythonlib/lib/python2.7/site-packages/:$HOME/pythonlib/Library/Python/2.7/site-packages/:/usr/local/Cellar/pyqt/4.11.3/lib/python2.7/site-packages/:/System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/:$PYTHONPATH
 export AWKPATH=$HOME/wzlib/awkutils
 
 # % cpan
@@ -55,8 +56,8 @@ function prompt {
   local WHITE="\[\033[0;37m\]"
   local WHITEBOLD="\[\033[1;37m\]"
   # export PS1="$REDBOLD[\t]${SCREENTITLE}$GREY[$GREENBOLD\u@\h $YELLOWBOLD\w$GREY]"'$ '
-  export PS1="$REDBOLD[\t]${SCREENTITLE}$GREY[$GREENBOLD\u@\h $YELLOWBOLD\w$GREY]\$ "
-
+  # export PS1="$REDBOLD[\t]${SCREENTITLE}$GREY[$GREENBOLD\u@\h $YELLOWBOLD\w$GREY]\$ "
+  export PS1="$REDBOLD[\t]$GREY[$GREENBOLD\u@\h $YELLOWBOLD\w$GREY]\$ "
 }
 
 # export CDPATH=.:~:..:/tools
@@ -68,7 +69,7 @@ prompt
 # `basename ${PWD}`]\033\0134"'
 # note in mac /bin/echo is different from echo
 # the following is super important
-export PROMPT_COMMAND='echo -ne "\033k\033\0134\033k[`basename ${PWD}`]\033\0134"'
+# export PROMPT_COMMAND='echo -ne "\033k\033\0134\033k[`basename ${PWD}`]\033\0134"'
 
 # case "$TERM" in
 #     screen*) PROMPT_COMMAND='echo -ne "\033k\033\0134"'
@@ -175,7 +176,7 @@ alias wzutils='. /Users/wandingzhou/wzlib/bash/wzutils.sh'
 
 alias wzmouse='. ~/wzprojects/meth/2016_03_22_mouse_array_figures.sh'
 
-test -r ~/tools/EMAN2/eman2.bashrc && source ~/tools/EMAN2/eman2.bashrc
+# test -r ~/tools/EMAN2/eman2.bashrc && source ~/tools/EMAN2/eman2.bashrc
 
 export SESAMEHOME="~/.SESAMEDATA"
 export WZARD_HOME=/Users/wandingzhou/tools/wzard_data
@@ -193,4 +194,8 @@ function bedview {
 
 function bedsumbases {
   awk '{a += $3-$2;}END{print a}' $1
+}
+
+function windows2unix {
+  sed "s///g" $1
 }

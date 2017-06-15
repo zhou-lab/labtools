@@ -384,9 +384,6 @@ time<tab>
     revert-buffer
 ** major editting modes
 *** ESS mode
-   :PROPERTIES:
-   :VISIBILITY: children
-   :END:
 **** start R session
 M-x R
 **** submit code to R console
@@ -411,14 +408,8 @@ press 'p' to jump to previous section
 If so, this is a long-standing bug. Add:
 (setq ess-eval-visibly-p nil)
 *** helm mode
-   :PROPERTIES:
-   :VISIBILITY: children
-   :END:
 **** helm-recentf M-r
 *** org mode
-   :PROPERTIES:
-   :VISIBILITY: children
-   :END:
    http://orgmode.org/org.html
 **** the basics
 
@@ -1823,7 +1814,7 @@ C-x C-m f change the default encoding of the file while saving
 * vim
 ** what is useless
 
-disable netrw
+netrw, a separate MRU
 
 ** setting (see dot_vimrc_hpc)
 
@@ -1865,7 +1856,6 @@ nunmap, iunmap, vunmap - disable mapping
 mapclear - disable all maps
 
 ** basics
-
 *** move
 
 4j - move down 4 lines
@@ -2021,6 +2011,12 @@ d`a - delete from/until point mark
 // - search forward last pattern
 ?? - search backward last pattern
 n - next in search
+#+BEGIN_SRC 
+ * - search for word under cursor
+ # - backward search for word under cursor
+#+END_SRC
+g* - partial search for word under cursor
+g# - backward partial search for word under cursor
 
 :s/s1/s2 - substitute the first s1 in this line by s2
 :lr/s/s1/s2/g - replace all s1 by s2 in line range lr
@@ -2039,7 +2035,7 @@ n - next in search
 
 *** copy (aka Yank), in Emacs C-y is paste, in Vim yank is copy
 
-"{a-zA-Z0-9} - Set {a-zA-Z0-9} for next delete, yank or put.
+"{a-zA-Z} - Set {a-zA-Z} for next delete, yank or put.
 :reg[isters] - Display the contents of all numbered and named registers.
 
 ["x]yy - yank 1 line [into register x]
@@ -2049,7 +2045,7 @@ n - next in search
 {Visual}["x]y - Yank the highlighted text [into register x]
 {Visual}["x]Y - Yank the highlighted lines [into register x]
 
-*** paste
+# paste
 
 ["x]p	- paste text [from register x] after cursor.
 ["x]P	- paste text [from register x] before cursor.
@@ -2058,11 +2054,24 @@ n - next in search
 ["x]gp	Just like p, but leave cursor after new text (rare). 
 ["x]gP	Just like P, but leave cursor after new text (rare).
 
+"+p - paste from clipboard(Linux)
+"*p - paste from clipboard(windows)
+
+# registers
+
+register 0 holds most recent yank
+register 1-9 holds most recent deletes
+delete after yank overwrote that yank, but the yank can still be reached by "0p
+"_dd - use '_' as the black hole register
+"aY + "ap - use 'a' as the safe register
+
 *** recording
+
+# note the register in recording is the same registers used in yank/paste
 
 qa - recording into register "a"
 @a - execute command from register "a"
-@@ - execute last recording
+@@ - execute last recording (very useful if you just want to repeat, you don't need to type @a)
 
 *** buffer
 
@@ -2079,7 +2088,13 @@ qa - recording into register "a"
 :b#
 ^ - to last file
 
-*** netrw
+*** folding
+
+zc - close
+zo - open
+zf - fold a block
+
+*** netrw (don't use)
 
 :Explore - opens netrw in current window
 :Ex - same as above
@@ -2138,6 +2153,8 @@ vim -S ~/today.ses - reload session
 <C-r> - regex mode
 <C-j> / <C-k> - navigate regult
 
+type :30 after a hit takes the cursor to line 30 after opening the file
+
 <C-z> - mark multiple files 
 <C-o> - open multiple files
 
@@ -2192,6 +2209,9 @@ let g:NERDTrimTrailingWhitespace = 1
 ,cs - pretty/sexy comment
 ,cy - yank/copy and comment
 ,c$ - comment till end of line
+** SuperTab 
+<TAB> for autocompletion
+
 * AWK
 ** strip whitespace
 gsub(/ +/, "", str)
@@ -6735,17 +6755,6 @@ The parenthesis around {= perl expression =} can be changed with --parens.
 ** pretty print columns using "pr"
 pr -t -e15 your_file | less
 -e15 replace tab stops to the next 15 spaces column
-
-** gnu screen
-*** resume an attached screen
-screen -d -r
-*** gnu screen set window title to be working directory
-http://unix.stackexchange.com/questions/28430/screen-status-bar-to-display-current-directory-for-zsh-bash-shell
-http://vim.wikia.com/wiki/Automatically_set_screen_title
-fix the bug
-http://superuser.com/questions/244299/gnu-screen-how-to-update-dynamically-the-title-of-a-window
-about using PROMPT_COMMAND (specific to bash, allows putting command result before the PS
-http://www.tldp.org/HOWTO/Bash-Prompt-HOWTO/x264.html
 ** shell utility
 *** sort
 version 8.23 support --parallel=N
@@ -8318,6 +8327,21 @@ TTL: time to live. this indicates the amount of time after which a package would
       DNS related problems?? - Configuration for OpenDNS servers - http://ubuntuforums.org/showthread.php?t=543659 - Author noob12
       Turn off/Disable IPv6 - http://ubuntuforums.org/showthread.php?t=6841 - Author mark
       Quit Having Network Manager asking for a Password to Connect to Known Wireless Networks - http://ubuntuforums.org/showthread.p...o+login&page=8 - Author Blueshift
+
+* gnu screen
+
+** renumber screen
+C-a :number 3 - renumber to 3
+C-a A - rename
+** resume an attached screen
+screen -d -r
+** gnu screen set window title to be working directory
+http://unix.stackexchange.com/questions/28430/screen-status-bar-to-display-current-directory-for-zsh-bash-shell
+http://vim.wikia.com/wiki/Automatically_set_screen_title
+fix the bug
+http://superuser.com/questions/244299/gnu-screen-how-to-update-dynamically-the-title-of-a-window
+about using PROMPT_COMMAND (specific to bash, allows putting command result before the PS
+http://www.tldp.org/HOWTO/Bash-Prompt-HOWTO/x264.html
       
 * R
 

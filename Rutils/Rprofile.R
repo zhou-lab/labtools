@@ -3,6 +3,7 @@
 options(max.print=200); # note this is not the maximum "rows" but maximum records
 options(stringsAsFactors = FALSE)
 source('~/wzlib/Rutils/wzcore.R')
+source('~/wzlib/Rutils/wzplotlib.R')
 
 
 .First <- function(){

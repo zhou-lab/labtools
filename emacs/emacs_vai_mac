@@ -9,6 +9,7 @@
 
 ;; (add-to-list 'default-frame-alist '(font . "Source Code Pro 10"))
 (add-to-list 'default-frame-alist '(font . "Monaco-12"))
+(add-to-list 'default-frame-alist '(font . "Iosevka-12:light"))
 
 ;; (require 'ess)
 (load "ess-site")
@@ -29,11 +30,12 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 (setenv "PATH" (concat (getenv "PATH") ":/usr/local/texlive/2014/bin/x86_64-darwin/"))
 (setq exec-path (append exec-path '("/usr/local/texlive/2014/bin/x86_64-darwin/")))
 
-(load-theme 'ample-zen t)
+;; (load-theme 'ample-zen t)
 ;; (load-theme 'airline-badwolf t)
 ;; (load-theme 'tsdh-light t)
 ;; (load-theme 'leuven t)
 ;; (load-theme 'deeper-blue t)
+(load-theme 'adwaita t)
 
 (setq-default indent-tabs-mode nil)
 
