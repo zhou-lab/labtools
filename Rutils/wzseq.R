@@ -21,6 +21,20 @@ GR2bed <- function(gr, fnm, rangeOnly=FALSE, col.names=F) {
   write.table(as.data.frame(gr), file=fnm, quote=F, sep="\t", row.names=F, col.names=col.names)
 }
 
+bed2GR <- function(bedfn, rangeOnly=FALSE) {
+  bed <- read.table(bedfn, header=F, stringsAsFactors=F)
+  colnames(bed)[1] <- 'chrm'
+  colnames(bed)[2] <- 'beg'
+  colnames(bed)[3] <- 'end'
+  chrms <- sort(unique(bed$chrm))
+  gr <- GRanges(seqnames=bed$chrm, ranges=IRanges(bed$beg, bed$end), seqinfo=Seqinfo(chrms))
+  if (!rangeOnly) {
+    mcols(gr) <- bed[,4:ncol(bed)]
+  }
+  gr <- sort(gr)
+  gr
+}
+
 ## intersection
 setGeneric('%i%', function(x, y) standardGeneric('%i%'))
 setMethod('%i%', c('ANY','ANY'), function(x, y) {intersect(x, y)})

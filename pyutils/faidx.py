@@ -71,7 +71,8 @@ class RefGenome:
          
         while len(seq)<end-start:
             line=self.fasta_handle.readline()
-            line=line[:-1] #Remove newline symbols
+            if line[:-1] == '\n':
+                line=line[:-1] #Remove newline symbols
             seq=seq+line
             
         #chomp off extra bases

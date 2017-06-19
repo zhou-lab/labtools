@@ -19,3 +19,6 @@ export PATH="/opt/local/bin:/opt/local/sbin:$PATH"
 export PATH="/opt/local/bin:/opt/local/sbin:$PATH"
 # Finished adapting your PATH environment variable for use with MacPorts.
 
+
+# added by Anaconda2 4.3.1 installer
+export PATH="/Users/wandingzhou/anaconda/bin:$PATH"

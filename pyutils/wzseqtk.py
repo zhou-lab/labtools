@@ -107,7 +107,6 @@ def main_printc(args):
             err_print(c)
         gseq = genome.fetch_chrmseq(c)
         for i in xrange(len(gseq)-2):
-
             # for CG (symmetric), print the position of CG (2-bases)
             if gseq[i] == 'C' and gseq[i+1] == 'G':
                 tprint([c, i, i+2, 'CG', '+', 'CG'],out)
