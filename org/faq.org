@@ -1907,7 +1907,7 @@ f[ind] - forward to char
 F - backward to char
 3fb - forward to the 3rd 'b'
 
-C-o - jump to older location
+C-o - jump to previous/older location
 <TAB> - jump to newer location
 C-i - same as above
 :jumps - show all previous jump locations

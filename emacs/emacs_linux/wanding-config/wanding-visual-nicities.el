@@ -1,7 +1,7 @@
 (add-to-list 'custom-theme-load-path "~/.emacs.d/wanding-config/themes")
 ;; see http://orgmode.org/worg/org-color-themes.html for a list
 ;; (load-theme 'leuven t)
-;; (load-theme 'deeper-blue t)
+(load-theme 'deeper-blue t)
 ;; (load-theme 'cyberpunk t)
 ;; (load-theme 'zenburn t)
 ;; (load-theme 'wombat t)
@@ -11,6 +11,7 @@
 ;; (load-theme 'sanityinc-solarized-light t)
 ;; (load-theme 'misterioso t)
 ;; (load-theme 'dichromacy t)
+;; (load-theme 'adwaita t)
 
 (setq default-frame-alist
       '(
@@ -83,7 +84,8 @@
 ;; (add-to-list 'default-frame-alist '(font . "WenQuanYi Micro Hei Mono 9"))
 ;; (add-to-list 'default-frame-alist '(font . "Monospace 9"))
 ;; (add-to-list 'default-frame-alist '(font . "Droid Sans Mono 10"))
-(add-to-list 'default-frame-alist '(font . "Source Code Pro 9"))
+;; (add-to-list 'default-frame-alist '(font . "Source Code Pro 9"))
+(add-to-list 'default-frame-alist '(font . "Iosevka-10:light"))
 ;; (add-to-list 'default-frame-alist '(font . "WenQuanYi Micro Hei 9"))
 
 
