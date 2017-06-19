@@ -1541,6 +1541,8 @@ EOF
 ## generate fragments Hind-III A^AGCTT, Mbol: ^GATC
 ## utils/digest_genome.py -r A^AGCTT -o mm9_hindiii.bed mm9.fasta
 ## [~/software/HiC_Pro/default/annotation]$ ../bin/utils/digest_genome.py -r ^GATC -o Mbol_resfrag_hg19.bed ~/references/hg19_noContig/hg19_noContig.fa
+## 
+## java -Xmx8g -jar ~/software/juicer/juicer_tools_linux_0.8.jar pre hicpro/O3_57_CTCF_HiCHP-41521568_output/hic_results/data/O3_57_CTCF_HiCHP-41521568/O3_57_CTCF_HiCHP-41521568_allValidPairs.forjuicer hicpro/O3_57_CTCF_HiCHP-41521568_output/hic_results/data/O3_57_CTCF_HiCHP-41521568/O3_57_CTCF_HiCHP-41521568_allValidPairs.forjuicer.hic hg19
 function hic_hicpro {
 
   base=$(pwd)
@@ -1556,12 +1558,12 @@ function hic_hicpro {
         read -p "Do you wish to replace existing output: hicpro/${sname}_output [yn]? " yn </dev/tty
         case $yn in
           [Yy]* ) rm -rf hicpro/${sname}_output; ;;
-          [Nn]* ) exit;;
+          [Nn]* ) echo "Skip $sname."; continue;;
               * ) echo "Please answer yes or no."; exit;;
         esac
       fi
 
-      ## hicpro_config file, sample-specific config file has higher precedence 
+      ## hicpro_config file, sample-specific config file has higher precedence
       for fastq in ${fastqs//,/ }; do
         ln -sf `rf fastq/$fastq` hicpro/${sname}_input/$sname/$fastq;
       done
@@ -1572,6 +1574,10 @@ function hic_hicpro {
     cmd="
 cd $base
 /home/wanding.zhou/software/HiC_Pro/default/bin/HiC-Pro -c $configfile -i hicpro/${sname}_input -o hicpro/${sname}_output
+mkdir -p hicpro/hic
+awk '{gsub(/chr/,\"\",\$2); gsub(/chr/,\"\",\$5); print 0,\$2,\$3,0,0,\$5,\$6,1,60}' hicpro/${sname}_output/hic_results/data/${sname}/${sname}_allValidPairs | sort -k1,1 -k6,6 >hicpro/hic/${sname}.juicer
+java -Xmx8g -jar ~/software/juicer/juicer_tools_linux_0.8.jar pre hicpro/hic/${sname}.juicer hicpro/hic/${sname}.hic $WZSEQ_REFVERSION
+rm -f hicpro/hic/${sname}.juicer
 "
       jobname="hicpro_${sname}"
       pbsfn=$base/pbs/$jobname.pbs
@@ -2186,7 +2192,7 @@ rm -f stranded/${sname}_p.bam stranded/${sname}_r.bam
 
 function rnaseq_splitstrand_se {
   # split stranded RNAseq into 2 strands
-  # that only works for paired-end
+  # that only works for single-end
   base=$(pwd)
   [[ -d pbs ]] || mkdir pbs
   [[ -d stranded ]] || mkdir stranded
@@ -2222,6 +2228,10 @@ rm -f stranded/${sname}_p.bam stranded/${sname}_r.bam
     [[ ${!#} == "do" ]] && qsub $pbsfn
   done
 }
+
+## the following restrict to intergenic ERVs
+## for f in rmsk/*.tsv; do echo $f; bedtools intersect -a <(sed -n '2,$p' $f) -b ERVIntergenic.bed -sorted -wo | cut -f1-13 | cat <(echo -e "chrm\tbeg\tend\tstr\tclass1\tclass2\tclass3\ttlen\tBaseNeg\tBasePos\tRPKMneg\tRPKMpos\tRPKM") - >rmsk/$(basename $f).LTRintergenic.bed; done
+## for f in rmsk/*.tsv; do echo $f; bedtools intersect -a <(sed -n '2,$p' $f) -b ERVIntergenic.bed -sorted -wo | cut -f1-13 | awk -f wanding.awk -e '$9<0 && $10>0 && min(-$9,$10)/max(-$9,$10)>=0.5' | cat <(echo -e "chrm\tbeg\tend\tstr\tclass1\tclass2\tclass3\ttlen\tBaseNeg\tBasePos\tRPKMneg\tRPKMpos\tRPKM") - >rmsk/$(basename $f).LTRintergenic.doubleStranded.bed; done
 
 function rnaseq_count_rmsk_stranded {
   # require stranded/, this actually gives the cumulative
