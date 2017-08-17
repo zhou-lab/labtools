@@ -129,6 +129,7 @@ def main_printc(args):
                 if gseq[i] != 'N' and gseq[i+1] != 'N':
                     tprint([c, i+2, i+3, 'CHH', '-', reverse_complement(gseq[i:i+3])], out)
 
+
 def main_comp(args):
 
     import faidx, re
