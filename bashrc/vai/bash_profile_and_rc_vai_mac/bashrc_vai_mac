@@ -75,6 +75,11 @@ prompt
 #     screen*) PROMPT_COMMAND='echo -ne "\033k\033\0134"'
 # esac
 
+## search wzprojects
+function wzfind {
+  grep --color=always "$1" ~/wzprojects/*.{R,py,org,sh} | less -SR;
+}
+
 function wz_vcffilter {
     vcffile=$1;
     if [[ $3 == "-s" ]]; then
@@ -199,3 +204,10 @@ function bedsumbases {
 function windows2unix {
   sed "s///g" $1
 }
+
+
+############## FZF ##############
+## [ -f ~/.fzf.bash ] && source ~/.fzf.bash
+
+## z - jump around
+. ~/tools/z/z.sh

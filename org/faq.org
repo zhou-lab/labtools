@@ -2145,6 +2145,8 @@ vim -S ~/today.ses - reload session
 
 ** CtrlP mode
 
+follow http://ctrlpvim.github.io/ctrlp.vim/#installation
+
 # no need of separate MRU mode
 <C-p> - start
 <C-f> / <C-b> - circle among "file", "MRU" and "path"
@@ -2210,7 +2212,12 @@ let g:NERDTrimTrailingWhitespace = 1
 ,cy - yank/copy and comment
 ,c$ - comment till end of line
 ** SuperTab 
+
 <TAB> for autocompletion
+
+## download http://www.vim.org/scripts/script.php?script_id=1643
+vim supertab.vmb
+:source %
 
 * AWK
 ** strip whitespace
@@ -8344,7 +8351,8 @@ about using PROMPT_COMMAND (specific to bash, allows putting command result befo
 http://www.tldp.org/HOWTO/Bash-Prompt-HOWTO/x264.html
       
 * R
-
+** paste from clipboard
+x <- read.delim(pipe(“pbpaste”))
 ** install R on cluster
 use Renv
 https://github.com/viking/Renv

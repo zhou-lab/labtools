@@ -336,7 +336,11 @@ Then move to that line and indent according to mode"
   (insert (format-time-string "%Y_%m_%d_"))
   )
 
-(global-set-key "\C-c\C-d" 'insert-date)
+(global-set-key "\C-x\C-d" 'insert-date)
+
+(defun timestamp ()
+  (interactive)
+  (insert (format-time-string "%Y-%m-%d %H:%M")))
 
 ;;;;;;;; UNCLEAR FUNCTIONS ;;;;;;;;;;
 (defun insert-and-indent-line-above ()

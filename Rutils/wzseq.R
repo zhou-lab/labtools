@@ -12,13 +12,19 @@ setMethod("$<-", "GRanges", function(x, name, value) {
   return(x)
 })
 
-GR2bed <- function(gr, fnm, rangeOnly=FALSE, col.names=F) {
+GR2bed <- function(gr, fnm, rangeOnly=FALSE, col.names=F, gz=FALSE) {
   start(gr) <- start(gr)-1
   if (rangeOnly) {
     mcols(gr) <- NULL
   }
   gr$probeID <- names(gr)
-  write.table(as.data.frame(gr), file=fnm, quote=F, sep="\t", row.names=F, col.names=col.names)
+  if (gz) {
+    gzf <- gzfile(fnm,'w')
+    write.table(as.data.frame(gr), file=gzf, quote=F, sep="\t", row.names=F, col.names=col.names)
+    close(gzf)
+  } else {
+    write.table(as.data.frame(gr), file=fnm, quote=F, sep="\t", row.names=F, col.names=col.names)
+  }
 }
 
 bed2GR <- function(bedfn, rangeOnly=FALSE) {
@@ -27,6 +33,20 @@ bed2GR <- function(bedfn, rangeOnly=FALSE) {
   colnames(bed)[2] <- 'beg'
   colnames(bed)[3] <- 'end'
   chrms <- sort(unique(bed$chrm))
+  gr <- GRanges(seqnames=bed$chrm, ranges=IRanges(bed$beg, bed$end), seqinfo=Seqinfo(chrms))
+  if (!rangeOnly) {
+    mcols(gr) <- bed[,4:ncol(bed)]
+  }
+  gr <- sort(gr)
+  gr
+}
+
+bed2GR.human <- function(bedfn, rangeOnly=FALSE) {
+  bed <- read.table(bedfn, header=F, stringsAsFactors=F)
+  colnames(bed)[1] <- 'chrm'
+  colnames(bed)[2] <- 'beg'
+  colnames(bed)[3] <- 'end'
+  chrms <- c(paste0('chr',1:22),'chrX','chrY','chrM')
   gr <- GRanges(seqnames=bed$chrm, ranges=IRanges(bed$beg, bed$end), seqinfo=Seqinfo(chrms))
   if (!rangeOnly) {
     mcols(gr) <- bed[,4:ncol(bed)]
