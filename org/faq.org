@@ -1,6 +1,13 @@
 #+STARTUP: overview
 #+STARTUP: indent
 #+TAGS: memorize(a) unknown(u)
+* MacOSX
+** keyboard shortcut
+Ctrl + Up # show all windows
+Alt + Command + Space # loop over input methods
+Ctrl + Shift + Command 4 # copy screen to clipboard
+Shift + Command 4 # copy screen to file
+Shift + Command + Space # spotlight
 * EMACS
 ** installation and customization
 *** install emacs snapshot
@@ -1928,6 +1935,8 @@ va{
 
 gv - reselect last visual block
 
+o - jump to other end
+
 *** delete
 
 dw - delete to end of word
@@ -2683,6 +2692,9 @@ exclude ending pattern
 sed -n '/chrM/,/GL000207.1/{/GL000207.1/!p}' /scratch/bcb/wzhou1/reference/hs37d5/hs37d5.fa > hs37d5.fa.chrM
 
 * git
+** to inspect a remote
+git remote show [remote-name]
+git remote show origin
 ** submodule
 *** add submodule
 git submodule add github.com/<user>/rock rock
@@ -2716,7 +2728,6 @@ git pull --recurse-submodules
 # update every submodules
 
 git submodule update --recursive --remote
-
 
 ** subtree
 *** add - git fetch + git read-tree + git commit
@@ -3164,10 +3175,6 @@ git tag -a v1.2 -m 'version 1.2' 9fceb02
 git push origin v1.5
 # push all tags
 git push origin --tags
-
-** to inspect a remote
-git remote show [remote-name]
-git remote show origin
 
 ** where the remote info stored on disk
 cat .git/config
