@@ -12783,6 +12783,8 @@ causes Perl to assume the following loop around your script, which makes it iter
 while (<>) { ... # your script } continue { print or die "-p destination: $!\n";}
 
 To suppress printing use the -n switch. A -p overrides a -n switch. If a file named by an argument cannot be opened for some reason, Perl warns you about it, and moves on to the next file. Note that the lines are printed automatically. An error occurring during printing is treated as fatal. 
+*** -l
+Smart newline processing. Normally, perl hands you entire lines, including a trailing newline. With -l, it will strip the trailing newline off of any lines read, and automatically add a newline to anything you print (including via -p).
 ** one-liner
 Compiled by Peteris Krumins (peter@catonmat.net, @pkrumins on Twitter)
 http://www.catonmat.net -- good coders code, great reuse

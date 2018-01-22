@@ -4,6 +4,7 @@
 # of ETE-3
 from ete3 import Tree
 import numpy as np
+import pandas as pd
 import random
 import matplotlib.pyplot as plt
 import matplotlib
@@ -69,15 +70,20 @@ class PhyloGram():
     def __init__(self, root, angle_beg, angle_end,
                  target_clade=None, # a special clade to zoom in
                  target_clade_angle_span=np.pi, # set when target_clade is not None
+                 clade_colors = pd.Series(),
+                 leaffix = False, # whether all leaves are of the same depth
+                 fig = None
              ):
 
         PLG_tree_calc_dimension(root, True)
 
         self.root = root   # ete TreeNode object
-        self.root._angle_beg = angle_beg
+        self.root._angle_beg = angle_beg # set the _angle_beg for the root
         self.angle_beg = angle_beg
         self.angle_end = angle_end
         self.angle_span = angle_end - angle_beg
+        self.clade_colors = clade_colors
+        self.leaffix = leaffix
 
         # reset all node angle span
         for n in root.traverse():
@@ -107,7 +113,6 @@ class PhyloGram():
         # aesthetics
         self.radialtext = True
         self.innerlabels = []     # internal branch label
-        self.node2color_f = None  # map of edge color function
         self.internal_drawer_f = None  # draw on internal node
         self.leaf_drawer_f = None     # draw on leaf node
         self.leafratio = 3 # leaf branch length ratio w.r.t internal branches
@@ -117,46 +122,20 @@ class PhyloGram():
         self.fontsize = 12 # font size
         # self.radius = 100  # plot radius
 
+        """ draw TreeNode t """
+        if fig is None:
+            self.fig = plt.figure(figsize=(13,13))
+        else:
+            self.fig = fig
+        self.ax = self.fig.add_axes([0,0,1,1], projection='polar')
+        self.ax.set_axis_off()
+        self.drawNode(self.root)
+
     def drawCircle(self, t, r, circle_radius, **kargs):
         """ r is the radius of the center in polar coordiantes, not the radius of the circle """
         self.ax.add_artist(plt.Circle(
             polar2cart(t._angle_mid, r), circle_radius, transform=self.ax.transData._b, **kargs))
 
-
-    def drawInternalText(self, t, text, r=None):
-
-        if r is None:
-            r = t._r - 0.7 * self.blv
-            
-        text_angle = PLG_normalize_angle2(t._angle_mid / np.pi * 180) + 90
-        self.ax.text(t._angle_mid, r, text,
-                     fontsize=12, rotation=text_angle, ha='center', va='center')
-        
-    def drawLeafText(self, t, r=None):
-
-        if r is None:
-            r = t._r + self.blv * self.leafratio
-
-        # extend_adjustment
-        r += len(t.common_name)*0.2
-        
-        if self.radialtext:
-            rot = PLG_normalize_angle(t._angle_mid / np.pi * 180)
-            ha, va = PLG_calc_text_aln(t._angle_mid / np.pi * 180)
-        else:
-            rot = 0
-            ha, va = PLG_calc_text_aln(t._angle_mid / np.pi * 180)
-
-        # currently text are all center-adjusted
-        # this is a hard adjustment and may be inaccturate due to
-        # un-equal space of different characters
-        # Is there a better solution?
-        self.ax.text(
-            t._angle_mid, r,
-            t.common_name, rotation=rot, ha='center', va='center', fontsize=self.fontsize)
-
-        return rot, ha,va
-                
     def drawNode(self, t, ec='k'):
 
         """ 
@@ -164,19 +143,31 @@ class PhyloGram():
         |------ t -------|
         |                |
         c                c
+
+        The parent of t sets t._angle_beg
+        This sets t._angle_end, t._angle_mid, t._r
         """
         # set t._r, t._angle_end, t._angle_mid based on t._angle_beg
-        t._r = t.depth*self.blv
+        if t.is_leaf() and self.leaffix:
+            t._r = self.root.height*self.blv
+        else:
+            t._r = t.depth*self.blv
+
+        # initialize t._r - where next track will be added
+        if t.is_leaf():
+            t._r2 = t._r
+            
         t._angle_end = t._angle_beg + t._angle_span
         t._angle_mid = (t._angle_beg + t._angle_end) / 2.0
 
         if t.is_leaf():
             if self.leaf_drawer_f is not None:
                 self.leaf_drawer_f(self, t)
-            else:
-                self.drawLeafText(t)
-        elif self.internal_drawer_f is not None:
-            self.internal_drawer_f(self, t)
+            # else:
+            #     self.drawLeafText(t)
+        else:
+            if self.internal_drawer_f is not None:
+                self.internal_drawer_f(self, t)
         
         # plot branches to children
         tangent_angle_beg = t._angle_mid
@@ -189,23 +180,33 @@ class PhyloGram():
             c_angle_mid = ab + c._angle_span / 2.
 
             # whether to change edge color?
-            if self.node2color_f is not None:
-                success, _ec = self.node2color_f(c)
-                if success:
-                    ec2 = _ec
-                else:
-                    ec2 = ec
+            if c.name in self.clade_colors.index:
+                ec2 = self.clade_colors[c.name]
             else:
                 ec2 = ec
+            # if self.clade_colors is not None:
+            #     success, _ec = self.node2color_f(c)
+            #     if success:
+            #         ec2 = _ec
+            #     else:
+            #         ec2 = ec
+            # else:
+            #     ec2 = ec
 
             # update tangent angles
             tangent_angle_beg = min(c_angle_mid, tangent_angle_beg)
             tangent_angle_end = max(c_angle_mid, tangent_angle_end)
 
             # plot radial line
-            c_r = (c.depth-1+self.leafratio)*self.blv if c.is_leaf() else c.depth*self.blv
+            if c.is_leaf():
+                if self.leaffix:
+                    c_r = self.root.height*self.blv
+                else:
+                    c_r = (c.depth-1+self.leafratio)*self.blv
+            else:
+                c_r = c.depth*self.blv
             self.ax.plot([c_angle_mid, c_angle_mid], # angle
-                         [t._r, c_r],                 # axial
+                         [t._r, c_r],                # axial
                          color=ec2, lw=self.lw, alpha=self.alpha)
 
             c._angle_beg = ab
@@ -217,14 +218,82 @@ class PhyloGram():
                      [t._r]*40, color=ec, lw=self.lw, alpha=self.alpha)
         
 
-    def draw(self, fig=None):
-        
-        """ draw TreeNode t """
-        if fig is None:
-            self.fig = plt.figure(figsize=(13,13))
-        else:
-            self.fig = fig
-        self.ax = self.fig.add_axes([0,0,1,1], projection='polar')
-        self.ax.set_axis_off()
-        self.drawNode(self.root)
+    def add_leaf_bar_track(self, srs, inner_space = None, track_color='k'):
 
+        """
+        srs is a pandas Series, indexed by t.name 
+        inner_space is default to 0.5*track_height
+        """
+
+        track_height = self.blv
+        if inner_space is None:
+            inner_space = 0.5 * track_height
+            
+        y_max = srs.max() # the data maximum
+        for t in self.root.get_leaves():
+            t._r2 += inner_space + track_height
+            y = srs[t.name] / y_max * track_height
+            self.ax.bar(t._angle_mid, height = y, width = 0.04, bottom = t._r2 - y, facecolor=track_color, alpha=0.85)
+
+        # the base line
+        self.ax.plot(np.linspace(self.angle_beg, self.angle_end, 100), [t._r2]*100, color=track_color, lw=0.5)
+
+    def add_leaf_bubble_track(self, srs, inner_space = None, track_color='k'):
+
+        """
+        srs is a pandas Series, indexed by t.name
+        inner_space is default to 0.5*track_height
+        """
+
+        track_height = self.blv
+        if inner_space is None:
+            inner_space = 0.5 * track_height
+            
+        y_max = srs.max() # the data maximum
+        for t in self.root.get_leaves():
+            t._r2 += inner_space + track_height
+            circle_radius = srs[t.name] / y_max * track_height/2
+            self.ax.add_artist(plt.Circle(polar2cart(t._angle_mid, t._r2-track_height/2), circle_radius, transform=self.ax.transData._b))
+
+    def add_leaf_labels(self, labels=None, r_pad=1):
+
+        for t in self.root.get_leaves():
+
+            if labels is None:
+                label = t.common_name
+            else:
+                label = labels[t.name]
+                
+            r = t._r2 + r_pad
+            # + self.blv * self.leafratio
+
+            if self.radialtext:
+                rot = PLG_normalize_angle(t._angle_mid / np.pi * 180)
+                ha, va = PLG_calc_text_aln(t._angle_mid / np.pi * 180)
+            else:
+                rot = 0
+                ha, va = PLG_calc_text_aln(t._angle_mid / np.pi * 180)
+
+            # currently text are all center-adjusted
+            # this is a hard adjustment and may be inaccturate due to
+            # un-equal space of different characters
+            # Is there a better solution?
+            self.ax.text(t._angle_mid, r, label, rotation=rot, ha=ha, va=va, fontsize=self.fontsize)
+            # return rot, ha,va
+
+    def add_internal_labels(self, internal_node_labels):
+
+        """ internal_node_labels is a Series mapping node name to label """
+
+        for t in self.root.traverse():
+            if t.name in internal_node_labels.index:
+                r = t._r - 0.7 * self.blv
+                text_angle = PLG_normalize_angle2(t._angle_mid / np.pi * 180) + 90
+                self.ax.text(t._angle_mid, r, internal_node_labels[t.name],
+                             fontsize=12, rotation=text_angle, ha='center', va='center')
+
+
+    def add_radial_extension(self):
+
+        for t in self.root.get_leaves():
+            self.ax.plot([t._angle_mid, t._angle_mid],[t._r, t._r2], lw=0.5, ls='dashed', color='black')
