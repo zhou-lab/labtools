@@ -5885,6 +5885,9 @@ mongoimport --db test --collection users --drop --file user_list.json
 
 * unix
 
+** add user to white list
+setfacl -m u:wanding.zhou:rx /secondary/projects/triche
+
 ** convert multiple lines into one line
 
 paste -d, -s file

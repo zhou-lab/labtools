@@ -9,7 +9,8 @@
 
 ;; (add-to-list 'default-frame-alist '(font . "Source Code Pro 10"))
 ;; (set-default-font "Source Code Pro 10")
-(add-to-list 'default-frame-alist '(font . "Source Code Pro-12"))
+;; (add-to-list 'default-frame-alist '(font . "Source Code Pro-11"))
+(add-to-list 'default-frame-alist '(font . "Consolas-12"))
 ;; (add-to-list 'default-frame-alist '(font . "Latin Modern Mono-12"))
 ;; (add-to-list 'default-frame-alist '(font . "Monaco-12"))
 ;; (add-to-list 'default-frame-alist '(font . "Iosevka-12:light"))
