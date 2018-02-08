@@ -3,7 +3,6 @@
 # 	. /etc/bashrc
 # fi
 
-
 ############# the following copied from /etc/bashrc ##############
 # are we an interactive shell?
 if [ "$PS1" ]; then
@@ -109,6 +108,7 @@ alias igv="~/tools/igv/IGV_2.3.60/igv.sh"
 alias du="du -sh"
 alias st="zstat"
 alias bs=". ~/.bashrc"
+alias sr="screen -r"
 # alias sort="LC_ALL=C /home/wandingzhou/tools/coreutils/coreutils-8.23/src/sort"
 
 alias biscuittest=". ~/tools/biscuit/development/biscuit/test.sh"
@@ -123,12 +123,35 @@ alias wzseq=". $HOME/wzlib/bash/wzseq.sh"
 alias wzcore=". $HOME/wzlib/bash/wzcore.sh"
 
 export SCREENRC=$HOME/wzlib/screenrc/screenrc_hp
-export PYTHONPATH=$HOME/wzlib/pyutils:$HOME/pythonlib/lib/python2.7/site-packages/
+export PYTHONPATH=$HOME/wzlib/pyutils
+## :$HOME/pythonlib/lib/python2.7/site-packages/
+##:/primary/home/wanding.zhou/.local/lib/python2.7/site-packages
 export AWKPATH=$HOME/wzlib/awkutils
 
 # /home/wanding.zhou/tools/anaconda/anaconda/bin, instead put python as a symlink to that location
-export PATH=~/bin:~/pythonlib/bin::/primary/vari/software/UCSC_Browser_Tools/default/:/home/wanding.zhou/.local/bin/:/home/pbs/bin/:/primary/vari/software/valgrind/default/bin:/primary/shared/production/software/python/default/bin/:$HOME/.Renv/bin:/primary/vari/software/latex/20160405/bin/x86_64-linux/:$HOME/software/zacks_usc_devel/zacks_PBS_Tools/:$PATH
+export PATH=~/bin:$PATH
+export PATH=~/pythonlib/bin:$PATH
+export PATH=/primary/vari/software/UCSC_Browser_Tools/default/:$PATH
+# export PATH=/primary/vari/software/valgrind/default/bin:$PATH
+# export PATH=/primary/shared/production/software/python/default/bin/:$PATH
+export PATH=$HOME/.Renv/bin:$PATH
+export PATH=$HOME/software/zacks_usc_devel/zacks_PBS_Tools/:$PATH
+export PATH=/primary/vari/software/latex/20160405/bin/x86_64-linux/:$PATH
+export JAVA_HOME=/primary/vari/software/java/jdk1.8.0_60
+
 eval "$(Renv init -)"
+
+# anaconda might interfere with R package installation!!!
+export PATH="/secondary/projects/laird/projects/2017_11_09_WZ_anaconda/bin:$PATH"
+
+function switchPy3 {
+  export PATH=$(echo "$PATH" | sed -e 's/2017_11_09_WZ_anaconda/2017_11_09_WZ_anaconda_python3.6\/anaconda3/')
+}
+function switchPy2 {
+  export PATH=$(echo "$PATH" | sed -e 's/2017_11_09_WZ_anaconda_python3.6\/anaconda3/2017_11_09_WZ_anaconda/')
+}
+# added by Anaconda3 installer
+# export PATH="/secondary/projects/laird/projects/2017_11_09_WZ_anaconda_python3.6/anaconda3/bin:$PATH"
 
 # % cpan
 # cpan> o conf makepl_arg INSTALL_BASE=/mydir/perl
@@ -143,11 +166,14 @@ alias qsuball="find pbs/ -type f -name '*.pbs' | sort | xargs -I {} qsub {}"
 alias rdf="readlink -f"
 alias qsubi='qsub -I -l nodes=1:ppn=1 -l mem=10gb -l walltime=8:00:00'
 alias qsubim='qsub -I -l nodes=1:ppn=6 -l mem=10gb -l walltime=8:00:00'
-alias qsubil='qsub -I -l nodes=1:ppn=28 -l walltime=8:00:00'
+alias qsubil='qsub -I -l nodes=1:ppn=20 -l walltime=8:00:00'
 alias qsubill='qsub -I -l nodes=1:ppn=40 -l walltime=24:00:00'
 
 function qdelall {
    qstat | grep 'wanding.zhou' | awk '{split($1,a,".");print a[1]}' | xargs -I {} qdel {}
+}
+function wzqdel {
+  for ((i=$1;i<=$2;i++)); do qdel $i;done
 }
 # alias curl="curl -OL"
 
@@ -186,15 +212,23 @@ case "$TERM" in
     screen*) PROMPT_COMMAND='echo -ne "\033k\033\0134"'
 esac
 
+## search wzprojects
+function wzgrep {
+  grep --color=always "$1" ~/wzprojects/*.{R,py,org,sh} | less -SR;
+}
+function wzfind {
+  find ~/wzprojects/ -name "*$1*" | less -S
+}
+
 function wz_vcffilter {
     vcffile=$1;
     if [[ $3 == "-s" ]]; then
-	awk -v threshold=$2 '
+  awk -v threshold=$2 '
 (!/^#/){
 if($6>threshold) print;
 }' $vcffile | sort -k6,6 -nr
     else
-	awk -v threshold=$2 '
+  awk -v threshold=$2 '
 (!/^#/){
 if($6>threshold) print;
 }' $vcffile
@@ -213,6 +247,10 @@ function wzsum_slow {
 sum+=$column;} END{ave=sum/c; if((c%2)==1){median=a[int(c/2)];} else{median=(a[c/2]+a[c/2-1\
 ])/2;} print "sum: "sum"\tcount: "c"\tmean: "ave"\tmedian: "median"\tmin: "a[0]"\tmax: "a[c\
 -1]"\t25%: "a[c/4]"\t75%: "a[c/4*3]}'
+}
+
+function wztop {
+  top -c -p `pgrep -f $1 | tr '\n' , | sed s/,$// | head -20`
 }
 
 function dnarev {
@@ -270,12 +308,16 @@ sortbed ()
 {
     LC_ALL=C sort -k1,1 -k2,2n -T /secondary/projects/jones/tmp $1
 }
-export sortbed
+export -f sortbed
 
-export TMPDIR=/secondary/projects/jones/tmp
-export TEMP=/secondary/projects/jones/tmp
+samnohead() { awk '!/^@/' $1; }
+export -f samnohead
+
+TMPBOSSNAME=jones
+export TMPDIR=/secondary/projects/$TMPBOSSNAME/tmp
+export TEMP=/secondary/projects/$TMPBOSSNAME/tmp
 alias R="LANG=en_US.UTF-8 R"
-export TRANSVAR_CFG=/primary/vari/software/transvar/TransVar-2.1.9/transvar.cfg
+# export TRANSVAR_CFG=/primary/vari/software/transvar/TransVar-2.1.9/transvar.cfg
 
 #source /home/wanding.zhou/tools/EMAN2/EMAN2/eman2.bashrc
 #source /primary/vari/software/eman2/default/eman2.bashrc
@@ -299,3 +341,13 @@ source ~/perl5/perlbrew/etc/bashrc
 function comparesam {
  paste <(awk -f wanding.awk -e '!/^@/{print joinr(1,8),joinr(12,NF,"__")}' $1) <(awk -f wanding.awk -e '!/^@/{print joinr(1,8),joinr(12,NF,"__")}' $2) | awk -f wanding.awk -e 'BEGIN{cnt=0}{d=0; if ($1!=$10) d=1; if ($2!=$11) d=1; if ($3!=$12) d=1; if ($4!=$13) d=1; if ($5!=$14) d=1; if (d==1) { cnt+=1; print joinr(1,9)"\n"joinr(10,NF)"\n\n"; }}END{print cnt}'
 }
+
+## fzf and z
+. ~/tools/z/z.sh
+
+[ -f ~/.fzf.bash ] && source ~/.fzf.bash
+
+[[ -z ${PBS_O_WORKDIR+x} ]] || cd ${PBS_O_WORKDIR}
+
+alias wzmultiqc='rm -rf multiqc_*; /secondary/projects/laird/projects/2017_11_09_WZ_anaconda/bin/multiqc raw'
+

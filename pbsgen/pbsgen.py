@@ -17,6 +17,7 @@ template="""
 #PBS -l nodes=1:ppn={self.ppn},mem={self.memG}gb,walltime={self.time}
 {self.depend}
 
+set -xe
 {self.commands}
         
 """
@@ -258,7 +259,7 @@ class Default:
 if __name__ == "__main__":
 
     def set_queue_htc(job):
-        if job.hour <= 4:
+        if job.hour <= 24:
             job.queue = "short"
         else:
             job.queue = "medium"

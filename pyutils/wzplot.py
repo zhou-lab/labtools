@@ -12,7 +12,7 @@ import numpy as np
 import operator
 import re
 
-mpl.rcParams['font.family'] = 'Arial Narrow'
+# mpl.rcParams['font.family'] = 'Arial Narrow'
 
 class Indices:
 
@@ -52,7 +52,8 @@ def parse_indices(indstr):
 
 colorcycle = ['k', 'DarkSlateGray', 'Brown', 'Burlywood', 'DarkSlateBlue', 'yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'y', 'k', 'c', 'g']
 ccycle = itertools.cycle(colorcycle)
-mpl.rcParams['axes.color_cycle'] = colorcycle
+from cycler import cycler
+mpl.rcParams['axes.prop_cycle'] = cycler(color=colorcycle)
 
 def __prelude__(args):
 

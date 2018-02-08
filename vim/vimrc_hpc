@@ -1,3 +1,4 @@
+set nohlsearch
 syntax on
 set mouse=a
 

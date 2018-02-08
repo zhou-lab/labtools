@@ -67,7 +67,11 @@ def qprint(read, beg, end, refseq, refbeg, mod=''):
 def qualprint(read, beg, end):
     s = ''
     for i, base in enumerate(read.seq[beg:end]):
-        c = q2c(ord(read.qual[beg+i])-33)
+        if len(read.qual) <= 2:
+            c = cSNV
+        else:
+            c = q2c(ord(read.qual[beg+i])-33)
+
         if read.is_reverse:
             base = c+base.lower()+ENDC
         else:
@@ -84,7 +88,7 @@ def bsprint(read, beg, end, refseq, refbeg, mod=''):
         bsstate = tag['ZS'][0]
     if bsstate is None and 'YD' in tag: # BWA-meth
         bsstate = '+' if tag['YD'] == 'f' else '-'
-        
+
     for i, base in enumerate(read.seq[beg:end]):
         base = base.upper()
         rbase = refseq[refbeg+i].upper()
@@ -132,7 +136,7 @@ def main_bis(args):
 
     read1seen = read2seen = False
     for read in samfile.fetch(region=args.reg):
-	if read.qname != args.qname:
+        if read.qname != args.qname:
             continue
 
         chrm = samfile.getrname(read.tid)
@@ -158,7 +162,7 @@ def main_bis(args):
         pqual += ' '*flen
         if args.pbis: pbis = ' '*flen
         
-	for i, (op, clen) in enumerate(read.cigar):
+        for i, (op, clen) in enumerate(read.cigar):
             if op == 0:
                 if pp.isspace():
                     pp += "|{}:{}".format(chrm, rpos+refbeg-1)
@@ -210,6 +214,108 @@ def main_bis(args):
         elif args.pair == '0':
             break
 
+class Read:
+    pass
+        
+def parse_cigar(cigarstring):
+
+    cigars = []
+    for s in re.findall(r'[0-9]+[A-Z]', cigarstring):
+        if s[-1] == 'M':
+            cigars.append((0, int(s[:-1])))
+        elif s[-1] == 'I':
+            cigars.append((1, int(s[:-1])))
+        elif s[-1] in ['D','N']:
+            cigars.append((2, int(s[:-1])))
+        elif s[-1] in ['S','H']:
+            cigars.append((4, int(s[:-1])))
+        else:
+            raise Exception("unknown cigar: %d" % s[-1])
+
+    return cigars
+
+def main_one(args):
+
+    samrec = args.sam
+    ref = faidx.RefGenome(args.ref)
+
+    samfields = samrec.split()
+    # print samfields
+    chrm = samfields[2]
+    read = Read
+    read.pos = int(samfields[3]) - 1 # the raw sequence is 1-based, shift back
+    read.seq = samfields[9]
+    read.cigar = parse_cigar(samfields[5])
+    read.qname = samfields[0]
+    read.flag = int(samfields[1])
+    read.is_read1 = read.flag & 0x40
+    read.is_read2 = read.flag & 0x80
+    read.is_reverse = read.flag & 0x10
+    read.qual = samfields[10]
+    read.tags3 = [_tagstr.split(':') for _tagstr in samfields[11:]]
+    read.tags = [(_[0],_[2]) for _ in read.tags3]
+    print read.tags
+    
+    refbeg = read.pos - 100 if read.pos > 100 else 1
+    refend = read.pos + len(read.seq) + 100
+    refseq = ref.fetch_sequence(chrm, refbeg, refend).upper()
+    rpos = read.pos - refbeg + 1
+    qpos = 0
+
+    flen = flank_len
+    if flen > rpos:
+        flen = rpos
+
+    op,oplen = read.cigar[0]
+    if op == 4:
+        pr_beg = rpos - flen - oplen
+    else:
+        pr_beg = rpos - flen
+    pp = pr = pq = pqual = ''
+    pp += " "*(rpos-pr_beg)
+    pr += rprint(refseq[pr_beg:rpos])
+    pq += ' '*flen
+    pqual += ' '*flen
+    pbis = ' '*flen
+
+    for i, (op, clen) in enumerate(read.cigar):
+        if op == 0:
+            if pp.isspace():
+                pp += "|{}:{}".format(chrm, rpos+refbeg-1)
+
+            pr += rprint(refseq[rpos:rpos+clen])
+            pq += qprint(read, qpos, qpos+clen, refseq, rpos)
+            pqual += qualprint(read, qpos, qpos+clen)
+            pbis += bsprint(read, qpos, qpos+clen, refseq, rpos)
+            rpos += clen
+            qpos += clen
+        elif op == 1:
+            pr += GAPC+'*'*clen+ENDC
+            pq += qprint(read, qpos, qpos+clen, refseq, rpos)
+            pqual += qualprint(read, qpos, qpos+clen)
+            pbis += bsprint(read, qpos, qpos+clen, refseq, rpos)
+            qpos += clen
+        elif op == 2:
+            pr += rprint(refseq[rpos:rpos+clen])
+            pq += GAPC+'*'*clen+ENDC
+            pqual += '*'*clen
+            pbis += '*'*clen
+            rpos += clen
+        elif op == 4:
+            pq += qprint(read, qpos, qpos+clen, refseq, rpos, UNDERLINE)
+            pqual += qualprint(read, qpos, qpos+clen)
+            pbis += bsprint(read, qpos, qpos+clen, refseq, rpos)
+            qpos += clen
+        else:
+            raise Exception("unknown cigar: %d" % op)
+    pr += rprint(refseq[rpos:rpos+flen])
+
+    print "\n"+"="*5+read.qname+"="*5
+    print pp                    # position
+    print pr                    # reference
+    print pq                    # query sequence
+    print pbis                  # bisulfite mode
+    print pqual                 # quality
 
 if __name__ == "__main__":
 
@@ -228,6 +334,11 @@ if __name__ == "__main__":
     parser_bis.add_argument('-pair', default='12', help='[1,2,12]')
     parser_bis.set_defaults(func=main_bis)
 
+    parser_one = subparsers.add_parser('one', help='visualize one sam bisulfite read alignment in terminal')
+    parser_one.add_argument('ref')
+    parser_one.add_argument('sam')
+    parser_one.set_defaults(func=main_one)
+
     # parser_nome = subparsers.add_parser('nome', help='visualize nome-seq region')
     # parser_nome.add_argument('-reg')
     # parser_nome.add_argument('-bam', required=True, help='bam file')
@@ -236,7 +347,6 @@ if __name__ == "__main__":
     # parser_nome.set_defaults(func=main_nome)
 
     args = parser.parse_args()
-    args.func(args)
     try:
         args.func(args)
     except IOError as e:
