@@ -12,18 +12,21 @@ setMethod("$<-", "GRanges", function(x, name, value) {
   return(x)
 })
 
-GR2bed <- function(gr, fnm, rangeOnly=FALSE, col.names=F, gz=FALSE) {
+GR2bed <- function(gr, fnm, rangeOnly=FALSE, col.names=F, gz=FALSE, noStrand=FALSE) {
   start(gr) <- start(gr)-1
   if (rangeOnly) {
     mcols(gr) <- NULL
   }
   gr$probeID <- names(gr)
+  df <- as.data.frame(gr)
+  if (noStrand)
+    df <- df[,-c(4,5)]
   if (gz) {
     gzf <- gzfile(fnm,'w')
-    write.table(as.data.frame(gr), file=gzf, quote=F, sep="\t", row.names=F, col.names=col.names)
+    write.table(df, file=gzf, quote=F, sep="\t", row.names=F, col.names=col.names)
     close(gzf)
   } else {
-    write.table(as.data.frame(gr), file=fnm, quote=F, sep="\t", row.names=F, col.names=col.names)
+    write.table(df, file=fnm, quote=F, sep="\t", row.names=F, col.names=col.names)
   }
 }
 

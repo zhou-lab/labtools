@@ -184,6 +184,20 @@ function join(array, start, end, sep,  result, i)
     return result
 }
 
+function uniqarray(s, sep,       resultarr, result, i)
+{
+    split(s, sa, sep);
+    split("", resultarr);
+    for (i=1; i<=length(sa); i++)
+        resultarr[sa[i]]=1;
+    result=""
+    for (i in resultarr) {
+        if (result!="") result=result""sep
+        result=result""i
+    }
+    return result
+}
+
 
 function joina(array, sep, start, end,    result, i)
 {

@@ -21,4 +21,7 @@ export PATH="/opt/local/bin:/opt/local/sbin:$PATH"
 
 
 # added by Anaconda2 4.3.1 installer
-export PATH="/Users/wandingzhou/anaconda/bin:$PATH"
+# export PATH="/Users/wandingzhou/anaconda/bin:$PATH"
+
+# added by Anaconda3 5.0.1 installer
+export PATH="/Users/wandingzhou/anaconda3/bin:$PATH"

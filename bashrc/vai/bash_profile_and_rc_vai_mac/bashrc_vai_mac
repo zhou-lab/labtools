@@ -21,14 +21,19 @@ HOME=/Users/wandingzhou
 
 export PATH=~/bin:~/tools/circos/current/bin:$PATH
 export SCREENRC=$HOME/wzlib/screenrc/screenrc_hp
-export PYTHONPATH=$HOME/wzlib/pyutils:$PYTHONPATH
-# /usr/local/lib/python2.7/site-packages/:$HOME/wzlib/pyutils:$HOME/pythonlib/lib/python2.7/site-packages/:$HOME/pythonlib/Library/Python/2.7/site-packages/:/usr/local/Cellar/pyqt/4.11.3/lib/python2.7/site-packages/:/System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/:$PYTHONPATH
+# export PYTHONPATH=$HOME/wzlib/pyutils:$PYTHONPATH:$HOME/pythonlib/lib/python2.7/site-packages/
+# /usr/local/lib/python2.7/site-packages/:$HOME/wzlib/pyutils:$HOME/pythonlib/Library/Python/2.7/site-packages/:/usr/local/Cellar/pyqt/4.11.3/lib/python2.7/site-packages/:/System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/:$PYTHONPATH
 export AWKPATH=$HOME/wzlib/awkutils
 
 # % cpan
 # cpan> o conf makepl_arg INSTALL_BASE=/mydir/perl
 # cpan> o conf commit
 # export PERL5LIB=/home/wzhou1/tools/perltools/lib/perl5:/home/wzhou1/tools/vcftools/vcftools_0.1.11/lib/perl5/site_perl:${PERL5LIB}
+export PERL5LIB=${PERL5LIB}:/Users/wandingzhou/tools/bioperl/src/BioPerl-1.6.1
+export PERL5LIB=${PERL5LIB}:/Users/wandingzhou/tools/ensembl_api/ensembl/modules
+export PERL5LIB=${PERL5LIB}:/Users/wandingzhou/tools/ensembl_api/ensembl-compara/modules
+export PERL5LIB=${PERL5LIB}:/Users/wandingzhou/tools/ensembl_api/ensembl-variation/modules
+export PERL5LIB=${PERL5LIB}:/Users/wandingzhou/tools/ensembl_api/ensembl-funcgen/modules
 
 alias scp='rsync -Pravdtze ssh'
 alias awk='gawk -F"\t" -v OFS="\t"'
@@ -76,8 +81,11 @@ prompt
 # esac
 
 ## search wzprojects
-function wzfind {
+function wzgrep {
   grep --color=always "$1" ~/wzprojects/*.{R,py,org,sh} | less -SR;
+}
+function wzfind {
+  find ~/wzprojects/ -name "*$1*" | less -S
 }
 
 function wz_vcffilter {
@@ -190,6 +198,10 @@ function findc {
   find . -regex '.*.c' -o -regex '.*.h' -exec grep -H "$1" {} \;
 }
 
+## Renv
+export PATH="$HOME/.Renv/bin:$PATH"
+eval "$(Renv init -)"
+
 
 source ~/tools/git-subrepo/.rc
 
@@ -211,3 +223,4 @@ function windows2unix {
 
 ## z - jump around
 . ~/tools/z/z.sh
+
