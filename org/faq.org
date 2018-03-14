@@ -5885,6 +5885,9 @@ mongoimport --db test --collection users --drop --file user_list.json
 
 * unix
 
+** add user to white list
+setfacl -m u:wanding.zhou:rx /secondary/projects/triche
+
 ** convert multiple lines into one line
 
 paste -d, -s file
@@ -16605,6 +16608,9 @@ CMAKE_CURRENT_BINARY_DIR
 CMAKE_CURRENT_SOURCE_DIR
 CMAKE_BINARY_DIR
 CMAKE_SOURCE_DIR
+** specify compiler
+cmake -DCMAKE_CXX_COMPILER=/cm/local/apps/gcc/6.1.0/bin/g++ -DCMAKE_C_COMPILER=/cm/local/apps/gcc/6.1.0/bin/gcc .
+
 * SQLite
 ** tutorial by Mike Chirico
     http://souptonuts.sourceforge.net/readme_sqlite_tutorial.html

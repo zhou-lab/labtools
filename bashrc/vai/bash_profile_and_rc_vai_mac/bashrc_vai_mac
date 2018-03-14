@@ -224,3 +224,4 @@ function windows2unix {
 ## z - jump around
 . ~/tools/z/z.sh
 
+export PATH=/usr/local/texlive/2014/bin/x86_64-darwin/:$PATH

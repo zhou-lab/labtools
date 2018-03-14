@@ -9,6 +9,7 @@ if (length(target) > 1) {
 
 if (dir.exists(target)) {
   library(devtools)
+  build_vignettes(target)
   document()
   check()
 } else {

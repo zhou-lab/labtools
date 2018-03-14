@@ -9,7 +9,9 @@
 
 ;; (add-to-list 'default-frame-alist '(font . "Source Code Pro 10"))
 ;; (set-default-font "Source Code Pro 10")
-(add-to-list 'default-frame-alist '(font . "Source Code Pro-12"))
+;; (add-to-list 'default-frame-alist '(font . "Source Code Pro-11"))
+;; (add-to-list 'default-frame-alist '(font . "Consolas-12"))
+(add-to-list 'default-frame-alist '(font . "Inconsolata-12"))
 ;; (add-to-list 'default-frame-alist '(font . "Latin Modern Mono-12"))
 ;; (add-to-list 'default-frame-alist '(font . "Monaco-12"))
 ;; (add-to-list 'default-frame-alist '(font . "Iosevka-12:light"))
@@ -39,6 +41,7 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 ;; (load-theme 'leuven t)
 ;; (load-theme 'deeper-blue t)
 (load-theme 'adwaita t)
+(setq-default cursor-type 'bar)
 
 (setq-default indent-tabs-mode nil)
 
@@ -56,15 +59,32 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 
 (setq tab-width 2)
 (setq-default tab-width 2)
-(setq-default indent-tabs-mode nil)
+(setq sh-basic-offset 2
+      sh-indentation 2)
 
+;; the following is important to pass R CMD BiocCheck
+(add-hook 'ess-mode-hook (lambda () (setq ess-indent-level 4)))
+(add-hook 'ess-mode-hook
+          (lambda ()
+            (ess-set-style 'C++ 'quiet)
+            ;; Because
+            ;;                                 DEF GNU BSD K&R  C++
+            ;; ess-indent-level                  2   2   8   5  4
+            ;; ess-continued-statement-offset    2   2   8   5  4
+            ;; ess-brace-offset                  0   0  -8  -5 -4
+            ;; ess-arg-function-offset           2   4   0   0  0
+            ;; ess-expression-offset             4   2   8   5  4
+            ;; ess-else-offset                   0   0   0   0  0
+            ;; ess-close-brace-offset            0   0   0   0  0
+            (add-hook 'local-write-file-hooks
+                      (lambda ()
+                        (ess-nuke-trailing-whitespace)))))
+
+(setq-default indent-tabs-mode nil)
 (setq org-startup-indented t)
 (setq org-startup-folded 'content)
 (setq org-src-fontify-natively t)
 (setq org-edit-src-content-indentation 0)
-
-(setq sh-basic-offset 2
-      sh-indentation 2)
 
 (setq mouse-wheel-scroll-amount '(2))
 (setq mouse-wheel-progressive-speed nil)
@@ -104,9 +124,6 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 (global-set-key (kbd "<f13>") 'kill-ring-save)
 (global-set-key (kbd "<f14>") 'jao-copy-line)
 (global-set-key (kbd "<f16>") 'yank)
-
-(setq sh-basic-offset 2
-      sh-indentation 2)
 
 ;; Wanding functions
 (defun my-switch-to-other-buffer ()
