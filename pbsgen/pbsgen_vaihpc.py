@@ -4,6 +4,7 @@ from pbsgen import pbsgen_main, Default
 
 def set_queue(job):
     job.queue = 'default'
+    # job.queue = 'bbc'
 
 default = Default()
 default.pbsdir = '/primary/home/wanding.zhou/pbs'

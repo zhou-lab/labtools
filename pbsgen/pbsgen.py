@@ -34,10 +34,13 @@ class Job():
         self.memG       = args.memG
         self.stderrdir  = args.stderr
         self.stdoutdir  = args.stdout
+        self.queue      = args.queue
         if args.depend:
             self.depend = '#PBS -W depend=afterany:{%s}' % args.depend
         else:
             self.depend = ''
+
+        
         self.set_queue = types.MethodType(args.set_queue, self)
         if not os.path.exists(self.stdoutdir):
             raise Exception("stdout dir %s not existent" % self.stdoutdir)
@@ -63,7 +66,8 @@ class Job():
             self.jobname = jobname
             
         self.time = "%d:00:00" % self.hour
-        self.set_queue()
+        if self.queue is None:
+            self.set_queue()
         
         if pbsname is None:
             pbsname = '%s/%s.pbs' % (self.pbs, self.jobname)
@@ -199,6 +203,7 @@ def add_default_settings(parser, d):
                         help="Job root [WandingJob]")
     parser.add_argument("-memG", default=d.memG, type=int,
                         help="memory in G [%d]" % d.memG)
+    parser.add_argument('-queue', default=None, help='queue to force to')
     parser.add_argument('-depend', default='', help='dependency')
     parser.add_argument('-silent', action='store_true', help='suppress info print')
 

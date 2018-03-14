@@ -60,7 +60,7 @@ level_jobids=()
 # echo "select:" $pipeline_select
 
 # pipeline_submit=false
-hour=24; memG=10; ppn=1
+hour=24; memG=10; ppn=1; queue=default
 EOF
 )
 
@@ -77,7 +77,7 @@ function pipeline_eval {
 
     $2
     pbsfn=$base/pbs/${jobname}.pbs
-    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour $hour -memG $memG -ppn $ppn
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour $hour -memG $memG -ppn $ppn -queue $queue
 
     ## whether to submit
     if $pipeline_submit; then
@@ -165,6 +165,7 @@ function wzref_mm10 {
   # WGBS indices
   export WZSEQ_BISCUIT_INDEX_LAMBDAPHAGE=/home/wanding.zhou/references/lambdaphage/biscuit/NC_001416.fa
   export WZSEQ_BISCUIT_INDEX=/home/wanding.zhou/references/mm10/biscuit/mm10.fa
+  export WZSEQ_BISCUIT_QC_SETUP=/home/wanding.zhou/tools/biscuit/development/biscuit/test/QC_assets/mm10_QC_assets/setup.sh
   export WZSEQ_BWAMETH_INDEX=/home/wanding.zhou/references/mm10/bwameth/mm10.fa
 
   export WZSEQ_BISMARK_BT1_INDEX=/home/wanding.zhou/references/mm10/bismark_bt1
@@ -232,11 +233,14 @@ function wzref_hg19 {
   export WZSEQ_CGIBED=/primary/vari/genomicdata/genomes/hg19/annotation/cpgisland/cpgIslandExt.bed
   export WZSEQ_TSSBED=/primary/vari/genomicdata/genomes/hg19/annotation/hg19.refseq.tss.bed
   export WZSEQ_MACS_SHORT=hs
+  export WZSEQ_BISCUIT_QC_SETUP=/home/wanding.zhou/tools/biscuit/development/biscuit/test/QC_assets/hg19_QC_assets/setup.sh
 
   # rmsk
   export WZSEQ_RMSK=/primary/vari/genomicdata/genomes/hg19/annotation/rmsk/rmsk.txt.bed
   # build the following using the UCSC table builder
   export WZSEQ_RMSK_GTF=/home/wanding.zhou/references/hg19/annotation/rmsk/rmsk.hg19.gtf
+
+  export WZSEQ_HICPRO_CONFIG=/home/wanding.zhou/wzprojects/2017_05_13_CTCF_EZH2_hicpro_config_template
 }
 
 ###### human hg19_noContig ####
@@ -265,6 +269,7 @@ function wzref_hg38 {
   # export WZSEQ_STAR_INDEX=/primary/vari/genomicdata/genomes/hg19/STAR
   # export WZSEQ_RSEQC_GENE_BED=/primary/vari/genomicdata/genomes/hg19/rseqc/hg19_GENCODE_GENE_V19_comprehensive.bed
   export WZSEQ_BISMARK_BT2_INDEX=/home/wanding.zhou/references/hg38/bismark_bt2
+  export WZSEQ_BISCUIT_INDEX=/primary/vari/genomicdata/genomes/hg38/biscuit/hg38.fa
   # export WZSEQ_SUBREAD_INDEX=/primary/vari/genomicdata/genomes/hg19/subread/hg19
   # export WZSEQ_REFERENCE_SPLIT=/primary/vari/genomicdata/genomes/hg19/tophat/Homo_sapiens/UCSC/hg19/Sequence/Chromosomes
 
@@ -656,7 +661,7 @@ cd '$base'
 mkdir -p bam
 ~/tools/biscuit/master/biscuit/biscuit align '$WZSEQ_BISCUIT_INDEX' -t '$ppn' '$fastq' | samtools sort -T '$output_bam'_tmp -O bam -o '$output_bam'
 '
-  jobname="biscuit_align_${sname}_SE"
+  jobname="biscuit_align_"$sname"_SE"
 }
 
 function __wgbs_biscuit_align_PE {
@@ -665,7 +670,7 @@ cd '$base'
 mkdir -p bam
 ~/tools/biscuit/master/biscuit/biscuit align '$WZSEQ_BISCUIT_INDEX' -t '$ppn' '$fastq1' '$fastq2' | samtools sort -T '$output_bam'_tmp -O bam -o '$output_bam'
 '
-  jobname="biscuit_alignPE_"$sname
+  jobname="biscuit_align_"$sname"_PE"
 }
 
 function __wgbs_biscuit_align_PE_both {
@@ -673,10 +678,10 @@ function __wgbs_biscuit_align_PE_both {
 cd '$base'
 mkdir -p bam
 ~/tools/biscuit/master/biscuit/biscuit align '$WZSEQ_BISCUIT_INDEX' -b 1 -t '$ppn' '$fastq1' '$fastq2' | samtools sort -T '$output_bam'_tmp -O bam -o '$output_bam'
-samtools index '$output_bam';
-samtools flagstat '$output_bam' > '$output_bam'.flagstat
+#samtools index '$output_bam';
+#samtools flagstat '$output_bam' > '$output_bam'.flagstat
 '
-  jobname="biscuit_align_${sname}_PE_both"
+  jobname="biscuit_align_"${sname}"_PE_both"
 }
 
 function __wgbs_biscuit_markdup {
@@ -694,11 +699,21 @@ ln -sf `readlink -f '$output_bam'_markdup_report.txt` multiqc/raw/biscuit/
 function __wgbs_biscuit_mapping_summary {
   cmd='
 cd '$base'
-~/tools/biscuit/development/biscuit/biscuit cinread -p STRAND,BSSTRAND ~/references/hg19/hg19.fa bam/SC11.bam | awk '\''{a[$1$2]+=1}END{for(strand in a) {print "strand\t"strand"\t"a[strand];}}'\'' >'$input_bam'_mapping_summary.txt
+~/tools/biscuit/development/biscuit/biscuit cinread -p STRAND,BSSTRAND ~/references/hg19/hg19.fa '$input_bam' | awk '\''{a[$1$2]+=1}END{for(strand in a) {print "strand\t"strand"\t"a[strand];}}'\'' >'$input_bam'_mapping_summary.txt
 mkdir -p multiqc/raw/biscuit/
 ln -sf `readlink -f '$input_bam'_mapping_summary.txt` multiqc/raw/biscuit/
 '
   jobname='biscuit_mapping_summary_'$sname
+}
+
+function __wgbs_biscuit_QC {
+  cmd='
+cd '$base'
+~/tools/biscuit/development/biscuit/scripts/QC.sh -v '$input_vcf' '$WZSEQ_BISCUIT_QC_SETUP' '$sname' '$input_bam'
+mkdir -p multiqc/raw/BISCUITqc
+ln -sf `readlink -f BISCUITqc` multiqc/raw/BISCUITqc
+'
+  jobname='biscuit_QC_'$sname
 }
 
 function wgbs_biscuit_align_lambdaphage {
@@ -861,6 +876,12 @@ ln -sf `readlink -f '$bismark_bt2_dir'/[PS]E_report.txt` multiqc/raw/bismark/; d
 }
 
 function __wgbs_bismark_bowtie2_PE {
+  # fastq1=fastq/${sname}_trim_galore/${sname}_R1_val_1.fq.gz
+  # fastq2=fastq/${sname}_trim_galore/${sname}_R2_val_2.fq.gz
+  # bismark_bt2_dir=bam/${sname}_bismark_bt2
+  # bismark_bt2_bam_unsorted=bam/${sname}_bismark_bt2/${sname}_pe.bam
+  # bismark_bt2_bam_final=bam/${sname}_bismark_bt2.bam
+  # hour=200; memG=180; ppn=28
   cmd='
 export PATH=~/tools/bismark/default:~/tools/bowtie2/default:$PATH
 set -xe
@@ -868,7 +889,7 @@ cd '$base'
 mkdir -p bam
 rm -rf '$bismark_bt2_dir'
 bismark '$WZSEQ_BISMARK_BT2_INDEX' --bowtie2 --chunkmbs 2000 -p '$ppn' -o '$bismark_bt2_dir' -B '$sname' -1 '$fastq1' -2 '$fastq2' -temp_dir '$bismark_bt2_dir'/tmp
-samtools sort -O bam -o bam/'$bismark_bt2_bam_final' -T '$bismark_bt2_bam_unsorted'_tmp '$bismark_bt2_bam_unsorted'
+samtools sort -O bam -o '$bismark_bt2_bam_final' -T '$bismark_bt2_bam_unsorted'_tmp '$bismark_bt2_bam_unsorted'
 samtools index '$bismark_bt2_bam_final'
 samtools flagstat '$bismark_bt2_bam_final' >'$bismark_bt2_bam_final'.flagstat
 mkdir -p multiqc/raw/bismark
@@ -878,11 +899,19 @@ ln -s `readlink -f '$bismark_bt2_dir'` multiqc/raw/bismark/
 }
 
 function __wgbs_bismark_deduplicate {
-
+  # Please note that this function is very memory-consuming
+  # input_bam=bam/${sname}_bismark_bt2.bam
+  # hour=48; memG=50; ppn=2
+  # library="-p"
+  ## paired-end
+  # library="-p"
+  ## single-end
+  # library="-s"
   cmd='
 export PATH=~/tools/bismark/default:~/tools/bowtie2/default:$PATH
 cd '$base'
-deduplicate_bismark --bam '$input_bam'
+mkdir -p multiqc/raw/bismark/
+deduplicate_bismark '$library' --bam '$input_bam'
 ln -sf `readlink -f '${input_bam%.bam}'.deduplication_report.txt` multiqc/raw/bismark/
 '
   jobname="bismark_deduplicate_"$sname
@@ -890,6 +919,11 @@ ln -sf `readlink -f '${input_bam%.bam}'.deduplication_report.txt` multiqc/raw/bi
 
 function __wgbs_bismark_methylextraction {
   : '
+# for paired-end
+library="--no_overlap"
+# for single-end
+library=""
+
 input_bam=bam/${sname}_bismark_bt2.deduplicated.bam
 hour=48; memG=10; ppn=1
 '
@@ -897,7 +931,8 @@ hour=48; memG=10; ppn=1
 export PATH=~/tools/bismark/default:~/tools/bowtie2/default:$PATH
 cd '$base'
 mkdir -p bismark_methylextraction
-bismark_methylation_extractor --gzip --bedGraph '$input_bam' -o bismark_methylextraction
+bismark_methylation_extractor '$library' --gzip --bedGraph '$input_bam' -o bismark_methylextraction
+zcat bismark_methylextraction/'$(basename $input_bam .bam)'.bismark.cov.gz | awk '\''{print $1,$2-1,$3,$4/100,$5+$6}'\'' | sortbed | biscuit mergecg '$WZSEQ_REFERENCE' - >bismark_methylextraction/'$sname'.cpg_methylation.bed
 ln -sf `readlink -f bismark_methylextraction/'$(basename $input_bam)'_splitting_report.txt` multiqc/raw/bismark/
 '
   jobname="bismark_methylation_extraction_"$sname
@@ -1872,6 +1907,36 @@ rm -f hicpro/hic/${sname}.juicer
       pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 48 -memG 100 -ppn 28
       [[ ${!#} == "do" ]] && qsub $pbsfn
     done
+}
+
+function __hic_hicpro {
+
+  ## sname, fastq
+  ## need config file with name $sname.hicpro
+  ## note that in the config file we specify N_CPU=20, this is hard-coded
+  ## hour=48; memG=100; ppn=20; queue=shortq
+  mkdir -p hicpro/${sname}_input/$sname;
+
+  sed "s/WZREPLACE_N_CPU/"$ppn"/" $WZSEQ_HICPRO_CONFIG >hicpro/config
+  
+  ## check whether to overwrite existing output
+  rm -rf hicpro/${sname}_output
+  ## hicpro_config file, sample-specific config file has higher precedence
+  for fastq in ${fastqs//,/ }; do
+    ln -sf `readlink -f fastq/$fastq` hicpro/${sname}_input/$sname/
+  done
+  
+  ## write pbs file
+  cmd='
+cd '$base'
+/home/wanding.zhou/software/HiC_Pro/default/bin/HiC-Pro -c hicpro/config -i hicpro/'${sname}'_input -o hicpro/'${sname}'_output
+mkdir -p hicpro/hic
+awk '\''{gsub(/chr/,"",$2); gsub(/chr/,"",$5); print 0,$2,$3,0,0,$5,$6,1,60}'\'' hicpro/'${sname}'_output/hic_results/data/'${sname}'/'${sname}'_allValidPairs | sort -k1,1 -k6,6 >hicpro/hic/'${sname}'.juicer
+java -Xmx8g -jar ~/software/juicer/juicer_tools_linux_0.8.jar pre hicpro/hic/'${sname}'.juicer hicpro/hic/'${sname}'.hic '$WZSEQ_REFVERSION'
+rm -f hicpro/hic/'${sname}'.juicer
+'
+  jobname="hicpro_"${sname}
+  pbsfn=$base/pbs/$jobname.pbs
 }
 
 ################################################################################
@@ -3328,6 +3393,41 @@ wzplot hist --maxline 1000000000 -t cpg/CGImethAverage_cov5_${bfn}.bed -c 6 --xl
 # wzseq_bam2fastq
 # unmark secondary (some bam have only secondary mapping but primary mapping missing)
 # samtools view -h in.bam | awk '!/^@/{$2=and($2,compl(0x100)); print $0}/^@/' | samtools view -bo tmp0.bam
+
+function __wzseq_bam2fastq {
+
+  cmd='
+set -xe
+# group reads by read names, collate is faster than sort
+cd '$base';
+mkdir -p bam/collate;
+i=1;
+
+rm -f fastq/'$sname'.pe1.fq.gz
+rm -f fastq/'$sname'.pe2.fq.gz
+rm -f fastq/'$sname'.se.fq.gz
+rm -f fastq/'$sname'.paired_nolabel.fq.gz
+for sourcebam in '${sourcebams//,/ }'; do
+
+  ## NOTE: I extracted only primary mapping
+  samtools view -h $sourcebam | awk -F"\t" -v OFS="\t" '\''!/^@/{$2=and($2,compl(0x100)); print $0}/^@/'\'' > bam/collate/'$sname'_${i}_tmp1.sam
+  samtools collate -u bam/collate/'$sname'_${i}_tmp1.sam bam/collate/'$sname'_${i}_tmp2
+  ## NOTE: use the following to skip primary mapping extraction
+  ## samtools collate -u $sourcebam collate/${sample}_\$i.bam;
+  
+  ## NOTE: sometimes I used -O too. But -O can cause seg-fault on some malformed bams
+  samtools fastq -n -0 fastq/'$sname'_$i.paired_nolabel.fq -1 fastq/'$sname'_$i.pe1.fq -2 fastq/'$sname'_$i.pe2.fq -s fastq/'$sname'_$i.se.fq bam/collate/'$sname'_${i}_tmp2.bam;
+  gzip -c fastq/'$sname'_$i.paired_nolabel.fq >>fastq/'$sname'.paired_nolabel.fq.gz
+  gzip -c fastq/'$sname'_$i.pe1.fq >>fastq/'$sname'.pe1.fq.gz
+  gzip -c fastq/'$sname'_$i.pe2.fq >>fastq/'$sname'.pe2.fq.gz
+  gzip -c fastq/'$sname'_$i.se.fq >>fastq/'$sname'.se.fq.gz 
+  rm -f fastq/'$sname'_$i.paired_nolabel.fq fastq/'$sname'_$i.pe1.fq fastq/'$sname'_$i.pe2.fq fastq/'$sname'_$i.se.fq
+  rm -f bam/collate/'$sname'_$i_tmp{1,2}*;
+  i=$((i+1))
+done
+'
+  jobname='bam2fastq_'$sname
+}
 
 # remove suffix _1, _2, mark read info to flag and
 #  samtools view -h bam/SRR1029055.bam chr19 | awk '!/^@/{inpair=substr($1,length($1),1);$1=substr($1,1,length($1)-2);if(inpair==1) {$2=or($2,0x40);} else {$2=or($2,0x80);} $2=or($2,0x1); if (!(and($2, 0x100))) print $0}/^@/' | samtools collate -uO - SRR1029055tmp >SRR1029055.collate.bam

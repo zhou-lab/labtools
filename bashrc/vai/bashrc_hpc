@@ -143,13 +143,14 @@ eval "$(Renv init -)"
 
 # anaconda might interfere with R package installation!!!
 export PATH="/secondary/projects/laird/projects/2017_11_09_WZ_anaconda/bin:$PATH"
-
+#
 function switchPy3 {
   export PATH=$(echo "$PATH" | sed -e 's/2017_11_09_WZ_anaconda/2017_11_09_WZ_anaconda_python3.6\/anaconda3/')
 }
 function switchPy2 {
   export PATH=$(echo "$PATH" | sed -e 's/2017_11_09_WZ_anaconda_python3.6\/anaconda3/2017_11_09_WZ_anaconda/')
 }
+
 # added by Anaconda3 installer
 # export PATH="/secondary/projects/laird/projects/2017_11_09_WZ_anaconda_python3.6/anaconda3/bin:$PATH"
 
@@ -313,7 +314,7 @@ export -f sortbed
 samnohead() { awk '!/^@/' $1; }
 export -f samnohead
 
-TMPBOSSNAME=jones
+TMPBOSSNAME=shen
 export TMPDIR=/secondary/projects/$TMPBOSSNAME/tmp
 export TEMP=/secondary/projects/$TMPBOSSNAME/tmp
 alias R="LANG=en_US.UTF-8 R"
