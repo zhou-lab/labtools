@@ -11,6 +11,7 @@ if (dir.exists(target)) {
   library(devtools)
   build_vignettes(target)
   document()
+  test()
   check()
 } else {
   if (format == 'pdf') {

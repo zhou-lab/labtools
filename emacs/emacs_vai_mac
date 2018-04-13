@@ -353,7 +353,7 @@ Then move to that line and indent according to mode"
   (when (region-active-p)
     (delete-region (region-beginning) (region-end) )
     )
-  (insert (format-time-string "%Y_%m_%d_"))
+  (insert (format-time-string "%Y%m%d_"))
   )
 
 (global-set-key "\C-x\C-d" 'insert-date)

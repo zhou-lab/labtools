@@ -4,7 +4,7 @@ fi
 
 test -r /sw/bin/init.sh && . /sw/bin/init.sh
 
-test -e "${HOME}/.iterm2_shell_integration.bash" && source "${HOME}/.iterm2_shell_integration.bash"
+## test -e "${HOME}/.iterm2_shell_integration.bash" && source "${HOME}/.iterm2_shell_integration.bash"
 
 ##
 # Your previous /Users/wandingzhou/.bash_profile file was backed up as /Users/wandingzhou/.bash_profile.macports-saved_2017-02-19_at_12:43:44
@@ -21,11 +21,13 @@ export PATH="/opt/local/bin:/opt/local/sbin:$PATH"
 
 
 # default is anaconda3
-export PATH="/Users/wandingzhou/anaconda3/bin:$PATH"
+# export PATH="/Users/wandingzhou/anaconda3/bin:$PATH"
 
-function switchPy3 {
-  export PATH=$(echo "$PATH" | sed -e 's/anaconda2/anaconda3/')
-}
-function switchPy2 {
-  export PATH=$(echo "$PATH" | sed -e 's/anaconda3/anaconda2/')
-}
+# function switchPy3 {
+#   export PATH=$(echo "$PATH" | sed -e 's/anaconda2/anaconda3/')
+# }
+# function switchPy2 {
+#   export PATH=$(echo "$PATH" | sed -e 's/anaconda3/anaconda2/')
+# }
+export PATH="$HOME/.Renv/bin:$PATH"
+eval "$(Renv init -)"
