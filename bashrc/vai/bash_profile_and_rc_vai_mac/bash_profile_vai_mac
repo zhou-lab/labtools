@@ -29,5 +29,7 @@ export PATH="/opt/local/bin:/opt/local/sbin:$PATH"
 # function switchPy2 {
 #   export PATH=$(echo "$PATH" | sed -e 's/anaconda3/anaconda2/')
 # }
-export PATH="$HOME/.Renv/bin:$PATH"
-eval "$(Renv init -)"
+
+#### temporarily disable Renv
+# export PATH="$HOME/.Renv/bin:$PATH"
+# eval "$(Renv init -)"

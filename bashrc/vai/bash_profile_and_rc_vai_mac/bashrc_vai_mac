@@ -82,7 +82,8 @@ prompt
 
 ## search wzprojects
 function wzgrep {
-  grep --color=always "$1" ~/wzprojects/*.{R,py,org,sh} | less -SR;
+  # grep --recursive --color=always "$1" ~/wzprojects/*.{R,py,org,sh} | less -SR;
+  grep --recursive --color=always "$1" ~/wzprojects/* | less -R;
 }
 function wzfind {
   find ~/wzprojects/ -name "*$1*" | less -S
@@ -199,8 +200,8 @@ function findc {
 }
 
 ## Renv
-export PATH="$HOME/.Renv/bin:$PATH"
-eval "$(Renv init -)"
+#export PATH="$HOME/.Renv/bin:$PATH"
+#eval "$(Renv init -)"
 
 
 source ~/tools/git-subrepo/.rc
