@@ -270,3 +270,4 @@ tmux_conf_copy_to_os_clipboard=false
 bind-key -n F2 new-window
 bind-key -n F11 previous-window
 bind-key -n F12 next-window
+bind-key -n F9 last-window
