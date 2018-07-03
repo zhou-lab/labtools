@@ -24,7 +24,7 @@ nnoremap K :update<CR>
 set tabstop=2 softtabstop=0 expandtab shiftwidth=2 smarttab
 
 " turn on line number, :set nu! turns off
-set number
+" set number
 
 " menu length
 set wildmenu
@@ -32,7 +32,7 @@ set wildmode=list:longest,full
 
 " autoindent
 set autoindent
-set cindent " indent after 'for' and 'if'
+" set cindent " indent after 'for' and 'if'
 
 " visual move
 :nnoremap j gj
