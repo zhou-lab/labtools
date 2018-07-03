@@ -16,8 +16,12 @@ inoremap jk <ESC>
 " remap K
 nnoremap K :update<CR>
 
-" tab by spaces
-set tabstop=2 softtabstop=0 expandtab shiftwidth=2 smarttab
+" By default, tab by spaces
+set shiftwidth=2 smarttab
+set tabstop=2
+set softtabstop=0 
+set expandtab 
+autocmd Filetype python setlocal ts=4 sts=4 sw=4
 
 " turn on line number, :set nu! turns off
 set number 

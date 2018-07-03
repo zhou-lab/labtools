@@ -129,7 +129,7 @@ export PYTHONPATH=$HOME/wzlib/pyutils
 export AWKPATH=$HOME/wzlib/awkutils
 
 # /home/wanding.zhou/tools/anaconda/anaconda/bin, instead put python as a symlink to that location
-export PATH=~/bin:$PATH
+export PATH=~/bin:~/local/bin:$PATH
 export PATH=~/pythonlib/bin:$PATH
 export PATH=/primary/vari/software/UCSC_Browser_Tools/default/:$PATH
 # export PATH=/primary/vari/software/valgrind/default/bin:$PATH
@@ -142,7 +142,13 @@ export JAVA_HOME=/primary/vari/software/java/jdk1.8.0_60
 eval "$(Renv init -)"
 
 # anaconda might interfere with R package installation!!!
-export PATH="/secondary/projects/laird/projects/2017_11_09_WZ_anaconda/bin:$PATH"
+function addPy2 {
+  export PATH="/secondary/projects/laird/projects/2017_11_09_WZ_anaconda/bin:$PATH"
+}
+
+function addPy3 {
+  export PATH="/secondary/projects/laird/projects/2017_11_09_WZ_anaconda_python3.6/anaconda3/bin:$PATH"
+}
 #
 function switchPy3 {
   export PATH=$(echo "$PATH" | sed -e 's/2017_11_09_WZ_anaconda/2017_11_09_WZ_anaconda_python3.6\/anaconda3/')
@@ -167,8 +173,9 @@ alias qsuball="find pbs/ -type f -name '*.pbs' | sort | xargs -I {} qsub {}"
 alias rdf="readlink -f"
 alias qsubi='qsub -I -l nodes=1:ppn=1 -l mem=10gb -l walltime=8:00:00'
 alias qsubim='qsub -I -l nodes=1:ppn=6 -l mem=10gb -l walltime=8:00:00'
-alias qsubil='qsub -I -l nodes=1:ppn=20 -l walltime=8:00:00'
-alias qsubill='qsub -I -l nodes=1:ppn=40 -l walltime=24:00:00'
+alias qsubil28='qsub -I -l nodes=1:ppn=28 -l walltime=48:00:00'
+alias qsubil40='qsub -I -l nodes=1:ppn=40 -l walltime=48:00:00 -q longq'
+alias qsubiltriche='qsub -I -l nodes=1:ppn=40 -l walltime=48:00:00 -q triche'
 
 function qdelall {
    qstat | grep 'wanding.zhou' | awk '{split($1,a,".");print a[1]}' | xargs -I {} qdel {}
@@ -215,7 +222,7 @@ esac
 
 ## search wzprojects
 function wzgrep {
-  grep --color=always "$1" ~/wzprojects/*.{R,py,org,sh} | less -SR;
+  grep --color=always --recursive "$1" ~/wzprojects/* | less -SR;
 }
 function wzfind {
   find ~/wzprojects/ -name "*$1*" | less -S
@@ -314,7 +321,7 @@ export -f sortbed
 samnohead() { awk '!/^@/' $1; }
 export -f samnohead
 
-TMPBOSSNAME=shen
+TMPBOSSNAME=laird
 export TMPDIR=/secondary/projects/$TMPBOSSNAME/tmp
 export TEMP=/secondary/projects/$TMPBOSSNAME/tmp
 alias R="LANG=en_US.UTF-8 R"

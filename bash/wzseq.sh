@@ -214,7 +214,8 @@ function wzref_hg19 {
   export WZSEQ_BWAMETH_INDEX=/home/wanding.zhou/references/hg19/bwameth/hg19.fa
   export WZSEQ_SUBREAD_INDEX=/primary/vari/genomicdata/genomes/hg19/subread/hg19
   export WZSEQ_REFERENCE_SPLIT=/primary/vari/genomicdata/genomes/hg19/tophat/Homo_sapiens/UCSC/hg19/Sequence/Chromosomes
-  export WZSEQ_HISAT2_INDEX=/primary/vari/genomicdata/genomes/hg19/hisat/genome
+  # export WZSEQ_HISAT2_INDEX=/primary/vari/genomicdata/genomes/hg19/hisat/genome
+  export WZSEQ_HISAT2_INDEX=/primary/vari/genomicdata/genomes/hg19_noContig/hisat2/genome
   export WZSEQ_EXOME_CAPTURE=/primary/vari/genomicdata/genomes/hg19/annotation/hg19.exomes.bed
   export WZSEQ_KALLISTO_INDEX=/primary/vari/genomicdata/genomes/hg19/kallisto/hg19.kallisto
 
@@ -240,7 +241,7 @@ function wzref_hg19 {
   # build the following using the UCSC table builder
   export WZSEQ_RMSK_GTF=/home/wanding.zhou/references/hg19/annotation/rmsk/rmsk.hg19.gtf
 
-  export WZSEQ_HICPRO_CONFIG=/home/wanding.zhou/wzprojects/2017_05_13_CTCF_EZH2_hicpro_config_template
+  export WZSEQ_HICPRO_CONFIG=/home/wanding.zhou/wzprojects/2017/2017_05_13_CTCF_EZH2_hicpro_config_template
 }
 
 ###### human hg19_noContig ####
@@ -270,6 +271,7 @@ function wzref_hg38 {
   # export WZSEQ_RSEQC_GENE_BED=/primary/vari/genomicdata/genomes/hg19/rseqc/hg19_GENCODE_GENE_V19_comprehensive.bed
   export WZSEQ_BISMARK_BT2_INDEX=/home/wanding.zhou/references/hg38/bismark_bt2
   export WZSEQ_BISCUIT_INDEX=/primary/vari/genomicdata/genomes/hg38/biscuit/hg38.fa
+  export WZSEQ_BISCUIT_QC_SETUP=/home/wanding.zhou/tools/biscuit/development/biscuit/test/QC_assets/hg38_QC_assets/setup.sh
   # export WZSEQ_SUBREAD_INDEX=/primary/vari/genomicdata/genomes/hg19/subread/hg19
   # export WZSEQ_REFERENCE_SPLIT=/primary/vari/genomicdata/genomes/hg19/tophat/Homo_sapiens/UCSC/hg19/Sequence/Chromosomes
 
@@ -668,7 +670,7 @@ function __wgbs_biscuit_align_PE {
   cmd='
 cd '$base'
 mkdir -p bam
-~/tools/biscuit/master/biscuit/biscuit align '$WZSEQ_BISCUIT_INDEX' -t '$ppn' '$fastq1' '$fastq2' | samtools sort -T '$output_bam'_tmp -O bam -o '$output_bam'
+~/bin/biscuit align '$WZSEQ_BISCUIT_INDEX' -t '$ppn' '$fastq1' '$fastq2' | samtools sort -T '$output_bam'_tmp -O bam -o '$output_bam'
 '
   jobname="biscuit_align_"$sname"_PE"
 }
@@ -677,11 +679,38 @@ function __wgbs_biscuit_align_PE_both {
   cmd='
 cd '$base'
 mkdir -p bam
-~/tools/biscuit/master/biscuit/biscuit align '$WZSEQ_BISCUIT_INDEX' -b 1 -t '$ppn' '$fastq1' '$fastq2' | samtools sort -T '$output_bam'_tmp -O bam -o '$output_bam'
+# ~/tools/biscuit/master/biscuit/biscuit
+~/bin/biscuit align '$WZSEQ_BISCUIT_INDEX' -b 1 -t '$ppn' '$fastq1' '$fastq2' >'$output_bam'.sam
+samtools sort -T '$output_bam'_tmp -O bam -o '$output_bam' '$output_bam'.sam
 #samtools index '$output_bam';
 #samtools flagstat '$output_bam' > '$output_bam'.flagstat
 '
   jobname="biscuit_align_"${sname}"_PE_both"
+}
+
+function __wgbs_biscuit_align_PE_Walid_lib {
+  cmd='
+cd '$base'
+mkdir -p bam
+# ~/tools/biscuit/master/biscuit/biscuit
+~/bin/biscuit align '$WZSEQ_BISCUIT_INDEX' -b 1 -t '$ppn' -J AGATCGGAAGAGCGGTTCAGCA -K TCTAGCCTTCTCGCAGCACA '$fastq1' '$fastq2' >'$output_bam'.sam
+samtools sort -T '$output_bam'_tmp -O bam -o '$output_bam' '$output_bam'.sam
+#samtools index '$output_bam';
+#samtools flagstat '$output_bam' > '$output_bam'.flagstat
+'
+  jobname="biscuit_align_"${sname}"_PE_both"
+}
+
+function __wgbs_biscuit_align_PE_POETIC {
+  cmd='
+cd '$base'
+mkdir -p bam
+~/bin/biscuit align '$WZSEQ_BISCUIT_INDEX' -t '$ppn' -J AGATCGGAAGAGC -K AAATCAAAAAAAC '$fastq1' '$fastq2' >'$output_bam'.sam
+samtools sort -T '$output_bam'_tmp -O bam -o '$output_bam' '$output_bam'.sam
+# samtools index '$output_bam';
+# samtools flagstat '$output_bam' > '$output_bam'.flagstat
+'
+  jobname="biscuit_align_"${sname}"_PE_POETIC"
 }
 
 function __wgbs_biscuit_markdup {
@@ -696,21 +725,11 @@ ln -sf `readlink -f '$output_bam'_markdup_report.txt` multiqc/raw/biscuit/
   jobname='biscuit_markdup_'$sname
 }
 
-function __wgbs_biscuit_mapping_summary {
-  cmd='
-cd '$base'
-~/tools/biscuit/development/biscuit/biscuit cinread -p STRAND,BSSTRAND ~/references/hg19/hg19.fa '$input_bam' | awk '\''{a[$1$2]+=1}END{for(strand in a) {print "strand\t"strand"\t"a[strand];}}'\'' >'$input_bam'_mapping_summary.txt
-mkdir -p multiqc/raw/biscuit/
-ln -sf `readlink -f '$input_bam'_mapping_summary.txt` multiqc/raw/biscuit/
-'
-  jobname='biscuit_mapping_summary_'$sname
-}
-
 function __wgbs_biscuit_QC {
   cmd='
 cd '$base'
 ~/tools/biscuit/development/biscuit/scripts/QC.sh -v '$input_vcf' '$WZSEQ_BISCUIT_QC_SETUP' '$sname' '$input_bam'
-mkdir -p multiqc/raw/BISCUITqc
+mkdir -p multiqc/raw/BISCUITqc/'$sname'
 ln -sf `readlink -f BISCUITqc` multiqc/raw/BISCUITqc
 '
   jobname='biscuit_QC_'$sname
@@ -2070,32 +2089,49 @@ samtools flagstat $sname.bam >$sname.bam.flagstat
     done
 }
 
-function __rnaseq_hisat2 {
+function __rnaseq_hisat2_SE {
 
-  # input: sname, sread1, sread2
-  [[ $sread2 == "." ]] && input="-U fastq/$sread1" || input="-1 fastq/$sread1 -2 fastq/$sread2"
-  cmd="
+  # hour=24; memG=30; ppn=14; queue=shortq
+  cmd='
 set -xe
-cd $base
+cd '$base'
 mkdir -p bam
 
-export PATH=$PATH:/primary/vari/software/hisat/hisat2-2.0.4
-hisat2 -x $WZSEQ_HISAT2_INDEX $input -p 14 | samtools view -bS - | samtools sort -T bam/$sname.tmp -O bam -o bam/$sname.bam
-samtools index bam/$sname.bam
-samtools flagstat bam/$sname.bam >bam/$sname.bam.flagstat
-"
-    jobname="hisat_$sname"
-    pbsfn=$base/pbs/$jobname.pbs
-    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 30 -ppn 14
+export PATH='$PATH':/primary/vari/software/hisat/default
+hisat2 -x '$WZSEQ_HISAT2_INDEX' -U '$fastq' -p '$ppn' | samtools view -bS - | samtools sort -T bam/'$sname'.tmp -O bam -o bam/'$sname'.bam
+samtools index bam/'$sname'.bam
+samtools flagstat bam/'$sname'.bam >bam/'$sname'.bam.flagstat
+'
+  jobname="hisat_${sname}_SE"
+}
+
+function __rnaseq_hisat2_PE {
+
+  cmd='
+set -xe
+cd '$base'
+mkdir -p bam
+
+export PATH=$PATH:/primary/vari/software/hisat/default
+hisat2 -x '$WZSEQ_HISAT2_INDEX' -1 '$fastq1' -2 '$fastq2' -p '$ppn' | samtools view -bS - | samtools sort -T bam/'$sname'.tmp -O bam -o bam/'$sname'.bam
+samtools index bam/'$sname'.bam
+samtools flagstat bam/'$sname'.bam >bam/'$sname'.bam.flagstat
+'
+  jobname="hisat_${sname}_PE"
 }
 
 function rnaseq_hisat2 {
   base=$(pwd)
   [[ -d pbs ]] || mkdir pbs
   awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples |
-  while read sname sread1 sread2; do
-    __rnaseq_hisat2
-    [[ $1 == "do" ]] && qsub $pbsfn
+    while read sname sread1 sread2; do
+      fastq=fastq/$sread1
+      ppn=28
+      queue=shortq
+      __rnaseq_hisat2_SE
+      pbsfn=$base/pbs/$jobname.pbs
+      pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 24 -memG 240 -ppn $ppn
+      [[ $1 == "do" ]] && qsub $pbsfn
   done  
 }
 
@@ -2464,13 +2500,40 @@ awk -f wanding.awk -e 'NR==FNR{\$2+=1; a[\$1\":\"\$2\"-\"\$3]=joinr(4,NF)}NR!=FN
 
 # R-based methods
 # this doesn't work very well for repeats, since they lost the family information
+# the most generic version
 function rnaseq_featureCounts {
   base=$(pwd);
   [[ -d pbs ]] || mkdir pbs
   grep '\[experiment\] single-end' samples && pairEnd="" || pairEnd="-P"
-  grep '\[experiment\] unstranded' samples && stranded="-s 0" || stranded="-s 1"
+  # grep '\[experiment\] unstranded' samples && stranded="-s 0" || stranded="-s 1"
+  # stranded="-s 0" # unstranded
+  # stranded="-s 1" # for forward-stranded
+  # stranded="-s 2" # for reverse-stranded (most of Minmin's library)
   [[ -z "$pairEnd" ]] && stranded=""
 
+  allbams="bam/*.bam"
+  [[ -d bam_allele ]] && allbams=$allbams" bam_allele/*.bam"
+  __rnaseq_featureCounts
+  [[ ${!#} == "do" ]] && qsub $pbsfn
+}
+
+function rnaseq_featureCounts_SE_stranded {
+  base=$(pwd);
+  [[ -d pbs ]] || mkdir pbs
+  pairEnd=""
+  stranded="-s 1"
+  allbams="bam/*.bam"
+  [[ -d bam_allele ]] && allbams=$allbams" bam_allele/*.bam"
+  __rnaseq_featureCounts
+  [[ ${!#} == "do" ]] && qsub $pbsfn
+}
+
+
+function rnaseq_featureCounts_SE_revstranded {
+  base=$(pwd);
+  [[ -d pbs ]] || mkdir pbs
+  pairEnd=""
+  stranded="-s 2"
   allbams="bam/*.bam"
   [[ -d bam_allele ]] && allbams=$allbams" bam_allele/*.bam"
   __rnaseq_featureCounts
@@ -2590,42 +2653,41 @@ rm -f stranded/${sname}_p.bam stranded/${sname}_r.bam
 }
 
 function __rnaseq_splitstrand_se {
+  # hour=12; memG=10; ppn=1; queue=shortq
   # input: base, sname
-  cmd="
+  cmd='
 set -xe
-cd $base
+cd '$base'
 minmapq=10
 mkdir -p stranded
 
 # first read, positive strand
-samtools view -H bam/${sname}.bam > stranded/${sname}_p.sam
-samtools view -q \$minmapq -F 0x110 bam/${sname}.bam >> stranded/${sname}_p.sam
-samtools view -b stranded/${sname}_p.sam | samtools sort -o stranded/${sname}_p.bam -O bam -T stranded/${sname}_tmp
+samtools view -H bam/'${sname}'.bam > stranded/'${sname}'_p.sam
+samtools view -q $minmapq -F 0x110 bam/'${sname}'.bam >> stranded/'${sname}'_p.sam
+samtools view -b stranded/'${sname}'_p.sam | samtools sort -o stranded/'${sname}'_p.bam -O bam -T stranded/'${sname}'_tmp
 
 # first read, reverse strand
-samtools view -H bam/${sname}.bam > stranded/${sname}_r.sam
-samtools view -q \$minmapq -f 0x10 -F 0x100 bam/${sname}.bam >> stranded/${sname}_r.sam
-samtools view -b stranded/${sname}_r.sam | samtools sort -o stranded/${sname}_r.bam -O bam -T stranded/${sname}_tmp
+samtools view -H bam/'${sname}'.bam > stranded/'${sname}'_r.sam
+samtools view -q $minmapq -f 0x10 -F 0x100 bam/'${sname}'.bam >> stranded/'${sname}'_r.sam
+samtools view -b stranded/'${sname}'_r.sam | samtools sort -o stranded/'${sname}'_r.bam -O bam -T stranded/'${sname}'_tmp
 
-totalreads=\$(awk -F\" \" 'NR==1{print \$1}' bam/${sname}.bam.flagstat)
+totalreads=$(awk -F" " '\''NR==1{print $1}'\'' bam/'${sname}'.bam.flagstat)
 
-bedtools genomecov -ibam stranded/${sname}_p.bam -g ${WZSEQ_REFERENCE}.fai -bga -split | LC_COLLATE=C sort -k1,1 -k2,2n -T stranded/ >stranded/${sname}_p.bedg
-awk -v totalreads=\$totalreads '{print \$1,\$2,\$3,\$4/totalreads*10000000}' stranded/${sname}_p.bedg >stranded/${sname}_p_norm.bedg
-bedGraphToBigWig stranded/${sname}_p_norm.bedg ${WZSEQ_REFERENCE}.fai stranded/${sname}_p_norm.bw
-bedGraphToBigWig stranded/${sname}_p.bedg ${WZSEQ_REFERENCE}.fai stranded/${sname}_p.bw
+bedtools genomecov -ibam stranded/'${sname}'_p.bam -g '${WZSEQ_REFERENCE}'.fai -bga -split | LC_COLLATE=C sort -k1,1 -k2,2n -T stranded/ >stranded/'${sname}'_p.bedg
+awk -v totalreads=$totalreads '\''{print $1,$2,$3,$4/totalreads*10000000}'\'' stranded/'${sname}'_p.bedg >stranded/'${sname}'_p_norm.bedg
+bedGraphToBigWig stranded/'${sname}'_p_norm.bedg '${WZSEQ_REFERENCE}'.fai stranded/'${sname}'_p_norm.bw
+bedGraphToBigWig stranded/'${sname}'_p.bedg '${WZSEQ_REFERENCE}'.fai stranded/'${sname}'_p.bw
 
 ## negative strand always have negative counts
-bedtools genomecov -ibam stranded/${sname}_r.bam -g ${WZSEQ_REFERENCE}.fai -bga -split | LC_COLLATE=C sort -k1,1 -k2,2n -T stranded/ | awk -F\"\\t\" -v OFS=\"\t\" '{print \$1,\$2,\$3,-\$4}' >stranded/${sname}_r.bedg
-awk -v totalreads=\$totalreads '{print \$1,\$2,\$3,\$4/totalreads*10000000}' stranded/${sname}_r.bedg >stranded/${sname}_r_norm.bedg
-bedGraphToBigWig stranded/${sname}_r_norm.bedg ${WZSEQ_REFERENCE}.fai stranded/${sname}_r_norm.bw
-bedGraphToBigWig stranded/${sname}_r.bedg ${WZSEQ_REFERENCE}.fai stranded/${sname}_r.bw
+bedtools genomecov -ibam stranded/'${sname}'_r.bam -g '${WZSEQ_REFERENCE}'.fai -bga -split | LC_COLLATE=C sort -k1,1 -k2,2n -T stranded/ | awk -F"\t" -v OFS="\t" '\''{print $1,$2,$3,-$4}'\'' >stranded/'${sname}'_r.bedg
+awk -v totalreads=$totalreads '\''{print $1,$2,$3,$4/totalreads*10000000}'\'' stranded/'${sname}'_r.bedg >stranded/'${sname}'_r_norm.bedg
+bedGraphToBigWig stranded/'${sname}'_r_norm.bedg '${WZSEQ_REFERENCE}'.fai stranded/'${sname}'_r_norm.bw
+bedGraphToBigWig stranded/'${sname}'_r.bedg '${WZSEQ_REFERENCE}'.fai stranded/'${sname}'_r.bw
 
-rm -f stranded/${sname}_p.sam stranded/${sname}_r.sam
-rm -f stranded/${sname}_p.bam stranded/${sname}_r.bam
-"
-  jobname="splitstrand_${sname}"
-  pbsfn=pbs/$jobname.pbs
-  pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 1
+rm -f stranded/'${sname}'_p.sam stranded/'${sname}'_r.sam
+rm -f stranded/'${sname}'_p.bam stranded/'${sname}'_r.bam
+'
+  jobname="splitstrand_${sname}_se"
 }
 
 function rnaseq_splitstrand_se {
@@ -2647,37 +2709,36 @@ function rnaseq_splitstrand_se {
 function __rnaseq_count_rmsk_stranded {
 
   # input: sname, base
-  cmd="
+  # hour=24; memG=20; ppn=2;
+  cmd='
 set -xe
-cd $base
+cd '$base'
 mkdir -p rmsk
 
-bedtools intersect -a $WZSEQ_RMSK -b stranded/${sname}_r.bedg -wao -sorted | awk -f wanding.awk -e '{print joinr(1,7)\"\\t\"\$11*\$12;}' | bedtools groupby -g 1-7 -c 8 -o sum > rmsk/${sname}_r.tsv
+bedtools intersect -a '$WZSEQ_RMSK' -b stranded/'${sname}'_r.bedg -wao -sorted | awk -f wanding.awk -e '\''{print joinr(1,7)"\t"$11*$12;}'\'' | bedtools groupby -g 1-7 -c 8 -o sum > rmsk/'${sname}'_r.tsv
 
 ## find all cummulative base counts
 ## all bases mapped to positive strand
-all_p=\$(awk '{a+=(\$3-\$2)*\$4}END{print a}' stranded/${sname}_p.bedg)
+all_p=$(awk '\''{a+=($3-$2)*$4}END{print a}'\'' stranded/'${sname}'_p.bedg)
 ## all bases mapped to negative strand
-all_r=\$(awk '{a+=(\$3-\$2)*\$4}END{print a}' stranded/${sname}_r.bedg)
+all_r=$(awk '\''{a+=($3-$2)*$4}END{print a}'\'' stranded/'${sname}'_r.bedg)
 
-nmap=\$((\$all_p-\$all_r))
+nmap=$(($all_p-$all_r))
 
-echo \"cumulative base cnt: \$nmap\"
+echo "cumulative base cnt: $nmap"
 
-bedtools intersect -a $WZSEQ_RMSK -b stranded/${sname}_p.bedg -wao -sorted | awk -f wanding.awk -e '{print joinr(1,7)\"\\t\"\$11*\$12;}' | bedtools groupby -g 1-7 -c 8 -o sum > rmsk/${sname}_p.tsv
+bedtools intersect -a '$WZSEQ_RMSK' -b stranded/'${sname}'_p.bedg -wao -sorted | awk -f wanding.awk -e '\''{print joinr(1,7)"\t"$11*$12;}'\'' | bedtools groupby -g 1-7 -c 8 -o sum > rmsk/'${sname}'_p.tsv
 
-paste rmsk/${sname}_p.tsv rmsk/${sname}_r.tsv | awk '\$2==\$10 && \$5==\$13' | cut -f1-7,8,16 | awk -v alln=\$nmap 'BEGIN{print \"chrm\tbeg\tend\tstrand\tcat1\tcat2\tcat3\ttlen\tposBaseCnt\tnegBaseCnt\tposRPKM\tnegRPKM\tRPKM\"}{tlen=\$3-\$2; pp=\$8/tlen*1000/alln*1000000; rr=\$9/tlen*1000/alln*1000000; print \$0\"\t\"tlen\"\t\"pp\"\t\"rr\"\t\"pp-rr}' >rmsk/$sname.tsv
+paste rmsk/'${sname}'_p.tsv rmsk/'${sname}'_r.tsv | awk '\''$2==$10 && $5==$13'\'' | cut -f1-7,8,16 | awk -v alln=$nmap '\''BEGIN{print "chrm\tbeg\tend\tstrand\tcat1\tcat2\tcat3\ttlen\tposBaseCnt\tnegBaseCnt\tposRPKM\tnegRPKM\tRPKM"}{tlen=$3-$2; pp=$8/tlen*1000/alln*1000000; rr=$9/tlen*1000/alln*1000000; print $0"\t"tlen"\t"pp"\t"rr"\t"pp-rr}'\'' >rmsk/'$sname'.tsv
 
 ## count category
-awk -v alln=\$nmap '{n=\$8-\$9; a[\$5]+=n; b[\$6]+=n; c[\$7]+=n;} END{print \"Genome\t0\t\"alln\"\t1.0\"; for (i in a) {print i\"\t1\t\"a[i]\"\t\"a[i]/alln} for(i in b){print i\"\t2\t\"b[i]\"\t\"b[i]/alln} for(i in c){print i\"\t3\t\"c[i]\"\t\"c[i]/alln}}' rmsk/$sname.tsv | sort -k2,2n -k1,1 >rmsk/$sname.tsv.categories
+awk -v alln=$nmap '\''{n=$8-$9; a[$5]+=n; b[$6]+=n; c[$7]+=n;} END{print "Genome\t0\t"alln"\t1.0"; for (i in a) {print i"\t1\t"a[i]"\t"a[i]/alln} for(i in b){print i"\t2\t"b[i]"\t"b[i]/alln} for(i in c){print i"\t3\t"c[i]"\t"c[i]/alln}}'\'' rmsk/'$sname'.tsv | sort -k2,2n -k1,1 >rmsk/'$sname'.tsv.categories
 
-rm -f rmsk/${sname}_p.tsv rmsk/${sname}_r.tsv
-"
+rm -f rmsk/'${sname}'_p.tsv rmsk/'${sname}'_r.tsv
+'
   # for locating double-strand transcription
   # awk -v OFS="\t" -f wanding.awk -e 'max($14,-$15)>0 && min($14,-$15)/max($14,-$15)>0.5 && min($14,-$15)>100{print $_"\t"($14-$15)/($8-$9+10)}' merged.rmsk.bed | sort -k16,16nr >merged.rmsk.bed.double.up
   jobname="rmsk_${sname}"
-  pbsfn=$base/pbs/$jobname.pbs
-  pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 2 -ppn 1
 }
 
 function rnaseq_count_rmsk_stranded {
@@ -2690,6 +2751,9 @@ function rnaseq_count_rmsk_stranded {
   for bedg_r in stranded/*_r.bedg; do
     sname=$(basename $bedg_r _r.bedg)
     __rnaseq_count_rmsk_stranded
+    pbsfn=$base/pbs/$jobname.pbs
+    hour=24; memG=20; ppn=2
+    pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour $hour -memG $memG -ppn $ppn
     [[ $1 == "do" ]] && qsub $pbsfn
   done
 }
@@ -3113,37 +3177,9 @@ cd '$base'
 mkdir -p fastqc/'$fastq_sname'
 fastqc -f fastq '$fastq' -o fastqc/'$fastq_sname'
 mkdir -p multiqc/raw/fastqc/
-ln -sf `readlink -f fastqc/'$fastq_sname'/'$fastq_sname'_fastqc.zip` multiqc/raw/fastqc/
+ln -sf `readlink -f fastqc` multiqc/raw/fastqc/
 '
   jobname='fastqc_'$fastq_sname
-}
-
-## retention
-function __biscuit_retention {
-  cmd='
-set -xe
-cd '$base'
-mkdir -p retention
-samtools view -h -q 40 '$input_bam' | ~/tools/biscuit/development/biscuit/biscuit bsconv '$WZSEQ_REFERENCE' - | awk '\''match($0,/ZN:Z:([^ ]*)/,a){print gensub(/[A-Z,_]+/, "\t", "g", a[1])}'\'' | cut -f2,4,6,8 | awk -v OFS="\t" '\''{ra[$1]+=1;rc[$2]+=1;rg[$3]+=1;rt[$4]+=1;}END{for(k in ra) {print "CA", k, ra[k]} for(k in rc) {print "CC", k, rc[k]} for(k in rg) {print "CG", k, rg[k]} for(k in rt) {print "CT", k, rt[k]}}'\'' | sort -k1,1 -k2,2n | awk '\''BEGIN{print "CTXT\tnumRET\tCnt"}{print}'\'' > retention/'$sname'_freqOfTotalRetentionPerRead.tsv
-
-Rscript ~/wzprojects/2017_11_23_plot_freqOfTotalRetentionPerRead.R retention/'$sname'_freqOfTotalRetentionPerRead.tsv
-
-~/tools/biscuit/development/biscuit/biscuit vcf2bed -et c '$input_vcf' | awk '\''{beta_sum[$6]+=$8; beta_cnt[$6]+=1;} END{print "CA\tCC\tCG\tCT"; print beta_sum["CA"]/beta_cnt["CA"]"\t"beta_sum["CC"]/beta_cnt["CC"]"\t"beta_sum["CG"]/beta_cnt["CG"]"\t"beta_sum["CT"]/beta_cnt["CT"];}'\'' >retention/'$sname'_totalBaseConversionRate.tsv
-
-samtools view -hq 40 '$input_bam' | ~/tools/biscuit/development/biscuit/biscuit bsconv -b '$WZSEQ_REFERENCE' - | awk '\''{for(i=1;i<=8;++i) a[i]+=$i;}END{print "CpA\tCpC\tCpG\tCpT"; print a[1]/(a[1]+a[2])"\t"a[3]/(a[3]+a[4])"\t"a[5]/(a[5]+a[6])"\t"a[7]/(a[7]+a[8]);}'\'' >retention/'$sname'_totalReadConversionRate.tsv
-
-samtools view -hq 40 '$input_bam' | ~/tools/biscuit/development/biscuit/biscuit cinread '$WZSEQ_REFERENCE' - -t ch -p QPAIR,CQPOS,CRETENTION | sort | uniq -c | awk -F" " '\''$4!="N"{print $2"\t"$3"\t"$4"\t"$1}'\'' | sort -k1,1 -k2,2n >retention/'$sname'_CpHRetentionByReadPos.tsv
-
-Rscript ~/wzprojects/2017_11_23_plot_CpHRetentionByReadPos.R retention/'$sname'_CpHRetentionByReadPos.tsv
-
-mkdir -p multiqc/raw/retention
-ln -sf `readlink -f retention/'$sname'_totalBaseConversionRate.tsv` multiqc/raw/retention/
-ln -sf `readlink -f retention/'$sname'_totalReadConversionRate.tsv` multiqc/raw/retention/
-ln -sf `readlink -f retention/'$sname'_CpHRetentionByReadPos.tsv` multiqc/raw/retention/
-ln -sf `readlink -f retention/'$sname'_freqOfTotalRetentionPerRead.tsv` multiqc/raw/retention/
-'
-  
-  jobname="biscuit_retention_$sname"
 }
 
 ####################################
@@ -3155,185 +3191,6 @@ function __wzseq_uniformity_1M() {
   bedtools makewindows -w 1000000 -g '${WZSEQ_REFERENCE}'.fai | grep -v random | grep -v chrUn | grep -v hap | sortbed | bedtools coverage -a - -b <(samtools view -O BAM -q 40 '$input_bam') -sorted >uniformity/'${sname}'_1Mb.bed
 '
   jobname='uniformity_1m_'$sname
-}
-
-## replacing the old wzseq_bam_coverage
-function __wzseq_base_coverage {
-  # hour=24; memG=2; ppn=2
-  cmd='
-cd '$base'
-mkdir -p coverage
-# all
-bedtools genomecov -bga -split -ibam '$input_bam' -g '${WZSEQ_REFERENCE}'.fai | sortbed >coverage/'${sname}'_bga.bed
-bedGraphToBigWig coverage/'${sname}'_bga.bed '$WZSEQ_REFERENCE'.fai coverage/'$sname'_bga.bw
-
-# q40
-samtools view -q 40 -b '$input_bam' | bedtools genomecov -ibam stdin -g '$WZSEQ_REFERENCE'.fai -bga -split | LC_ALL=C sort -k1,1 -k2,2n -T coverage/  >coverage/'$sname'_bga_q40.bed
-bedGraphToBigWig coverage/'${sname}'_bga_q40.bed '$WZSEQ_REFERENCE'.fai coverage/'$sname'_bga_q40.bw
-
-awk '\''{cnt[$4]+=$3-$2}END{for(cov in cnt) {print int(cov)"\t"int(cnt[cov]);}}'\'' coverage/'$sname'_bga.bed | sort -k1,1n >coverage/'$sname'_bga_table
-
-awk '\''{cnt[$4]+=$3-$2}END{for(cov in cnt) {print int(cov)"\t"int(cnt[cov]);}}'\'' coverage/'$sname'_bga_q40.bed | sort -k1,1n >coverage/'$sname'_bga_q40_table
-
-mkdir -p multiqc/raw/coverage
-ln -sf `readlink -f coverage/'$sname'_bga_table` multiqc/raw/coverage/
-ln -sf `readlink -f coverage/'$sname'_bga_q40_table` multiqc/raw/coverage/
-'
-  jobname="base_coverage_"$sname
-}
-
-function __wzseq_duplicate_coverage {
-
-  cmd='
-# duplicate
-samtools view -f 0x400 -b '$input_bam' | bedtools genomecov -ibam stdin -g '$WZSEQ_REFERENCE'.fai -bga -split >coverage/'$sname'_bga_dup.bed
-
-# duplication rate
-echo -ne "#bases covered by all reads: " >coverage/'$sname'_dup_report.txt
-awk '\''$4>0{a+=$3-$2}END{print a}'\'' coverage/'$sname'_bga.bed >>coverage/'$sname'_dup_report.txt
-echo -ne "#bases covered by duplicate reads: " >>coverage/'$sname'_dup_report.txt
-awk '\''$4>0{a+=$3-$2}END{print a}'\'' coverage/'$sname'_bga_dup.bed >>coverage/'$sname'_dup_report.txt
-
-# high GC content
-echo -ne "#high-GC bases covered by all reads: " >>coverage/'$sname'_dup_report.txt
-bedtools intersect -a coverage/'$sname'_bga.bed -b '$WZSEQ_TOPGC_BED' -sorted | awk '\''$4>0{a+=$3-$2}END{print a}'\'' >>coverage/'$sname'_dup_report.txt
-echo -ne "#high-GC bases covered by duplicate reads: " >>coverage/'$sname'_dup_report.txt
-bedtools intersect -a coverage/'$sname'_bga_dup.bed -b '$WZSEQ_TOPGC_BED' -sorted | awk '\''$4>0{a+=$3-$2}END{print a}'\'' >>coverage/'$sname'_dup_report.txt
-
-# low GC content
-echo -ne "#low-GC bases covered by all reads: " >>coverage/'$sname'_dup_report.txt
-bedtools intersect -a coverage/'$sname'_bga.bed -b '$WZSEQ_BOTGC_BED' -sorted | awk '\''$4>0{a+=$3-$2}END{print a}'\'' >>coverage/'$sname'_dup_report.txt
-echo -ne "#low-GC bases covered by duplicate reads: " >>coverage/'$sname'_dup_report.txt
-bedtools intersect -a coverage/'$sname'_bga_dup.bed -b '$WZSEQ_BOTGC_BED' -sorted | awk '\''$4>0{a+=$3-$2}END{print a}'\'' >>coverage/'$sname'_dup_report.txt
-
-## Q40
-# duplicate
-samtools view -f 0x400 -q 40 -b '$input_bam' | bedtools genomecov -ibam stdin -g '$WZSEQ_REFERENCE'.fai -bga -split >coverage/'$sname'_bga_dup_q40.bed
-
-# duplication rate
-echo -ne "#bases covered by all q40-reads: " >>coverage/'$sname'_dup_report.txt
-awk '\''$4>0{a+=$3-$2}END{print a}'\'' coverage/'$sname'_bga_q40.bed >>coverage/'$sname'_dup_report.txt
-echo -ne "#bases covered by duplicate q40-reads: " >>coverage/'$sname'_dup_report.txt
-awk '\''$4>0{a+=$3-$2}END{print a}'\'' coverage/'$sname'_bga_dup_q40.bed >>coverage/'$sname'_dup_report.txt
-
-# high GC content
-echo -ne "#high-GC bases covered by all q40-reads: " >>coverage/'$sname'_dup_report.txt
-bedtools intersect -a coverage/'$sname'_bga_q40.bed -b '$WZSEQ_TOPGC_BED' -sorted | awk '\''$4>0{a+=$3-$2}END{print a}'\'' >>coverage/'$sname'_dup_report.txt
-echo -ne "#high-GC bases covered by duplicate q40-reads: " >>coverage/'$sname'_dup_report.txt
-bedtools intersect -a coverage/'$sname'_bga_dup_q40.bed -b '$WZSEQ_TOPGC_BED' -sorted | awk '\''$4>0{a+=$3-$2}END{print a}'\'' >>coverage/'$sname'_dup_report.txt
-
-# low GC content
-echo -ne "#low-GC bases covered by all q40-reads: " >>coverage/'$sname'_dup_report.txt
-bedtools intersect -a coverage/'$sname'_bga_q40.bed -b '$WZSEQ_BOTGC_BED' -sorted | awk '\''$4>0{a+=$3-$2}END{print a}'\'' >>coverage/'$sname'_dup_report.txt
-echo -ne "#low-GC bases covered by duplicate q40-reads: " >>coverage/'$sname'_dup_report.txt
-bedtools intersect -a coverage/'$sname'_bga_dup_q40.bed -b '$WZSEQ_BOTGC_BED' -sorted | awk '\''$4>0{a+=$3-$2}END{print a}'\'' >>coverage/'$sname'_dup_report.txt
-
-mkdir -p multiqc/raw/coverage
-ln -sf `readlink -f coverage/'$sname'_dup_report.txt` multiqc/raw/coverage/
-'
-  jobname='duplicate_coverage_'$sname
-}
-
-## note: this is a rough estimate since, if a read cover CpG, it has to either C or G
-## there is 50% chance it gets to C or G and missed the strand
-function __wzseq_cpg_coverage {
-  ## depend on __wzseq_base_coverage
-  cmd='
-cd '$base'
-bedtools intersect -a '$WZSEQ_CPGBED' -b coverage/'${sname}'_bga.bed -wo -sorted | bedtools groupby -g 1-3 -c 7 -o min >coverage/'$sname'_cpg.bed
-
-bedtools intersect -a '$WZSEQ_CPGBED' -b coverage/'${sname}'_bga_q40.bed -wo -sorted | bedtools groupby -g 1-3 -c 7 -o min >coverage/'$sname'_cpg_q40.bed
-
-awk '\''{cnt[$4]+=1}END{for(cov in cnt) {print int(cov)"\t"int(cnt[cov]);}}'\'' coverage/'$sname'_cpg.bed | sort -k1,1n >coverage/'$sname'_cpg_table
-
-awk '\''{cnt[$4]+=1}END{for(cov in cnt) {print int(cov)"\t"int(cnt[cov]);}}'\'' coverage/'$sname'_cpg_q40.bed | sort -k1,1n >coverage/'$sname'_cpg_q40_table
-
-mkdir -p multiqc/raw/coverage
-ln -sf `readlink -f coverage/'$sname'_cpg_table` multiqc/raw/coverage
-ln -sf `readlink -f coverage/'$sname'_cpg_q40_table` multiqc/raw/coverage
-'
-  jobname='cpg_coverage_'$sname
-}
-
-function __wzseq_cpg_distribution {
-  ## depend on __wzseq_cpg_coverage
-  cmd='
-# whole genome
-wc -l coverage/'$sname'_cpg_q40.bed | awk -F" " '\''{printf("Territory\tAll\tUniqCov\tAllCov\nTotalCpGs\t%s",$1)}'\'' >coverage/'$sname'_cpg_dist_table
-awk '\''$4>0{a+=1}END{printf("\t%d",a)}'\'' coverage/'$sname'_cpg_q40.bed >>coverage/'$sname'_cpg_dist_table
-awk '\''$4>0{a+=1}END{printf("\t%d\n",a)}'\'' coverage/'$sname'_cpg.bed >>coverage/'$sname'_cpg_dist_table
-
-# exon
-bedtools intersect -a coverage/'$sname'_cpg_q40.bed -b '$WZSEQ_EXON' -sorted | wc -l | awk -F" " '\''{printf("ExonicCpGs\t%s",$1)}'\'' >>coverage/'$sname'_cpg_dist_table
-bedtools intersect -a coverage/'$sname'_cpg_q40.bed -b '$WZSEQ_EXON' -sorted | awk '\''$4>0{a+=1}END{printf("\t%d",a)}'\''  >>coverage/'$sname'_cpg_dist_table
-bedtools intersect -a coverage/'$sname'_cpg.bed -b '$WZSEQ_EXON' -sorted | awk '\''$4>0{a+=1}END{printf("\t%d\n",a)}'\''  >>coverage/'$sname'_cpg_dist_table
-
-# repeat
-bedtools intersect -a coverage/'$sname'_cpg_q40.bed -b '$WZSEQ_RMSK' -sorted | wc -l | awk -F" " '\''{printf("RepeatCpGs\t%s",$1)}'\'' >>coverage/'$sname'_cpg_dist_table
-bedtools intersect -a coverage/'$sname'_cpg_q40.bed -b '$WZSEQ_RMSK' -sorted | awk '\''$4>0{a+=1}END{printf("\t%d",a)}'\''  >>coverage/'$sname'_cpg_dist_table
-bedtools intersect -a coverage/'$sname'_cpg.bed -b '$WZSEQ_RMSK' -sorted | awk '\''$4>0{a+=1}END{printf("\t%d\n",a)}'\''  >>coverage/'$sname'_cpg_dist_table
-
-# gene
-bedtools intersect -a coverage/'$sname'_cpg_q40.bed -b '$WZSEQ_GTF' -sorted | wc -l | awk -F" " '\''{printf("GenicCpGs\t%s",$1)}'\'' >>coverage/'$sname'_cpg_dist_table
-bedtools intersect -a coverage/'$sname'_cpg_q40.bed -b '$WZSEQ_GTF' -sorted | awk '\''$4>0{a+=1}END{printf("\t%d",a)}'\''  >>coverage/'$sname'_cpg_dist_table
-bedtools intersect -a coverage/'$sname'_cpg.bed -b '$WZSEQ_GTF' -sorted | awk '\''$4>0{a+=1}END{printf("\t%d\n",a)}'\''  >>coverage/'$sname'_cpg_dist_table
-
-# CGI
-bedtools intersect -a coverage/'$sname'_cpg_q40.bed -b '$WZSEQ_CGIBED' -sorted | wc -l | awk -F" " '\''{printf("CGICpGs\t%s",$1)}'\'' >>coverage/'$sname'_cpg_dist_table
-bedtools intersect -a coverage/'$sname'_cpg_q40.bed -b '$WZSEQ_CGIBED' -sorted | awk '\''$4>0{a+=1}END{printf("\t%d",a)}'\''  >>coverage/'$sname'_cpg_dist_table
-bedtools intersect -a coverage/'$sname'_cpg.bed -b '$WZSEQ_CGIBED' -sorted | awk '\''$4>0{a+=1}END{printf("\t%d\n",a)}'\''  >>coverage/'$sname'_cpg_dist_table
-
-# how CGI is covered by at least one q40-read in at least one CpG
-echo >>coverage/'$sname'_cpg_dist_table
-echo -ne "#CpG Islands\t" >>coverage/'$sname'_cpg_dist_table
-cat '$WZSEQ_CGIBED' | wc -l >>coverage/'$sname'_cpg_dist_table
-echo -ne "#CpG Islands covered by at least one q40-read in at least one CpG\t" >>coverage/'$sname'_cpg_dist_table
-bedtools intersect -a coverage/'$sname'_cpg_q40.bed -b '$WZSEQ_CGIBED' -sorted -wo | awk '\''$4>0{print $5":"$6"-"$7}'\'' | uniq -c | awk -F" " '\''{print $2"\t"$1}'\'' | wc -l >>coverage/'$sname'_cpg_dist_table
-echo -ne "#CpG Islands covered by at least one q40-read in at least three CpGs\t" >>coverage/'$sname'_cpg_dist_table
-bedtools intersect -a coverage/'$sname'_cpg_q40.bed -b '$WZSEQ_CGIBED' -sorted -wo | awk '\''$4>0{print $5":"$6"-"$7}'\'' | uniq -c | awk -F" " '\''$1>=3{print $2"\t"$1}'\'' | wc -l >>coverage/'$sname'_cpg_dist_table
-echo -ne "#CpG Islands covered by at least one q40-read in at least five CpGs\t" >>coverage/'$sname'_cpg_dist_table
-bedtools intersect -a coverage/'$sname'_cpg_q40.bed -b '$WZSEQ_CGIBED' -sorted -wo | awk '\''$4>0{print $5":"$6"-"$7}'\'' | uniq -c | awk -F" " '\''$1>=5{print $2"\t"$1}'\'' | wc -l >>coverage/'$sname'_cpg_dist_table
-echo -ne "#CpG Islands covered by at least one q40-read in at least ten CpGs\t" >>coverage/'$sname'_cpg_dist_table
-bedtools intersect -a coverage/'$sname'_cpg_q40.bed -b '$WZSEQ_CGIBED' -sorted -wo | awk '\''$4>0{print $5":"$6"-"$7}'\'' | uniq -c | awk -F" " '\''$1>=10{print $2"\t"$1}'\'' | wc -l >>coverage/'$sname'_cpg_dist_table
-
-mkdir -p multiqc/raw/coverage
-ln -sf `readlink -f coverage/'$sname'_cpg_dist_table` multiqc/raw/coverage
-'
-  jobname='cpgdist_'$sname
-}
-
-function __wzseq_uniformity() {
-  ## depend on __wzseq_base_coverage
-  cmd='
-cd '$base'
-mkdir -p coverage
-awk '\''{cnt[$1]=$2}END{for (cov in cnt) {sum_cov+=cnt[cov]*cov; sum_cnt+=cnt[cov];} for(cov in cnt) {sum_var+=((cov-mu)^2)*cnt[cov];} mu=sum_cov/sum_cnt; sigma=sqrt(sum_var/sum_cnt); print "sample\tmu\tsigma\tcv\n'$sname'_all\t"mu"\t"sigma"\t"sigma/mu}'\'' coverage/'$sname'_bga_q40_table >coverage/'$sname'_all_cv_table
-
-bedtools intersect -a coverage/'$sname'_bga_q40.bed -b '$WZSEQ_TOPGC_BED' -sorted | awk '\''{cnt[$4]+=$3-$2}END{for (cov in cnt) {print cov"\t"cnt[cov]; sum_cov+=cnt[cov]*cov; sum_cnt+=cnt[cov];} for(cov in cnt) {sum_var+=((cov-mu)^2)*cnt[cov];} mu=sum_cov/sum_cnt; sigma=sqrt(sum_var/sum_cnt); print "'$sname'_all_topgc\t"mu"\t"sigma"\t"sigma/mu >>"coverage/'$sname'_all_cv_table"}'\'' | sort -k1,1n >coverage/'$sname'_coverage_cnts_topgc.tsv
-
-bedtools intersect -a coverage/'$sname'_bga_q40.bed -b '$WZSEQ_BOTGC_BED' -sorted | awk '\''{cnt[$4]+=$3-$2}END{for (cov in cnt) {print cov"\t"cnt[cov]; sum_cov+=cnt[cov]*cov; sum_cnt+=cnt[cov];} for(cov in cnt) {sum_var+=((cov-mu)^2)*cnt[cov];} mu=sum_cov/sum_cnt; sigma=sqrt(sum_var/sum_cnt); print "'$sname'_all_botgc\t"mu"\t"sigma"\t"sigma/mu >>"coverage/'$sname'_all_cv_table"}'\'' | sort -k1,1n >coverage/'$sname'_coverage_cnts_botgc.tsv
-
-mkdir -p multiqc/raw/coverage
-ln -sf `readlink -f coverage/'$sname'_all_cv_table` multiqc/raw/coverage/
-'
-  jobname='uniformity_'$sname
-}
-
-function __wzseq_uniformity_cpg() {
-  ## depend on __wzseq_cpg_coverage
-  cmd='
-cd '$base'
-mkdir -p coverage
-awk '\''{cnt[$1]=$2}END{for(cov in cnt) {sum_cov+=cnt[cov]*cov; sum_cnt+=cnt[cov];} for(cov in cnt) {sum_var+=((cov-mu)^2)*cnt[cov];} mu=sum_cov/sum_cnt; sigma=sqrt(sum_var/sum_cnt); print "sample\tmu\tsigma\tcv\n'$sname'_cpg\t"mu"\t"sigma"\t"sigma/mu}'\'' coverage/'$sname'_cpg_q40_table >coverage/'$sname'_cpg_cv_table
-
-bedtools intersect -a coverage/'$sname'_cpg_q40.bed -b '$WZSEQ_TOPGC_BED' -sorted | awk '\''{cnt[$4]+=1}END{for (cov in cnt) {print cov"\t"cnt[cov]; sum_cov+=cnt[cov]*cov; sum_cnt+=cnt[cov];} for(cov in cnt) {sum_var+=((cov-mu)^2)*cnt[cov];} mu=sum_cov/sum_cnt; sigma=sqrt(sum_var/sum_cnt); print "'$sname'_cpg_topgc\t"mu"\t"sigma"\t"sigma/mu >>"coverage/'$sname'_cpg_cv_table"}'\'' | sort -k1,1n >coverage/'$sname'_cpg_coverage_cnts_topgc.tsv
-
-bedtools intersect -a coverage/'$sname'_cpg_q40.bed -b '$WZSEQ_BOTGC_BED' -sorted | awk '\''{cnt[$4]+=1}END{for (cov in cnt) {print cov"\t"cnt[cov]; sum_cov+=cnt[cov]*cov; sum_cnt+=cnt[cov];} for(cov in cnt) {sum_var+=((cov-mu)^2)*cnt[cov];} mu=sum_cov/sum_cnt; sigma=sqrt(sum_var/sum_cnt); print "'$sname'_cpg_botgc\t"mu"\t"sigma"\t"sigma/mu >>"coverage/'$sname'_cpg_cv_table"}'\'' | sort -k1,1n >coverage/'$sname'_cpg_coverage_cnts_botgc.tsv
-
-mkdir -p multiqc/raw/coverage
-ln -sf `readlink -f coverage/'$sname'_cpg_cv_table` multiqc/raw/coverage/
-'
-  jobname="uniformity_cpg_"$sname
 }
 
 # create coverage track, unique and nonunique mapping
@@ -3475,10 +3332,13 @@ done
 #####################
 
 function __wzseq_qualimap_bamqc() {
-  # hour=24; memG=50; ppn=10
+  # NOTE: be sure to set memG correctly, otherwise, it would be very very slow and weird
+  # hour=24; memG=200; ppn=28; queue=longq
+  # input_bam=
+  # output_sname=
   cmd='
 cd '$base'
-qualimap --java-mem-size=10G bamqc -nt '$ppn' -bam '$input_bam' -outdir qualimap/'$sname' -c
+qualimap --java-mem-size='$memG'G bamqc -nt '$ppn' -bam '$input_bam' -outdir qualimap/'$output_sname' -c
 mkdir -p multiqc/raw/qualimap
 ln -sf `readlink -f qualimap/'$sname'` multiqc/raw/qualimap/
 '
@@ -3752,3 +3612,4 @@ ln -fs `readlink -f '$input_bam'_mapq_table` multiqc/raw/mapq/
 '
   jobname='mapqdist_'$sname
 }
+
