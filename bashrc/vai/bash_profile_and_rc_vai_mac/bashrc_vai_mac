@@ -84,7 +84,8 @@ prompt
 ## search wzprojects
 function wzgrep {
   # grep --recursive --color=always "$1" ~/wzprojects/*.{R,py,org,sh} | less -SR;
-  grep --recursive --color=always "$1" ~/wzprojects/* | less -R;
+  # grep --recursive --color=always "$1" ~/wzprojects/* | less -R;
+  ag "$1" ~/wzprojects --pager="less -R"
 }
 function wzfind {
   find ~/wzprojects/ -name "*$1*" | less -S
@@ -159,11 +160,11 @@ function mkdircd {
 ### git ###
 
 alias gst="git status"
-alias gu="git pull"
+# alias gu="git pull"
 alias gp="git pull"
-alias gh="git push"
+alias gpu="git push"
 alias gc="git commit -a"
-alias ga="git add"
+# alias ga="git add"
 
 # lazy git
 function gl {
@@ -195,6 +196,10 @@ alias wzmouse='. ~/wzprojects/meth/2016_03_22_mouse_array_figures.sh'
 
 export SESAMEHOME="~/.SESAMEDATA"
 export WZARD_HOME=/Users/wandingzhou/tools/wzard_data
+
+### source .bashrc
+alias sb="source ~/.bashrc"
+alias eb="vim ~/.bashrc"
 
 function findc {
   find . -regex '.*.c' -o -regex '.*.h' -exec grep -H "$1" {} \;
