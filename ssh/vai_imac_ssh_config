@@ -1,0 +1,46 @@
+Host vai1
+     HostName vailnxapp03
+     User wzhou
+
+Host vai2
+     HostName 10.152.11.174
+     User wzhou
+
+Host transvar
+     HostName transvar.info
+     User transvar
+
+Host zack
+     HostName 10.152.193.214
+     User zack
+
+Host headnode
+     HostName headnodetest.hpc.vai.org
+     User wandingzhou
+
+Host hpc
+     HostName submit.hpc.vai.org
+     User wanding.zhou
+
+Host hpclogin
+     HostName login.hpc.vai.org
+     User wanding.zhou
+
+Host hpcyyt
+     HostName login.hpc.vai.org
+     User yanting.yin
+     ForwardX11 yes
+
+Host zwd
+     HostName zwdzwd.io
+     User zwdzwd
+
+Host ec2
+     HostName 54.161.146.192
+     User ubuntu
+     IdentityFile ~/.ssh/wandingVAI.pem
+
+Host anchordx
+     HostName 192.168.10.5
+     User wanding_zhou
+
