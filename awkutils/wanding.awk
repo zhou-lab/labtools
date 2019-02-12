@@ -276,3 +276,22 @@ function basename(file) {
 function capFirst(s) {
 	return toupper(substr(s,1,1))tolower(substr(s,2))
 }
+
+
+function FindAllMatches(str, regex, match_arr) {
+
+    ftotal = 0;
+    ini = RSTART;
+    leng = RLENGTH;
+
+    delete match_arr;
+
+    while (match(str, regex) > 0) {
+        match_arr[++ftotal] = substr(str, RSTART, RLENGTH)
+        if (str == "") break
+        str = substr(str, RSTART + (RLENGTH ? RLENGTH : 1))
+    }
+
+    RSTART = ini;
+    RLENGTH = leng;
+}

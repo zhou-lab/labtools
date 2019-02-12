@@ -661,7 +661,16 @@ function __wgbs_biscuit_align_SE {
   cmd='
 cd '$base'
 mkdir -p bam
-~/tools/biscuit/master/biscuit/biscuit align '$WZSEQ_BISCUIT_INDEX' -t '$ppn' '$fastq' | samtools sort -T '$output_bam'_tmp -O bam -o '$output_bam'
+~/bin/biscuit align -b 3 '$WZSEQ_BISCUIT_INDEX' -t '$ppn' '$fastq' | samtools sort -T '$output_bam'_tmp -O bam -o '$output_bam'
+'
+  jobname="biscuit_align_"$sname"_SE"
+}
+
+function __wgbs_biscuit_align_SE_both {
+  cmd='
+cd '$base'
+mkdir -p bam
+~/bin/biscuit align '$WZSEQ_BISCUIT_INDEX' -t '$ppn' '$fastq' | samtools sort -T '$output_bam'_tmp -O bam -o '$output_bam'
 '
   jobname="biscuit_align_"$sname"_SE"
 }
@@ -670,7 +679,7 @@ function __wgbs_biscuit_align_PE {
   cmd='
 cd '$base'
 mkdir -p bam
-~/bin/biscuit align '$WZSEQ_BISCUIT_INDEX' -t '$ppn' '$fastq1' '$fastq2' | samtools sort -T '$output_bam'_tmp -O bam -o '$output_bam'
+~/bin/biscuit align '$WZSEQ_BISCUIT_INDEX' -b 1 -t '$ppn' '$fastq1' '$fastq2' | samtools sort -T '$output_bam'_tmp -O bam -o '$output_bam'
 '
   jobname="biscuit_align_"$sname"_PE"
 }
@@ -680,7 +689,7 @@ function __wgbs_biscuit_align_PE_both {
 cd '$base'
 mkdir -p bam
 # ~/tools/biscuit/master/biscuit/biscuit
-~/bin/biscuit align '$WZSEQ_BISCUIT_INDEX' -b 1 -t '$ppn' '$fastq1' '$fastq2' >'$output_bam'.sam
+~/bin/biscuit align '$WZSEQ_BISCUIT_INDEX' -t '$ppn' '$fastq1' '$fastq2' >'$output_bam'.sam
 samtools sort -T '$output_bam'_tmp -O bam -o '$output_bam' '$output_bam'.sam
 #samtools index '$output_bam';
 #samtools flagstat '$output_bam' > '$output_bam'.flagstat
@@ -693,7 +702,7 @@ function __wgbs_biscuit_align_PE_Walid_lib {
 cd '$base'
 mkdir -p bam
 # ~/tools/biscuit/master/biscuit/biscuit
-~/bin/biscuit align '$WZSEQ_BISCUIT_INDEX' -b 1 -t '$ppn' -J AGATCGGAAGAGCGGTTCAGCA -K TCTAGCCTTCTCGCAGCACA '$fastq1' '$fastq2' >'$output_bam'.sam
+~/bin/biscuit align '$WZSEQ_BISCUIT_INDEX' -b 1 -t '$ppn' -J AGATCGGAAGAGC -K AGATCGGAAGAGC '$fastq1' '$fastq2' >'$output_bam'.sam
 samtools sort -T '$output_bam'_tmp -O bam -o '$output_bam' '$output_bam'.sam
 #samtools index '$output_bam';
 #samtools flagstat '$output_bam' > '$output_bam'.flagstat
@@ -897,6 +906,8 @@ ln -sf `readlink -f '$bismark_bt2_dir'/[PS]E_report.txt` multiqc/raw/bismark/; d
 function __wgbs_bismark_bowtie2_PE {
   # fastq1=fastq/${sname}_trim_galore/${sname}_R1_val_1.fq.gz
   # fastq2=fastq/${sname}_trim_galore/${sname}_R2_val_2.fq.gz
+  # direction="--non_directional"
+  # pbat=""
   # bismark_bt2_dir=bam/${sname}_bismark_bt2
   # bismark_bt2_bam_unsorted=bam/${sname}_bismark_bt2/${sname}_pe.bam
   # bismark_bt2_bam_final=bam/${sname}_bismark_bt2.bam
@@ -907,7 +918,7 @@ set -xe
 cd '$base'
 mkdir -p bam
 rm -rf '$bismark_bt2_dir'
-bismark '$WZSEQ_BISMARK_BT2_INDEX' --bowtie2 --chunkmbs 2000 -p '$ppn' -o '$bismark_bt2_dir' -B '$sname' -1 '$fastq1' -2 '$fastq2' -temp_dir '$bismark_bt2_dir'/tmp
+bismark '$direction' '$pbat' '$WZSEQ_BISMARK_BT2_INDEX' --bowtie2 --chunkmbs 2000 -p '$ppn' -o '$bismark_bt2_dir' -B '$sname' -1 '$fastq1' -2 '$fastq2' -temp_dir '$bismark_bt2_dir'/tmp
 samtools sort -O bam -o '$bismark_bt2_bam_final' -T '$bismark_bt2_bam_unsorted'_tmp '$bismark_bt2_bam_unsorted'
 samtools index '$bismark_bt2_bam_final'
 samtools flagstat '$bismark_bt2_bam_final' >'$bismark_bt2_bam_final'.flagstat
@@ -1174,15 +1185,19 @@ pipeline_depend bamjob
   cmd='
 cd '$base'
 mkdir -p pileup
-~/tools/biscuit/development/biscuit/biscuit pileup -q '$ppn' '$WZSEQ_REFERENCE' '$input_bam' >'${output_vcf%.gz}'
-bgzip '${output_vcf%.gz}'
-tabix -p vcf '$output_vcf'
+~/tools/biscuit/development/biscuit/biscuit pileup -q '$ppn' '$WZSEQ_REFERENCE' '$input_bam' >pileup/'$sname.vcf'
+bgzip pileup/'$sname.vcf'
+tabix -p vcf pileup/'$sname.vcf.gz'
 
-~/tools/biscuit/master/biscuit/biscuit vcf2bed -k 0 -c -t cg '$output_vcf' | cut -f1-5 | LC_ALL=C sort -k1,1 -k2,2n -T pileup | gzip -c >'$output_vcf'_cg_bed.gz
+~/tools/biscuit/development/biscuit/biscuit vcf2bed -k 1 -t cg pileup/'$sname.vcf.gz' | cut -f1-5 | LC_ALL=C sort -k1,1 -k2,2n -T pileup | ~/tools/biscuit/development/biscuit/biscuit mergecg '$WZSEQ_REFERENCE' - | cut -f1-5 | gzip -c >pileup/'$sname'_cpg.bed.gz
 
 # make a bw file, arbitrarily chose cov5
-~/tools/biscuit/master/biscuit/biscuit vcf2bed -k 5 -t cg '$output_vcf' | LC_ALL=C sort -k1,1 -k2,2n -T pileup >'$output_vcf'_cg_cov5.bed
-bedGraphToBigWig '$output_vcf'_cg_cov5.bed '$WZSEQ_REFERENCE'.fai '$output_vcf'_cg_cov5.bw
+# ~/tools/biscuit/development/biscuit/biscuit vcf2bed -k 5 -t cg pileup/'$sname.vcf.gz' | LC_ALL=C sort -k1,1 -k2,2n -T pileup >pileup/'$sname'_cg_cov5.bed
+zcat pileup/'$sname'_cpg.bed.gz | awk '\''$5>=5'\'' | gzip -c >pileup/'$sname'_cpg_cov5.bed.gz
+
+zcat pileup/'$sname'_cpg_cov5.bed.gz | cut -f1-4 >pileup/'$sname'_cpg_cov5_tmp.bedg
+bedGraphToBigWig pileup/'$sname'_cpg_cov5_tmp.bedg '$WZSEQ_REFERENCE'.fai pileup/'$sname'_cpg_cov5.bw
+rm -f pileup/'$sname'_cpg_cov5_tmp.bedg
 '
   jobname="biscuit_pileup_"$sname
 }
@@ -2396,7 +2411,7 @@ function rnaseq_kallisto {
   [[ -d pbs ]] || mkdir pbs
   [[ -d kallisto ]] || mkdir kallisto
 
-  while read sname fastq1 fastq2; do
+  awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples | while read sname fastq1 fastq2; do
     if [[ "$fastq2" == "." ]]; then
       input2=""
       ## the following is requried, read length is 75 sd 10. this needs to be tuned for each library
@@ -2415,7 +2430,7 @@ cd $base
     pbsfn=$base/pbs/$jobname.pbs
     pbsgen one "$cmd" -name $jobname -dest $pbsfn -hour 12 -memG 10 -ppn 4
     [[ $1 == "do" ]] && qsub $pbsfn
-  done < <(awk '/^\[/{p=0}/\[alignment\]/{p=1;next} p&&!/^$/' samples)
+  done 
 }
 
 function rnaseq_kallisto_diff {
@@ -3112,7 +3127,7 @@ function __wzseq_fastq_dump_PE {
   cmd='
 set -xe
 mkdir -p '$base'/fastq
-cd $base/fastq
+cd '$base'/fastq
 rm -f '${sname}'_R1.fastq.gz '${sname}'_R2.fastq.gz
 for f in '$srr_ids'; do
   ~/software/sra-toolkit/default/bin/fastq-dump --split-files --gzip $f;

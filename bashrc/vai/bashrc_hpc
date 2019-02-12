@@ -102,12 +102,14 @@ alias ls='ls --color'
 alias rm='rm -i'
 alias lc="wc -l"
 alias ll="ls -l"
+alias lv="ls -v"
 alias rf="readlink -f"
 alias parallel="parallel --gnu --progress"
 alias igv="~/tools/igv/IGV_2.3.60/igv.sh"
 alias du="du -sh"
 alias st="zstat"
 alias bs=". ~/.bashrc"
+# alias ta="tmux a" # tmux is still not as robust as screen
 alias sr="screen -r"
 # alias sort="LC_ALL=C /home/wandingzhou/tools/coreutils/coreutils-8.23/src/sort"
 
@@ -131,6 +133,7 @@ export AWKPATH=$HOME/wzlib/awkutils
 # /home/wanding.zhou/tools/anaconda/anaconda/bin, instead put python as a symlink to that location
 export PATH=~/bin:~/local/bin:$PATH
 export PATH=~/pythonlib/bin:$PATH
+export PATH=/secondary/projects/laird/projects/2018_05_02_Wanding_tools/go/go/bin:$PATH
 export PATH=/primary/vari/software/UCSC_Browser_Tools/default/:$PATH
 # export PATH=/primary/vari/software/valgrind/default/bin:$PATH
 # export PATH=/primary/shared/production/software/python/default/bin/:$PATH
@@ -176,6 +179,7 @@ alias qsubim='qsub -I -l nodes=1:ppn=6 -l mem=10gb -l walltime=8:00:00'
 alias qsubil28='qsub -I -l nodes=1:ppn=28 -l walltime=48:00:00'
 alias qsubil40='qsub -I -l nodes=1:ppn=40 -l walltime=48:00:00 -q longq'
 alias qsubiltriche='qsub -I -l nodes=1:ppn=40 -l walltime=48:00:00 -q triche'
+alias downloadsrr='~/software/sra-toolkit/default/bin/fastq-dump --gzip'
 
 function qdelall {
    qstat | grep 'wanding.zhou' | awk '{split($1,a,".");print a[1]}' | xargs -I {} qdel {}
@@ -222,8 +226,10 @@ esac
 
 ## search wzprojects
 function wzgrep {
-  grep --color=always --recursive "$1" ~/wzprojects/* | less -SR;
+  # grep --color=always --recursive "$1" ~/wzprojects/* | less -SR;
+  ag "$1" ~/wzprojects --pager="less -R"
 }
+
 function wzfind {
   find ~/wzprojects/ -name "*$1*" | less -S
 }
@@ -298,11 +304,11 @@ function hist {
 ### git ###
 
 alias gst="git status" # this interfere with ghostscript program gs
-alias gu="git pull"
+# alias gu="git pull"
 alias gp="git pull"
-alias gh="git push"
+alias gpu="git push"
 alias gc="git commit -a -m"
-alias ga="git add"
+# alias ga="git add"
 
 # lazy git
 function gl {
@@ -314,14 +320,14 @@ function gl {
 
 sortbed ()
 {
-    LC_ALL=C sort -k1,1 -k2,2n -T /secondary/projects/jones/tmp $1
+    LC_ALL=C sort -k1,1 -k2,2n -T . $1
 }
 export -f sortbed
 
 samnohead() { awk '!/^@/' $1; }
 export -f samnohead
 
-TMPBOSSNAME=laird
+TMPBOSSNAME=shen
 export TMPDIR=/secondary/projects/$TMPBOSSNAME/tmp
 export TEMP=/secondary/projects/$TMPBOSSNAME/tmp
 alias R="LANG=en_US.UTF-8 R"
@@ -355,7 +361,19 @@ function comparesam {
 
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 
+if [ -d ~/.bash_completion.d ]; then
+  for file in ~/.bash_completion.d/*; do
+    . $file
+  done
+fi
+
 [[ -z ${PBS_O_WORKDIR+x} ]] || cd ${PBS_O_WORKDIR}
 
 alias wzmultiqc='rm -rf multiqc_*; /secondary/projects/laird/projects/2017_11_09_WZ_anaconda/bin/multiqc raw'
 
+## source .bashrc
+alias sb="source ~/.bashrc"
+alias eb="vim ~/.bashrc"
+
+
+export GOPATH=${HOME}/go

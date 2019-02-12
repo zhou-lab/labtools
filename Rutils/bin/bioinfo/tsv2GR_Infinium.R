@@ -16,4 +16,4 @@ gr <- GRanges(seqnames=bed$CpG_chrm, ranges=IRanges(bed$CpG_beg, bed$CpG_end), s
 mcols(gr) <- bed[,!(colnames(bed) %in% c('CpG_chrm','CpG_beg','CpG_end','probe_strand'))]
 names(gr) <- rownames(bed)
 gr <- sort(gr, by = ~ seqnames + start + end)
-saveRDS(gr, file=grfile, compress='xz')
+saveRDS(gr, file=grfile) # compress='xz' is about half the size compared to gz, but they are not directly downloadable through gzcon(url())

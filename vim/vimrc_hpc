@@ -24,7 +24,7 @@ set expandtab
 autocmd Filetype python setlocal ts=4 sts=4 sw=4
 
 " turn on line number, :set nu! turns off
-set number 
+" set number 
 
 " menu length
 set wildmenu

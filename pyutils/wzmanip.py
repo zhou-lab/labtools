@@ -655,8 +655,9 @@ def main_dedupfun(args):
 
             computeval = [_ for _ in vals if _ is not None]
             if computeval:
-                pipeprint('%s\t%s' % (args.delim.join(map(str,prev_key)), '\t'.join(
-                    map(lambda x: str(eval(x, {'vals':vals,'np':np})), funs))))
+                pipeprint(
+                        '%s\t%s' % (args.delim.join(map(str,prev_key)), '\t'.join(
+                                map(lambda x: str(eval(x, {'vals':vals,'np':np})), funs))))
             else:
                 pipeprint('%s\t%s' % (args.delim.join(map(str,prev_key)), '\t'.join(["NA"]*len(funs))))
 
