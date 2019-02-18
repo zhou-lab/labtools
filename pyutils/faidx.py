@@ -10,12 +10,12 @@ class RefGenome:
         try:
             self.fasta_handle=open(fasta_file)
         except IOError:
-            print "Reference sequence doesn't exist"
+            print("Reference sequence doesn't exist")
  
         try:
             self.faidx_handle=open(fasta_file+".fai")
         except IOError:
-            print "samtools faidx file doesn't exist for reference"   
+            print("samtools faidx file doesn't exist for reference")
         self.load_faidx()
          
     # Function to cache fasta index in dictionary
@@ -37,7 +37,7 @@ class RefGenome:
 
     def fetch_chrmseq(self, chrom, uppercase=True):
 
-        if not self.faidx.has_key(chrom):
+        if chrom not in self.faidx:
             raise ValueError('Chromosome %s not found in reference' % chrom)
         slen,offset,blen,bytelen=self.faidx[chrom]
         return self.fetch_sequence(chrom, 1, slen, uppercase=uppercase)
@@ -52,7 +52,7 @@ class RefGenome:
         # Fetch a sequence from start to end in 1-based coordinates
         seq=""
          
-        if not self.faidx.has_key(chrom):
+        if chrom not in self.faidx:
             raise ValueError('Chromosome %s not found in reference' % chrom)
         slen,offset,blen,bytelen=self.faidx[chrom]
         start = start-1 #To 0-base

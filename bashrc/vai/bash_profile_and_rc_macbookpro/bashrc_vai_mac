@@ -1,0 +1,258 @@
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+	. /etc/bashrc
+fi
+
+alias ls='ls -G'
+alias rm='rm -i'
+alias lc="wc -l"
+alias ll="ls -l"
+alias rf="greadlink -f"
+alias parallel="parallel --gnu --progress"
+alias sort="LC_ALL=C sort"
+alias hs="history | sed 's/^ *[0-9]* *//' | tail -r | less -S"
+alias wget='wget --no-check-certificate'
+alias du="du -sh"
+alias R='R --no-save'
+
+PS1='\u@\h:\w\$ '
+
+HOME=/Users/wanding.zhou
+
+export PATH=~/bin:~/tools/circos/current/bin:$PATH
+export SCREENRC=$HOME/wzlib/screenrc/screenrc_hp
+export PYTHONPATH=$HOME:~/wzlib/pyutils
+# export PYTHONPATH=$HOME/wzlib/pyutils:$PYTHONPATH:$HOME/pythonlib/lib/python2.7/site-packages/
+# /usr/local/lib/python2.7/site-packages/:$HOME/wzlib/pyutils:$HOME/pythonlib/Library/Python/2.7/site-packages/:/usr/local/Cellar/pyqt/4.11.3/lib/python2.7/site-packages/:/System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/:$PYTHONPATH
+export AWKPATH=$HOME/wzlib/awkutils
+export EDITOR='subl -w'
+
+
+#### python ####
+function addPy2 {
+  export PATH="/secondary/projects/laird/projects/2017_11_09_WZ_anaconda/bin:$PATH"
+}
+
+function addPy3 {
+	export PATH="/Users/wanding.zhou/anaconda3/bin:$PATH"
+}
+addPy3
+
+function switchPy3 {
+  export PATH=$(echo "$PATH" | sed -e 's/2017_11_09_WZ_anaconda/2017_11_09_WZ_anaconda_python3.6\/anaconda3/')
+}
+function switchPy2 {
+  export PATH=$(echo "$PATH" | sed -e 's/2017_11_09_WZ_anaconda_python3.6\/anaconda3/2017_11_09_WZ_anaconda/')
+}
+
+
+# % cpan
+# cpan> o conf makepl_arg INSTALL_BASE=/mydir/perl
+# cpan> o conf commit
+# export PERL5LIB=/home/wzhou1/tools/perltools/lib/perl5:/home/wzhou1/tools/vcftools/vcftools_0.1.11/lib/perl5/site_perl:${PERL5LIB}
+export PERL5LIB=${PERL5LIB}:/Users/wandingzhou/tools/bioperl/src/BioPerl-1.6.1
+export PERL5LIB=${PERL5LIB}:/Users/wandingzhou/tools/ensembl_api/ensembl/modules
+export PERL5LIB=${PERL5LIB}:/Users/wandingzhou/tools/ensembl_api/ensembl-compara/modules
+export PERL5LIB=${PERL5LIB}:/Users/wandingzhou/tools/ensembl_api/ensembl-variation/modules
+export PERL5LIB=${PERL5LIB}:/Users/wandingzhou/tools/ensembl_api/ensembl-funcgen/modules
+
+alias scp='rsync -Pravdtze ssh'
+alias awk='gawk -F"\t" -v OFS="\t"'
+alias les="less -S"
+alias zles="zless -S"
+alias qsuball="find $HOME/htcpbs/ -type f | sort | xargs -I {} qsub {}"
+alias qdelall="qstat | grep wzhou | awk '{print $1}' | xargs -I {} qdel {}"
+
+function prompt {
+  local BLACK="\[\033[0;30m\]"
+  local BLACKBOLD="\[\033[1;30m\]"
+  local GREY="\[\033[00m\]"
+  local RED="\[\033[0;31m\]"
+  local REDBOLD="\[\033[1;31m\]"
+  local GREEN="\[\033[0;32m\]"
+  local GREENBOLD="\[\033[1;32m\]"
+  local YELLOW="\[\033[0;33m\]"
+  local YELLOWBOLD="\[\033[1;33m\]"
+  local BLUE="\[\033[0;34m\]"
+  local BLUEBOLD="\[\033[1;34m\]"
+  local PURPLE="\[\033[0;35m\]"
+  local PURPLEBOLD="\[\033[1;35m\]"
+  local CYAN="\[\033[0;36m\]"
+  local CYANBOLD="\[\033[1;36m\]"
+  local WHITE="\[\033[0;37m\]"
+  local WHITEBOLD="\[\033[1;37m\]"
+  # export PS1="$REDBOLD[\t]${SCREENTITLE}$GREY[$GREENBOLD\u@\h $YELLOWBOLD\w$GREY]"'$ '
+  # export PS1="$REDBOLD[\t]${SCREENTITLE}$GREY[$GREENBOLD\u@\h $YELLOWBOLD\w$GREY]\$ "
+  export PS1="$REDBOLD[\t]$GREY[$GREENBOLD\u@\h $YELLOWBOLD\w$GREY]\$ "
+}
+
+# export CDPATH=.:~:..:/tools
+
+prompt
+
+# PROMPT_COMMAND='echo -ne "\033k\033\134\033k${HOSTNAME}[`basename ${PWD}`]\033\134"'
+# PROMPT_COMMAND='echo -ne "\033k\033\134\033k[`basename ${PWD}`]\033\134"'
+# `basename ${PWD}`]\033\0134"'
+# note in mac /bin/echo is different from echo
+# the following is super important
+# export PROMPT_COMMAND='echo -ne "\033k\033\0134\033k[`basename ${PWD}`]\033\0134"'
+
+# case "$TERM" in
+#     screen*) PROMPT_COMMAND='echo -ne "\033k\033\0134"'
+# esac
+
+## search wzprojects
+function wzgrep {
+  # grep --recursive --color=always "$1" ~/wzprojects/*.{R,py,org,sh} | less -SR;
+  # grep --recursive --color=always "$1" ~/wzprojects/* | less -R;
+  ag "$1" ~/wzprojects --pager="less -R"
+}
+function wzfind {
+  find ~/wzprojects/ -name "*$1*" | less -S
+}
+
+function wz_vcffilter {
+    vcffile=$1;
+    if [[ $3 == "-s" ]]; then
+	awk -v threshold=$2 '
+(!/^#/){
+if($6>threshold) print;
+}' $vcffile | sort -k6,6 -nr
+    else
+	awk -v threshold=$2 '
+(!/^#/){
+if($6>threshold) print;
+}' $vcffile
+    fi
+}
+
+function wzsum {
+  awk -v column=$2 '(NR==1){min=$column;max=$column}{sum += $column; if(min>$column) min=$c\
+olumn; if(max < $column) max=$column; }END{print "sum: "sum"\tcount: "NR"\tmean: "sum/NR"\t\
+min: "min"\tmax: "max}' $1
+}
+
+function wzsum_slow {
+  column=$2
+  sort -n $1 -k$column,$column | awk -v column=$column 'BEGIN{c=0;sum=0;} {a[c++]=$column; \
+sum+=$column;} END{ave=sum/c; if((c%2)==1){median=a[int(c/2)];} else{median=(a[c/2]+a[c/2-1\
+])/2;} print "sum: "sum"\tcount: "c"\tmean: "ave"\tmedian: "median"\tmin: "a[0]"\tmax: "a[c\
+-1]"\t25%: "a[c/4]"\t75%: "a[c/4*3]}'
+}
+
+alias qsubi='qsub -I -q default -l nodes=1:ppn=1'
+
+function dnarev {
+  echo $1 | tr ATGC TACG | rev;
+}
+
+# eval $(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib)
+function getseqh {
+  samtools faidx ~/references/hg19/hg19.fa $1
+}
+
+function getseqm {
+  samtools faidx ~/references/mm10/mm10.fa $1
+}
+
+function tv {
+    samtools tview $1 /workspace/zchong/clinsek/test_data/hg19.fa
+}
+function sv {
+    samtools view $1 $2 | les
+}
+
+function bt {
+    bcftools view $1 | les
+}
+
+MANPATH=$MANPATH:$HOME/share/man
+
+function wzqsub {
+    find ~/pbs/ -type f | sort | sed -n "${1},${2}"p | xargs -I {} qsub {}
+}
+
+
+function mkdircd {
+  mkdir $1 && cd $_;
+}
+
+### git ###
+
+alias gst="git status"
+# alias gu="git pull"
+alias gp="git pull"
+alias gpu="git push"
+alias gc="git commit -a"
+# alias ga="git add"
+
+# lazy git
+function gl {
+
+  if [ -z "$1" ]; then message="minor, message omitted"; else message="$1"; fi;
+  git commit -a -m "$message";
+  git push;
+}
+
+PERL_MB_OPT="--install_base \"/Users/wandingzhou/perl5\""; export PERL_MB_OPT;
+PERL_MM_OPT="INSTALL_BASE=/Users/wandingzhou/perl5"; export PERL_MM_OPT;
+
+function cntbed {
+ cut -f 1-3 $1 | sort | uniq | lc
+}
+
+function sortbed {
+sort -k1,1 -k2,2n $1
+}
+
+## circos
+export PATH=~/tools/circos/circos-0.67-7/bin/:$PATH
+alias wzseq='. /Users/wandingzhou/wzlib/bash/wzseq.sh'
+alias wzutils='. /Users/wandingzhou/wzlib/bash/wzutils.sh'
+
+alias wzmouse='. ~/wzprojects/meth/2016_03_22_mouse_array_figures.sh'
+
+# test -r ~/tools/EMAN2/eman2.bashrc && source ~/tools/EMAN2/eman2.bashrc
+
+export SESAMEHOME="~/.SESAMEDATA"
+export WZARD_HOME=/Users/wandingzhou/tools/wzard_data
+
+### source .bashrc
+alias sb="source ~/.bashrc"
+alias eb="vim ~/.bashrc"
+
+function findc {
+  find . -regex '.*.c' -o -regex '.*.h' -exec grep -H "$1" {} \;
+}
+
+## Renv
+#export PATH="$HOME/.Renv/bin:$PATH"
+#eval "$(Renv init -)"
+
+
+# source ~/tools/git-subrepo/.rc
+
+function bedview {
+  awk -v target=$2 'BEGIN{match(target, "([^:]*):([0-9]*)-([0-9]*)", a)}($1==a[1] && $2<a[3] && $3>a[2])' $1;
+}
+
+function bedsumbases {
+  awk '{a += $3-$2;}END{print a}' $1
+}
+
+function windows2unix {
+  sed "s/
+//g" $1
+}
+
+
+############## FZF ##############
+## [ -f ~/.fzf.bash ] && source ~/.fzf.bash
+
+## z - jump around
+. ~/tools/z/z.sh
+
+export PATH=/usr/local/texlive/2014/bin/x86_64-darwin/:$PATH
+
+
+

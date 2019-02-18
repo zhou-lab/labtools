@@ -1,0 +1,51 @@
+if [ -f ~/.bashrc ]; then
+    . ~/.bashrc
+fi
+
+test -r /sw/bin/init.sh && . /sw/bin/init.sh
+
+## test -e "${HOME}/.iterm2_shell_integration.bash" && source "${HOME}/.iterm2_shell_integration.bash"
+
+##
+# Your previous /Users/wandingzhou/.bash_profile file was backed up as /Users/wandingzhou/.bash_profile.macports-saved_2017-02-19_at_12:43:44
+##
+
+# MacPorts Installer addition on 2017-02-19_at_12:43:44: adding an appropriate PATH variable for use with MacPorts.
+export PATH="/opt/local/bin:/opt/local/sbin:$PATH"
+# Finished adapting your PATH environment variable for use with MacPorts.
+
+
+# MacPorts Installer addition on 2017-02-19_at_12:46:56: adding an appropriate PATH variable for use with MacPorts.
+export PATH="/opt/local/bin:/opt/local/sbin:$PATH"
+# Finished adapting your PATH environment variable for use with MacPorts.
+
+
+# default is anaconda3
+# export PATH="/Users/wandingzhou/anaconda3/bin:$PATH"
+
+# function switchPy3 {
+#   export PATH=$(echo "$PATH" | sed -e 's/anaconda2/anaconda3/')
+# }
+# function switchPy2 {
+#   export PATH=$(echo "$PATH" | sed -e 's/anaconda3/anaconda2/')
+# }
+
+#### temporarily disable Renv
+# export PATH="$HOME/.Renv/bin:$PATH"
+# eval "$(Renv init -)"
+# added by Anaconda3 5.3.0 installer
+# >>> conda init >>>
+# !! Contents within this block are managed by 'conda init' !!
+__conda_setup="$(CONDA_REPORT_ERRORS=false '/Users/wanding.zhou/anaconda3/bin/conda' shell.bash hook 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    \eval "$__conda_setup"
+else
+    if [ -f "/Users/wanding.zhou/anaconda3/etc/profile.d/conda.sh" ]; then
+        . "/Users/wanding.zhou/anaconda3/etc/profile.d/conda.sh"
+        CONDA_CHANGEPS1=false conda activate base
+    else
+        \export PATH="/Users/wanding.zhou/anaconda3/bin:$PATH"
+    fi
+fi
+unset __conda_setup
+# <<< conda init <<<
