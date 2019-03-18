@@ -6,6 +6,8 @@ source('~/wzlib/Rutils/wzcore.R')
 source('~/wzlib/Rutils/wzplotlib.R')
 
 
+Sys.setenv(RSTUDIO_PANDOC='/Applications/RStudio.app/Contents/MacOS/pandoc')
+
 .First <- function(){
   if(!any(commandArgs()=='--no-readline') && interactive()) {
     ## ... startup code (elided)

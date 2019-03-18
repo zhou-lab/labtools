@@ -1,17 +1,23 @@
 
+;; you need to install tabbar, yasnippet, ESS, polymode, helm
+;; other things: ivy+counsel+swiper
+
 (when (>= emacs-major-version 24)
   (require 'package)
   (add-to-list 'package-archives '("melpa" . "http://melpa.milkbox.net/packages/") t)
-  (add-to-list 'package-archives '("marmalade" . "http://marmalade-repo.org/packages/"))
+  ;; (add-to-list 'package-archives '("marmalade" . "http://marmalade-repo.org/packages/"))
 	;; (add-to-list 'package-archives '("ELPA", "http://tromey.com/elpa/"))
   (package-initialize)
   )
 
+;;;;;;;;;;;;;;;;;;;;
+;;;;;;; fonts ;;;;;;
+;;;;;;;;;;;;;;;;;;;;
+(add-to-list 'default-frame-alist '(font . "Inconsolata-12"))
 ;; (add-to-list 'default-frame-alist '(font . "Source Code Pro 10"))
 ;; (set-default-font "Source Code Pro 10")
 ;; (add-to-list 'default-frame-alist '(font . "Source Code Pro-11"))
 ;; (add-to-list 'default-frame-alist '(font . "Consolas-12"))
-(add-to-list 'default-frame-alist '(font . "Inconsolata-12"))
 ;; (add-to-list 'default-frame-alist '(font . "Latin Modern Mono-12"))
 ;; (add-to-list 'default-frame-alist '(font . "Monaco-12"))
 ;; (add-to-list 'default-frame-alist '(font . "Iosevka-12:light"))
@@ -28,6 +34,10 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
             '("\\.emacs" . emacs-lisp-mode)
 						)
 						auto-mode-alist)
+
+;; for Rmarkdown to find pandoc
+;; (setq markdown-command "/Applications/RStudio.app/Contents/MacOS/pandoc")
+(setq markdown-command "/usr/local/bin/pandoc")
 
 ;; open file in existing frame
 (setq ns-pop-up-frames nil)
@@ -62,24 +72,6 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 (setq sh-basic-offset 2
       sh-indentation 2)
 
-;; the following is important to pass R CMD BiocCheck
-(add-hook 'ess-mode-hook (lambda () (setq ess-indent-level 4)))
-(add-hook 'ess-mode-hook
-          (lambda ()
-            (ess-set-style 'C++ 'quiet)
-            ;; Because
-            ;;                                 DEF GNU BSD K&R  C++
-            ;; ess-indent-level                  2   2   8   5  4
-            ;; ess-continued-statement-offset    2   2   8   5  4
-            ;; ess-brace-offset                  0   0  -8  -5 -4
-            ;; ess-arg-function-offset           2   4   0   0  0
-            ;; ess-expression-offset             4   2   8   5  4
-            ;; ess-else-offset                   0   0   0   0  0
-            ;; ess-close-brace-offset            0   0   0   0  0
-            (add-hook 'local-write-file-hooks
-                      (lambda ()
-                        (ess-nuke-trailing-whitespace)))))
-
 (setq-default indent-tabs-mode nil)
 (setq org-startup-indented t)
 (setq org-startup-folded 'content)
@@ -113,7 +105,6 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 			    (interactive)
 			    (scroll-up 1)))
 (global-set-key (kbd "<f12>") 'save-buffer)
-
 (global-set-key (kbd "<f11>") 'dabbrev-expand)
 ;; (global-set-key (kbd "<f9>") 'my-switch-to-other-buffer)
 (global-set-key (kbd "<f19>") 'my-switch-to-other-buffer)
@@ -125,7 +116,9 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 (global-set-key (kbd "<f14>") 'jao-copy-line)
 (global-set-key (kbd "<f16>") 'yank)
 
+;;;;;;;;;;;;;;;;;;;;;;;
 ;; Wanding functions
+;;;;;;;;;;;;;;;;;;;;;;;
 (defun my-switch-to-other-buffer ()
   "Switch to other buffer"
   (interactive)
@@ -390,14 +383,13 @@ Then move to that line and indent according to mode"
 (global-set-key (kbd "<clear>") 'goto-line)
 (global-set-key (kbd "M-<up>") 'move-line-upward)
 (global-set-key (kbd "M-<down>") 'move-line-downward)
+(global-set-key (kbd "<home>") 'beginning-of-line)
+(global-set-key (kbd "<end>") 'end-of-line)
 
 ;; helm
 (setq recentf-max-saved-items 10000)
 (global-set-key (kbd "M-r") 'helm-recentf)
 
-
-(global-set-key (kbd "<home>") 'beginning-of-line)
-(global-set-key (kbd "<end>") 'end-of-line)
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -406,9 +398,23 @@ Then move to that line and indent according to mode"
  '(custom-safe-themes
    (quote
     ("c006bc787154c31d5c75e93a54657b4421e0b1a62516644bd25d954239bc9933" "c237299ad2385b4e59767eeb55a0a7e888ebbabec9975be9ae63eec2ff74668d" "f08c2405a7e71e568b784ae0145a86e48e1b4ea8ba33d231a4ad21b52495de5e" "5b86be6c49b591ec04aa238b929f0f4a8d79364653c8482ba69db698645b4de1" "ab8033276aa563bc7373f78aeefef69e1e25083266b44116341f0a8096657463" "40b7687853f3d6921eba3afed50c532bbf4a66959554d32adf1899a675926b2d" "7db66dafe7a65a8a6a403014edb5e53deca2da82279cb8f3f55e4bc336bf48af" "de309af2ced9914b67077eecd0b89412dd9a60c5eb823e5c5ed66170bd4495a7" "de05e8c13f7b8f3f3b9aaee44855c43dcdfd4db8b93c15af2bdcaf2528154ebc" "b69df114abdbbf223e1ad2c98ad1abee04ac2a5070aeb8b7ceefcf00aa5e43f8" "de8fa309eed1effea412533ca5d68ed33770bdf570dcaa458ec21eab219821fd" "3b0f554ddd413e74b82854d78c7c22df6cb4298413f69b514b2884fa84d42f30" "e8a9dfa28c7c3ae126152210e3ccc3707eedae55bdc4b6d3e1bb3a85dfb4e670" "1db337246ebc9c083be0d728f8d20913a0f46edc0a00277746ba411c149d7fe5" "eaf4cb94ad96e1659f9254db8efb799deb1885e97884f8f971ff1e6a4114500a" "356f57a98f35c8ead5a349408cab69f8d4d92baea131e9531611d0d82190fedf" default)))
+ '(ess-own-style-list
+   (quote
+    ((ess-indent-offset . 4)
+     (ess-offset-arguments . prev-line)
+     (ess-offset-arguments-newline . prev-line)
+     (ess-offset-block . prev-line)
+     (ess-offset-continued . straight)
+     (ess-align-nested-calls)
+     (ess-align-arguments-in-calls)
+     (ess-align-continuations-in-calls)
+     (ess-align-blocks control-flow)
+     (ess-indent-from-lhs)
+     (ess-indent-from-chain-start)
+     (ess-indent-with-fancy-comments . t))))
  '(package-selected-packages
    (quote
-    (tabbar-ruler polymode php-mode markdown-mode leuven-theme helm ess-R-object-popup ess auto-yasnippet auctex ample-zen-theme ample-theme airline-themes ahungry-theme))))
+    (counsel swiper ivy poly-R tabbar-ruler polymode php-mode markdown-mode leuven-theme helm ess-R-object-popup ess auto-yasnippet auctex ample-zen-theme ample-theme airline-themes ahungry-theme))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -423,8 +429,12 @@ Then move to that line and indent according to mode"
   (insert (buffer-file-name (window-buffer (minibuffer-selected-window)))))
 (put 'upcase-region 'disabled nil)
 
-(setq ess-default-style 'OWN)
-(setq ess-indent-level 2)
+;;;;;;;;;;
+;; ESS
+;;;;;;;;;;
+(setq inferior-R-program-name "/usr/local/bin/R")
+
+(setq ess-style 'OWN)
 
 ;; (defun rmd-mode ()
 ;;  "ESS Markdown mode for rmd files"
@@ -432,8 +442,17 @@ Then move to that line and indent according to mode"
 ;;  (require 'poly-R)
 ;;  (require 'poly-markdown)     
 ;;  (poly-markdown+r-mode))
-
 (add-to-list 'auto-mode-alist '("\\.Rmd" . poly-markdown+r-mode))
+;; the shortcut for R
+(defun then_R_operator ()
+  "R - %>% operator or 'then' pipe operator"
+  (interactive)
+  (just-one-space 1)
+  (insert "%>%")
+  ;; (reindent-then-newline-and-indent)
+  (just-one-space 1))
+(define-key ess-mode-map (kbd "C-%") 'then_R_operator)
+(define-key inferior-ess-mode-map (kbd "C-%") 'then_R_operator)
 
 (setq column-number-mode t)
 
@@ -442,3 +461,26 @@ Then move to that line and indent according to mode"
      (interactive "DDirectory: ")
      (eshell-command 
       (format "find %s -type f -name \"*.[ch]\" | etags -" dir-name)))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; I don't find ivy mode that compelling compared to helm
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; (ivy-mode 1)
+;; (setq ivy-use-virtual-buffers t)
+;; (setq enable-recursive-minibuffers t)
+;; (global-set-key "\C-s" 'swiper)
+;; (global-set-key (kbd "C-c C-r") 'ivy-resume)
+;; (global-set-key (kbd "<f6>") 'ivy-resume)
+;; (global-set-key (kbd "M-x") 'counsel-M-x)
+;; (global-set-key (kbd "C-x C-f") 'counsel-find-file)
+;; (global-set-key (kbd "<f1> f") 'counsel-describe-function)
+;; (global-set-key (kbd "<f1> v") 'counsel-describe-variable)
+;; (global-set-key (kbd "<f1> l") 'counsel-find-library)
+;; (global-set-key (kbd "<f2> i") 'counsel-info-lookup-symbol)
+;; (global-set-key (kbd "<f2> u") 'counsel-unicode-char)
+;; (global-set-key (kbd "C-c g") 'counsel-git)
+;; (global-set-key (kbd "C-c j") 'counsel-git-grep)
+;; (global-set-key (kbd "C-c k") 'counsel-ag)
+;; (global-set-key (kbd "C-x l") 'counsel-locate)
+;; (define-key minibuffer-local-map (kbd "C-r") 'counsel-minibuffer-history)

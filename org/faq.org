@@ -8374,7 +8374,7 @@ every time you install a new R binary
 location of installed packages
 ~/.Renv/versions/3.2.3/lib64/R/library/
 
-*** example: add R3.0.2
+*** example add R3.0.2
 wget https://cran.cnr.berkeley.edu/src/base/R-3/R-3.0.2.tar.gz
 ./configure --prefix=/home/wanding.zhou/.Renv/versions/3.0.2
 export JAVA_HOME=/primary/vari/software/java/jdk1.7.0_40 # somehow the java home is not correctly setup
@@ -8390,12 +8390,13 @@ make
 make install
 *** example add R3.2.5
 export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/primary/vari/software/cairo/default/lib/pkgconfig/
-./configure --prefix=/home/wanding.zhou/.Renv/versions/3.2.5 -with-recommended-packages=no --without-x --with-cairo --with-libpng --with-libtiff --with-jpeglib --enable-R-shlib
-export JAVA_HOME=/primary/vari/software/java/jdk1.7.0_40 # somehow the java home is not correctly setup
+./configure --prefix=/home/wanding.zhou/.Renv/versions/3.5.2 -with-recommended-packages=no --without-x --with-cairo --with-libpng --with-libtiff --with-jpeglib --enable-R-shlib
+# export JAVA_HOME=/primary/vari/software/java/jdk1.7.0_40 # in case java home is not correctly setup
 make
 make install
 
 ./configure --prefix=/home/wanding.zhou/.Renv/versions/3.2.5 --without-x --with-cairo --with-libpng --with-libtiff --with-jpeglib --enable-R-shlib
+*** example add R3.5.2
 
 ** install Cairo on cluster
 export CAIRO_LIBS="-L/primary/vari/software/cairo/default/lib/ -L/primary/vari/software/pixman/default/lib/ -lcairo -lpixman-1"

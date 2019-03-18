@@ -1,3 +1,5 @@
+#!/bin/bash
+
 if [ -f ~/.bashrc ]; then
     . ~/.bashrc
 fi
@@ -49,3 +51,6 @@ else
 fi
 unset __conda_setup
 # <<< conda init <<<
+
+
+

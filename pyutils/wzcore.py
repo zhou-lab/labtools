@@ -13,7 +13,7 @@ def tprint(array, out=None):
 def wprint(msg):
 
     try:
-        print msg
+        print(msg)
     except IOError as e:
         sys.exit()
 

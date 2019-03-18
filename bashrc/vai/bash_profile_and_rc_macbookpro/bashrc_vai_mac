@@ -1,3 +1,4 @@
+#!/bin/bash
 # Source global definitions
 if [ -f /etc/bashrc ]; then
 	. /etc/bashrc
@@ -14,12 +15,13 @@ alias hs="history | sed 's/^ *[0-9]* *//' | tail -r | less -S"
 alias wget='wget --no-check-certificate'
 alias du="du -sh"
 alias R='R --no-save'
+alias emacs='open -a /Applications/Emacs.app'
 
 PS1='\u@\h:\w\$ '
 
 HOME=/Users/wanding.zhou
 
-export PATH=~/bin:~/tools/circos/current/bin:$PATH
+export PATH=~/bin:~/tools/circos/current/bin:~/tools/bin/:~/wzlib/bin/:$PATH
 export SCREENRC=$HOME/wzlib/screenrc/screenrc_hp
 export PYTHONPATH=$HOME:~/wzlib/pyutils
 # export PYTHONPATH=$HOME/wzlib/pyutils:$PYTHONPATH:$HOME/pythonlib/lib/python2.7/site-packages/
@@ -229,6 +231,8 @@ function findc {
 #export PATH="$HOME/.Renv/bin:$PATH"
 #eval "$(Renv init -)"
 
+## texlive
+export PATH=/usr/local/texlive/2014/bin/x86_64-darwin/:$PATH
 
 # source ~/tools/git-subrepo/.rc
 
@@ -245,14 +249,39 @@ function windows2unix {
 //g" $1
 }
 
+function touchopen {
+  touch $1
+  open $1
+}
 
-############## FZF ##############
-## [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 
+########################
 ## z - jump around
+########################
 . ~/tools/z/z.sh
 
-export PATH=/usr/local/texlive/2014/bin/x86_64-darwin/:$PATH
+## re-define z with coupling with fzf, you need to install fzf (but needn't
+## to invoke its key-binding or auto-completion)
+## https://github.com/junegunn/fzf/wiki/examples#z
+unalias z
+z() {
+  if [[ -z "$*" ]]; then        # when there is no argument
+    cd "$(_z -l 2>&1 | fzf +s --tac | sed 's/^[0-9,.]* *//')"
+  else                          # when there is argument
+    if [[ $1 == -* ]]; then
+      _z $@
+    else
+      cd "$(_z -l 2>&1 | fzf -q "$@" | sed 's/^[0-9,.]* *//')"
+    fi
+  fi
+}
 
-
-
+############## FZF ##############
+## Wanding Note1:
+## if you want autocompletion (triggered by **) and key-binding for C-T
+## to me this is not that necessary
+## ZFZ is no good since it only supports bash version >= 4 (and most mac
+## unfortunately supports only version 3)
+## Wanding Note2:
+## and you need to put it to bash_profile in mac to have it work properly
+# [ -f ~/.fzf.bash ] && source ~/.fzf.bash
