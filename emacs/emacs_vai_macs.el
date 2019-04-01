@@ -1,5 +1,7 @@
 
-;; you need to install tabbar, yasnippet, ESS, polymode, helm, toc-org, fill-column-indicator
+;; you need to install
+;; tabbar
+;; yasnippet, ESS, polymode, helm, toc-org, fill-column-indicator
 ;; other things: ivy+counsel+swiper
 
 (when (>= emacs-major-version 24)
@@ -65,9 +67,10 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 ;;       '~/emacs.d/.elpa/snippets/
 ;;       )
 (yas-global-mode 1)
-;; need to link ~/emacs.d/snippets to ~/wzlib/emacs/emacs_linux/wanding-config/snippets
+;; need to link
+;; ln -s `rf ~/wzlib/emacs/emacs_linux/wanding-config/snippets` ~/.emacs.d/snippets
 ;; (yas/load-directory "~/wzlib/emacs/emacs_linux/wanding-config/snippets/")
-;; (add-to-list 'yas-snippet-dirs "~/wzlib/emacs/emacs_linux/wanding-config/snippets")
+(add-to-list 'yas-snippet-dirs "~/wzlib/emacs/emacs_linux/wanding-config/snippets")
 
 ;; (global-linum-mode t)
 
@@ -124,7 +127,8 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 ;;  '(face lines-tail))
 ;; (add-hook 'prog-mode-hook #'whitespace-mode)
 
-;; (setq c-default-style "linux")
+(setq-default c-default-style "k&r"
+              c-basic-offset 3)
 
 (show-paren-mode 1)
 (require 'mouse)
@@ -426,39 +430,6 @@ Then move to that line and indent according to mode"
 (setq recentf-max-saved-items 10000)
 (global-set-key (kbd "M-r") 'helm-recentf)
 
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(custom-safe-themes
-   (quote
-    ("274fa62b00d732d093fc3f120aca1b31a6bb484492f31081c1814a858e25c72e" "c006bc787154c31d5c75e93a54657b4421e0b1a62516644bd25d954239bc9933" "c237299ad2385b4e59767eeb55a0a7e888ebbabec9975be9ae63eec2ff74668d" "f08c2405a7e71e568b784ae0145a86e48e1b4ea8ba33d231a4ad21b52495de5e" "5b86be6c49b591ec04aa238b929f0f4a8d79364653c8482ba69db698645b4de1" "ab8033276aa563bc7373f78aeefef69e1e25083266b44116341f0a8096657463" "40b7687853f3d6921eba3afed50c532bbf4a66959554d32adf1899a675926b2d" "7db66dafe7a65a8a6a403014edb5e53deca2da82279cb8f3f55e4bc336bf48af" "de309af2ced9914b67077eecd0b89412dd9a60c5eb823e5c5ed66170bd4495a7" "de05e8c13f7b8f3f3b9aaee44855c43dcdfd4db8b93c15af2bdcaf2528154ebc" "b69df114abdbbf223e1ad2c98ad1abee04ac2a5070aeb8b7ceefcf00aa5e43f8" "de8fa309eed1effea412533ca5d68ed33770bdf570dcaa458ec21eab219821fd" "3b0f554ddd413e74b82854d78c7c22df6cb4298413f69b514b2884fa84d42f30" "e8a9dfa28c7c3ae126152210e3ccc3707eedae55bdc4b6d3e1bb3a85dfb4e670" "1db337246ebc9c083be0d728f8d20913a0f46edc0a00277746ba411c149d7fe5" "eaf4cb94ad96e1659f9254db8efb799deb1885e97884f8f971ff1e6a4114500a" "356f57a98f35c8ead5a349408cab69f8d4d92baea131e9531611d0d82190fedf" default)))
- '(ess-own-style-list
-   (quote
-    ((ess-indent-offset . 4)
-     (ess-offset-arguments . prev-line)
-     (ess-offset-arguments-newline . prev-line)
-     (ess-offset-block . prev-line)
-     (ess-offset-continued . straight)
-     (ess-align-nested-calls)
-     (ess-align-arguments-in-calls)
-     (ess-align-continuations-in-calls)
-     (ess-align-blocks control-flow)
-     (ess-indent-from-lhs)
-     (ess-indent-from-chain-start)
-     (ess-indent-with-fancy-comments . t))))
- '(package-selected-packages
-   (quote
-    (fill-column-indicator dracula-theme toc-org counsel swiper ivy poly-R tabbar-ruler polymode php-mode markdown-mode leuven-theme helm ess-R-object-popup ess auto-yasnippet auctex ample-zen-theme ample-theme airline-themes ahungry-theme))))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
-
-
 (defun insert-file-name ()
   "Insert the full path file name into the current buffer."
   (interactive)
@@ -520,3 +491,17 @@ Then move to that line and indent according to mode"
 ;; (global-set-key (kbd "C-c k") 'counsel-ag)
 ;; (global-set-key (kbd "C-x l") 'counsel-locate)
 ;; (define-key minibuffer-local-map (kbd "C-r") 'counsel-minibuffer-history)
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(package-selected-packages
+   (quote
+    (markdown-mode yaml-mode yasnippet-snippets yasnippet toc-org tabbar helm fill-column-indicator ess))))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )

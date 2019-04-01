@@ -1,0 +1,93 @@
+syntax on
+set mouse=a
+
+
+set runtimepath^=~/.vim/bundle/ctrlp.vim
+set clipboard=unnamed
+
+
+" move line up and down
+nnoremap <C-j> :m .+1<CR>==
+nnoremap <C-k> :m .-2<CR>==
+inoremap <C-j> <Esc>:m .+1<CR>==gi
+inoremap <C-k> <Esc>:m .-2<CR>==gi
+vnoremap <C-j> :m '>+1<CR>gv=gv
+vnoremap <C-k> :m '<-2<CR>gv=gv
+
+" remap ESC
+inoremap jk <ESC>
+
+" remap K
+nnoremap K :update<CR>
+
+" tab by spaces
+set tabstop=2 softtabstop=0 expandtab shiftwidth=2 smarttab
+
+" turn on line number, :set nu! turns off
+" set number
+
+" menu length
+set wildmenu
+set wildmode=list:longest,full
+
+" autoindent
+set autoindent
+" set cindent " indent after 'for' and 'if'
+set smartindent
+
+" visual move
+:nnoremap j gj
+:nnoremap k gk
+
+" ----- status line -----
+" set statusline=%f
+set laststatus=2 " always show status line, otherwise, only show when file opens
+set statusline=%t       "tail of the filename
+set statusline+=[%{strlen(&fenc)?&fenc:'none'}, "file encoding
+set statusline+=%{&ff}] "file format
+set statusline+=%h      "help file flag
+set statusline+=%m      "modified flag
+set statusline+=%r      "read only flag
+set statusline+=%y      "filetype
+set statusline+=%=      "left/right separator
+set statusline+=%c,     "cursor column
+set statusline+=%l/%L   "cursor line/total lines
+set statusline+=\ %P    "percent through file
+
+" ---- NERD commenter -----
+filetype plugin on
+
+let mapleader=","
+set timeout timeoutlen=1500
+
+" Add spaces after comment delimiters by default
+let g:NERDSpaceDelims = 1
+
+" Use compact syntax for prettified multi-line comments
+let g:NERDCompactSexyComs = 1
+
+" Align line-wise comment delimiters flush left instead of following code indentation
+let g:NERDDefaultAlign = 'left'
+
+" Set a language to use its alternate delimiters by default
+let g:NERDAltDelims_java = 1
+
+" Add your own custom formats or override the defaults
+" let g:NERDCustomDelimiters = { 'c': { 'left': '/*','right': '*/' } }
+
+" Allow commenting and inverting empty lines (useful when commenting a region)
+let g:NERDCommentEmptyLines = 1
+
+" Allow buffer switching without saving
+set hidden
+
+" Enable trimming of trailing whitespace when uncommenting
+let g:NERDTrimTrailingWhitespace = 1
+
+" ----- Ctrl-p -----
+set runtimepath^=~/.vim/bundle/ctrlp.vim
+let g:ctrlp_mruf_max = 100000
+set wildignore += ".swp,*.zip,*.exe,*/tmp/*,*.bam
+let g:ctrlp_working_path_mode = 'ra'
+let g:ctrlp_cmd = "CtrlPMRU"
+
