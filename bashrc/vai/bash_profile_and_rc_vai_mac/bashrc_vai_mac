@@ -1,9 +1,10 @@
+#!/bin/bash
 # Source global definitions
 if [ -f /etc/bashrc ]; then
 	. /etc/bashrc
 fi
 
-alias ls='ls -G'
+alias ls='gls -Gv'
 alias rm='rm -i'
 alias lc="wc -l"
 alias ll="ls -l"
@@ -14,6 +15,10 @@ alias hs="history | sed 's/^ *[0-9]* *//' | tail -r | less -S"
 alias wget='wget --no-check-certificate'
 alias du="du -sh"
 alias R='R --no-save'
+function emacs {
+  touch $1;
+  open -a /Applications/Emacs.app $1
+}
 
 PS1='\u@\h:\w\$ '
 
@@ -89,6 +94,10 @@ function wzgrep {
 }
 function wzfind {
   find ~/wzprojects/ -name "*$1*" | less -S
+}
+
+function wzgallery {
+  open $(find ~/gallery/ -type f | fzf -q "$1")
 }
 
 function wz_vcffilter {
@@ -230,5 +239,21 @@ function windows2unix {
 
 ## z - jump around
 . ~/tools/z/z.sh
+
+## re-define z with coupling with fzf, you need to install fzf (but needn't
+## to invoke its key-binding or auto-completion)
+## https://github.com/junegunn/fzf/wiki/examples#z
+unalias z
+z() {
+  if [[ -z "$*" ]]; then        # when there is no argument
+    cd "$(_z -l 2>&1 | fzf +s --tac | sed 's/^[0-9,.]* *//')"
+  else                          # when there is argument
+    if [[ $1 == -* ]]; then
+      _z "$@"
+    else
+      cd "$(_z -l 2>&1 | fzf -q "$@" | sed 's/^[0-9,.]* *//')"
+    fi
+  fi
+}
 
 export PATH=/usr/local/texlive/2014/bin/x86_64-darwin/:$PATH

@@ -115,7 +115,7 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 (define-globalized-minor-mode
   global-fci-mode fci-mode (lambda () (fci-mode 1)))
 (global-fci-mode 1)
-(set-fill-column 79)
+(setq-default fill-column 79)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; visualize long lines > 80
 ;; using whitespace-mode
