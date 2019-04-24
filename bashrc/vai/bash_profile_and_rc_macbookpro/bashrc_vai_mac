@@ -15,7 +15,11 @@ alias hs="history | sed 's/^ *[0-9]* *//' | tail -r | less -S"
 alias wget='wget --no-check-certificate'
 alias du="du -sh"
 alias R='R --no-save'
-alias emacs='open -a /Applications/Emacs.app'
+
+function emacs {
+  touch $1
+  open -a /Applications/Emacs.app $1
+}
 
 PS1='\u@\h:\w\$ '
 
