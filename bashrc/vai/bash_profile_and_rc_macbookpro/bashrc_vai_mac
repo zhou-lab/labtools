@@ -113,6 +113,12 @@ function wzfind {
   find ~/wzprojects/ -name "*$1*" | less -S
 }
 
+function wzgallery {
+  fpath=$(find ~/gallery/ -type f | fzf -q "$1")
+  echo $fpath
+  open -R $fpath
+}
+
 function wz_vcffilter {
     vcffile=$1;
     if [[ $3 == "-s" ]]; then
@@ -285,3 +291,7 @@ z() {
 ## Wanding Note2:
 ## and you need to put it to bash_profile in mac to have it work properly
 # [ -f ~/.fzf.bash ] && source ~/.fzf.bash
+
+function wzcd() {
+  cd $(find . -type d | fzf)
+}

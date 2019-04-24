@@ -425,6 +425,7 @@ Then move to that line and indent according to mode"
 (global-set-key (kbd "M-<down>") 'move-line-downward)
 (global-set-key (kbd "<home>") 'beginning-of-line)
 (global-set-key (kbd "<end>") 'end-of-line)
+(global-set-key (kbd "C-c C-q") 'fill-paragraph)
 
 ;; helm
 (setq recentf-max-saved-items 10000)
