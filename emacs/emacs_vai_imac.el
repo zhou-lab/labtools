@@ -1,4 +1,3 @@
-
 ;; you need to install
 ;; tabbar
 ;; yasnippet, ESS, polymode, helm, toc-org, fill-column-indicator
@@ -111,10 +110,11 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; fill-column-indicator mode
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define-globalized-minor-mode
-  global-fci-mode fci-mode (lambda () (fci-mode 1)))
-(global-fci-mode 1)
+;; This is not good, see line-move-visual and fci-handle-line-move-visual
+;; (define-globalized-minor-mode
+;;   global-fci-mode fci-mode (lambda () (fci-mode 1)))
+;; (global-fci-mode 0)
+
 (setq-default fill-column 79)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; visualize long lines > 80
@@ -440,9 +440,45 @@ Then move to that line and indent according to mode"
 ;;;;;;;;;;
 ;; ESS
 ;;;;;;;;;;
+
+(add-hook 'ess-mode-hook 
+          (lambda ()
+            (ess-set-style 'C++)
+            (setq ess-first-continued-statement-offset 4)
+            (setq ess-continued-statement-offset 0)
+            (setq ess-close-paren-offset '(0))
+            ;; (setq ess-offset-arguments 'prev-line)
+            ;; (setq ess-indent-block-arg-function nil)
+            ;; (setq ess-arg-function-offset nil)
+            ;; (setq ess-arg-function-offset 2)
+            ;; (setq ess-arg-function-offset-new-line 2)
+            ))
+(ess-toggle-underscore nil)
+
+
+;; The following is another way to set it. but unfortunately
+;; none of the methods works perfectly
+;; (add-to-list 'ess-style-alist
+;;              '(my-style
+;;                (ess-indent-level . 4)
+;;                (ess-first-continued-statement-offset . 4)
+;;                (ess-continued-statement-offset . 0)
+;;                (ess-brace-offset . -4)
+;;                (ess-expression-offset . 4)
+;;                (ess-else-offset . 0)
+;;                (ess-close-brace-offset . 4)
+;;                (ess-close-paren-offset . -4)
+;;                (ess-brace-imaginary-offset . 0)
+;;                (ess-continued-brace-offset . 0)
+;;                (ess-arg-function-offset . 0)
+;;                (ess-close-paren-offset . 0)
+;;                (ess-arg-function-offset-new-line . '(4)) ;; () is important
+;;                ))
+;; (setq ess-default-style 'my-style)
+
 (setq inferior-R-program-name "/usr/local/bin/R")
 
-(setq ess-style 'OWN)
+;; (setq ess-style 'OWN)
 
 ;; (defun rmd-mode ()
 ;;  "ESS Markdown mode for rmd files"

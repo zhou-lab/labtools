@@ -4,7 +4,7 @@ if [ -f /etc/bashrc ]; then
 	. /etc/bashrc
 fi
 
-alias ls='gls -Gv'
+alias ls='/bin/ls -Gv'
 alias rm='rm -i'
 alias lc="wc -l"
 alias ll="ls -l"
@@ -97,7 +97,9 @@ function wzfind {
 }
 
 function wzgallery {
-  open $(find ~/gallery/ -type f | fzf -q "$1")
+  fpath=$(find ~/gallery/ -type f | fzf -q "$1")
+  echo $fpath
+  open -R $fpath
 }
 
 function wz_vcffilter {

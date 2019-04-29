@@ -440,6 +440,11 @@ Then move to that line and indent according to mode"
 ;;;;;;;;;;
 ;; ESS
 ;;;;;;;;;;
+(add-hook 'ess-mode-hook
+          (lambda ()
+            (setq ess-first-continued-statement-offset 4)
+            (setq ess-continued-statement-offset 0)))
+
 (setq inferior-R-program-name "/usr/local/bin/R")
 
 (setq ess-style 'OWN)
