@@ -15,23 +15,11 @@ Remove image
 Make image from container/process 
 ** docker build -t <username>/<repository>:<tag> <directory_of_Dockerfile>
 Make image from Dockerfile
-** docker pull <image>
+** docker pull <image>:<tag>
 Get a copy of public docker
 ** docker tag sesame zhouwanding/sesame
 Rename docker image
-
-* Container
-** docker ps
-List running containers / processes
-
-*** docker ps -a
-List all containers
-** docker cp <containerId>:/file/path/within/container /host/path/target
-Copy stuff from container path to host path
-
-** docker inspect --format '{{ .NetworkSettings.IPAddress }}’ <container>
-Get container IP address
-** docker run -itd <image> <command>
+** docker run -it <image> <command>
 Keep a container running at startup
 
 This runs a command inside the container. 
@@ -51,32 +39,38 @@ Running the run command with the -it flags attaches us to an
 interactive tty in the container. Now we can run as many 
 commands in the container as we want.
 
-** docker start <container>
-Resume container (THIS IS A MISNOMER, START actually needs the
-container to be run first). This is seldomly used unless you want to
-restart the process/container.  docker start <container>
-
 ** docker run --rm --it busybox
 --rm removes the container after exit 
 Shutdown container
 This run a container/process from an image
 
+* Container
+** docker ps
+List running containers / processes
+*** docker ps -a
+List all containers
+** docker stop <container>
+stop a container process
+*** docker stop $(docker ps -a -q)
+Stop all containers
+** docker rm <container>
+Remove a stopped container
+*** docker rm $(docker ps -a -q) 
+Remove all containers
 ** docker exec -it <name> /bin/bash
 Shell into a running container with either of the following
 
 ** docker attach <name>
 Shell into a running container with either of the following
+** docker cp <containerId>:/file/path/within/container /host/path/target
+Copy stuff from container path to host path
 
-** docker stop <container>
-stop a container process
-
-*** docker stop $(docker ps -a -q)
-Stop all containers
-
-** docker rm <container>
-Remove a stopped container
-*** docker rm $(docker ps -a -q) 
-Remove all containers
+** docker inspect --format '{{ .NetworkSettings.IPAddress }}’ <container>
+Get container IP address
+** docker start <container>
+Resume container (THIS IS A MISNOMER, START actually needs the
+container to be run first). This is seldomly used unless you want to
+restart the process/container.  docker start <container>
 
 * Building and modifying the Bioconductor docker
 images The BioC Dockerfiles are not directly edited. Instead, for each

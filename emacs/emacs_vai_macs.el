@@ -24,20 +24,21 @@
 ;; (add-to-list 'default-frame-alist '(font . "Latin Modern Mono-12"))
 ;; (add-to-list 'default-frame-alist '(font . "Monaco-12"))
 ;; (add-to-list 'default-frame-alist '(font . "Iosevka-12:light"))
-(add-to-list 'default-frame-alist '(font . "Anonymous Pro-13"))
+;; (add-to-list 'default-frame-alist '(font . "Anonymous Pro-13"))
 
-;; (require 'ess)
-(load "ess-site")
-auto-mode-alist (append (list '("\\.c$" . c-mode)	
-			      '("\\.tex$" . latex-mode)
-			      '("\\.S$" . S-mode)
-			      '("\\.s$" . S-mode)
-			      '("\\.R$" . R-mode)
-			      '("\\.r$" . R-mode)
-			      '("\\.html$" . html-mode)
-            '("\\.emacs" . emacs-lisp-mode)
-						)
-						auto-mode-alist)
+;; (require 'ess-r-mode)
+;; (require 'ess-site)
+;; (require "ess-site")
+;; auto-mode-alist (append (list '("\\.c$" . c-mode)	
+;; 			      '("\\.tex$" . latex-mode)
+;; 			      '("\\.S$" . S-mode)
+;; 			      '("\\.s$" . S-mode)
+;; 			      '("\\.R$" . R-mode)
+;; 			      '("\\.r$" . R-mode)
+;; 			      '("\\.html$" . html-mode)
+;;             '("\\.emacs" . emacs-lisp-mode)
+;; 						)
+;; 						auto-mode-alist)
 
 ;; for Rmarkdown to find pandoc
 ;; (setq markdown-command "/Applications/RStudio.app/Contents/MacOS/pandoc")
@@ -111,10 +112,11 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; fill-column-indicator mode
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define-globalized-minor-mode
-  global-fci-mode fci-mode (lambda () (fci-mode 1)))
-(global-fci-mode 1)
-(set-fill-column 79)
+;; (define-globalized-minor-mode
+;;   global-fci-mode fci-mode (lambda () (fci-mode 1)))
+;; (global-fci-mode 1)
+
+(setq-default fill-column 79)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; visualize long lines > 80
 ;; using whitespace-mode
@@ -298,7 +300,6 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
   (goto-char (line-beginning-position 0))
 )
 
-
 (defun insert-before-line ()
   "insert the content yanked (e.g., copied) before the current line"
   (interactive)
@@ -440,14 +441,35 @@ Then move to that line and indent according to mode"
 ;;;;;;;;;;
 ;; ESS
 ;;;;;;;;;;
-(add-hook 'ess-mode-hook
-          (lambda ()
-            (setq ess-first-continued-statement-offset 4)
-            (setq ess-continued-statement-offset 0)))
-
-(setq inferior-R-program-name "/usr/local/bin/R")
+(require 'ess-r-mode)
+;; Note that there are a lot of out-dated information out
+;; there on the internet. ESS has changed a lot in terms of
+;; the variables for customization. Look at ess-custom.el
+;; and C-h v ess-style-alist for the most updated information.
+;;
+;; To customize, you need to change the default list to OWN
+;; all the other style are FIXED!!
+;; The default style is RRR. Even changing this thing to
+;; DEFAULT won't work. So far only the following works.
+(custom-set-variables
+ '(ess-own-style-list
+   (quote
+    ((ess-indent-offset . 4)
+     (ess-offset-arguments . prev-line)
+     (ess-offset-arguments-newline . prev-line)
+     (ess-offset-block . prev-line)
+     (ess-offset-continued . straight)
+     (ess-align-nested-calls)
+     (ess-align-arguments-in-calls)
+     (ess-align-continuations-in-calls)
+     (ess-align-blocks control-flow)
+     (ess-indent-from-lhs)
+     (ess-indent-from-chain-start)
+     (ess-indent-with-fancy-comments . t)))))
 
 (setq ess-style 'OWN)
+(ess-toggle-underscore nil)
+(setq inferior-R-program-name "/usr/local/bin/R")
 
 ;; (defun rmd-mode ()
 ;;  "ESS Markdown mode for rmd files"
@@ -504,7 +526,7 @@ Then move to that line and indent according to mode"
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
    (quote
-    (abs-mode markdown-mode yaml-mode yasnippet-snippets yasnippet toc-org tabbar helm fill-column-indicator ess))))
+    (abs-mode markdown-mode yaml-mode yasnippet-snippets yasnippet toc-org tabbar helm fill-column-indicator))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.

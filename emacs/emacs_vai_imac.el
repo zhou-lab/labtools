@@ -440,45 +440,35 @@ Then move to that line and indent according to mode"
 ;;;;;;;;;;
 ;; ESS
 ;;;;;;;;;;
+(require 'ess-r-mode)
+;; Note that there are a lot of out-dated information out
+;; there on the internet. ESS has changed a lot in terms of
+;; the variables for customization. Look at ess-custom.el
+;; and C-h v ess-style-alist for the most updated information.
+;;
+;; To customize, you need to change the default list to OWN
+;; all the other style are FIXED!!
+;; The default style is RRR. Even changing this thing to
+;; DEFAULT won't work. So far only the following works.
+(custom-set-variables
+ '(ess-own-style-list
+   (quote
+    ((ess-indent-offset . 4)
+     (ess-offset-arguments . prev-line)
+     (ess-offset-arguments-newline . prev-line)
+     (ess-offset-block . prev-line)
+     (ess-offset-continued . straight)
+     (ess-align-nested-calls)
+     (ess-align-arguments-in-calls)
+     (ess-align-continuations-in-calls)
+     (ess-align-blocks control-flow)
+     (ess-indent-from-lhs)
+     (ess-indent-from-chain-start)
+     (ess-indent-with-fancy-comments . t)))))
 
-(add-hook 'ess-mode-hook 
-          (lambda ()
-            (ess-set-style 'C++)
-            (setq ess-first-continued-statement-offset 4)
-            (setq ess-continued-statement-offset 0)
-            (setq ess-close-paren-offset '(0))
-            ;; (setq ess-offset-arguments 'prev-line)
-            ;; (setq ess-indent-block-arg-function nil)
-            ;; (setq ess-arg-function-offset nil)
-            ;; (setq ess-arg-function-offset 2)
-            ;; (setq ess-arg-function-offset-new-line 2)
-            ))
+(setq ess-style 'OWN)
 (ess-toggle-underscore nil)
-
-
-;; The following is another way to set it. but unfortunately
-;; none of the methods works perfectly
-;; (add-to-list 'ess-style-alist
-;;              '(my-style
-;;                (ess-indent-level . 4)
-;;                (ess-first-continued-statement-offset . 4)
-;;                (ess-continued-statement-offset . 0)
-;;                (ess-brace-offset . -4)
-;;                (ess-expression-offset . 4)
-;;                (ess-else-offset . 0)
-;;                (ess-close-brace-offset . 4)
-;;                (ess-close-paren-offset . -4)
-;;                (ess-brace-imaginary-offset . 0)
-;;                (ess-continued-brace-offset . 0)
-;;                (ess-arg-function-offset . 0)
-;;                (ess-close-paren-offset . 0)
-;;                (ess-arg-function-offset-new-line . '(4)) ;; () is important
-;;                ))
-;; (setq ess-default-style 'my-style)
-
 (setq inferior-R-program-name "/usr/local/bin/R")
-
-;; (setq ess-style 'OWN)
 
 ;; (defun rmd-mode ()
 ;;  "ESS Markdown mode for rmd files"
