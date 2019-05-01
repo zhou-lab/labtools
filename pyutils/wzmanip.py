@@ -444,6 +444,7 @@ def main_classify(args):
 
 def main_dedupmax(args):
 
+    ## TODO: implement the sorted version, should be easy
     k_ind = parse_indices(args.k)
     k2v = {}
     for line in args.t:
