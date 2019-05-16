@@ -26,9 +26,6 @@
 ;; (add-to-list 'default-frame-alist '(font . "Iosevka-12:light"))
 ;; (add-to-list 'default-frame-alist '(font . "Anonymous Pro-13"))
 
-;; (require 'ess-r-mode)
-;; (require 'ess-site)
-;; (require "ess-site")
 ;; auto-mode-alist (append (list '("\\.c$" . c-mode)	
 ;; 			      '("\\.tex$" . latex-mode)
 ;; 			      '("\\.S$" . S-mode)
@@ -447,6 +444,8 @@ Then move to that line and indent according to mode"
 ;; the variables for customization. Look at ess-custom.el
 ;; and C-h v ess-style-alist for the most updated information.
 ;;
+;; Make sure you use the most updated version of ESS!!
+;;
 ;; To customize, you need to change the default list to OWN
 ;; all the other style are FIXED!!
 ;; The default style is RRR. Even changing this thing to
@@ -466,6 +465,8 @@ Then move to that line and indent according to mode"
      (ess-indent-from-lhs)
      (ess-indent-from-chain-start)
      (ess-indent-with-fancy-comments . t)))))
+
+(setq-default ess-indent-offset 4)
 
 (setq ess-style 'OWN)
 (ess-toggle-underscore nil)

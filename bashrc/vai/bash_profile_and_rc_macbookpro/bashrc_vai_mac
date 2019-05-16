@@ -117,10 +117,16 @@ function wzfind {
   find ~/wzprojects/ -name "*$1*" | less -S
 }
 
+function wzpresentation {
+  fpath=$(find ~/Dropbox/Documents/Presentation/ -type f | fzf -q "$1")
+  echo $fpath
+  open -R "$fpath"
+}
+
 function wzgallery {
   fpath=$(find ~/gallery/ -type f | fzf -q "$1")
   echo $fpath
-  open -R $fpath
+  open -R "$fpath"
 }
 
 function wz_vcffilter {
@@ -299,3 +305,6 @@ z() {
 function wzcd() {
   cd $(find . -type d | fzf)
 }
+
+export GEM_HOME=$HOME/gems
+export PATH=$HOME/gems/bin:$PATH
