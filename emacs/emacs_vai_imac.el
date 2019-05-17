@@ -79,12 +79,13 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 (setq sh-basic-offset 2
       sh-indentation 2)
 
-(setq-default indent-tabs-mode nil)
+(setq-default indent-tabs-mode nil) ;; indentation cannot insert tabs
 (setq org-startup-indented t)
 (setq org-startup-folded 'content)
 (setq org-src-fontify-natively t)
 (setq org-edit-src-content-indentation 0)
 (setq org-src-tab-acts-natively t)
+(setq org-src-window-setup 'other-window) ;; see C-h v org-src-window-setup, this shows the src code in the other window
 
 ;; R support inside org-babel
 ;; (useful only for export R code-containing org files)
@@ -152,9 +153,19 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 (global-set-key (kbd "<f18>") 'switch-to-buffer)
 (global-set-key (kbd "<f10>") 'yas-reload-all)
 (global-set-key (kbd "<f9>") 'yas-describe-tables)
-(global-set-key (kbd "<f13>") 'kill-ring-save)
-(global-set-key (kbd "<f14>") 'jao-copy-line)
-(global-set-key (kbd "<f16>") 'yank)
+
+;; copy/paste
+(defun zhou-copy-line-or-region ()
+  "Copy current line, or region if active."
+  (interactive)
+  (if (use-region-p)
+      (kill-ring-save (region-beginning) (region-end))
+    (kill-ring-save (line-beginning-position)
+                    (line-end-position)))
+  (message "line/region copied"))
+
+(global-set-key (kbd "<f1>") 'zhou-copy-line-or-region) ; copy
+(global-set-key (kbd "<f2>") 'yank)           ; paste
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;
