@@ -258,4 +258,16 @@ z() {
   fi
 }
 
+# zy() {
+#   if [[ -z "$*" ]]; then        # when there is no argument
+#     cd "$(_z -l 2>&1 | fzy | sed 's/^[0-9,.]* *//')"
+#   else                          # when there is argument
+#     if [[ $1 == -* ]]; then
+#       _z "$@"
+#     else
+#       cd "$(_z -l 2>&1 | fzy -q "$@" | sed 's/^[0-9,.]* *//')"
+#     fi
+#   fi
+# }
+
 export PATH=/usr/local/texlive/2014/bin/x86_64-darwin/:$PATH
