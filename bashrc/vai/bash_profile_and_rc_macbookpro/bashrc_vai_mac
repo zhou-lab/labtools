@@ -129,6 +129,16 @@ function wzgallery {
   open -R "$fpath"
 }
 
+function wzgrepwriting {
+  ag "$1" ~/Dropbox/Documents/Writing --pager="less -R"
+}
+
+function wzdocument {
+  fpath=$(find ~/Dropbox/Documents/ -type f | fzf -q "$1")
+  echo $fpath
+  open -R "$fpath"
+}
+
 function wz_vcffilter {
     vcffile=$1;
     if [[ $3 == "-s" ]]; then
