@@ -99,7 +99,7 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 (setq mouse-wheel-scroll-amount '(2))
 (setq mouse-wheel-progressive-speed nil)
 ;; (global-visual-line-mode nil)
-(set-default 'truncate-lines nil)
+(set-default 'truncate-lines t)
 ;; (define-key org-mode-map "\M-q" 'toggle-truncate-lines)
 (global-set-key (kbd "M-q") 'toggle-truncate-lines)
 
@@ -195,6 +195,48 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 (defun collapse-blank-lines (start end)
   (interactive "r")
   (replace-regexp "^\n\\{2,\\}" "\n" nil start end))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; paragraph-sentence convertion
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; collapse sentences into a paragraph
+(defun make-paragraph (start end)
+  (interactive "r")
+  (replace-regexp "\n\\{2,\\}" " " nil start end))
+
+;; split a paragraph into sentences
+(defun split-paragraph (start end)
+  (interactive "r")
+  (replace-regexp "\\. " ".\n\n" nil start end))
+
+;; the following is not useful at all, just for learning purpose
+(defun remove-vowel ($string &optional $from $to)
+  "Remove the following letters: {a e i o u}.
+
+When called interactively, work on current paragraph or text selection.
+
+When called in lisp code, if ξstring is non-nil, returns a changed string.
+If ξstring nil, change the text in the region between positions ξfrom ξto."
+  (interactive
+   (if (use-region-p)
+       (list nil (region-beginning) (region-end))
+     (let ((bds (bounds-of-thing-at-point 'paragraph)) )
+       (list nil (car bds) (cdr bds)) ) ) )
+
+  (let (workOnStringP inputStr outputStr)
+    (setq workOnStringP (if $string t nil))
+    (setq inputStr (if workOnStringP $string (buffer-substring-no-properties $from $to)))
+    (setq outputStr
+          (let ((case-fold-search t))
+            (replace-regexp-in-string "a\\|e\\|i\\|o\\|u\\|" "" inputStr) )  )
+
+    (if workOnStringP
+        outputStr
+      (save-excursion
+        (delete-region $from $to)
+        (goto-char $from)
+        (insert outputStr) )) ) )
 
 
 ;; kill whole word implementation

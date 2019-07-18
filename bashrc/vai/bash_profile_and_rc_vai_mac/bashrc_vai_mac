@@ -86,22 +86,93 @@ prompt
 #     screen*) PROMPT_COMMAND='echo -ne "\033k\033\0134"'
 # esac
 
-## search wzprojects
+##########################
+## grep contents
+##########################
+## for code
 function wzgrep {
   # grep --recursive --color=always "$1" ~/wzprojects/*.{R,py,org,sh} | less -SR;
   # grep --recursive --color=always "$1" ~/wzprojects/* | less -R;
   ag "$1" ~/wzprojects --pager="less -R"
 }
-function wzfind {
-  find ~/wzprojects/ -name "*$1*" | less -S
+## for Word documents
+function wzgrepword {
+  echo
+}
+## for PDF documents, DON'T WORK WELL, TRY SEARCHING IN MENDELEY
+function wzgreppdf {
+  pattern="$@";
+  find ~/Dropbox/Literature -name '*.pdf' -exec pdfgrep "$pattern" {} \;
 }
 
-function wzgallery {
-  fpath=$(find ~/gallery/ -type f | fzf -q "$1")
-  echo $fpath
-  open -R $fpath
+###################
+## show location
+###################
+## usage:
+## wzshow [query]
+## wzshow open [query] # directly open
+## wzshow directory [query] # directly open folder in finder, any level
+## wzshow cd # cd into folder, any level
+function wzshow {
+  location=$1
+  shift;
+
+  to_open=0;
+  to_cd=0;
+  is_directory=0;
+  if [[ $1 == "open" ]]; then
+    to_open=1;
+    shift;
+  fi
+  
+  if [[ $1 == "directory" ]]; then
+    to_open=1;
+    is_directory=1;
+    shift;
+  fi
+
+  if [[ $1 == "cd" ]]; then
+    to_cd=1;
+    is_directory=1;
+    shift;
+  fi
+  
+  
+  pattern="$@"
+  if [[ $is_directory -eq 1 ]]; then
+    fpath=$(find "$location" -type d | fzf -q "$pattern")
+  else
+    fpath=$(find "$location" -type f | fzf -q "$pattern")
+  fi
+  
+  if [[ ! -z "$fpath" ]]; then
+    echo $fpath
+    if [[ $to_open -eq 1 ]]; then
+      open "$fpath"
+    elif [[ $to_cd -eq 1 ]]; then
+      cd "$fpath"
+    else
+      open -R "$fpath"
+    fi
+  fi
 }
 
+alias wzshow_wzprojects="wzshow ~/wzprojects/"
+alias wzshow_gallery="wzshow ~/gallery/"
+alias wzshow_dropbox="wzshow ~/Dropbox/"
+alias wzshow_documents="wzshow ~/Dropbox/Documents/"
+alias wzshow_spreadsheets="wzshow ~/Dropbox/Documents/SpreadSheets/"
+alias wzshow_paper="wzshow ~/Dropbox/Documents/Paper/"
+alias wzshow_presentation="wzshow ~/Dropbox/Documents/Presentation/"
+alias wzshow_grant="wzshow ~/Dropbox/Documents/Grant/"
+alias wzshow_writing="wzshow ~/Dropbox/Documents/Writing/"
+alias wzshow_personal="wzshow ~/Dropbox/personal/"
+alias wzshow_cv="wzshow ~/Dropbox/Documents/ResumeCV"
+alias wzshow_literature="wzshow ~/Dropbox/Literature/"
+
+####################
+## VCF tools
+####################
 function wz_vcffilter {
     vcffile=$1;
     if [[ $3 == "-s" ]]; then
@@ -134,7 +205,7 @@ sum+=$column;} END{ave=sum/c; if((c%2)==1){median=a[int(c/2)];} else{median=(a[c
 alias qsubi='qsub -I -q default -l nodes=1:ppn=1'
 
 function dnarev {
-  echo $1 | tr ATGC TACG | rev;
+  echo $1 | tr ATGC TACG | tr atgc tacg | rev;
 }
 
 # eval $(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib)
