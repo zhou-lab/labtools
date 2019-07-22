@@ -95,10 +95,7 @@ function wzgrep {
   # grep --recursive --color=always "$1" ~/wzprojects/* | less -R;
   ag "$1" ~/wzprojects --pager="less -R"
 }
-## for Word documents
-function wzgrepword {
-  echo
-}
+
 ## for PDF documents, DON'T WORK WELL, TRY SEARCHING IN MENDELEY
 function wzgreppdf {
   pattern="$@";
