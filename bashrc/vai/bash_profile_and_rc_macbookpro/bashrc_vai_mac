@@ -138,15 +138,13 @@ function wzgreppdf {
 ## s cd directory # cd into folder, any level
 function s {
 
-  if [[ "$#" -lt 1 ]]; then
-    location=~/Dropbox/Documents
-  else
-    location=$1
-    shift;
-  fi
+  location=$1
+  shift;
 
   if [[ $location =~ ^wzp ]]; then
     location=$HOME/wzprojects/
+  elif [[ $location =~ ^wzl ]]; then
+    location=$HOME/wzlib/
   elif [[ $location =~ ^ga ]]; then
     location=$HOME/gallery/
   elif [[ $location =~ ^dr ]]; then
@@ -165,6 +163,10 @@ function s {
     location=$HOME/Dropbox/Literature/
   elif [[ $location =~ ^wr ]]; then
     location=$HOME/Dropbox/Documents/Writing/
+  fi
+
+  if [[ ! -d $location ]]; then
+    location=$HOME/Dropbox/Documents/
   fi
 
   to_open=1;
