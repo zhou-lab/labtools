@@ -106,19 +106,53 @@ function wzgreppdf {
 ## show location
 ###################
 ## usage:
-## wzshow [query]
-## wzshow open [query] # directly open
-## wzshow directory [query] # directly open folder in finder, any level
-## wzshow cd # cd into folder, any level
-function wzshow {
-  location=$1
-  shift;
+## s [query]
+## s open [query] # directly open
+## s directory [query] # directly open folder in finder, any level
+## s cd # cd into the folder containing the directory
+## s cd directory # cd into folder, any level
+function s {
 
-  to_open=0;
+  if [[ "$#" -lt 1 ]]; then
+    location=~/Dropbox/Documents
+  else
+    location=$1
+    shift;
+  fi
+
+  if [[ $location =~ ^wzp ]]; then
+    location=$HOME/wzprojects/
+  elif [[ $location =~ ^ga ]]; then
+    location=$HOME/gallery/
+  elif [[ $location =~ ^dr ]]; then
+    location=$HOME/Dropbox/
+  elif [[ $location =~ ^do ]]; then
+    location=$HOME/Dropbox/Documents/
+  elif [[ $location =~ ^re ]]; then
+    location=$HOME/review/
+  elif [[ $location =~ ^sp ]]; then
+    location=$HOME/Dropbox/Documents/SpreadSheets/
+  elif [[ $location =~ ^pa ]]; then
+    location=$HOME/Dropbox/Documents/Paper/
+  elif [[ $location =~ ^pr ]]; then
+    location=$HOME/Dropbox/Documents/Presentation/
+  elif [[ $location =~ ^li ]]; then
+    location=$HOME/Dropbox/Literature/
+  elif [[ $location =~ ^wr ]]; then
+    location=$HOME/Dropbox/Documents/Writing/
+  fi
+
+  to_open=1;
   to_cd=0;
   is_directory=0;
-  if [[ $1 == "open" ]]; then
-    to_open=1;
+  if [[ $1 == "show" ]]; then
+    to_open=0;
+    shift;
+  fi
+
+  if [[ $1 == "cd" ]]; then
+    to_open=0;
+    to_cd=1;
     shift;
   fi
   
@@ -126,14 +160,7 @@ function wzshow {
     to_open=1;
     is_directory=1;
     shift;
-  fi
-
-  if [[ $1 == "cd" ]]; then
-    to_cd=1;
-    is_directory=1;
-    shift;
-  fi
-  
+  fi  
   
   pattern="$@"
   if [[ $is_directory -eq 1 ]]; then
@@ -147,25 +174,16 @@ function wzshow {
     if [[ $to_open -eq 1 ]]; then
       open "$fpath"
     elif [[ $to_cd -eq 1 ]]; then
-      cd "$fpath"
+      if [[ -d "$fpath" ]]; then
+        cd "$fpath"
+      else
+        cd $(dirname "$fpath")
+      fi
     else
       open -R "$fpath"
     fi
   fi
 }
-
-alias wzshow_wzprojects="wzshow ~/wzprojects/"
-alias wzshow_gallery="wzshow ~/gallery/"
-alias wzshow_dropbox="wzshow ~/Dropbox/"
-alias wzshow_documents="wzshow ~/Dropbox/Documents/"
-alias wzshow_spreadsheets="wzshow ~/Dropbox/Documents/SpreadSheets/"
-alias wzshow_paper="wzshow ~/Dropbox/Documents/Paper/"
-alias wzshow_presentation="wzshow ~/Dropbox/Documents/Presentation/"
-alias wzshow_grant="wzshow ~/Dropbox/Documents/Grant/"
-alias wzshow_writing="wzshow ~/Dropbox/Documents/Writing/"
-alias wzshow_personal="wzshow ~/Dropbox/personal/"
-alias wzshow_cv="wzshow ~/Dropbox/Documents/ResumeCV"
-alias wzshow_literature="wzshow ~/Dropbox/Literature/"
 
 ####################
 ## VCF tools

@@ -167,7 +167,6 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 (global-set-key (kbd "<f1>") 'zhou-copy-line-or-region) ; copy
 (global-set-key (kbd "<f2>") 'yank)           ; paste
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;; Wanding functions
 ;;;;;;;;;;;;;;;;;;;;;;;

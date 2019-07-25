@@ -153,7 +153,20 @@
 (global-set-key (kbd "<f13>") 'kill-ring-save)
 (global-set-key (kbd "<f14>") 'jao-copy-line)
 (global-set-key (kbd "<f16>") 'yank)
+(global-set-key (kbd "<help>") 'other-window)
 
+;; copy/paste
+(defun zhou-copy-line-or-region ()
+  "Copy current line, or region if active."
+  (interactive)
+  (if (use-region-p)
+      (kill-ring-save (region-beginning) (region-end))
+    (kill-ring-save (line-beginning-position)
+                    (line-end-position)))
+  (message "line/region copied"))
+
+(global-set-key (kbd "<f1>") 'zhou-copy-line-or-region) ; copy
+(global-set-key (kbd "<f2>") 'yank)           ; paste
 
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;; Wanding functions
@@ -459,7 +472,7 @@ Then move to that line and indent according to mode"
 ;;       backup-by-copying-when-linked t) ; Copy linked files, don't rename.
 
 (global-set-key (kbd "M-i") 'kill-whole-line)
-(global-set-key (kbd "<f16>") 'other-window)
+(global-set-key (kbd "<f9>") 'other-window)
 (global-set-key (kbd "<f18>") 'delete-other-windows)
 (global-set-key (kbd "<clear>") 'goto-line)
 (global-set-key (kbd "M-<up>") 'move-line-upward)
