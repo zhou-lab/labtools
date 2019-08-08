@@ -204,10 +204,14 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
   (interactive "r")
   (replace-regexp "\n\\{2,\\}" " " nil start end))
 
+(global-set-key (kbd "<f6>") 'make-paragraph)
+
 ;; split a paragraph into sentences
 (defun split-paragraph (start end)
   (interactive "r")
   (replace-regexp "\\. " ".\n\n" nil start end))
+
+(global-set-key (kbd "<f5>") 'split-paragraph)
 
 ;; the following is not useful at all, just for learning purpose
 (defun remove-vowel ($string &optional $from $to)
