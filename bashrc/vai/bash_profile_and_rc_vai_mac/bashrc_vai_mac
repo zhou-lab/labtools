@@ -4,7 +4,8 @@ if [ -f /etc/bashrc ]; then
 	. /etc/bashrc
 fi
 
-alias ls='/bin/ls -Gv'
+# note --color is -G on a mac ls
+alias ls='/usr/local/bin/gls -v --color --ignore-backups'
 alias rm='rm -i'
 alias lc="wc -l"
 alias ll="ls -l"
@@ -359,3 +360,11 @@ z() {
 # }
 
 export PATH=/usr/local/texlive/2014/bin/x86_64-darwin/:$PATH
+
+function dt() {
+  date +%Y%m%d
+}
+
+function dt2() {
+  date +%Y_%m_%d
+}

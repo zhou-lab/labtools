@@ -25,6 +25,7 @@
 ;; (add-to-list 'default-frame-alist '(font . "Iosevka-12:light"))
 ;; (add-to-list 'default-frame-alist '(font . "Anonymous Pro-13"))
 ;; (add-to-list 'default-frame-alist '(font . "Anonymous Pro-16"))
+(add-to-list 'default-frame-alist '(font . "Menlo-14"))
 
 ;; (require 'ess)
 (load "ess-site")
