@@ -25,6 +25,7 @@
 ;; (add-to-list 'default-frame-alist '(font . "Iosevka-12:light"))
 ;; (add-to-list 'default-frame-alist '(font . "Anonymous Pro-13"))
 ;; (add-to-list 'default-frame-alist '(font . "Anonymous Pro-16"))
+(add-to-list 'default-frame-alist '(font . "Menlo-14"))
 
 ;; (require 'ess)
 (load "ess-site")
@@ -150,7 +151,7 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 ;; (global-set-key (kbd "<f9>") 'my-switch-to-other-buffer)
 (global-set-key (kbd "<f19>") 'my-switch-to-other-buffer)
 ;; (global-set-key (kbd "<f9>") 'switch-to-buffer)
-(global-set-key (kbd "<f18>") 'switch-to-buffer)
+;; (global-set-key (kbd "<f18>") 'switch-to-buffer)
 (global-set-key (kbd "<f10>") 'yas-reload-all)
 (global-set-key (kbd "<f9>") 'yas-describe-tables)
 
@@ -475,8 +476,10 @@ Then move to that line and indent according to mode"
 ;;       backup-by-copying-when-linked t) ; Copy linked files, don't rename.
 
 (global-set-key (kbd "M-i") 'kill-whole-line)
+(global-set-key (kbd "<f13>") 'ess-eval-region-or-function-or-paragraph-and-step)
 (global-set-key (kbd "<f16>") 'other-window)
-(global-set-key (kbd "<f18>") 'delete-other-windows)
+(global-set-key (kbd "<f18>") 'split-window-right)
+(global-set-key (kbd "<f17>") 'split-window-below)
 (global-set-key (kbd "<clear>") 'goto-line)
 (global-set-key (kbd "M-<up>") 'move-line-upward)
 (global-set-key (kbd "M-<down>") 'move-line-downward)
