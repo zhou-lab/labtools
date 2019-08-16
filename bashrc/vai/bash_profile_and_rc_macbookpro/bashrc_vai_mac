@@ -402,6 +402,10 @@ function wzcd() {
 export GEM_HOME=$HOME/gems
 export PATH=$HOME/gems/bin:$PATH
 
-function tm() {
+function dt() {
   date +%Y%m%d
+}
+
+function dt2() {
+  date +%Y_%m_%d
 }
