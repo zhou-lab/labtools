@@ -103,17 +103,43 @@ function wzgreppdf {
   find ~/Dropbox/Literature -name '*.pdf' -exec pdfgrep "$pattern" {} \;
 }
 
+
 ###################
 ## show location
 ###################
 ## usage:
 ## s [query]
 ## s open [query] # directly open
-## s directory [query] # directly open folder in finder, any level
+## s goto [query] # directly open folder in finder, any level
 ## s cd # cd into the folder containing the directory
-## s cd directory # cd into folder, any level
+## s show # show things in finder
 function s {
 
+  to_open=0
+  to_cd=0;
+  is_directory=0;
+  if [[ $1 == "open" ]]; then
+    to_open=1;
+    shift;
+  fi
+  
+  if [[ $1 == "show" ]]; then
+    to_open=0;
+    shift;
+  fi
+
+  if [[ $1 == "cd" ]]; then
+    to_open=0;
+    to_cd=1;
+    shift;
+  fi
+  
+  if [[ $1 == "goto" ]]; then
+    to_open=1;
+    is_directory=1;
+    shift;
+  fi  
+  
   location=$1
   shift;
 
@@ -125,6 +151,8 @@ function s {
     location=$HOME/gallery/
   elif [[ $location =~ ^dr ]]; then
     location=$HOME/Dropbox/
+  elif [[ $location =~ ^pe ]]; then
+    location=$HOME/Dropbox/personal/
   elif [[ $location =~ ^do ]]; then
     location=$HOME/Dropbox/Documents/
   elif [[ $location =~ ^re ]]; then
@@ -145,26 +173,6 @@ function s {
     location=$HOME/Dropbox/Documents/
   fi
 
-  to_open=1;
-  to_cd=0;
-  is_directory=0;
-  if [[ $1 == "show" ]]; then
-    to_open=0;
-    shift;
-  fi
-
-  if [[ $1 == "cd" ]]; then
-    to_open=0;
-    to_cd=1;
-    shift;
-  fi
-  
-  if [[ $1 == "directory" ]]; then
-    to_open=1;
-    is_directory=1;
-    shift;
-  fi  
-  
   pattern="$@"
   if [[ $is_directory -eq 1 ]]; then
     fpath=$(find "$location" -type d | fzf -q "$pattern")

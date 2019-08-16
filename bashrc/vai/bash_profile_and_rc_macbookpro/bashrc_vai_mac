@@ -133,9 +133,9 @@ function wzgreppdf {
 ## usage:
 ## s [query]
 ## s open [query] # directly open
-## s directory [query] # directly open folder in finder, any level
+## s goto [query] # directly open folder in finder, any level
 ## s cd # cd into the folder containing the directory
-## s cd directory # cd into folder, any level
+## s show # show things in finder
 function s {
 
   to_open=0
