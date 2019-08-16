@@ -1,6 +1,3187 @@
 #+STARTUP: overview
 #+STARTUP: indent
 #+TAGS: memorize(a) unknown(u)
+      
+* R
+** ESS emacs memory, the most important usage
+the most important use is
+ess-eval-region-or-function-or-paragraph-and-step
+this is mapped to C-c C-c by default
+
+sometimes if you really want to evaluate a line
+that's
+ess-eval-region-or-line-visibly-and-step
+mapped to C-return by default
+
+M-x R
+
+** paste from clipboard
+x <- read.delim(pipe(“pbpaste”))
+** install R on cluster
+use Renv
+https://github.com/viking/Renv
+and follows the instruction
+do
+Renv rehash
+every time you install a new R binary
+
+location of installed packages
+~/.Renv/versions/3.2.3/lib64/R/library/
+
+*** example add R3.0.2
+wget https://cran.cnr.berkeley.edu/src/base/R-3/R-3.0.2.tar.gz
+./configure --prefix=/home/wanding.zhou/.Renv/versions/3.0.2
+export JAVA_HOME=/primary/vari/software/java/jdk1.7.0_40 # somehow the java home is not correctly setup
+make
+make install
+
+# switch R version
+Renv shell 3.2.2
+*** example add R3.2.3
+./configure --prefix=/home/wanding.zhou/.Renv/versions/3.2.3 --enable-R-shlib=yes
+export JAVA_HOME=/primary/vari/software/java/jdk1.7.0_40 # somehow the java home is not correctly setup
+make
+make install
+*** example add R3.2.5
+export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/primary/vari/software/cairo/default/lib/pkgconfig/
+./configure --prefix=/home/wanding.zhou/.Renv/versions/3.5.2 -with-recommended-packages=no --without-x --with-cairo --with-libpng --with-libtiff --with-jpeglib --enable-R-shlib
+# export JAVA_HOME=/primary/vari/software/java/jdk1.7.0_40 # in case java home is not correctly setup
+make
+make install
+
+./configure --prefix=/home/wanding.zhou/.Renv/versions/3.2.5 --without-x --with-cairo --with-libpng --with-libtiff --with-jpeglib --enable-R-shlib
+*** example add R3.5.2
+
+** install Cairo on cluster
+export CAIRO_LIBS="-L/primary/vari/software/cairo/default/lib/ -L/primary/vari/software/pixman/default/lib/ -lcairo -lpixman-1"
+export CAIRO_CFLAGS="-I/primary/vari/software/cairo/default/include/cairo/ -I/primary/vari/software/pixman/default/include/pixman-1/“
+
+export PKG_CONFIG_PATH="/primary/vari/software/cairo/default/lib/pkgconfig/:/primary/vari/software/pixman/default/lib/pkgconfig/“
+
+pkg-config --libs --cflags cairo # can query cairo, see what the problem is 
+** Bioconductor
+*** basics
+**** install bioconductor
+source("http://bioconductor.org/biocLite.R")
+biocLite()
+**** install bioconductor packages
+biocLite(c("GenomicFeatures", "AnnotationDbi"))
+**** upgrade installed package (require R version > 2.15)
+source("http://bioconductor.org/biocLite.R")
+biocLite('BioUpgrade')
+**** recompile installed package
+source("http://bioconductor.org/biocLite.R")
+pkgs <- rownames(installed.packages())
+biocLite(pkgs, type="source")
+*** methylumi
+**** tryout
+suppressPackageStartupMessages(library(methylumi,quietly=TRUE))
+samps <- read.table(system.file("extdata/samples.txt", package = "methylumi"),sep="\t",header=TRUE)
+mldat <- methylumiR(system.file('extdata/exampledata.samples.txt',package='methylumi'), qcfile=system.file('extdata/exampledata.controls.txt',package="methylumi"), sampleDescriptions=samps)
+
+md <- cmdscale(dist(t(exprs(mldat)[fData(mldat)$CHROMOSOME=='X',])),2)
+plot(md,pch=c('F','M')[pData(mldat)$Gender],col=c('red','blue')[pData(mldat)$Gender])
+
+# system.file find file relative to package installation
+**** assessor functions
+exprs(ob)
+betas(ob)
+pvals(ob)
+methylated(ob)
+unmethylated(ob)
+QCdata(ob)
+getHistory(ob)
+**** example - QC
+#+BEGIN_SRC R
+qcplot(mldat, 'FIRST HYBRIDIZATION')
+#+END_SRC
+
+**** example - normalization
+only for GoldenGate platform
+#+BEGIN_SRC R
+mldat.norm <- normalizeMethyLumiSet(mldat)
+# looks at the median intensities in the methylated and unmethylated channels at very low and high beta values and sets these medians equal.
+#+END_SRC
+
+**** example - test whether expression differs between males and females
+
+see "an introduction to methylumi package"
+
+#+BEGIN_SRC R
+
+library(limma)
+
+design_matrix <- model.matrix(~1+Gender, data=pData(mldat.norm))
+# pData returns the "phenotypic" data in a data.frame
+# "Gender" is a column in the returned data.frame
+# model.matrix creates the "design matrix" which was usually used for the linear regression analysis
+# In this case, however, the design matrix can be for limma (see limma paper for the definition of the design matrix, in brief, the rows are array experiments the columns are contrast coefficient)
+# the "1+" adds (which is by default on too, so one could just use model.matrix(~Gender) in principle) the intercept term into the design matrix. The intercept term is a column of 1's.
+
+fit <- lmFit(exprs(mldat), design_matrix)
+# raw fit
+
+fit <- eBayes(fit)
+# empirical Bayes smoothing
+# which estimates the prior from the raw fit, then estimate the posterior fit, then iterate.
+
+tt <- topTable(fit, coef=2, genelist=fData(mldat)[,c('SYMBOL', 'CHROMOSOME')], number=1000)
+# get the top differentially expressed genes
+
+x <- aggregate(tt$adj.P.Val, by=list(tt$CHROMOSOME), median)
+# split the genes by chromosome, compute the median adjusted P-value
+colnames(X) <- c('Chromosome', 'Median adjusted P-value')
+# set title
+
+library(xtable)
+xt <- xtable(x, label='tab:chromosomepvals', caption='The median adjusted P-value for each gene')
+digits(xt) <- 6
+print(xt, include.rownames=FALSE, align='cr')
+# print LaTeX table.
+#+END_SRC
+
+*** illuminaio
+*** Biobase
+
+exprs accesses expression from eSet class
+se.exprs access standard error of expression from eSet class
+
+fData retrieves features
+*** Rsamtools
+browseVignettes(Rsamtools)
+*** GenomicAlignments
+test data H.RNAseqData.HNRNPC.bam.chr14
+**** By default readGAlignments only reads genomic ranges.
+gal <- readGAlignments(bamfile_path)
+# accessor functions
+length(gal) # number of alignments
+strand(gal) # strand info as a factor
+table(strand(gal)) # count reads mapped to 2 strands
+**** fetch sequence and quality string as well using ScanBamParam
+scanBamWhat() # check all the options
+seq_gal <- readGAlignments(bamfile_path, param = ScanBamParam(what=c("seq","qual")))
+**** fetch sequence restrict to a region using ScanBamParam
+seq_gal <- readGAlignments(bamfile_path, param = ScanBamParam(which = GRanges(seqnames="chr14", ranges = ranges(gal)[1:5])))
+**** fetch reads mapped to positive strand only using scanBamFlag
+pos_gal <- readGAlignments(bamfile_path, param = ScanBamParam(which = gr, what = "seq", flag = scanBamFlag(isMinusStrand=FALSE)))
+*** AnnotationDb system
+see
+https://www.bioconductor.org/packages/release/data/annotation/
+for available annotation db
+see
+https://www.youtube.com/watch?v=8qvGNTVz3Ik
+for how to use it.
+** algorithm
+*** run length encoding (rle)
+> ## generate data for coin flipping example 
+> coin <- sample(c("H", "T"), 1000, replace = TRUE)
+> table(coin) 
+coin
+  H   T 
+501 499  
+> head(coin, n = 20)
+ [1] "T" "H" "T" "T" "T" "H" "T" "H" "T" "T" "H" "T" "H" "T"
+[15] "T" "T" "H" "H" "H" "H" 
+
+> ## use the rle function on our SMALL EXAMPLE above
+> ## note results MATCH what I described above... 
+> rle(c("H", "T", "T", "H", "H", "H", "H", "H", "T", "H"))
+Run Length Encoding
+  lengths: int [1:5] 1 2 5 1 1
+  values : chr [1:5] "H" "T" "H" "T" "H" 
+> ## use the rle function on our SIMULATED data
+> coin.rle <- rle(coin)
+> ## what is the structure of the returned result? 
+> str(coin.rle)
+List of 2
+ $ lengths: int [1:500] 1 1 3 1 1 1 2 1 1 1 ...
+ $ values : chr [1:500] "T" "H" "T" "H" ...
+ - attr(*, "class")= chr "rle" 
+> ## sort the data, this shows the longest run of
+> ## ANY type (heads OR tails)
+> sort(coin.rle$lengths, decreasing = TRUE)
+  [1] 9 8 7 7 7 7 7 6 6 6 6 6 6 6 6 5 5 5 5 5 5 5 5 5 5 5 5
+ [28] 5 5 5 5 5 5 5 5 5 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4
+ [55] 4 4 4 4 4 4 4 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3
+ [82] 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3
+[109] 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 2 2 2 2 2 2 2
+[136] 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+[163] 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+[190] 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+[217] 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+[244] 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+[271] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+[298] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+[325] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+[352] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+[379] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+[406] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+[433] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+[460] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+[487] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 
+> ## use the tapply function to break up
+> ## into 2 groups, and then find the maximum
+> ## within each group
+> 
+> tapply(coin.rle$lengths, coin.rle$values, max)
+H T 
+9 8
+
+unique (S3 method: unique.Rle)
+
+** best practices
+*** use . for multi-word names, NOT _ since _ is used as <- in early versions (and S_PLUS).
+** basics
+*** R is a functional programming language
+meaning that arguments to functions are assumed to be immutable (RC below is a violation). "Side effects" should be minimized.
+*** attributes of an R object
+every R object can have attributes attached to it
+
+attributes are named list of R
+
+to list all attributes
+attributes(obj)
+
+to access a specific attributes
+attr(obj,'aaa')
+or
+aaa(obj)
+
+"class" is an attribute of obj
+
+structure() function returns a new object with modified attributes
+structure(1:10, my_attribute='This is a vector')
+
+By default, most attributes are lost when modifying a vector
+Attributes that are NOT lost:
+names
+dimensions
+class
+
+factors can be seen as vector with "level" attribute.
+
+*** S3, S4, Reference Class (RC)
+S3 and S4 are "generic" function based. methods belong to function and are called depending on class of the argument. S4 is more formal than S3.
+RC is newest OO system in R. it's message-passing based. similar to C++, Java etc.
+*** S3 class
+S3 is a naming scheme of method dispatching (or method overload, or polymorphism or whatever you call it)
+
+S3 method means one have different method instantiation when applied to different S3 classes.
+
+it works by:
+replacing the function f by f.a when the first argument to f is an object of class "a". i.e.,
+f.A(other_args) === f(a, other_args) # and a is of class "A"
+
+setting the return value of a call to method "glm" to be "glm"
+print.glm is the specific version of print (the "generic") when it applies to object of class "glm"
+
+For example, if you type "median", you see "UseMethod("median"). That means it is an S3 method. To list all the S3 classes
+#+BEGIN_SRC R
+methods(median)
+methods(print)
+#+END_SRC
+
+Notice that some of the methods have *s next to their name. That means that they are hidden inside some package's namespace. Use find to find out which package they are in. For example
+#+BEGIN_SRC R
+find("acf")  #it's in the stats package
+stats:::print.acf
+#+END_SRC
+
+unclass()	remove the class attribute of an object
+# set attributes
+attr(z,"dim")<-c(10,10)		treat z as a 10 by 10 matrix
+**** list methods of a generic - methods()
+
+**** define S3 class
+All you need in defining a S3 class object is to add the "class" attribute by
+foo <- structure(list(), class="Foo")
+or
+foo <- list()
+class(foo) <- "Foo"
+
+the "class" attribute can be a vector, for example glm object is of class c("glm", "lm")
+meaning that object is a glm class object which is also inherited from lm class. The vector describe 
+the object from most specific (leftmost) to the least specific (rightmost).
+**** determine the class of an object using "inherits"
+inherits(foo, "Foo")
+#> [1] TRUE
+
+**** constructor of the class objects
+Most built-in S3 class has an constructor function of the same name as the class name:
+Foo <- function(x) {
+ if (!is.numeric(x)) stop("X must be numeric")
+ structure(list(x), class="foo")
+}
+
+**** declare an S3 "generic" function and its instantiations (called "method" in R)
+# Use "UseMethod" to declare a "generic"
+f <- function(x) UseMethod("f")
+
+# instantiation, must follow the correct naming scheme "generic.class"
+f.a <- function(x) "Class a" # this just return the character array "Class a" of length 1
+
+a <- structure(list(), class="a")
+class(a)
+#> [1] "a"
+f(a)
+#> [1] Class a"
+
+**** add a method to existing generic, e.g., "mean"
+
+mean.a <- function(x) "a"
+mean(a)
+#> [1] "a"
+
+**** how methods are dispatched along the class hierarchy?
+
+f <- function(x) UseMethod("f")
+f.a <- function(x) "Class a"
+f.default <- function(x) "Unknown class"
+
+f(structure(list(), class="a"))
+#> [1] "Class a"
+
+# no method for class b, so use method for class a
+f(structure(list(), class=c("b","a")))
+#> [1] "Class a"
+
+f(structure(list(), class="c"))
+#> [1] "Unknown class"
+
+*** S4 class
+
+Note that similar to S3 class, S4 class method still belongs to function, instead of class.
+
+see http://www.cyclismo.org/tutorial/R/s4Classes.html
+
+S4 objects are created using setClass
+S4 methods are created using setGeneric + setMethod
+S4 data members (called 'slot's) are accessed from '@' instead of '$'
+is.object(a) tells whether a is an object
+isS4(a) tells whether a is an S4 object
+"contains" argument specify base class of inheritance
+"callNextMethod" is used to call the same version in the base class.
+
+other methods:
+slotNames(a)
+slotNames('MethyLumiSet')
+getSlots('MethyLumiSet') returns the types (search getSlots in the link for detail)
+getslot(a, 'slotname') == a@slotname
+
+"The basic idea is that if the name of a function has not been defined, the name must first be reserved using the setGeneric function."
+
+In setMethod, the first component of "signature" argument must be the same as the name of the class object. additional components can be different to allow overloading. (search overloading)
+
+validity function can be explicitly called through validObject(theObject);
+
+**** declare S4 class using "setClass"
+
+setClass("Person", slots=list(name="character", age="numeric"))
+# "contains" implements inheritance.
+setClass("Employee", slots=list(boss="Person"), contains="Person")
+
+alice <- new("Person", name="Alice", age=40)
+john <- new("Employee", name="John", age=20, boss=alice)
+
+**** access slots
+
+alice@age
+or
+slot(john, "boss")
+
+**** S4 can inherit S3 or base type
+
+If S4 objects contain S3 class or base type, it will have a special .Data slot
+
+setClass("RangedNumeric", contains="numeric",slots=list(min="numeric",max="numeric"))
+rn <- new("RangedNumeric",1:10,min=1,max=10)
+rn@min
+#> [1] 1
+rn@.Data
+#> [1] 1 2 3 4 5 6 7 8 9 10
+
+**** create generics and methods
+
+again, generic is by definition a "generialized method".
+
+# use existing generic "union"
+setGeneric("union")
+#> [1] "union"
+setMethod("union", c(x="data.frame", y="data.frame"), function(x,y) {unique(rbind(x,y))})
+#> [1] "union"
+
+# create new generic "MyGeneric"
+setGeneric("MyGeneric", function(x) {
+  standardGeneric("MyGeneric")
+})
+
+find which method gets called given the specification of a generic call
+# from methods: takes generic name and class names
+selectMethod("nobs", list("mle"))
+
+#> Method Definition:
+
+function (object, ...) 
+if ("nobs" %in% slotNames(object)) object@nobs else NA_integer_
+<bytecode: 0x4801a30>
+<environment: namespace:stats4>
+
+Signatures:
+        object
+target  "mle" 
+defined "mle" 
+
+**** use setAs() to create converter function
+"track" is a class with slot x and y.
+setAs("track", "numeric", function(from) from@y)
+t1 <- new("track", x=1:20, y=(1:20)^2)
+as(t1, "numeric")
+#> [1]   1   4   9  16  25  36  49  64  81 100 121 144 169 196 225 256 289 324 361 400
+
+**** more information
+vignette("Intro2Matrix",package="Matrix")
+google bioconductor S4
+*** Reference Class
+RC methods belong to objects, not functions
+RC objects are mutable, the usual R copy-on-modify semantics do not apply. (this is how the "Reference" comes in the name!)
+
+is(x, "refClass") tells whether an object is a refClass
+
+**** define class and class object
+
+fields(accessed through $) are equivalents of slots in S4(accessed through @)
+
+Account <- setRefClass("Account", fields=list(balance="numeric"))
+
+a <- Account$new(balance=100)
+a
+#> Reference class object of class "Account"
+a$balance
+#> [1] 100
+a$balance <- 200
+a$balance
+#> [1] 200
+
+**** RC behaves like a Reference
+
+b <- a
+b$balance
+#> [1] 200
+a$balance <- 0
+b$balance
+#> [1] 0
+
+**** use $copy() to copy
+
+c <- a$copy()
+c$balance
+#> [1] 0
+a$balance <- 100
+c$balance
+#> [1] 0
+
+**** access member fields in member function using "<<-" (deep binding)
+
+Account <- setRefClass("Account", fields=list(balance="numeric"),
+  methods = list(
+    withdraw = function(x) {
+     balance <<- balance - x
+    },
+    deposit = function(x) {
+      balance <<- balance + x
+    }
+  )
+)
+
+# usage
+a <- Account$new(balance=100)
+a$deposit(100)
+a$balance
+#> [1] 200
+
+**** inheritance
+
+NoOverdraft <- setRefClass("NoOverdraft",
+  contains = "Account",
+  methods = list(
+    withdraw = function(x) {
+      if (balance < x) stop("Not enough money")
+      balance <<- balance - x
+    }
+  )
+)
+
+accountJohn <- NoOverdraft$new(balance=100)
+accountJohn$deposit(50)
+accountJohn$balance
+#> [1] 150
+accountJohn$withdraw(200)
+#> Error in accountJohn$withdraw(200): Not enough money
+
+One can call parent methods by callSuper(...)
+
+*** Group Generics
+?S4groupGeneric
+?Methods
+*** environment
+
+http://adv-r.had.co.nz/Environments.html
+
+environment is like a list, but different in other ways:
+ + reference semantics (objects in the environment is like pointers in C.)
+ + Every object in an environment has a unique name.
+ + The objects in an environment are not ordered (i.e., it doesn’t make sense to ask what the first object in an environment is).
+ + An environment has a parent.
+
+environments' members are accessed via e$member or e[ [member]] or get('member', envir=e)
+
+environment = frame + parent environment
+
+e <- new.env() creates a new environment
+ls(e) list bindings in the environment, omitting names begin with '.'.
+ls(e, all.names=True) show all the names
+create a new binding like a list: e$a <- 1
+remove binding: rm('a', envir=e)
+check existence of binding: exists('x', envir=e)
+consider inherits: exists('x', envir, inherits=TRUE)
+
+ + globalenv() interactive workspace
+ + baseenv() base environment, on top of emptyenv()
+ + emptyenv() empty environment, ultimate ancestor of all environments only empty environment does not have parent
+ + environment() current environment
+
+globalenv() => [environment loaded with "library"] => search path .. => baseenv() => emptyenv()
+
+The enclosing environment determines how the function finds values; the binding environments determine how we find the function.
+
+**** manipulate environment
+
+e <- new.env()
+e$a <- FALSE
+e$b <- "a"
+e$d <- 1:3
+
+multiple name can point to the same object
+e$a <- $d
+
+names in an environment are like pointers, object with no name bound goes to gabbage collector.
+
+get parent environment
+e <- new.env()
+# the default parent provided by new.env() is environment from
+# which it is called - in this case that's the global environment
+parent.env(e)
+#> <environment: R_GlobalEnv>
+ls(e)
+#> character(0)
+
+e$a <- 1
+e$b <- 2
+ls(e)
+#> [1] "a" "b"
+e$a
+#> [1] 1
+
+str(e)
+#> <environment: 0x7ff93eea0d>
+ls.str(e)
+#> a: num 1
+#> b: num 2
+
+get name from environment and their ancestors..
+get("c", envir=e)
+Note that e$c and e[ [c]] only searches the current environment. 
+
+**** delete binding from environment "rm()"
+# in list you can set the name to NULL, but for environment, you have remove the binding using rm()
+e$a <- 1
+e$a <- NULL
+ls(e)
+#> [1] "a"
+
+rm("a", envir=e)
+ls(e)
+#> character(0)
+
+**** determine name exists "exists"
+x <- 10
+exists("x", envir=e)
+#> [1] TRUE
+exists("x", envir=e, inherits = FALSE)
+#> [1] FALSE
+
+**** compare environment "identical()" (DONT USE ==)
+identical(globalenv(), environment())
+#> [1] TRUE
+globalenv() == environment()
+#> Error in globalenv() == environment(): comparison (1) is possible only for atomic and list types.
+**** lexical scoping (R) vs dynamic scoping (elisp etc.)
+lexical scoping: if a name is not found in an environment, R will look in the parent (enclosing) environment (not from the calling environment).
+def2: lexical scoping looks up symbol values based on how functions were nested when they were created, no how they are nested when they are called.
+
+the values of free variables are searched for in the environment in which the function was defined.
+A function + an environment = a closure or function closure.
+Keep looking back in the search list.
+#+BEGIN_SRC R
+> f<-function(x) {x*x}
+> environment(f)
+<environment: R_GlobalEnv>
+> parent.env(environment(f))
+<environment: package:lattice>
+attr(,"name")
+[1] "package:lattice"
+attr(,"path")
+[1] "/usr/lib/R/library/lattice"
+#+END_SRC
+
+**** find which environment a name is defined (pryr::where())
+#+BEGIN_SRC R
+
+library(pryr)
+x <- 5
+where("x")
+#> <environment: R_GlobalEnv>
+where("mean")
+#> <environment: base>
+
+where <- function(name, env=parent.frame()) {
+  if (identical(env, emptyenv())) {
+    # Base case
+    stop("Can't find ", name, call. = FALSE)
+  } else if (exists(name, envir = env, inherits = FALSE)) {
+    # Success case
+    env
+  } else {
+    # Recursive case
+    where(name, parent.env(env))
+  }
+}
+
+# implemented using iteration
+is_empty <- function(x) identical(x, emptyenv())
+where2 <- function(..., env = parent.frame()) {
+  while (!is_empty(env)) {
+    if (success) {
+      # success case
+      return ()
+    }
+    # inspect parent
+    env <- parent.env(env)
+  }
+# base case
+}
+
+#+END_SRC
+
+**** function environments
+1. enclosing environment : the environment when function gets executed it can see. (given by environment())
+2. binding environment : the environment where the function itself is defined, can have many
+3. execution environment : the ephermeral environment that stores the temporary variable when the function is called. This environment usually is the child of enclosing environment.
+4. calling environment : the environment from which the function is called
+
+Note the difference between parent.frame() and environment(), the previous returns the calling environment, the latter returns the enclosing environment (the real parent)
+
+binding environment can be different from enclosing environment, e.g.,
+e <- new.env()
+e$g <- function() 1
+binding environment is e and enclosing environment is GlobalEnv.
+
+Enclosing environment determines how the function finds values; the binding environment determine how we find the function.
+
+execution environment is destroyed every time function finishes, unless the function returns another function and the execution environment becomes the enclosing environment of the returned function, e.g.,
+#+BEGIN_SRC R
+# plus is a function factory
+plus <- function(x) {
+  function(y) x+y
+}
+plus_one <- plus(1)
+# both below are GlobalEnv
+identical(parent.env(environment(plus_one)), environment(plus))
+#> [1] TRUE
+#+END_SRC
+
+see the difference between calling environment (returned by parent.frame()) and enclosing environment (returned by environment())
+#+BEGIN_SRC R
+f2 <- function() {
+  x <- 10
+  function() {
+    def <- get("x", environment())
+    cll <- get("x", environment())
+    list(defined=def, called=cll)
+  }
+}
+g2 <- f2()
+x <- 20
+str(g2())
+#> List of 2
+#>  $ defined : num 10
+#>  $ called : num 20
+#+END_SRC
+
+**** search order of names (scoping rules) "search()"
+to see the search paths (and their priorities). The global environment (or the user's workspace) is always the first on the search list and base package is always the last.
+> search()
+ [1] ".GlobalEnv"        "tools:rstudio"     "package:stats"    
+ [4] "package:graphics"  "package:grDevices" "package:utils"    
+ [7] "package:datasets"  "package:methods"   "Autoloads"        
+[10] "package:base"   
+library() put the package to the second position of the search list
+> library(lattice)
+> search()
+ [1] ".GlobalEnv"        "package:lattice"   "tools:rstudio"    
+ [4] "package:stats"     "package:graphics"  "package:grDevices"
+ [7] "package:utils"     "package:datasets"  "package:methods"  
+[10] "Autoloads"         "package:base"    
+function and non-function are separated. One can have a function c and a object called c simultaneously.
+
+retrieve environment by name
+as.environment("package:stats")
+#> <environment: package:stats>
+
+**** package environment
+Every package has 2 environments associated with it : the package environment and the namespace environment.
+namespace defines internal names
+package defines publically accessible names
+
+**** deep binding <<-
+name <<- value
+equivalent to
+assign("name", value, inherits = TRUE)
+
+walks up the parent (enclosing) environments
+#+BEGIN_SRC R
+x <- 0
+f <- function() {
+  x <<- 1
+}
+f()
+x
+#> [1] 1
+#+END_SRC
+
+**** explicit environment
+modify <- function(x) {
+  x$a <- 2
+  invisible()
+}
+
+# when applied to list, nothing changed
+x_l <- list()
+x_l$a <- 1
+modify(x_l)
+x_l$a
+#> [1] 1
+
+# when applied to environment, original copy is modified
+x_e <- new.env()
+x_e$a <- 1
+modify(x_e)
+x_e$a
+#> [1] 2
+
+**** create a new environment and make sure it does NOT inherit anything
+
+use new.env(parent=emptyenv())
+
+x <- 1
+e1 <- new.env()
+get("x", envir = e1)
+#> [1] 1
+
+e2 <- new.env(parent = emptyenv())
+get("x", envir = e2)
+#> Error in get("x", envir = e2): object 'x' not found
+
+**** package state using environment
+
+my_env <-new.env(parent=emptyenv())
+my_env$a <- 1
+get_a <- function() {
+  my_env$a
+}
+
+# return the old value from setter function is a good practice because it makes it easier to reset the previous value in conjunction with on.exit()
+set_a <- function(value) {
+  old <- my_env$a
+  my_env$a <- value
+  invisible(old)
+}
+
+**** delayed binding %<d-% or delayedAssign()
+omitted
+**** active binding %<a-% or makeActiveBinding()
+omitted
+*** peek into an object using "str", "class" and "typeof"
+**** to figure out what an object is using "str" (short for "structure" NOT for "string")
+str()
+**** to figure out the elementary type an object is built based on (most likely a list) using "typeof"
+mod <- lm(mpg~wt, data=mtcars)
+> typeof(mod)
+#> [1] "list"
+
+# for example, data.frame is a S3-structure, 
+#+BEGIN_SRC R
+typeof(df)
+#> [1] "list"
+class(df)
+#> [1] "data.frame"
+is.data.frame(df)
+#> [1] TRUE
+#+END_SRC
+**** "class" is an attribute, class() essentially display that attribute
+*** ls(2) sees the second environment in the search path, usually useful to see what is added from the latest attachment
+*** get (multiple) element from environment
+get("one.element", envir=id2name)
+mget(row.names(tested$table), envir=id2name)
+** Data IO
+see R wiki for more options
+http://en.wikibooks.org/wiki/R_Programming/Importing_and_exporting_data
+*** read ods file
+library("gnumeric")
+df <- read.gnumeric.sheet(file = "df.ods", head = TRUE, sheet.name = "Feuille1")
+*** read.csv
+read.csv is identical to read.table except that the default separator is “,” and header=TRUE
+t<-read.csv('2012_04_16_endosymbiosis_in_gamma_proteobacteria.csv', header=TRUE)
+
+*** handle large dataset by doing a pilot study of the type of each column
+initial <- read.table(“datatable.txt”, nrows=100) # try the first 100 rows first
+classes <- sapply(initial, class)
+tabAll <- read.table(“datatable.txt”, colClasses=classes)
+
+*** dget and dput
+read and write R code files, contain the metadata from R for a single object
+> y<-data.frame(a=1,b='a')
+> dput(y) # dput to the console
+structure(list(a = 1, b = structure(1L, .Label = "a", class = "factor")), .Names = c("a", 
+"b"), row.names = c(NA, -1L), class = "data.frame")
+> dput(y,file='y.R') # dput to a file
+> new.y <- dget('y.R')
+> new.y
+  a b
+1 1 a
+
+*** source and dump
+read and  write R code files, contain the metadata from R, possibly for multiple objects
+> x<-'foo'
+> y<-data.frame(a=1,b='a')
+> dump(c('x','y'), file='data.R')
+> rm(x,y)
+> source('data.R')
+
+*** sink
+this redirect any "cat"s to file without printing to terminal
+sink("/home/wanding/myfile.csv")
+datafile
+sink()
+
+*** write.table
+write.table(datafile,file="/home/wanding/myfile.csv")
+
+*** load and save
+read and write workspaces
+*** serialize and unserialize
+write and read single R object in binary form
+
+*** file connections
+file, opens a connection to a file
+gzfile, opens a connection to a gzip file
+bzfile, opens a connection to a bzip2 file
+url, opens a connection to a webpage
+> str(file)
+function (description = "", open = "", blocking = TRUE, encoding = getOption("encoding"),  raw = FALSE)  
+str(file) see the description of a command (in this case “file”)
+open is a code indicating
+'r' read only
+'w' writing
+'a' appending
+'rb','wb','ab' for binary
+con ← file(“foo.txt”, 'r')
+data ← read.csv(con)
+close(con)
+the same as 
+data ← read.csv('foo.txt')
+
+**** readLines and writeLines
+> con ← gzfile(“words.gz”)
+> x ← readLines(con,10) # read in 10 lines.
+
+**** Read in lines of a webpage
+con ← url(“http://www.jhsph.edu”,'r')
+x ← readLines(con)
+
+*** Print
+**** Print without quote “”
+> print("a")
+[1] "a"
+> print("a",quote=FALSE)
+[1] a
+
+**** print without array index using cat
+> cat("a\n")
+a
+but in this case, one needs to append “\n”.
+
+the best solution to use C-type printf is to use cat + sprintf
+cat(sprintf('%1.3f\t%s\n', a.sorted[i], names(a.sorted)[i]))
+
+** Manipulate Data
+**** cut
+group data into intervals
+> a=c(3,7,2,5,7,12,15,13,17)
+> cut(a, br=c(1,5,10,15))
+[1] (1,5]   (5,10]  (1,5]   (1,5]   (5,10]  (10,15] (10,15] (10,15] <NA>   
+Levels: (1,5] (5,10] (10,15]
+> ac=cut(a, br=c(1,5,10,15))
+> class(ac)
+[1] "factor"
+> as.character(ac)
+[1] "(1,5]"   "(5,10]"  "(1,5]"   "(1,5]"   "(5,10]"  "(10,15]" "(10,15]" "(10,15]"
+[9] NA
+
+***** specify labels
+> cut(a, br=c(1,5,10,15),labels=c('1-5','5 to 10','10~15'))
+[1] 1-5     5 to 10 1-5     1-5     5 to 10 10~15   10~15   10~15   <NA>   
+Levels: 1-5 5 to 10 10~15
+
+**** tertiary operator vectorization (ifelse)
+a <- 1
+x <- if(a==1) 2 else 1
+x
+#> [1] 2
+
+a <- c(1,2,1)
+x <- ifelse(a==2,1,2)
+x
+#> [1] 2 1 2
+
+**** string regular expression
+fetch pattern
+txt <- "aaa12xxx"
+regmatches(txt,regexpr("[0-9]+",txt))
+**** assign()
+assign("x", function(arguments)) # Has the same effect, but uses the assignment function instead of the assignment operator.
+x<-function(arguments)
+
+**** how to round a number using floor and ceiling
+sapply(vec, floor)
+trunc
+round
+signif
+**** word wrap using strwrap function
+sapply(names(t), function(x) paste(strwrap(x,width=40),collapse="\n"))
+
+**** view the class (type) of an object
+class(x)
+in fact “class” is an attribute of x, see below.
+
+**** names()
+> x<-1:3
+> names(x) # no names by default
+NULL
+> names(x)<-c('foo','bar','norf')
+> x
+ foo  bar norf 
+  1    2    3 
+> names(x)
+[ 1 ] "foo"  "bar"  "norf"
+# note that even with names, x remains a vector, not a data.frame
+**** explicit type coersion
+as.numeric()
+as.character()
+as.logical()
+as.complex()
+
+**** integer and numeric
+numeric is equivalent to "double"
+“1” is numeric and “1L” is integer.
+
+**** NULL, NaN and NA
+***** basics
+NULL is nothing. is.null()
+
+NA has a class too, there's integer NA and character NA.
+default is a logical NA
+NaN is NA, but NA is not NaN.
+> x<-c(1,2,NA,10,3)
+> is.na(x)
+[ 1 ] FALSE FALSE  TRUE FALSE FALSE
+> is.nan(x)
+[ 1 ] FALSE FALSE FALSE FALSE FALSE
+> x<-c(1,2,NaN,NA,4)
+> is.na(x)
+[1] FALSE FALSE  TRUE  TRUE FALSE
+> is.nan(x)
+[1] FALSE FALSE  TRUE FALSE FALSE
+***** omit all NA in a data.frame (this omit any row with at least 1 NA)
+na.omit(dat)
+***** omit rows with all NA in a data.frame
+
+df2 <- df[rowSums(is.na(df)) == 0,];
+cat(sprintf('Removed %d rows from %d.\n', dim(df)[1]-dim(df2)[1], dim(df)[1]));
+return(df2);
+
+***** filter out NA - is.na
+> x<-c(1,2,NA,4,NA,5)
+> x[!is.na(x)]
+[ 1 ] 1 2 4 5
+
+***** filter out NA for two vectors simultaneously using complete.cases.
+> x<-c(1,NA,2,4,NA,5)
+> y<-c('a','b',NA,'d',NA,'f')
+> good<-complete.cases(x,y)
+> good
+[ 1 ]  TRUE FALSE FALSE  TRUE FALSE  TRUE
+> x[good]
+[ 1 ] 1 4 5
+> y[good]
+[ 1 ] "a" "d" "f"
+
+**** concatenate two string - paste
+paste("wan","ding")
+this would insert a " "
+
+paste0("wan", "ding")
+this results in "wanding"
+
+**** trim whitespace
+library(stringr)
+str_trim(string)
+**** substring
+substring:
+substring("wanding",1,3)
+gives "wan"
+*** vector
+numeric, character, integer are all vectors, there is no atomic unit in R. 4L is a vector of length 1.
+integer are with "L" suffix, 1L, 3L etc.
+numeric are essentially floating numbers, 1.2, 3.1 etc.
+**** sort a vector
+x <- c("b","c","a")
+order(x)
+#> [1] 3 1 2
+x[order(x)]
+#> [1] "a" "b" "c"
+**** take absolute value
+abs()
+or
+y[y<0]<- -y[y<0]
+**** repeat
+c(2,3)[rep(c(2,1),times=2)] gives 3 2 3 2
+
+rep(1:3,times=5)
+#> [1] 1 2 3 1 2 3 1 2 3 1 2 3 1 2 3
+
+rep(1:3,each=5)
+#> [1] 1 1 1 1 1 2 2 2 2 2 3 3 3 3 3
+**** how to create X1, Y2, X3, Y4 ... quickly
+labs<-paste(c("X","Y"),1:10,sep"")
+== c("X1", "Y2", "X3", "Y4", "X5", "Y6", "X7", "Y8", "X9", "Y10")
+the recycling of short lists takes place here.
+
+**** delete elements from vector
+x[-c(1,2,3)]	删掉第1，2，3个元素
+**** how to generate (1,1,1,2,2,2,3,3,3) from (1,2,3)
+> rep(c("g1","g2","g3"),times=c(1,3,4))
+[1] "g1" "g2" "g2" "g2" "g3" "g3" "g3" "g3"
+**** create an empty vector
+x ← vector(“numeric”, length=10)
+vector elements are initialized to 0.0
+logical vector
+x ← c(T,F)
+x ← c(TRUE, FALSE)
+
+**** range
+x <- 1:20
+seq
+seq(from = 1, to = 1, by = ((to - from)/(length.out - 1))
+seq(-5, 5, by = .2)
+***** sample 51 points from -5 by interval 0.2
+seq(length = 51, from = -5, by = 0.2)
+***** sample 50 points from 3 to 7 evenly
+***** seq_along - the counterpart of python enumerate
+seq_along(x) is equivalent to seq(along=x)
+**** type coersion in vectors
+elements in a vector must be of the same type, there will be implicit type coersion when different types are mixed.
+y ← c(1.7, “a”) ## character 1.7 → “1.7”
+y ← c(TRUE,2) ## numeric TRUE → 1
+y ← c(“a”, TRUE) ## character TRUE → “TRUE”
+
+**** subset a vector
+# different from python, 1-based, last element included.
+x[1:10] select the first 10 components of x
+y<-x[x<10]
+y<-x[!is.na(x)]
+(x+1)[(!is.na(x)) & x>0] ->z
+A<-c(1,2,3)
+B<-c(0,1,0)
+change A's element to 0 if B's element is 1: A[B==1]<-0
+
+y<-x[-(1:5)] gives y all but the first five elements of x
+
+> x<-c('a','b','c','c','d','a')
+> x[ 2 ]
+[ 1 ] "b"
+> x[1:4]
+[ 1 ] "a" "b" "c" "c"
+> x[x>"a"]
+[ 1 ] "b" "c" "c" "d"
+> u<-x > 'a'
+> u
+[ 1 ] FALSE  TRUE  TRUE  TRUE  TRUE FALSE
+> x[u]
+[ 1 ] "b" "c" "c" "d"
+
+**** vectorized operations
+> x <- 1:4; y <- 6:9
+> x+y
+[1]  7  9 11 13
+> x>=2
+[1] FALSE  TRUE  TRUE  TRUE
+> y==9
+[1] FALSE FALSE FALSE  TRUE
+> x*y
+[1]  6 14 24 36
+> x/y
+[1] 0.1666667 0.2857143 0.3750000 0.4444444
+
+**** count using sum
+> sum(x>4)
+count the number of elements in x that are larger than 4
+
+**** vector type check
+is.vector()
+
+**** use match to find mapping between two vectors
+ma=match(cats, names(t))
+
+**** reverse the vector
+rev(vec)
+**** get index of an element in a vector
+which(vector == element_value)
+**** create a numeric vector - numeric()
+e<-numeric()		create an empty numeric vector
+**** create a character vector - character()
+as.character(z)	convert to character
+**** create an integer vector - integer()
+as.integer(z)	convert to integer
+**** create empty vector
+list of empty character string vector is listed as character(0) and the empty numeric vector as numeric(0)
+*** factor (factor is a special vector with attribute "levels" and "class")
+
+if something is a factor, then typing "something" will give levels information.Besides, typing "attributes(something)"will have "levels" option. So we can use levels(something)
+
+**** create label from factor
+
+> f <- factor(c('a','b','a','a','a'))
+> f
+[1] a b a a a
+Levels: a b
+> c('F','M')[f]
+[1] "F" "M" "F" "F" "F"
+
+This is useful when you want to create colors and label for plots, e.g.,
+plot(md,pch=c('F','M')[pData(mldat)$Gender],col=c('red','blue')[pData(mldat)$Gender])
+
+**** Ordered or unordered, represent categorical data
+> x ← factor(c(“yes”, “no”, “yes”, “no”, “yes”))
+> x
+[1] yes no  yes no  yes
+Levels: no yes
+
+**** "table" - frequency count of factor levels
+> table(x)
+x
+ no yes
+ 2   3
+
+**** see the underlying representation of the factor (really an integer vector)
+> unclass(x)
+[1] 2 1 2 1 2
+attr(,"levels")
+[1] "no"  "yes"
+> attr(x,'levels')
+[1] "no"  "yes"
+
+**** make something a factor:
+something<-factor(something)
+
+**** setup baseline level
+setup the baseline level, the baseline level would be the first level that is encountered in the “levels” option, otherwise it is determined by the alphabetic order.
+> x<-factor(c("yes","no", "yes", "no"), levels=c("yes","no"))
+> x
+[1] yes no  yes no 
+Levels: yes no
+if levels is not specified, “no” is before “yes” because “n” is before “y” in the alphabetic order.
+> y<-factor(c("yes","no", "yes", "no"))
+> y
+[1] yes no yes no 
+Levels: no yes
+
+**** generate factor levels
+> f<-gl(40,10)
+generate forty factor levels (each labeled as an integer), each level is repeated 10 times.
+
+**** convert factors to numeric
+t3<-as.numeric(as.character(f))
+Or more efficiently, as.numberic(levels(f))[as.integer(f)]
+*** list
+List can mix objects of different types
+> x ← list(1, “a”, TRUE, 1+4i)
+> x
+[[1]]
+[1] 1
+
+[[2]]
+[1] "a"
+
+[[3]]
+[1] TRUE
+
+[[4]]
+[1] 1+4i
+
+**** A list with name
+> x<-list(a=1,b=2,c=3)
+> x
+$a
+[1] 1
+
+$b
+[1] 2
+
+$c
+[1] 3
+
+**** subset a list
+> x<-list(foo=1:4,bar=0.6)
+> x[1] # single bracket always return object of the same class, in this case a list.
+$foo
+[1] 1 2 3 4
+
+> x[ [1] ]
+[1] 1 2 3 4
+> x$bar
+[1] 0.6
+> x[ ["bar"] ]
+[1] 0.6
+> x["bar"]
+$bar
+[1] 0.6
+
+**** extract multiple elements
+> x<-list(foo=1:4,bar=0.6,baz='hello')
+> x[c(1,3)]
+$foo
+[1] 1 2 3 4
+
+$baz
+[1] "hello"
+
+**** [[]] can be used to subset elements whose name is determined at runtime
+> x<-list(foo=1:4, bar=0.6, baz='hello')
+> name<-'foo'
+> x[ [name] ]
+[1] 1 2 3 4
+> x$name
+NULL
+> x$foo
+[1] 1 2 3 4
+
+**** create a list
+Lst<-list(name_1=object_1,...,name_m=object_m)	construct a new list
+
+Lst<-c(list.A, list.B, list.C)	concatenate lists
+
+Lst<-list(name="Fred",wife="Mary",no.children=3,child.ages=c(4,7,9))
+Lst[ [ 1 ] ] is equivalent to Lst$name.
+Lst[ [ 2 ] ] is equivalent to Lst$wife.
+Lst[ [ 3 ] ] is equivalent to Lst$no.children
+Lst[ [ 4 ] ][1] is equivalent to Lst$child.ages[1]
+
+**** double subset using [[]]
+> x<-list(a=list(10,12,14),b=c(3.14,2.81))
+> x[ [c(1,3)] ] # the third element of the first element
+[1] 14
+> x[ [1] ][ [3] ]
+[1] 14
+> x[ [c(2,1)] ]
+[1] 3.14
+
+**** partial matching
+> x<-list(aardvark=1:5)
+> x$a
+[1] 1 2 3 4 5
+> x[ ["a"] ]
+NULL
+> x[ ["a",exact=FALSE] ]
+[1] 1 2 3 4 5
+
+**** list coersion
+as.list()
+
+**** list type check
+is.list()
+
+**** append to list
+# Initial list:
+List <- list()
+
+# Now the new experiments
+for(i in 1:3){
+  List[as.character(i)] <- list(sample(1:3))
+}
+*** matrix (matrix is a special case of "array" which is by itself vector with attribute "dim"). "array"s are in fact nd-arrays.
+**** make a matrix
+> m ← matrix(nrow=2, ncol=3)
+initialized to “NA”
+> m ← matrix(1:6, nrow=2, ncol=3)
+> m
+     [,1] [,2] [,3]
+[1,]    1    3    5
+[2,]    2    4    6
+matrix initialization is “column first” or “columnwise”
+> m ← 1:10
+> dim(m) ← c(2,5)
+> m
+     [,1] [,2] [,3] [,4] [,5]
+[1,]    1    3    5    7    9
+[2,]    2    4    6    8   10
+
+**** create a matrix
+diag(v) gives a diagonal matrix with elements of the vector as the diagonal entries.
+diag(M) gives the vector of main diagonal entries of M.
+diag(k) gives a k by k identity matrix
+**** create a matrix by concatenation
+cbind(arg_1,arg_2,arg_3,...) forms matrices by binding together matrices horizontally, or column-wise.
+rbind(arg_1,arg_2,arg_3,...) forms matrices by binding together matrices vertically, or row-wise.
+**** matrix multiplication
+"*" normal multiplication
+"%*%" matrix multiplication
+
+**** matrix transposition
+t() matrix transposition
+
+**** cross product two vector
+crossprod(x,y)==t(x)%*%y
+**** dimension of a matrix
+> dim(m)
+[1] 2 5
+
+**** remove a column/row of a matrix
+d[,-5] deletes column 5
+mat[-3,] remove the 3rd row of the matrix
+t[-1,] remove the first row
+
+**** remove several rows
+df[-(416:472), ]
+
+**** view attributes of objects, e.g., names, dimnames, dimensions, class, length are all attributes.
+> attributes(m)
+$dim
+[1] 2 3
+
+**** cbind and rbind
+> x ← 1:3
+> y ← 10:12
+> cbind(x,y)
+     x  y
+[1,] 1 10
+[2,] 2 11
+[3,] 3 12
+> rbind(x,y) 
+  [,1] [,2] [,3]
+x    1    2    3
+y   10   11   12
+
+**** add two columns rowwise using cbind
+ctbl = cbind(tbl[,"Freq"], tbl[,"None"] + tbl[,"Some"])
+
+**** matrix with dimnames (row names, column names)
+> m<-matrix(1:4, nrow=2,ncol=2)
+> dimnames(m)<-list(c('a','b'),c('c','d'))
+> m
+  c d
+a 1 3
+b 2 4
+
+**** get or set the names of rows and columns
+rownames(matrix)
+colnames(matrix)
+
+can also use dimnames(matrix),where
+"rownames()" is equivalent to "dimnames(matrix)[ [1] ]"
+"colnames()" is equivalent to "dimnames(matrix)[ [2] ]"
+actually [[]] can be substituted by []
+dimnames() is built for high dimensional matrix e.g. 3,4...
+
+colnames(data)<-c('Apple','Orange')
+colnames(data)<-"Q"
+
+**** build matrix by column
+matrix <- cbind(column1 = 3, column2 = c(4:1,2:5))
+
+**** apply on rows/columns
+col.sums <- apply(matrix,2,sum)
+row.sums <- apply(matrix,1,sum)
+
+**** use sweep to normalize data
+
+#+BEGIN_SRC R
+x <- sweep(x, 2, rowMeans(x, na.rm = na.rm))
+sx <- apply(x, 1, sd, na.rm = na.rm)
+x <- sweep(x, 1, sx, "/")
+#+END_SRC
+
+**** subset a matrix
+> x<-matrix(1:6,2,3)
+> x[1,2]
+[1] 3
+> x[2,1]
+[1] 2
+> x[1,]
+[1] 1 3 5
+> x[,2]
+[1] 3 4
+
+by default when a matrix is subsetted, one get a vector instead of a matrix, if one wants a submatrix, specify drop=FALSE
+> x[1,]
+[1] 1 3 5
+> x[1,,drop=FALSE]
+     [,1] [,2] [,3]
+[1,]    1    3    5
+
+**** vectorized operations
+> x <- matrix(1:4, 2, 2); y <- matrix(rep(10, 4), 2, 2) 
+> x * y ## element-wise multiplication 
+   [,1] [,2] 
+[1,] 10 30 
+[2,] 20 40 
+> x / y 
+   [,1] [,2] 
+[1,] 0.1 0.3 
+[2,] 0.2 0.4 
+> x %*% y ## true matrix multiplication 
+   [,1] [,2] 
+[1,] 40 40 
+[2,] 60 60
+
+*** data frame
+heterogenous columns, as opposed to matrix.
+**** convert data frame to numeric matrix
+data.matrix
+
+**** remove rows with any value NA
+#+BEGIN_SRC R
+na.omit(x)
+#+END_SRC
+
+**** remove rows with all values NA
+#+BEGIN_SRC R
+x[apply(x, 1, function(y) !all(is.na(y))),]
+or 
+x[rowSums(is.na(x))!=num_columns, ]
+#+END_SRC
+
+**** count the number of NAs in each row
+apply(x, 1, function(z) sum(is.na(z)))
+**** remove rows with more than 3 NAs
+numNAs = apply(x, 1, function(z) sum(is.na(z)))
+x[!(numNAs > 3),]
+**** accessing column of data frame
+#+BEGIN_SRC R
+data <- data.frame (id=1:3, weight=c(20,27,24))
+# id weight
+#  1     20
+#  2     27
+#  3     24
+
+
+# Ways to add a column
+data$size      <- c("small", "large", "medium")
+data[["size"]] <- c("small", "large", "medium")
+data["size"]   <- c("small", "large", "medium")
+data[,"size"]  <- c("small", "large", "medium")
+data$size      <- 0
+
+
+# Ways to remove the column
+data$size      <- NULL
+data[["size"]] <- NULL
+data["size"]   <- NULL
+data[,"size"]  <- NULL
+data[3]        <- NULL
+data[,3]       <- NULL
+data           <- subset(data, select=-size)
+#+END_SRC
+
+**** create a dataframe
+bubba<-data.frame(first=a second=b f=levels)
+**** add new column
+>saida["MY_NEW_COLUMN"] <- NA # That creates the new column named "MY_NEW_COLUMN" filled with "NA"
+>saida$MY_NEW_COLUMN <- saida$C - saida$D  # As an example, the new column receives the result of C - D
+or
+cbind(df, data.frame(z=3:1))
+**** add a new row
+rbind(df, data.frame(column1=10, column2="z"))
+**** rownames (or row.names) and colnames
+**** rename column of data frame
+names(d)[4]='ratio'
+
+**** build a data frame in a loop, adding row by row
+***** method 1
+d <- data.frame()
+for (i in 1:20) {d <- rbind(d,c(i+i, i*i, i/1))}
+
+similarly
+d = NULL
+
+And in the loop:
+
+d = rbind(d, data.frame(x, y, z))
+Note: this solution is not efficient.
+
+***** method 2
+Build vectors first, dataframe after the loop
+
+x = NULL
+y = NULL
+z = NULL
+
+in the loop:
+
+x = append(x, runif(1))
+...
+
+After loop:
+
+d = data.frame(x, y, z)
+
+***** method 3 (best)
+
+Build empty data frame of desired size beforehand and fill by row
+
+E.g. for 10 rows:
+d = data.frame( x=rep(0, 10), y=rep(0,10), z=rep(0,10))
+
+And in the loop (index i):
+
+d[i, ] = c(x, y, z)
+**** see the beginning of the data frame
+head(df)
+
+**** filter rows of a data frame
+df[apply(df > 5, 1, all)]
+df[apply(df > 5, 1, any)]
+1 means row and “all” and “any” are logical functions.
+
+**** create a data frame
+dat <- data.frame(x1 = c(1,2,3, NA, 5), x2 = c(100, NA, 300, 400, 500))
+> x<-data.frame(foo=1:4, bar=c(T,T,F,F))
+> x
+  foo   bar
+1   1  TRUE
+2   2  TRUE
+3   3 FALSE
+4   4 FALSE
+> nrow(x)
+[1] 4
+> ncol(x)
+[1] 2
+> attributes(x)
+$names
+[1] "foo" "bar"
+
+$row.names
+[1] 1 2 3 4
+
+$class
+[1] "data.frame"
+> attr(x, "row.names")
+[1] 1 2 3 4
+
+**** subset out NA using complete.cases (remove NA)
+> airquality[1:6,]
+  Ozone Solar.R Wind Temp Month Day
+1    41     190  7.4   67     5   1
+2    36     118  8.0   72     5   2
+3    12     149 12.6   74     5   3
+4    18     313 11.5   62     5   4
+5    NA      NA 14.3   56     5   5
+6    28      NA 14.9   66     5   6
+> good<-complete.cases(airquality)
+> airquality[good,][1:6,]
+  Ozone Solar.R Wind Temp Month Day
+1    41     190  7.4   67     5   1
+2    36     118  8.0   72     5   2
+3    12     149 12.6   74     5   3
+4    18     313 11.5   62     5   4
+7    23     299  8.6   65     5   7
+8    19      99 13.8   59     5   8
+
+**** split a data frame by a column into lists
+s<-split(airquality, airquality$Month)
+str(s)
+
+**** how to remove duplicate rows
+df <- data.frame(a = c(1:4, 1:4), 
+                 b = c(4:1, 4:1), 
+                 d = LETTERS[1:8])
+
+df[!duplicated(df[c("a", "b")]),]
+**** number of rows and columns
+nrow()
+ncol()
+higher dimensional matrix:
+NROW()
+NCOL()
+**** randomly sample rows
+df[sample(nrow(df), 10),]
+
+Note that this is equivalent to (and is a convenient feature of sample)
+df[sample(1:nrow(df), 10),]
+or
+df[sample(seq(1:nrow(df)), 10),]
+
+**** build contigency table
+table(vec)
+table(vec,vec2) 2-d contingency table(matrix)
+
+**** merge two data frame on common column
+merge(probes.sampled, sampledata, by.x="pname", by.y="Composite Element REF")
+**** sort a data frame by a certain column
+sortd=d[with(d, order(-ratio)),]
+*** data.table - contingency table
+**** table - create table from vector
+a<-c("Sometimes","Sometimes","Never","Always","Always","Sometime","Sometimes","Never")
+b<-c("Maybe","Maybe","Yes","Maybe","Maybe","No","Yes","No")
+results2<-table(a,b)
+
+**** as.table - convert matrix to table
+sexsmoke<-matrix(c(70,120,65,140),ncol=2,byrow=TRUE)
+rownames(sexsmoke)<-c("male","female")
+colnames(sexsmoke)<-c("smoke","nosmoke")
+sexsmoke <- as.table(sexsmoke)
+
+**** xtabs - convert data.frame to table
+** control structure
+**** if structure
+if (<condition1>) {
+	## do something
+} else if (<condition2>) {
+	## do something different
+} else {
+	## do something different
+}
+
+y ← if(x>3) { 10 } else { 0 }
+
+**** for structure
+for(i in 1:10) {
+	print (i)
+}
+
+x ← c(“a”,”b”,”c”,”d”)
+for(i in seq_along(x)) {
+	print(x[i])
+}
+
+for(letter in x) {
+	print(letter)
+}
+
+for(i in 1:4) print(x[i]) # omit “{}” if only one statement exists
+
+**** loop over a matrix
+x ← matrix(1:6, 2, 3)
+
+for(i in seq_len(nrow(x))) {
+	for(j in seq_len(ncol(x))) {
+		print(x[i,j])
+	}
+}
+
+**** while
+count ← 0
+while(count < 10) {
+	print(count)
+	count ← count + 1
+}
+
+**** more than 1 conditions
+z ← 5
+while(z >= 3 && z <= 10) {
+	print(z)
+	coin ← rbinom(1,1,0.5)
+
+	if(coin == 1) { ## random walk
+		z ← z + 1
+	} else {
+		z ← z – 1
+	}
+}
+
+**** repeat (and break)
+x0 ← 1
+tol ← 1e-8
+repeat {
+	x1 ← computeEstimate()
+	
+	if(abs(x1 – x0) < tol) {
+		break
+	} else {
+		x0 ← x1
+	}
+}
+
+**** next
+for(i in 1:100) {
+	if (I <= 20) {
+		next # skip the first 20 iterations
+	}
+	# Do something here.
+}
+
+*** compact looping
+**** lapply – loop apply
+loop over a list or a vector and evaluate a function on each element
+lapply(X, FUN, ...)
+lapply takes a list X, a function FUN, and other arguments via …. if X is not a list, it will be coerced using as.list.
+Always return a list, list names are preserved.
+> x<-list(a=1:5,b=rnorm(10))
+> lapply(x,mean)
+$a
+
+[1] 3
+
+$b
+[1] 0.3474802
+generate uniform random variables using lapply
+> x<-1:4
+> lapply(x,runif,min=0,max=10)
+[ [1] ]
+[1] 3.472307
+
+[ [2] ]
+[1] 1.314423 3.744869
+
+[ [3] ]
+[1] 6.314202 3.900789 6.896278
+
+[ [4] ]
+[1] 6.894134 5.549006 4.296244 4.527201
+
+***** use anonymous function
+>lapply(x, function(elt) etl[,1])
+
+**** sapply – simplified apply
+same as lapply but try to simplify the result
+If the result is a list where every element is length 1, then a vector is returned.
+If the result is a list where every element is a vector of the same length (>1), a matrix is returned.
+If else, a list is returned.
+e.g.,
+> x<-list(a=1:4, b=rnorm(10),c=rnorm(20,1),d=rnorm(100,5))
+> lapply(x,mean)
+$a
+[1] 2.5
+
+$b
+[1] -0.006170834
+
+$c
+[1] 0.5080433
+
+$d
+[1] 5.022779
+
+> sapply(x,mean)
+           a            b            c            d 
+ 2.500000000 -0.006170834  0.508043328  5.022778795 
+but direct application of mean doesn't work
+> mean(x)
+[1] NA
+Warning message:
+In mean.default(x) : argument is not numeric or logical: returning NA
+
+**** apply
+apply a function over the margins of an array
+apply a function to the rows or columns of a matrix
+can be used with general arrays, e.g., taking the average of an array of matrices
+> str(apply)
+function (X, MARGIN, FUN, …
+MARGIN is the index of the dimension that will be preserved.
+
+***** find the means of each column
+> x<-matrix(rnorm(200),20,10)
+> apply(x,2,mean)
+ [1]  0.31764279 -0.20359102  0.27766089 -0.11381463 -0.24245208  0.08050356  0.04293477
+ [8]  0.42504710  0.17117791 -0.36513407
+
+***** find the sums of each row
+> apply(x,1,sum)
+ [1] -3.9535466  3.5378914  4.8657229  2.1557528 -1.2801329 -1.6267276  1.4089528
+ [8] -5.7330351  0.2595242  3.4015684  3.6012107 -3.0530614  7.9383705  4.2204701
+[15]  2.0523599 -4.0927801 -2.7655184 -0.8362684 -4.0963852  1.7951365
+
+***** shortcut functions
+Other shortcut functions (which are faster than “apply”)
+rowSums = apply(x, 1, sum)
+rowMeans = apply(x, 1, mean)
+colSums = apply(x, 2, sum)
+colMeans = apply(x, 2, mean)
+
+***** quantiles of the rows
+Find quantiles of the rows of a matrix, create a matrix of two rows and 20 columns
+> apply(x,1,quantile, probs=c(0.25,0.75))
+          [,1]       [,2]       [,3]       [,4]       [,5]       [,6]      [,7]
+25% -0.9239855 -0.1499241 -0.4175811 -0.3613111 -0.7518307 -0.8027004 -0.915204
+75%  0.2370467  0.9444296  1.1890847  0.8302415  0.2443323  0.5562284  1.166624
+          [,8]       [,9]     [,10]     [,11]      [,12]       [,13]      [,14]
+25% -1.1292202 -1.0858680 -0.609356 -0.291738 -1.5721484 -0.08286563 -0.5172696
+75%  0.1851672  0.6926818  1.569856  1.019504  0.9787008  1.38228732  1.3543220
+         [,15]      [,16]      [,17]      [,18]      [,19]      [,20]
+25% -0.3594793 -1.3583341 -0.6312026 -0.6608781 -1.1903123 -0.4987485
+75%  0.7911442  0.5423904  0.1620909  0.4539918  0.6021955  0.8130619
+
+***** collapse the third dimension of a 3-dimensional array
+> a<-array(rnorm(2*2*10),c(2,2,10))
+> apply(a,c(1,2),mean)
+            [,1]       [,2]
+[1,]  0.42410042 -0.3661022
+[2,] -0.07362168 -0.3439171
+or
+> rowMeans(a,dims=2)
+            [,1]       [,2]
+[1,]  0.42410042 -0.3661022
+[2,] -0.07362168 -0.3439171
+
+**** tapply – table apply
+***** apply a function over subsets of a vector
+>str(tapply)
+function (X, INDEX, FUN = NULL, ..., simplify = TRUE)
+X is a vector
+INDEX is a factor or a list of factors (or else they are coerced to factors)
+FUN is the function to apply
+> x<-c(rnorm(10),runif(10),rnorm(10,1)) 
+runif(10): 10 random variables from uniform distribution [0,1].
+rnorm(10,1): 10 random variables from normal distribution with mean 1.
+> f<-gl(3,10) 
+gl: generate levels, in this case 3 levels each repeating 10 times.
+> f 
+ [1] 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 3 3 3 3 3 3 3 3 3 3 
+Levels: 1 2 3 
+> tapply(x,f,mean) 
+         1          2          3 
+-0.2476370  0.5634356  0.6739376 
+“do not simplify” gives back a list:
+> tapply(x,f,mean, simplify=FALSE) 
+$`1` 
+[1] -0.247637 
+
+$`2` 
+[1] 0.5634356 
+
+$`3` 
+[1] 0.6739376 
+
+***** find group ranges (which returns two values for each factor):
+> tapply(x,f,range) 
+$`1` 
+[1] -1.648938  1.321278 
+
+$`2` 
+[1] 0.03362691 0.98146410 
+
+$`3` 
+[1] -1.888952  2.737393 
+
+**** split
+> str(split) 
+function (x, f, drop = FALSE, …)
+split a vector into a list of vectors based on a factor
+x: vector (or list) or data frame
+f: factor or a list of factors
+drop indicates whether empty factors levels should be dropped.
+> x<-c(rnorm(10),runif(10),rnorm(10,1)) 
+> f<-gl(3,10) 
+> split(x,f) 
+$`1` 
+ [1]  0.248778156  1.334741866 -0.881660069  1.628081242  0.386855405 
+ [6]  2.029278781 -0.581958243  0.585995546  0.001749236 -0.126356265 
+
+$`2` 
+ [1] 0.56698467 0.98970559 0.56405445 0.09636717 0.81920102 0.30759100 
+ [7] 0.28073524 0.74154150 0.11624665 0.02004426 
+
+$`3` 
+ [1]  0.26474370  0.54080495  1.64569571 -0.03437529  1.76457570  1.21412163 
+ [7] -0.30767157  3.32346077  1.78569698  2.65727270 
+
+**** lapply + split (in this case, can be substituted by tapply)
+> lapply(split(x,f), mean)
+$`1` 
+[1] 0.4625506 
+
+$`2` 
+[1] 0.4502472 
+
+$`3` 
+[1] 1.285433
+
+**** classify and calculate mean
+calculate the mean of Ozone and Solar.R based on month
+> library(datasets) 
+> head(airquality) 
+  Ozone Solar.R Wind Temp Month Day 
+1    41     190  7.4   67     5   1 
+2    36     118  8.0   72     5   2 
+3    12     149 12.6   74     5   3 
+4    18     313 11.5   62     5   4 
+5    NA      NA 14.3   56     5   5 
+6    28      NA 14.9   66     5   6
+split the entire table by Month
+s<-split(airquality, airquality$Month)
+> lapply(s, function(x) colMeans(x[,c("Ozone","Solar.R","Wind")])) 
+$`5` 
+   Ozone  Solar.R     Wind 
+      NA       NA 11.62258 
+
+$`6` 
+    Ozone   Solar.R      Wind 
+       NA 190.16667  10.26667 
+
+$`7` 
+     Ozone    Solar.R       Wind 
+        NA 216.483871   8.941935 
+
+$`8` 
+   Ozone  Solar.R     Wind 
+      NA       NA 8.793548 
+
+$`9` 
+   Ozone  Solar.R     Wind 
+      NA 167.4333  10.1800
+
+***** use sapply instead of lapply
+> sapply(s, function(x) colMeans(x[,c("Ozone","Solar.R","Wind")])) 
+               5         6          7        8        9 
+Ozone         NA        NA         NA       NA       NA 
+Solar.R       NA 190.16667 216.483871       NA 167.4333 
+Wind    11.62258  10.26667   8.941935 8.793548  10.1800 
+remove missing value when colMeans is called
+> sapply(s, function(x) colMeans(x[,c("Ozone","Solar.R","Wind")],na.rm=TRUE)) 
+                5         6          7          8         9 
+Ozone    23.61538  29.44444  59.115385  59.961538  31.44828 
+Solar.R 181.29630 190.16667 216.483871 171.857143 167.43333 
+Wind     11.62258  10.26667   8.941935   8.793548  10.18000 
+
+***** interaction - split on more than one factors
+use interaction function, make cartesian product of the two factors.
+> f1<-gl(2,5) 
+> f2<-gl(5,2) 
+> interaction(f1,f2) 
+ [1] 1.1 1.1 1.2 1.2 1.3 2.3 2.4 2.4 2.5 2.5 
+Levels: 1.1 2.1 1.2 2.2 1.3 2.3 1.4 2.4 1.5 2.5 
+interaction (in this case produced by using “list” in split) can create empty levels
+> str(split(x, list(f1, f2)))
+List of 10 
+ $ 1.1: num [1:6] 0.249 1.335 0.567 0.99 0.265 ... 
+ $ 2.1: num(0) 
+ $ 1.2: num [1:6] -0.8817 1.6281 0.5641 0.0964 1.6457 ... 
+ $ 2.2: num(0) 
+ $ 1.3: num [1:3] 0.387 0.819 1.765 
+ $ 2.3: num [1:3] 2.029 0.308 1.214 
+ $ 1.4: num(0) 
+ $ 2.4: num [1:6] -0.582 0.586 0.281 0.742 -0.308 ... 
+ $ 1.5: num(0) 
+ $ 2.5: num [1:6] 0.00175 -0.12636 0.11625 0.02004 1.7857 ... 
+
+drop empty levels
+> str(split(x, list(f1, f2), drop=TRUE)) 
+List of 6 
+ $ 1.1: num [1:6] 0.249 1.335 0.567 0.99 0.265 ... 
+ $ 1.2: num [1:6] -0.8817 1.6281 0.5641 0.0964 1.6457 ... 
+ $ 1.3: num [1:3] 0.387 0.819 1.765 
+ $ 2.3: num [1:3] 2.029 0.308 1.214 
+ $ 2.4: num [1:6] -0.582 0.586 0.281 0.742 -0.308 ... 
+ $ 2.5: num [1:6] 0.00175 -0.12636 0.11625 0.02004 1.7857 ... 
+
+**** mapply – multivariate apply
+multivariate version of lapply
+lapply, sapply and tapply only apply a function to a single element. Mapply applies a function in parallel over a set of arguments.
+> str(mapply) 
+function (FUN, ..., MoreArgs = NULL, SIMPLIFY = TRUE, USE.NAMES = TRUE)
+… contains arguments to apply over
+MoreArgs is a list of other arguments to FUN
+> mapply(rep,1:4,4:1) 
+is equivalent to
+> list(rep(1,4), rep(2,3), rep(3,2),rep(4,1))
+[[1]]
+[1] 1 1 1 1
+
+[[2]]
+[1] 2 2 2 
+
+[[3]] 
+[1] 3 3 
+
+[[4]] 
+[1] 4 
+another examle of “instant vectorization”
+> noise<-function(n,mean,sd){rnorm(n,mean,sd)}
+> mapply(noise,1:5,1:5,2) 
+[[1]] 
+[1] -0.5250608 
+
+[[2]] 
+[1] 4.684903 1.778944 
+
+[[3]] 
+[1] 7.540316 5.528719 5.501906 
+
+[[4]] 
+[1] 5.190458 5.318942 2.206801 3.286727 
+
+[[5]] 
+[1] 2.245433 1.933995 8.561300 4.059340 2.559799 
+is equivalent to
+list(noise(1,1,2), noise(2,2,2), noise(3,3,2), noise(4,4,2),noise(5,5,2))
+
+** Functions
+
+3 major components of a function are
+1. formals
+2. body
+3. environment
+
+f <- function(x) x^2
+f
+#> function(x) x^2
+
+formals(f)
+#> $x
+body(f)
+#> x^2
+environment(f)
+#> <environment: R_GlobalEnv>
+
+# for many base function
+attr(f, "srcref") return the source code
+
+# for primitive functions all 3 components are NULL
+sum
+#> function (..., na.rm = FALSE) .Primitive("sum")
+formals(sum)
+#> NULL
+body(sum)
+#> NULL
+environment(sum)
+#> NULL
+*** lexical scoping (see environment section)
+one comment: R is aware of whether a symbol desired is a function or a variable.
+#+BEGIN_SRC R
+n <- function(x) x / 2
+o <- function() {
+  n <- 10
+  n(n)
+}
+o()
+#> [1] 5
+rm(n, o)
+#+END_SRC
+
+**** lexical scoping can be "dynamic"
+lexical scoping determines where to look for values, not when
+f <- function() x
+x <- 15
+f()
+#> [1] 15
+
+x <- 20
+f()
+#> [1] 20
+
+**** find external dependencies of a function
+
+f <- function() x+1
+codetools::findGlobals(f)
+#> [1] "+" "x"
+
+*** operators are all functions
+All the following are equivalent operator expression and function expression
+` (the backtick) is for referringn to functions or variables that have otherwise reserved or illegal names.
+
+x <- 10; y <-5
+x + y
+#> [1] 15
+`+`(x, y)
+#> [1] 15
+
+for (i in 1:2) print(i)
+#> [1] 1
+#> [1] 2
+`for`(i, 1:2, print(i))
+#> [1] 1
+#> [2] 2
+
+if (i==1) print("yes!") else print("no.")
+#> [1] "no."
+`if`(i==1, print("yes!"), print("no."))
+#> [1] "no."
+
+x[3]
+#> [1] NA
+`[`(x,3)
+#> [1] NA
+
+{print(1); print(2); print(3) }
+#> [1] 1
+#> [1] 2
+#> [1] 3
+`{`(print(1), print(2), print(3))
+#> [1] 1
+#> [1] 2
+#> [1] 3
+
+**** use operator as functions in constructs such as sapply
+sapply(1:5, `+`, 3)
+#> [1] 4 5 6 7 8
+sapply(1:5, "+", 3)
+#> [1] 4 5 6 7 8
+
+There is a difference between `+` and "+". `+` refers to the operator function itself with backtick to escape the reserved name. "+" is the name of that function which also works since sapply can take both operator and its name. (see match.fun() in body(sapply).
+
+example, take 2nd element from each element in the list
+x <- list(1:3, 4:9, 10:12)
+sapply(x, "[", 2)
+#> [1] 2 5 11
+# equivalent to
+sapply(x, function(x) x[2])
+#> [1] 2 5 11
+
+*** check out what arguments are needed
+args(function)
+
+*** arguments matching
+> args(sd)
+function (x, na.rm = FALSE) 
+> mydata ← rnorm(100)
+> sd(mydata)
+> sd(x = mydata)
+> sd(x = mydata, na.rm = FALSE)
+> sd(na.rm = FALSE, x = mydata)
+> sd(na.rm = FALSE, mydata)
+
+*** lazy evaluation
+
+#+BEGIN_SRC R
+f <- function(a, b) {
+	a^2
+}
+f(2) # function call OK!
+
+f <- function(a, b) {
+	print(a)
+	print(b)
+}
+f(45) # function call Error!
+
+… argument
+… is often used when extending another function and you don't want to copy the entire argument list of the original function
+myplot ← function(x, y, type=”l”, …) {
+	plot(x, y, type = type, …)
+}
+#+END_SRC
+
+*** generic function
+> mean
+function (x, ...) 
+UseMethod("mean")
+
+**** "..." usage
+when the number of arguments is unknown one should use … and any arguments that appear after … on the argument list must be named explicitly and cannot be partially matched.
+> args(paste)
+function (..., sep = " ", collapse = NULL) 
+> args(cat)
+function (..., file = "", sep = " ", fill = FALSE, labels = NULL, 
+    append = FALSE)
+
+define a generator function to make an optimization function to feed “optim”, “nlm”, and “optimize”
+the generator function fix the data argument
+make.NegLogLik <- function(data, fixed=c(FALSE, FALSE)) {
+	params <- fixed
+	function(p) {
+		params[!fixed] <- p
+		mu <- params[1]
+		sigma <- params[2]
+		a <- -0.5 * length(data) * log(2*pi*sigma^2)
+		b <- -0.5 * sum((data-mu)^2) / (sigma^2)
+		-(a+b)
+	}
+}
+
+**** to use generator function to make a negative log likelihood function
+> set.seed(1); normals<-rnorm(100,1,2)
+> nLL<-make.NegLogLik(normals)
+> nLL
+function(p) {
+        params[!fixed] <- p
+        mu <- params[1]
+        sigma <- params[2]
+        a <- -0.5 * length(data) * log(2*pi*sigma^2)
+        b <- -0.5 * sum((data-mu)^2) / (sigma^2)
+        -(a+b)
+    }
+<environment: 0xb647a480> # the pointer to the defining environment
+> ls(environment(nLL))
+[1] "data"   "fixed"  "params"
+
+**** to use nLL, with initial value of mu and sigma
+> optim(c(mu=0, sigma=1), nLL)$par
+      mu    sigma 
+1.218239 1.787343 
+
+fixing sigma = 2
+> nLL<-make.NegLogLik(normals, c(FALSE,2))
+> optimize(nLL,c(-1,3))$minimum
+[1] 1.217775
+
+fixing mu = 1
+> nLL<-make.NegLogLik(normals, c(1,FALSE))
+> optimize(nLL,c(1e-6,10))$minimum
+[1] 1.800596
+
+**** plot log likelihood function against mean
+> nLL<-make.NegLogLik(normals,c(1,FALSE))
+> x<-seq(1.7,1.9,len=100)
+> y<-sapply(x,nLL)
+> plot(x,exp(-(y-min(y))),type='l')
+
+**** plot log likelihood function against sigma
+> nLL<-make.NegLogLik(normals, c(FALSE,2))
+> x<-seq(0.5,1.5,len=100)
+> y<-sapply(x,nLL)
+> plot(x,exp(-(y-min(y))),type="l")
+
+**** capture "..." in function definition
+f <- function(...) {
+  names(list(...))
+}
+f(a=1,b=2)
+#> [1] "a" "b"
+*** anonymous function
+suppose we have x
+> x<-list(a=matrix(1:4,2,2),b=matrix(1:6,3,2))
+> x
+$a
+     [,1] [,2]
+[1,]    1    3
+[2,]    2    4
+
+$b
+     [,1] [,2]
+[1,]    1    4
+[2,]    2    5
+[3,]    3    6
+and we want to grab the first column of the two matrices, we can use an anonymous function
+>lapply(x, function(elt) etl[,1])
+
+use invisible to refrain auto-printing (but still return the object)
+printmessage <- function(x) {
+	if (x>0)
+		print(“x is greater than zero”)
+	else
+		print(“x is less than or equal to zero”)
+	invisible(x)
+}
+
+“print” function will return the string it prints
+*** call a function given arguments in a list using "do.call"
+
+args <- list(1:10, na.rm = TRUE)
+do.call(mean, list(1:10, na.rm = TRUE))
+#> [1] 5.5
+# Equivalent to
+mean(1:10, na.rm = TRUE)
+#> [1] 5.5
+
+*** default and missing argument
+f <- function(a=1,b=2) {
+ c(a,b)
+}
+f(
+#> [1] 1 2
+
+Since arguments are evaluated lazily, default value can be dependent on other values
+g <- function(a=1, b=a*2) {
+  c(a,b)
+}
+g()
+#> [1] 1 2
+g(10)
+#> [1] 10 20
+
+or dependent on local variables created within the function
+h <- function(a=1, b=d) {
+  d <- (a+1)^2
+  c(a,b)
+}
+h()
+#> [1] 1 4
+h(10)
+#>[1] 10 121
+
+test whether an argument is supplied using "missing()"
+i <- function(a, b) {
+ c(missing(a), missing(b))
+}
+i()
+#> [1] TRUE FALSE
+i(a=1)
+#> [1] FALSE TRUE
+i(b=2)
+#> [1] TRUE FALSE
+i(1,2)
+#> [1] FALSE FALSE
+One can also set default value to NULL and use is.null to determine missing argument.
+
+*** argument evaluation is lazy
+f <- function(x) {
+ 10
+}
+f(stop("This is an error!"))
+#>[1] 10
+
+one can force evaluation using "force"
+f <- function(x) {
+  force(x)
+  10
+}
+f(stop("This is an error!"))
+#> Error in force(x): This is an error.
+
+default can depend on the current environment
+f <- function(x=ls()) {
+  a <- 1
+  x
+}
+
+# ls() is evaluated inside f
+f()
+#> [1] "a" "x"
+
+# ls() evaluated in global environment
+f(ls())
+#>  [1] "add"   "adders" "adders2" "args" "f"
+#>  [6] "funs"  "g"      "h"       "i"    "objs"
+#> [11] "x"     "y"
+
+*** make sure one override lazy evaluation when using closure
+
+# without force
+add <- function(x) {
+  function(y) x+y
+}
+adders <- lapply(1:10, add)
+adders[ [1]](10)
+#> [1] 20
+adders[ [10]](10)
+#> [1] 20
+
+# with force
+add <- function(x) {
+  force(x) # equivalent to just "x", since force(x) <- function(x) x
+  function(y) x+y
+}
+adders2 <- lapply(1:10, add)
+adders2[ [1]](10)
+#> [1] 11
+adders2[ [10]](10)
+#> [1] 20
+
+*** infix function e.g., %in%
+every infix function must be flanked by % on both sides
+predefined: %%, %*%, %/%, %in%, %o%, %x%
+
+# define a new infix function (note the special backtick "`")
+`%+%` <- function(a,b) paste0(a,b)
+"new" %+% " string"
+#> [1] "new string"
+`%+%`("new", " string")
+#> [1] "new string"
+
+escape special charactersinthe string used to defined the function, but not when you call it.
+`%/\\%` <- function(a,b) paste(a,b)
+"a" %/\% "b"
+#> [1] "a b"
+
+`%-%` <- function(a,b) paste0("(", a, " %-% ", b, ")")
+"a" %-% "b" %-% "c"
+#> [1] "((a %-% b) %-% c)"
+
+**** a useful infix function %||%
+`%||%` <- function(a,b) if (!is.null(a)) a else b
+function_that_might_return_null() %||% default value
+
+*** replacement functions
+
+`second<-` <- function(x, value) {
+  x[2] <- value
+  x
+}
+x <- 1:10
+second(x) <- 5L
+x
+#> [1] 1 5 3 4 5 6 7 8 9 10
+
+** Statistics
+
+描述性统计量
+sum mean median var sd min max range quantile summary 
+max(x),min(x),mean(x),range(x),sum(x),prod(x),length(x),
+var(x),sort(x),sort.list(),order(),quantile(x),sd(x)
+
+Summary will print out the statistics of all columns in the dataframe
+summary(argument)	print the five point descriptive statistics if the argument is a factor
+summary(factor)	print the frequency of each key if the argument is NOT a factor
+
+Wilcoxon
+wilcox.test(t$enzymes[t$symbiotic.!='endosymbiotic'], t$enzymes[t$symbiotic.=='endosymbiotic'], alternative='greater')
+
+wilcox.test(t$Qnorm[t$symbiotic.!='endosymbiotic'], t$Qnorm[t$symbiotic.=='endosymbiotic'], alternative='greater')
+
+wilcox.test(t$V3[t$V2=='Obligate'], t$V3[t$V2=='Facultative'], alternative='less')
+
+Pearson's Chi-squared test of independence on a contingency table
+chisq.test(table(survey$Smoke, survey$Exer))
+
+chisq.test(x[,2],p=dbinom(x[,1],5,0.5))
+
+Spearman's Correlation
+cor.test(method='spearman')
+
+*** ave - take average over a factor
+
+ave(breaks, wool)
+
+breaks
+
+*** cmdscale
+#+BEGIN_SRC R
+
+# classical multidimensional scaling
+md <- cmdscale(dist(t(exprs(mldat)[fData(mldat)$CHROMOSOME=='X',])),2)
+plot(md,pch=c('F','M')[pData(mldat)$Gender],col=c('red','blue')[pData(mldat)$Gender])
+#+END_SRC
+
+*** sample random variables
+set.seed
+> set.seed(1)
+> rnorm(5)
+[1] -0.6264538  0.1836433 -0.8356286  1.5952808  0.3295078
+> rnorm(5)
+[1] -0.8204684  0.4874291  0.7383247  0.5757814 -0.3053884
+> set.seed(1)
+> rnorm(5)
+[1] -0.6264538  0.1836433 -0.8356286  1.5952808  0.3295078
+
+Binomial distribution
+dbinom(x,size,prob)	size is the number of trials, prob is the probability of success of each trial
+pbinom(q,size,prob)
+qbinom(p,size,prob)	p is the number of successes among size
+rbinom(p,size,prob)
+
+Normal distribution:
+help(Normal)
+1. dnorm(0,mean=0,sd=1)	returns the height of the probability distribution at each point. Assume zero-mean and one-standard deviation
+x<-seq(from=-10,to=10,by=0.1)
+y<-dnorm(x,mean=0,sd=1)
+plot(x,y)
+2. pnorm(v,mean=0,sd=1)	calculate the probability that a normally distributed random number will be less than v(cummulative probability).
+3. qnorm(v,mean=0,sd=1) calculate the number whose cummulative probability is v.
+4. rnorm(n,mean=0,sd=1)	gives n random numbers following the normal distribution.
+Two generic functions: qqnorm(y) and qqline(y) provide a normal QQ plot of the values in 'y'.qqline is a line connecting the first and the third quartiles.
+**** sample from vector with replacement
+sample(vec,10,replace=TRUE)     sample from a vector
+**** uniform distribution
+sample
+> set.seed(1)
+> sample(1:10,4)
+[1] 3 4 5 7
+> sample(1:10,4)
+[1] 3 9 8 5
+> sample(letters, 5)
+[1] "q" "b" "e" "x" "p"
+> sample(1:10) # permutation
+ [1]  4  7 10  6  9  2  8  3  1  5
+> sample(1:10)
+ [1]  2  3  4  1  9  5 10  8  6  7
+> sample(1:10, replace=TRUE) # sample with replacement (same number may appear multiple times)
+ [1] 2 9 7 8 2 8 5 9 7 8
+
+**** normal distribution
+rnorm(n, mu, sigma)
+r: random number generation
+sample n random variable from normal distribution
+rnorm(n, mean = 0, sd = 1, log = FALSE) 
+x <- rnorm(10) # generate 10 random variables from a normal distribution with mean 0 sd 1.
+x <- rnorm(10,20,2) # generate 10 random variables from a normal distribution with mean 20 and sd 2.
+> summary(x)
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  17.39   19.22   19.97   20.05   20.70   23.11 
+
+
+dnorm
+d: density
+evaluate density
+dnorm (x, mean = 0, sd = 1, log = FALSE)
+
+pnorm
+evaluate cumulative distribution function
+given value of x compute cumulative probability
+pnorm (q, mean = 0, sd = 1, lower.tail = TRUE, log.p = FALSE) 
+
+
+qnorm
+q: quantile function, given cumulative probability, compute value of x, the inverse function of pnorm.
+qnorm (p, mean = 0, sd = 1, lower.tail = TRUE, log.p = FALSE)
+
+**** Poisson distribution
+rpois
+generate random Poisson variate with a given rate
+rpois (n, lambda)
+> rpois(10,1)
+ [1] 0 0 1 1 2 1 1 4 1 2
+> rpois(10,2)
+ [1] 4 1 2 0 1 1 0 1 4 1
+> rpois(10,20)
+ [1] 19 19 24 23 22 24 23 20 11 22
+model log.mu = 0.5 + 0.3 * x where x is standard normal distribution
+> set.seed(1)
+> x<-rnorm(100)
+> log.mu<-0.5+0.3*x
+> y<-rpois(100,exp(log.mu))
+> summary(y)
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+   0.00    1.00    1.00    1.55    2.00    6.00 
+
+ppois
+cumulative distribution Poisson distribution
+> ppois(2,2)
+[1] 0.6766764
+> ppois(4,2)
+[1] 0.947347
+> ppois(6,2)
+[1] 0.9954662
+
+**** binomial distribution
+rbinom(100, 1, 0.5)
+
+*** other descriptive statistics
+
+frequency count of discrete values
+Tabulate frequency counts
+table(d$numcc)
+*** linear regression:
+
+Before doing linear regression, one have to check if the factor attribute of the argument is removed or not first. In other words, one need to make sure x is not a factor. Otherwise, it would become an ANOVA on with categories corresponding to different levels of x.
+fm<-lm(y~x,data=dummy)
+fit<-lm(rate~year)
+To get the interest rate in year 2015:	Note that one should use two square braces to get the number.
+#+BEGIN_SRC R
+fit$coefficients[[2]]*2015 + fit$coefficients[[1]]
+#+END_SRC
+
+residuals(fit)	the residuals of the fit. By definition is the difference between the each data point with the predicted value.
+
+abline(fit)	add fitted line onto the data plot.
+summary(fit)	can get the result of F-test.
+fm$call
+fm$coefficient: Intercept & x
+*** formula and design matrix
+a formula is something like: 
+#+BEGIN_SRC R
+log(Volume) ~ log(Height) + log(Girth)
+#+END_SRC
+when one supply a formula into a regression model, a function called "data.matrix" is automatically called to produce a design matrix.
+
+*** model.matrix (build design matrix)
+when one supply a formula, R automatically computes the design matrix. When doing so, R appends the intercept term, which is a column of 1's. One could suppress the intercept term by "y~0+x" or "y~x-1". All the character columns are converted to factors. Factors are then 'dummy-indexed', meaning they are splitted into levels(f)-1 variables and each variable has 0 or 1 binary values corresponding to whether the sample falls into the category or not.
+
+#+BEGIN_SRC R
+
+df
+# A B C
+# 1 2 3
+# ...
+
+model.matrix(C~log(B),df)
+# (intercept) log(B)
+# 1 0.693
+# 1 ...
+
+#+END_SRC
+
+or if a column is a factor
+
+#+BEGIN_SRC R
+> df <- data.frame(A=c('a','b','c'),B=c(1,2,3))
+> df
+  A B
+1 a 1
+2 b 2
+3 c 3
+
+> model.matrix(B~A,df)
+  (Intercept) Ab Ac
+1           1  0  0
+2           1  1  0
+3           1  0  1
+attr(,"assign")
+[1] 0 1 1
+attr(,"contrasts")
+attr(,"contrasts")$A
+[1] "contr.treatment"
+
+# the first column is intercept. Only two of the three levels of A is used. Aa is used as reference group. degree of freedom = levels(A)-1
+
+#+END_SRC
+
+*** model.frame
+
+extract columns and apply function
+#+BEGIN_SRC R
+df
+# A B C
+# 1 2 3
+# ...
+
+model.frame(log(B)~C,df)
+# log(B) C
+# 0.693 3
+# ...
+
+#+END_SRC
+
+** Plotting
+graphics package
+plot, hist, boxplot
+
+lattice package
+xyplot, bwplot, levelplot
+
+grid package
+the package lattrice package depend on
+
+grDevices package
+code for implementing graphics devices such as X11, PDF, PostScript, PNG, etc.
+
+*** histogram with y log
+barplot(hist(x, plot=F)$counts,log='y')
+*** quickly show a color vector
+pie(rep(1,n), col=jet.colors(n))
+barplot(seq(1:n), col=topo.colors(12))
+
+*** never use palette
+all it does is to let one specify color by integer index
+e.g.,
+palette(rainbow(6))
+then one can do
+col=1:30
+
+*** get color gradient
+ColorRampPalette(c("red","green"))(5)
+colorRampPalette(c("#3794bf", "#FFFFFF", "#df8640"))(5)
+*** basic graphics
+**** common arguments
+***** cex
+****** cex.lab
+change label size relative to the plot
+magnification of x and y labels relative to cex
+cex.lab = 1.5
+****** cex.axis
+magnification of axis annotation relative to cex
+***** xlim, ylim - x, y plotting range
+plot(x, y, log='y', ylim=c(10, 20))
+***** pch - plotting character
+plot character/marker/symbol
++: 3
+***** col - border color of the symbol
+***** bg - fill color of the symbol
+***** xlab, ylab - put labels
+**** smoothScatter
+smoothScatter(d$oldfitness, d$newfitness, xlab='iJR904 fitness', ylab='iAF1260 fitness', cex.lab=1.5)
+***** making a log scale smoothScatter
+smoothScatter(x, log(y))
+instead of using
+smoothScatter(x, y, log='y')
+see
+https://stat.ethz.ch/pipermail/r-help/2009-July/205922.html
+**** plot
+plot(x,y) scatter plot
+plot(... type="h") histogram
+plot(... type="p") point graph
+plot(... type="l") line graph
+plot(... type="b") both line and points
+plot(density(x)) density plot
+**** lines
+add line using lines
+x<-c(1,2,5,10,20,50,100)
+y<-sapply(x, log2)
+plot(d$numdiffcogs, d$entropy, log='x', xlab='alphabet size', ylab='entropy')
+lines(x, y, lty='dashed')
+***** lty - line type
+dashed: 2
+***** lwd - line width
+relative to the default (default=1). 2 is twice as wide.
+**** abline
+abline(0, 1, lty='dashed')
+**** title
+title(main = NULL, sub = NULL, xlab = NULL, ylab = NULL)
+**** hist
+hist(w1$vals)
+hist(w1$vals,breaks=2)	breaks defines how many hists there are.
+hist(w1$vals,breaks=4)
+hist(w1$vals,breaks=12)
+hist(w1$vals,breaks=12,xlim=c(0,10))	xlim defines the ranges of the x axis for display
+hist(w1$vals,breaks=12,xlim=c(-1,2))
+**** stripchart
+stripchart(w1$vals)
+stripchart(w1$vals,method="stack")
+stripchart(w1$vals,method="jitter")
+stripchart(w1$vals,vertical=TRUE)
+stripchart(w1$vals,vertical=TRUE,method="jitter")
+stripchart(w1$vals,method="stack",main='Leaf BioMass in High CO2 Environment',xlab="BioMass of Leaves"
+add title and label: title('Leaf BioMass in High CO2 Environment',xlab='BioMass of Leave')
+**** matplot
+x<-seq(-4,4,len=101)
+y<-cbind(sin(x),cos(x))
+matplot(x,y,type="l",xaxt="n",main=expression(paste(plain(sin)*phi," and ",plain(cos)*phi)),ylab=expression("sin"*phi,"cos"*phi),#only 1st is taken
+xlab=expression(past("Phase Angle ",phi)),
+col.main="blue")
+axis(1,at=c(-pi,-pi/2,0,pi/2,pi),labels=expression(-pi,-pi/2,0,pi/2,pi)) add an axis to a plot.
+**** Venn's diagram
+===================
+library(limma)
+hsb2<-read.table("http://www.ats.ucla.edu/stat/R/notes/hsb2.csv",sep=',',header=T)
+attach(hsb2)
+hw<-(write>=60) # the result is an array of TRUE or FALSE.
+hm<-(math>=60)  # the result is an array of TRUE or FALSE.
+hr<-(read>=60)  # the result is an array of TRUE or FALSE.
+c3<-cbind(hw,hm,hr)
+a<-vennCounts(c3)
+vennDiagram(a)
+===================
+vennDiagram(a,include="both", names=c("High Writing","High Math","High Reading"), cex=1, counts.sol="red")
+g1<-c(rep(0,6),rep(1,3))
+g2<-c(rep(1,6),rep(0,3))
+g<-cbind(g1,g2)
+c<-vennCounts(g)
+vennDiagram(c)
+**** combined plots
+
+1. Combine hist and stripchart
+hist(w1$vals,main='Leaf BioMass in High CO2 Environment',xlab='BioMass of Leaves',ylim=c(0,16))
+stripchart(w1$vals,add=TRUE,at=15.5)
+
+2. Combine hist with boxplot
+hist(w1$vals,main='Leaf BioMass in High CO2 Environment',xlab='BioMass of Leaves',ylim=c(0,16))
+boxplot(w1$vals,horizontal=TRUE,at=15.5,add=TRUE,axes=FALSE)
+boxplot(w1$vals,main='Leaf BioMass in High CO2 Environment',ylab="BioMass of Leaves",horizontal=TRUE)
+boxplot(tree$STBM~tree$C)	tree$C is a factor vector.
+
+layout.show()  显示layout分布和编号
+**** legend
+legend(-3,.9,ex.cs1,lty=1:2,col=2:3,adj=c(0,.6))	##the components of each vector have to match. 
+##col: the color vector of each component.
+##lty: the line type 0=blank 1=solid 2=dashed 3=dotted 4=dotdash,5,longdash,6,twodash.
+op<-par(bg="white")	get an opaque box for the legend
+
+legend("topright",expression(paste("sin",phi),paste("cos",phi)),lty=1:1,col=c(1,2),title="right")
+Or we can designate the character on the line with exact coordinate of the legend by specifying pch:
+legend(-3,.9,expression(paste("sin",phi),paste("cos",phi)),lty=1:1,col=c(1,2),title="right",pch=2)
+
+legend("topright","(x,y)",pch=1,title="right")
+legend(-1,1.9,c("sin","cos","tan"),col=c(3,4,6),text.col="green4",lty=c(2,-1,1),pch=c(-1,3,4),merge=TRUE,bg='gray90')
+
+**** mtext - margin text
+mtext() add text into the margin of a plot.
+mtext(c("Low","High"),side=1,line=2,at=c(5,7))
+mtext(text,side=,line=,outer=FALSE,at=NA,adj=NA,padj=NA,cex=NA,col=NA,font=NA,...)
+side=1(bottom),2(left),3(top),4(right)
+line: Margin line starting at 0 counting outwards.
+outer=TRUE,use outer margins if available.
+adj,padj: used to adjust the location of the text.
+col: the color to use,e.g. col=100 or col="darkred"
+font: the font for text
+
+**** text
+plot(1:10,1:10)
+text(4,9,expression(hat(beta)==(X^t *X)^{-1}*X^t*y))	add text to a plot.
+text(4,8.4,"expression(hat(beta)==(X^t*X)^{-1}*X^t*y)",cex=.8)
+text(4,7,expression(bar(x)==sum(frac(x[i],n),i==1,n))
+text(4,6.4,"expression(bar(x)==sum(frac(x[i],n),i==1,n))",cex=.8)
+text(8,5,expression(paste(frac(1,sigma*sqrt(2*pi))," ",plain(e)^{frac(-(x-mu)^2,2*sigma^2)})),cex=1.2)
+
+text(x,y,labels,adj=,pos=,offset=,vfont=,cex=,col=,font=)
+	adj: adjustment of relative position of the text
+	pos=1,2,3,4,correspond to below, left, above, right. This overrides adj
+	cex= a value with 1 for normal size. for minization and enlargement
+
+**** the special math symbols
+demo(Hershey)   see how to draw special font in detail
+**** combine math and numeric variable
+plot(1:10,type="n",xlab="",ylab="",main="plot math & numbers")
+theta<-1.23;
+mtext(bquote(hat(theta)==.(theta)))
+for(i in 2:9)
+text(i,i+1,substitute(list(xi,eta)==group("(",list(x,y),")"),
+list(x=i,y=i+1)))
+**** colors
+colors(): list all the colors available and their index
+
+**** save figure as pdf
+pdf(file="my2.pdf")
+<do my plot,which won't display>
+dev.off()
+**** add line using lines
+x<-c(1,2,5,10,20,50,100)
+y<-sapply(x, log2)
+plot(d$numdiffcogs, d$entropy, log='x', xlab='alphabet size', ylab='entropy')
+lines(x, y, lty='dashed')
+
+change label size relative to the plot
+use argument
+cex.lab = 1.5
+**** smoothScatter
+**** change to 1 row
+par(mfrow=c(1,1))
+**** par
+change parameters of the plotting
+multiple subplots
+par(mfrow=c(2,1))
+
+margin
+par(mar=c(2,2,1,1))
+bottom, left, top, right
+
+xtick positions
+xaxp=c(0,136,8)
+start, end, number of ticks
+***** mfrow and mfcol
+multiple subplots
+par(mfrow=c(1,1))
+**** make x-axis label vertical
+par(las=2)
+
+**** boxplot
+boxplot() 带error bar的盒装图
+
+boxplot(list(d$numhsp[d$density < 0.5], d$numhsp[d$density >= 0.5]), log='y', names=c("density < 0.5", "density >= 0.5"), ylab="connected component size", cex.lab=1.4, cex.axis=1.4)
+cex.axis change the size of label on x axis
+names
+labels on x-axis
+
+another way to boxplot against some factor
+boxplot(envcnt ~ gltrunc12, data=d, xlab='number of gains and losses')
+
+**** vioplot
+do.call(vioplot,c(unname(a), col='red', names=list(names(a))))
+*** lattice plotting
+library(lattice)
+package ? Lattice
+library(help=lattice)
+data(environmental)
+?environmental
+head(environmental)
+xyplot(ozone ~ radiation, data=environmental)
+xyplot(ozone ~ radiation, data=environmental, main=”Ozone vs. Radiation”)
+
+#+BEGIN_SRC R
+xyplot(-log10(adj.P.Val)~CHROMOSOME, tt, ylab='-log10(Adjusted P-value)', main='P-values for probes\ndistinguishing males from females')
+# tt is the data.frame containing columns adj.P.Val and CHROMOSOME
+#+END_SRC
+
+*** ggplot2
+
+**** scatter plot
+qplot(x, y, data=dataframe)
+color category based on "colorcolumn"
+qplot(x, y, data=dataframe, color=colorcolumn)
+color category based on "shapecolumn"
+qplot(x, y, data=dataframe, color=shapecolumn)
+
+add LOESS
+qplot(x, y, data=dataframe, geom=c("point","smooth"))
+use linear regression instead of LOESS
+qplot(x, y, data=df, geom=c("point","smooth"), method="lm")
+
+**** histogram
+qplot(x, data=df, fill=colorcolumn)
+"fill" defines a 3rd category that defines the color
+
+**** subplot in "facets"
+data are first divided by certain column into row and column of the subplots
+qplot(x, y, data=df, facets=.~facetcolumncolumn)
+qplot(x, y, data=df, facets=facetrowcolumn~., binwidth=2)
+
+**** density plot
+qplot(x, data=maacs, geom="density")
+further split by colorcolumn
+qplot(x, data=df, geom="density", color="colorcolumn") # this results in n curves each corresponding to an alphabet found in colorcolumn
+
+*** convert R table to LaTeX table
+library(xtable)
+xt <- xtable(x, label="tab:chromosomepvals", caption="The median adjusted p-value ...")
+digits(xt) <- 6
+print(xt, include.rownames=FALSE, align='cr')
+** data IO
+*** read.table
+**** commonly used arguments
+***** file
+***** header
+***** sep
+default to space
+***** colClasses=c("character", "integer", "numeric")
+this may speed the data import
+e.g., colClasses=”numeric”
+***** nrows
+***** comment.char
+default to “#”, set comment.char=”” if there are no commented lines in your file.
+***** skip
+the number of lines to skip from the beginning
+***** stringsAsFactors
+hould character variables be coded as factors?
+**** read.table("clipboard")
+Read table from clipboard
+read.table(“clipboard”)
+One can copy a region in Excel then use this command to import to R.
+**** handle large data
+d.full=read.table('/home/wanding/sync/project_HGT/data2/2013_02_04_eval2alen.tab', header=T, comment.char="", colClasses=c("character", "integer", "numeric"), stringsAsFactors=F)
+** scripting
+*** Old style: R CMD BATCH --args my_arg
+*** New style: ./script.R my_arg
+*** get command line argument
+args<-(commandArgs(TRUE))
+args
+"lalala"
+** packaging
+http://cran.r-project.org/doc/contrib/Leisch-CreatingPackages.pdf
+
+to build the package tarball
+R CMD build
+
+to check the package tarball
+R CMD check
+
+ Edit the help file skeletons in 'man', possibly combining help files for multiple functions.
+ Edit the exports in 'NAMESPACE', and add necessary imports.
+ Put any C/C++/Fortran code in 'src'.
+ If you have compiled code, add a useDynLib() directive to 'NAMESPACE'.
+
+what "build and reload" in Rstudio do
+1. Unloads any existing version of the package (including shared libraries if necessary).
+2. Builds and installs the package using R CMD INSTALL.
+3. Restarts the underlying R session to ensure a clean environment for re-loading the package.
+4. Reloads the package in the new R session by executing the library function.
+
+** debug
+
+*** the browser
+insert "browser()" to where you want to stop the program and the execution will give an interactive session at that location.
+you can also set option(error=browser) to invoke a browser when an error occurs
+点击RStudio的左栏也可实现加入breakpoint效果。
+
+In browser
+type "help" to list all the options.
+
+flag a function for “debug” mode which allows you to step through execution of a function one line a time
+n: next line
+Q: quit
+c: continue without single stepping
+where: show call stack
+
+> debug(lm)
+> lm(y~x)
+debugging in: lm(y ~ x)
+debug: {
+    ret.x <- x
+    ret.y <- y
+…
+    if (!qr) 
+        z$qr <- NULL
+    z
+}
+Browse[2]> n
+debug: ret.x <- x
+Browse[2]> n
+debug: ret.y <- y
+
+# what's Browse?
+suspend the execution of a function wherever it is called and puts the function in debug mode
+the browser is just like your R work space (interactive shell)
+
+Message, warning, error, condition
+condition: a generic concept for indicating that something unexpected can occur; programmers can create their own conditions.
+Warning
+>log(-1)
+[1] NaN
+Warning message: 
+In log(-1) : NaNs produced 
+
+*** traceback() 
+prints out the function call stack, does nothing if there's no error
+> mean(x)
+Error in mean(x) : object 'x' not found
+> traceback()
+1: mean(x)
+or
+> lm(y~x)
+Error in eval(expr, envir, enclos) : object 'y' not found
+> traceback()
+7: eval(expr, envir, enclos)
+6: eval(predvars, data, env)
+5: model.frame.default(formula = y ~ x, drop.unused.levels = TRUE)
+4: model.frame(formula = y ~ x, drop.unused.levels = TRUE)
+3: eval(expr, envir, enclos)
+2: eval(mf, parent.frame())
+1: lm(y ~ x)
+
+*** notice that Rstudio breakpoint cannot be set inside packaged sources (source file inside a package).
+
+*** trace S4 method (use signature= argument)
+setMethod("plot", signature(x = "track", y = "missing"), 
+
+R> trace("plot", browser, exit=browser, signature = c("track",
+"missing"))
+
+** other
+
+*** littler
+
+# do the following during your R installation
+./configure --prefix=/home/wanding.zhou/.Renv/versions/3.2.3 --enable-R-shlib=yes
+
+install.packages("littler")
+# link binary
+ln -s /primary/home/wanding.zhou/.Renv/versions/3.2.3/lib64/R/library/littler/bin/r ~/bin/
+# under macosx, R and r are the same, so use lr
+ln -s /Library/Frameworks/R.framework/Resources/library/littler/bin/r ~/bin/lr
+
+*** set library path
+default library location
+/Library/Frameworks/R.framework/Resources/library
+
+To change libPath temporarily:
+.libPaths(c("/usr/lib/R/library","/usr/share/R/library"))
+
+permanently add the library path:
+in ~/.Renviron add R_LIBS="home/wan/lib/R"
+
+*** set default packages that are loaded on start
+options(defaultPackages=c(getOption("defaultPackages"),
+       "mypackage1","mypackage2", ... [etc.]))
+
+*** parallel
+#+BEGIN_SRC R
+mclapply(x, func)
+
+#+END_SRC
+
+*** display the internal structure of an R object using "str"
+diagnostic function and alternative to “summary”
+> str(str)
+function (object, ...)
+> str(lm)
+function (formula, data, subset, weights, na.action, method = "qr", 
+    model = TRUE, x = FALSE, y = FALSE, qr = TRUE, singular.ok = TRUE, 
+    contrasts = NULL, offset, ...)  
+> str(ls)
+function (name, pos = -1, envir = as.environment(pos), all.names = FALSE, 
+    pattern)  
+> x<-rnorm(100,2,4)
+> summary(x)
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+-6.0210 -0.6476  2.0160  2.1340  4.5160 14.4300 
+> str(x)
+ num [1:100] -0.61 3.586 2.446 -0.265 2.366 …
+*** time your code
+system.time(yourcodehere)
+
+*** recover
+allows you to modify the error behavior so that you can browse the function call stack
+> options(error=recover)
+> read.csv("nosuchfile")
+Error in file(file, "rt") : cannot open the connection
+In addition: Warning message:
+In file(file, "rt") :
+  cannot open file 'nosuchfile': No such file or directory
+
+Enter a frame number, or 0 to exit   
+
+1: read.csv("nosuchfile")
+2: read.table(file = file, header = header, sep = sep, quote = quote, dec = dec, fill 
+3: file(file, "rt")
+
+Selection: 1
+select a level in the call stack to see around, in this case, read.csv, for example. The control is handed over to browse.
+Called from: top level 
+Browse[1]> Q
+*** convert to LaTeX table
+#+BEGIN_SRC R
+library(xtable)
+print(xtable(res), file="~/tab.tex", digits=2, floating=FALSE)
+#+END_SRC
+
+*** list file in the working directory
+> dir()
+*** list files in current dir
+list.files(directory_name)
+list.files(pattern=".pairs")	list all the files satisfying some pattern in the current directory.
+file.show(filepath)	display the file indicated in the filepath
+*** list object in the work space
+> ls()
+
+*** free variables are searched in the parent closure
+> make.power <- function(n) {pow <-function(x) {x^n}; pow}
+> cube <- make.power(3)
+> square <- make.power(2)
+> cube(3)
+[1] 27
+> square(3)
+[1] 9
+> ls(environment(cube))
+[1] "n"   "pow"
+> get('n',environment(cube))
+[1] 3
+> ls(environment(square))
+[1] "n"   "pow"
+> get('n',environment(square))
+[1] 2
+
+*** use html help
+options(htmlhelp=FALSE)
+*** type <- in Rstudio, emacs ESS
+RStudio ALT -
+emacs ESS SHIFT -
+
+*** edit spreadsheet manually
+x <- edit(data.frame()) # Starts empty GUI spreadsheet editor for manual data entry
+x <- edit(x) # Opens existing data frame (table) 'x' in GUI spreadsheet editor.
+x <- scan(w="c") # Lets you enter values from the keyboard or by copy&paste and assigns them to vector 'x'.
+*** get help
+example(topic)
+?chisq.test
+?help.search("chi-square")	fuzzy-match search for chi-square
+help.search(igraph)	to search for topic in documents
+help("[[")
+?"[["
+vignette("sandwich")	## a brief introduction to the package sandwich
+*** attach data
+attach(data1)	使data1的列自动储入，无须data1$...
+*** clear workspace
+rm(list=ls())
+*** change directory, get working directory
+getwd()
+setwd(dir)
 * MacOSX
 ** keyboard shortcut
 Ctrl + Up # show all windows
@@ -417,7 +3598,6 @@ let g:NERDTrimTrailingWhitespace = 1
 ## download http://www.vim.org/scripts/script.php?script_id=1643
 vim supertab.vmb
 :source %
-
 * AWK
 ** strip whitespace
 gsub(/ +/, "", str)
@@ -880,7 +4060,6 @@ Linux
 
 exclude ending pattern
 sed -n '/chrM/,/GL000207.1/{/GL000207.1/!p}' /scratch/bcb/wzhou1/reference/hs37d5/hs37d5.fa > hs37d5.fa.chrM
-
 * git
 ** to inspect a remote
 git remote show [remote-name]
@@ -3341,27 +6520,6 @@ For example, <hash_map> is in STL but not in C++ standard library
     cout << hex << showbase << n << endl;
     cout << hex << noshowbase << n << endl;
     cout.flags( ios::right | ios::hex | ios::showbase )
-
-* Excel VBA
-** color cell by hex (e.g., column D and E)
-Sub SetHexColors()
-Dim i, LastRow
-LastRow = Range("A" & Rows.Count).End(xlUp).Row
-For i = 1 To LastRow
-Cells(i, "D").Interior.Color = HEXCOL2RGB(Cells(i, "D"))
-Cells(i, "E").Interior.Color = HEXCOL2RGB(Cells(i, "E"))
-Next
-End Sub
-
-Public Function HEXCOL2RGB(ByVal HexColor As String) As String
-Dim Red As String, Green As String, Blue As String
-HexColor = Replace(HexColor, "#", "")
-Red = Val("&H" & Mid(HexColor, 1, 2))
-Green = Val("&H" & Mid(HexColor, 3, 2))
-Blue = Val("&H" & Mid(HexColor, 5, 2))
-HEXCOL2RGB = RGB(Red, Green, Blue)
-End Function
-
 * Javascript / TypeScript
 everything is a reference
 
@@ -6534,7 +9692,6 @@ TTL: time to live. this indicates the amount of time after which a package would
       DNS related problems?? - Configuration for OpenDNS servers - http://ubuntuforums.org/showthread.php?t=543659 - Author noob12
       Turn off/Disable IPv6 - http://ubuntuforums.org/showthread.php?t=6841 - Author mark
       Quit Having Network Manager asking for a Password to Connect to Known Wireless Networks - http://ubuntuforums.org/showthread.p...o+login&page=8 - Author Blueshift
-
 * gnu screen
 
 ** renumber screen
@@ -6549,3176 +9706,6 @@ fix the bug
 http://superuser.com/questions/244299/gnu-screen-how-to-update-dynamically-the-title-of-a-window
 about using PROMPT_COMMAND (specific to bash, allows putting command result before the PS
 http://www.tldp.org/HOWTO/Bash-Prompt-HOWTO/x264.html
-      
-* R
-** paste from clipboard
-x <- read.delim(pipe(“pbpaste”))
-** install R on cluster
-use Renv
-https://github.com/viking/Renv
-and follows the instruction
-do
-Renv rehash
-every time you install a new R binary
-
-location of installed packages
-~/.Renv/versions/3.2.3/lib64/R/library/
-
-*** example add R3.0.2
-wget https://cran.cnr.berkeley.edu/src/base/R-3/R-3.0.2.tar.gz
-./configure --prefix=/home/wanding.zhou/.Renv/versions/3.0.2
-export JAVA_HOME=/primary/vari/software/java/jdk1.7.0_40 # somehow the java home is not correctly setup
-make
-make install
-
-# switch R version
-Renv shell 3.2.2
-*** example add R3.2.3
-./configure --prefix=/home/wanding.zhou/.Renv/versions/3.2.3 --enable-R-shlib=yes
-export JAVA_HOME=/primary/vari/software/java/jdk1.7.0_40 # somehow the java home is not correctly setup
-make
-make install
-*** example add R3.2.5
-export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/primary/vari/software/cairo/default/lib/pkgconfig/
-./configure --prefix=/home/wanding.zhou/.Renv/versions/3.5.2 -with-recommended-packages=no --without-x --with-cairo --with-libpng --with-libtiff --with-jpeglib --enable-R-shlib
-# export JAVA_HOME=/primary/vari/software/java/jdk1.7.0_40 # in case java home is not correctly setup
-make
-make install
-
-./configure --prefix=/home/wanding.zhou/.Renv/versions/3.2.5 --without-x --with-cairo --with-libpng --with-libtiff --with-jpeglib --enable-R-shlib
-*** example add R3.5.2
-
-** install Cairo on cluster
-export CAIRO_LIBS="-L/primary/vari/software/cairo/default/lib/ -L/primary/vari/software/pixman/default/lib/ -lcairo -lpixman-1"
-export CAIRO_CFLAGS="-I/primary/vari/software/cairo/default/include/cairo/ -I/primary/vari/software/pixman/default/include/pixman-1/“
-
-export PKG_CONFIG_PATH="/primary/vari/software/cairo/default/lib/pkgconfig/:/primary/vari/software/pixman/default/lib/pkgconfig/“
-
-pkg-config --libs --cflags cairo # can query cairo, see what the problem is 
-** Bioconductor
-*** basics
-**** install bioconductor
-source("http://bioconductor.org/biocLite.R")
-biocLite()
-**** install bioconductor packages
-biocLite(c("GenomicFeatures", "AnnotationDbi"))
-**** upgrade installed package (require R version > 2.15)
-source("http://bioconductor.org/biocLite.R")
-biocLite('BioUpgrade')
-**** recompile installed package
-source("http://bioconductor.org/biocLite.R")
-pkgs <- rownames(installed.packages())
-biocLite(pkgs, type="source")
-*** methylumi
-**** tryout
-suppressPackageStartupMessages(library(methylumi,quietly=TRUE))
-samps <- read.table(system.file("extdata/samples.txt", package = "methylumi"),sep="\t",header=TRUE)
-mldat <- methylumiR(system.file('extdata/exampledata.samples.txt',package='methylumi'), qcfile=system.file('extdata/exampledata.controls.txt',package="methylumi"), sampleDescriptions=samps)
-
-md <- cmdscale(dist(t(exprs(mldat)[fData(mldat)$CHROMOSOME=='X',])),2)
-plot(md,pch=c('F','M')[pData(mldat)$Gender],col=c('red','blue')[pData(mldat)$Gender])
-
-# system.file find file relative to package installation
-**** assessor functions
-exprs(ob)
-betas(ob)
-pvals(ob)
-methylated(ob)
-unmethylated(ob)
-QCdata(ob)
-getHistory(ob)
-**** example - QC
-#+BEGIN_SRC R
-qcplot(mldat, 'FIRST HYBRIDIZATION')
-#+END_SRC
-
-**** example - normalization
-only for GoldenGate platform
-#+BEGIN_SRC R
-mldat.norm <- normalizeMethyLumiSet(mldat)
-# looks at the median intensities in the methylated and unmethylated channels at very low and high beta values and sets these medians equal.
-#+END_SRC
-
-**** example - test whether expression differs between males and females
-
-see "an introduction to methylumi package"
-
-#+BEGIN_SRC R
-
-library(limma)
-
-design_matrix <- model.matrix(~1+Gender, data=pData(mldat.norm))
-# pData returns the "phenotypic" data in a data.frame
-# "Gender" is a column in the returned data.frame
-# model.matrix creates the "design matrix" which was usually used for the linear regression analysis
-# In this case, however, the design matrix can be for limma (see limma paper for the definition of the design matrix, in brief, the rows are array experiments the columns are contrast coefficient)
-# the "1+" adds (which is by default on too, so one could just use model.matrix(~Gender) in principle) the intercept term into the design matrix. The intercept term is a column of 1's.
-
-fit <- lmFit(exprs(mldat), design_matrix)
-# raw fit
-
-fit <- eBayes(fit)
-# empirical Bayes smoothing
-# which estimates the prior from the raw fit, then estimate the posterior fit, then iterate.
-
-tt <- topTable(fit, coef=2, genelist=fData(mldat)[,c('SYMBOL', 'CHROMOSOME')], number=1000)
-# get the top differentially expressed genes
-
-x <- aggregate(tt$adj.P.Val, by=list(tt$CHROMOSOME), median)
-# split the genes by chromosome, compute the median adjusted P-value
-colnames(X) <- c('Chromosome', 'Median adjusted P-value')
-# set title
-
-library(xtable)
-xt <- xtable(x, label='tab:chromosomepvals', caption='The median adjusted P-value for each gene')
-digits(xt) <- 6
-print(xt, include.rownames=FALSE, align='cr')
-# print LaTeX table.
-#+END_SRC
-
-*** illuminaio
-*** Biobase
-
-exprs accesses expression from eSet class
-se.exprs access standard error of expression from eSet class
-
-fData retrieves features
-*** Rsamtools
-browseVignettes(Rsamtools)
-*** GenomicAlignments
-test data H.RNAseqData.HNRNPC.bam.chr14
-**** By default readGAlignments only reads genomic ranges.
-gal <- readGAlignments(bamfile_path)
-# accessor functions
-length(gal) # number of alignments
-strand(gal) # strand info as a factor
-table(strand(gal)) # count reads mapped to 2 strands
-**** fetch sequence and quality string as well using ScanBamParam
-scanBamWhat() # check all the options
-seq_gal <- readGAlignments(bamfile_path, param = ScanBamParam(what=c("seq","qual")))
-**** fetch sequence restrict to a region using ScanBamParam
-seq_gal <- readGAlignments(bamfile_path, param = ScanBamParam(which = GRanges(seqnames="chr14", ranges = ranges(gal)[1:5])))
-**** fetch reads mapped to positive strand only using scanBamFlag
-pos_gal <- readGAlignments(bamfile_path, param = ScanBamParam(which = gr, what = "seq", flag = scanBamFlag(isMinusStrand=FALSE)))
-*** AnnotationDb system
-see
-https://www.bioconductor.org/packages/release/data/annotation/
-for available annotation db
-see
-https://www.youtube.com/watch?v=8qvGNTVz3Ik
-for how to use it.
-** algorithm
-*** run length encoding (rle)
-> ## generate data for coin flipping example 
-> coin <- sample(c("H", "T"), 1000, replace = TRUE)
-> table(coin) 
-coin
-  H   T 
-501 499  
-> head(coin, n = 20)
- [1] "T" "H" "T" "T" "T" "H" "T" "H" "T" "T" "H" "T" "H" "T"
-[15] "T" "T" "H" "H" "H" "H" 
-
-> ## use the rle function on our SMALL EXAMPLE above
-> ## note results MATCH what I described above... 
-> rle(c("H", "T", "T", "H", "H", "H", "H", "H", "T", "H"))
-Run Length Encoding
-  lengths: int [1:5] 1 2 5 1 1
-  values : chr [1:5] "H" "T" "H" "T" "H" 
-> ## use the rle function on our SIMULATED data
-> coin.rle <- rle(coin)
-> ## what is the structure of the returned result? 
-> str(coin.rle)
-List of 2
- $ lengths: int [1:500] 1 1 3 1 1 1 2 1 1 1 ...
- $ values : chr [1:500] "T" "H" "T" "H" ...
- - attr(*, "class")= chr "rle" 
-> ## sort the data, this shows the longest run of
-> ## ANY type (heads OR tails)
-> sort(coin.rle$lengths, decreasing = TRUE)
-  [1] 9 8 7 7 7 7 7 6 6 6 6 6 6 6 6 5 5 5 5 5 5 5 5 5 5 5 5
- [28] 5 5 5 5 5 5 5 5 5 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4
- [55] 4 4 4 4 4 4 4 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3
- [82] 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3
-[109] 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 2 2 2 2 2 2 2
-[136] 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-[163] 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-[190] 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-[217] 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-[244] 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-[271] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-[298] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-[325] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-[352] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-[379] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-[406] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-[433] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-[460] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-[487] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 
-> ## use the tapply function to break up
-> ## into 2 groups, and then find the maximum
-> ## within each group
-> 
-> tapply(coin.rle$lengths, coin.rle$values, max)
-H T 
-9 8
-
-unique (S3 method: unique.Rle)
-
-** best practices
-*** use . for multi-word names, NOT _ since _ is used as <- in early versions (and S_PLUS).
-** basics
-*** R is a functional programming language
-meaning that arguments to functions are assumed to be immutable (RC below is a violation). "Side effects" should be minimized.
-*** attributes of an R object
-every R object can have attributes attached to it
-
-attributes are named list of R
-
-to list all attributes
-attributes(obj)
-
-to access a specific attributes
-attr(obj,'aaa')
-or
-aaa(obj)
-
-"class" is an attribute of obj
-
-structure() function returns a new object with modified attributes
-structure(1:10, my_attribute='This is a vector')
-
-By default, most attributes are lost when modifying a vector
-Attributes that are NOT lost:
-names
-dimensions
-class
-
-factors can be seen as vector with "level" attribute.
-
-*** S3, S4, Reference Class (RC)
-S3 and S4 are "generic" function based. methods belong to function and are called depending on class of the argument. S4 is more formal than S3.
-RC is newest OO system in R. it's message-passing based. similar to C++, Java etc.
-*** S3 class
-S3 is a naming scheme of method dispatching (or method overload, or polymorphism or whatever you call it)
-
-S3 method means one have different method instantiation when applied to different S3 classes.
-
-it works by:
-replacing the function f by f.a when the first argument to f is an object of class "a". i.e.,
-f.A(other_args) === f(a, other_args) # and a is of class "A"
-
-setting the return value of a call to method "glm" to be "glm"
-print.glm is the specific version of print (the "generic") when it applies to object of class "glm"
-
-For example, if you type "median", you see "UseMethod("median"). That means it is an S3 method. To list all the S3 classes
-#+BEGIN_SRC R
-methods(median)
-methods(print)
-#+END_SRC
-
-Notice that some of the methods have *s next to their name. That means that they are hidden inside some package's namespace. Use find to find out which package they are in. For example
-#+BEGIN_SRC R
-find("acf")  #it's in the stats package
-stats:::print.acf
-#+END_SRC
-
-unclass()	remove the class attribute of an object
-# set attributes
-attr(z,"dim")<-c(10,10)		treat z as a 10 by 10 matrix
-**** list methods of a generic - methods()
-
-**** define S3 class
-All you need in defining a S3 class object is to add the "class" attribute by
-foo <- structure(list(), class="Foo")
-or
-foo <- list()
-class(foo) <- "Foo"
-
-the "class" attribute can be a vector, for example glm object is of class c("glm", "lm")
-meaning that object is a glm class object which is also inherited from lm class. The vector describe 
-the object from most specific (leftmost) to the least specific (rightmost).
-**** determine the class of an object using "inherits"
-inherits(foo, "Foo")
-#> [1] TRUE
-
-**** constructor of the class objects
-Most built-in S3 class has an constructor function of the same name as the class name:
-Foo <- function(x) {
- if (!is.numeric(x)) stop("X must be numeric")
- structure(list(x), class="foo")
-}
-
-**** declare an S3 "generic" function and its instantiations (called "method" in R)
-# Use "UseMethod" to declare a "generic"
-f <- function(x) UseMethod("f")
-
-# instantiation, must follow the correct naming scheme "generic.class"
-f.a <- function(x) "Class a" # this just return the character array "Class a" of length 1
-
-a <- structure(list(), class="a")
-class(a)
-#> [1] "a"
-f(a)
-#> [1] Class a"
-
-**** add a method to existing generic, e.g., "mean"
-
-mean.a <- function(x) "a"
-mean(a)
-#> [1] "a"
-
-**** how methods are dispatched along the class hierarchy?
-
-f <- function(x) UseMethod("f")
-f.a <- function(x) "Class a"
-f.default <- function(x) "Unknown class"
-
-f(structure(list(), class="a"))
-#> [1] "Class a"
-
-# no method for class b, so use method for class a
-f(structure(list(), class=c("b","a")))
-#> [1] "Class a"
-
-f(structure(list(), class="c"))
-#> [1] "Unknown class"
-
-*** S4 class
-
-Note that similar to S3 class, S4 class method still belongs to function, instead of class.
-
-see http://www.cyclismo.org/tutorial/R/s4Classes.html
-
-S4 objects are created using setClass
-S4 methods are created using setGeneric + setMethod
-S4 data members (called 'slot's) are accessed from '@' instead of '$'
-is.object(a) tells whether a is an object
-isS4(a) tells whether a is an S4 object
-"contains" argument specify base class of inheritance
-"callNextMethod" is used to call the same version in the base class.
-
-other methods:
-slotNames(a)
-slotNames('MethyLumiSet')
-getSlots('MethyLumiSet') returns the types (search getSlots in the link for detail)
-getslot(a, 'slotname') == a@slotname
-
-"The basic idea is that if the name of a function has not been defined, the name must first be reserved using the setGeneric function."
-
-In setMethod, the first component of "signature" argument must be the same as the name of the class object. additional components can be different to allow overloading. (search overloading)
-
-validity function can be explicitly called through validObject(theObject);
-
-**** declare S4 class using "setClass"
-
-setClass("Person", slots=list(name="character", age="numeric"))
-# "contains" implements inheritance.
-setClass("Employee", slots=list(boss="Person"), contains="Person")
-
-alice <- new("Person", name="Alice", age=40)
-john <- new("Employee", name="John", age=20, boss=alice)
-
-**** access slots
-
-alice@age
-or
-slot(john, "boss")
-
-**** S4 can inherit S3 or base type
-
-If S4 objects contain S3 class or base type, it will have a special .Data slot
-
-setClass("RangedNumeric", contains="numeric",slots=list(min="numeric",max="numeric"))
-rn <- new("RangedNumeric",1:10,min=1,max=10)
-rn@min
-#> [1] 1
-rn@.Data
-#> [1] 1 2 3 4 5 6 7 8 9 10
-
-**** create generics and methods
-
-again, generic is by definition a "generialized method".
-
-# use existing generic "union"
-setGeneric("union")
-#> [1] "union"
-setMethod("union", c(x="data.frame", y="data.frame"), function(x,y) {unique(rbind(x,y))})
-#> [1] "union"
-
-# create new generic "MyGeneric"
-setGeneric("MyGeneric", function(x) {
-  standardGeneric("MyGeneric")
-})
-
-find which method gets called given the specification of a generic call
-# from methods: takes generic name and class names
-selectMethod("nobs", list("mle"))
-
-#> Method Definition:
-
-function (object, ...) 
-if ("nobs" %in% slotNames(object)) object@nobs else NA_integer_
-<bytecode: 0x4801a30>
-<environment: namespace:stats4>
-
-Signatures:
-        object
-target  "mle" 
-defined "mle" 
-
-**** use setAs() to create converter function
-"track" is a class with slot x and y.
-setAs("track", "numeric", function(from) from@y)
-t1 <- new("track", x=1:20, y=(1:20)^2)
-as(t1, "numeric")
-#> [1]   1   4   9  16  25  36  49  64  81 100 121 144 169 196 225 256 289 324 361 400
-
-**** more information
-vignette("Intro2Matrix",package="Matrix")
-google bioconductor S4
-*** Reference Class
-RC methods belong to objects, not functions
-RC objects are mutable, the usual R copy-on-modify semantics do not apply. (this is how the "Reference" comes in the name!)
-
-is(x, "refClass") tells whether an object is a refClass
-
-**** define class and class object
-
-fields(accessed through $) are equivalents of slots in S4(accessed through @)
-
-Account <- setRefClass("Account", fields=list(balance="numeric"))
-
-a <- Account$new(balance=100)
-a
-#> Reference class object of class "Account"
-a$balance
-#> [1] 100
-a$balance <- 200
-a$balance
-#> [1] 200
-
-**** RC behaves like a Reference
-
-b <- a
-b$balance
-#> [1] 200
-a$balance <- 0
-b$balance
-#> [1] 0
-
-**** use $copy() to copy
-
-c <- a$copy()
-c$balance
-#> [1] 0
-a$balance <- 100
-c$balance
-#> [1] 0
-
-**** access member fields in member function using "<<-" (deep binding)
-
-Account <- setRefClass("Account", fields=list(balance="numeric"),
-  methods = list(
-    withdraw = function(x) {
-     balance <<- balance - x
-    },
-    deposit = function(x) {
-      balance <<- balance + x
-    }
-  )
-)
-
-# usage
-a <- Account$new(balance=100)
-a$deposit(100)
-a$balance
-#> [1] 200
-
-**** inheritance
-
-NoOverdraft <- setRefClass("NoOverdraft",
-  contains = "Account",
-  methods = list(
-    withdraw = function(x) {
-      if (balance < x) stop("Not enough money")
-      balance <<- balance - x
-    }
-  )
-)
-
-accountJohn <- NoOverdraft$new(balance=100)
-accountJohn$deposit(50)
-accountJohn$balance
-#> [1] 150
-accountJohn$withdraw(200)
-#> Error in accountJohn$withdraw(200): Not enough money
-
-One can call parent methods by callSuper(...)
-
-*** Group Generics
-?S4groupGeneric
-?Methods
-*** environment
-
-http://adv-r.had.co.nz/Environments.html
-
-environment is like a list, but different in other ways:
- + reference semantics (objects in the environment is like pointers in C.)
- + Every object in an environment has a unique name.
- + The objects in an environment are not ordered (i.e., it doesn’t make sense to ask what the first object in an environment is).
- + An environment has a parent.
-
-environments' members are accessed via e$member or e[ [member]] or get('member', envir=e)
-
-environment = frame + parent environment
-
-e <- new.env() creates a new environment
-ls(e) list bindings in the environment, omitting names begin with '.'.
-ls(e, all.names=True) show all the names
-create a new binding like a list: e$a <- 1
-remove binding: rm('a', envir=e)
-check existence of binding: exists('x', envir=e)
-consider inherits: exists('x', envir, inherits=TRUE)
-
- + globalenv() interactive workspace
- + baseenv() base environment, on top of emptyenv()
- + emptyenv() empty environment, ultimate ancestor of all environments only empty environment does not have parent
- + environment() current environment
-
-globalenv() => [environment loaded with "library"] => search path .. => baseenv() => emptyenv()
-
-The enclosing environment determines how the function finds values; the binding environments determine how we find the function.
-
-**** manipulate environment
-
-e <- new.env()
-e$a <- FALSE
-e$b <- "a"
-e$d <- 1:3
-
-multiple name can point to the same object
-e$a <- $d
-
-names in an environment are like pointers, object with no name bound goes to gabbage collector.
-
-get parent environment
-e <- new.env()
-# the default parent provided by new.env() is environment from
-# which it is called - in this case that's the global environment
-parent.env(e)
-#> <environment: R_GlobalEnv>
-ls(e)
-#> character(0)
-
-e$a <- 1
-e$b <- 2
-ls(e)
-#> [1] "a" "b"
-e$a
-#> [1] 1
-
-str(e)
-#> <environment: 0x7ff93eea0d>
-ls.str(e)
-#> a: num 1
-#> b: num 2
-
-get name from environment and their ancestors..
-get("c", envir=e)
-Note that e$c and e[ [c]] only searches the current environment. 
-
-**** delete binding from environment "rm()"
-# in list you can set the name to NULL, but for environment, you have remove the binding using rm()
-e$a <- 1
-e$a <- NULL
-ls(e)
-#> [1] "a"
-
-rm("a", envir=e)
-ls(e)
-#> character(0)
-
-**** determine name exists "exists"
-x <- 10
-exists("x", envir=e)
-#> [1] TRUE
-exists("x", envir=e, inherits = FALSE)
-#> [1] FALSE
-
-**** compare environment "identical()" (DONT USE ==)
-identical(globalenv(), environment())
-#> [1] TRUE
-globalenv() == environment()
-#> Error in globalenv() == environment(): comparison (1) is possible only for atomic and list types.
-**** lexical scoping (R) vs dynamic scoping (elisp etc.)
-lexical scoping: if a name is not found in an environment, R will look in the parent (enclosing) environment (not from the calling environment).
-def2: lexical scoping looks up symbol values based on how functions were nested when they were created, no how they are nested when they are called.
-
-the values of free variables are searched for in the environment in which the function was defined.
-A function + an environment = a closure or function closure.
-Keep looking back in the search list.
-#+BEGIN_SRC R
-> f<-function(x) {x*x}
-> environment(f)
-<environment: R_GlobalEnv>
-> parent.env(environment(f))
-<environment: package:lattice>
-attr(,"name")
-[1] "package:lattice"
-attr(,"path")
-[1] "/usr/lib/R/library/lattice"
-#+END_SRC
-
-**** find which environment a name is defined (pryr::where())
-#+BEGIN_SRC R
-
-library(pryr)
-x <- 5
-where("x")
-#> <environment: R_GlobalEnv>
-where("mean")
-#> <environment: base>
-
-where <- function(name, env=parent.frame()) {
-  if (identical(env, emptyenv())) {
-    # Base case
-    stop("Can't find ", name, call. = FALSE)
-  } else if (exists(name, envir = env, inherits = FALSE)) {
-    # Success case
-    env
-  } else {
-    # Recursive case
-    where(name, parent.env(env))
-  }
-}
-
-# implemented using iteration
-is_empty <- function(x) identical(x, emptyenv())
-where2 <- function(..., env = parent.frame()) {
-  while (!is_empty(env)) {
-    if (success) {
-      # success case
-      return ()
-    }
-    # inspect parent
-    env <- parent.env(env)
-  }
-# base case
-}
-
-#+END_SRC
-
-**** function environments
-1. enclosing environment : the environment when function gets executed it can see. (given by environment())
-2. binding environment : the environment where the function itself is defined, can have many
-3. execution environment : the ephermeral environment that stores the temporary variable when the function is called. This environment usually is the child of enclosing environment.
-4. calling environment : the environment from which the function is called
-
-Note the difference between parent.frame() and environment(), the previous returns the calling environment, the latter returns the enclosing environment (the real parent)
-
-binding environment can be different from enclosing environment, e.g.,
-e <- new.env()
-e$g <- function() 1
-binding environment is e and enclosing environment is GlobalEnv.
-
-Enclosing environment determines how the function finds values; the binding environment determine how we find the function.
-
-execution environment is destroyed every time function finishes, unless the function returns another function and the execution environment becomes the enclosing environment of the returned function, e.g.,
-#+BEGIN_SRC R
-# plus is a function factory
-plus <- function(x) {
-  function(y) x+y
-}
-plus_one <- plus(1)
-# both below are GlobalEnv
-identical(parent.env(environment(plus_one)), environment(plus))
-#> [1] TRUE
-#+END_SRC
-
-see the difference between calling environment (returned by parent.frame()) and enclosing environment (returned by environment())
-#+BEGIN_SRC R
-f2 <- function() {
-  x <- 10
-  function() {
-    def <- get("x", environment())
-    cll <- get("x", environment())
-    list(defined=def, called=cll)
-  }
-}
-g2 <- f2()
-x <- 20
-str(g2())
-#> List of 2
-#>  $ defined : num 10
-#>  $ called : num 20
-#+END_SRC
-
-**** search order of names (scoping rules) "search()"
-to see the search paths (and their priorities). The global environment (or the user's workspace) is always the first on the search list and base package is always the last.
-> search()
- [1] ".GlobalEnv"        "tools:rstudio"     "package:stats"    
- [4] "package:graphics"  "package:grDevices" "package:utils"    
- [7] "package:datasets"  "package:methods"   "Autoloads"        
-[10] "package:base"   
-library() put the package to the second position of the search list
-> library(lattice)
-> search()
- [1] ".GlobalEnv"        "package:lattice"   "tools:rstudio"    
- [4] "package:stats"     "package:graphics"  "package:grDevices"
- [7] "package:utils"     "package:datasets"  "package:methods"  
-[10] "Autoloads"         "package:base"    
-function and non-function are separated. One can have a function c and a object called c simultaneously.
-
-retrieve environment by name
-as.environment("package:stats")
-#> <environment: package:stats>
-
-**** package environment
-Every package has 2 environments associated with it : the package environment and the namespace environment.
-namespace defines internal names
-package defines publically accessible names
-
-**** deep binding <<-
-name <<- value
-equivalent to
-assign("name", value, inherits = TRUE)
-
-walks up the parent (enclosing) environments
-#+BEGIN_SRC R
-x <- 0
-f <- function() {
-  x <<- 1
-}
-f()
-x
-#> [1] 1
-#+END_SRC
-
-**** explicit environment
-modify <- function(x) {
-  x$a <- 2
-  invisible()
-}
-
-# when applied to list, nothing changed
-x_l <- list()
-x_l$a <- 1
-modify(x_l)
-x_l$a
-#> [1] 1
-
-# when applied to environment, original copy is modified
-x_e <- new.env()
-x_e$a <- 1
-modify(x_e)
-x_e$a
-#> [1] 2
-
-**** create a new environment and make sure it does NOT inherit anything
-
-use new.env(parent=emptyenv())
-
-x <- 1
-e1 <- new.env()
-get("x", envir = e1)
-#> [1] 1
-
-e2 <- new.env(parent = emptyenv())
-get("x", envir = e2)
-#> Error in get("x", envir = e2): object 'x' not found
-
-**** package state using environment
-
-my_env <-new.env(parent=emptyenv())
-my_env$a <- 1
-get_a <- function() {
-  my_env$a
-}
-
-# return the old value from setter function is a good practice because it makes it easier to reset the previous value in conjunction with on.exit()
-set_a <- function(value) {
-  old <- my_env$a
-  my_env$a <- value
-  invisible(old)
-}
-
-**** delayed binding %<d-% or delayedAssign()
-omitted
-**** active binding %<a-% or makeActiveBinding()
-omitted
-*** peek into an object using "str", "class" and "typeof"
-**** to figure out what an object is using "str" (short for "structure" NOT for "string")
-str()
-**** to figure out the elementary type an object is built based on (most likely a list) using "typeof"
-mod <- lm(mpg~wt, data=mtcars)
-> typeof(mod)
-#> [1] "list"
-
-# for example, data.frame is a S3-structure, 
-#+BEGIN_SRC R
-typeof(df)
-#> [1] "list"
-class(df)
-#> [1] "data.frame"
-is.data.frame(df)
-#> [1] TRUE
-#+END_SRC
-**** "class" is an attribute, class() essentially display that attribute
-*** ls(2) sees the second environment in the search path, usually useful to see what is added from the latest attachment
-*** get (multiple) element from environment
-get("one.element", envir=id2name)
-mget(row.names(tested$table), envir=id2name)
-** Data IO
-see R wiki for more options
-http://en.wikibooks.org/wiki/R_Programming/Importing_and_exporting_data
-*** read ods file
-library("gnumeric")
-df <- read.gnumeric.sheet(file = "df.ods", head = TRUE, sheet.name = "Feuille1")
-*** read.csv
-read.csv is identical to read.table except that the default separator is “,” and header=TRUE
-t<-read.csv('2012_04_16_endosymbiosis_in_gamma_proteobacteria.csv', header=TRUE)
-
-*** handle large dataset by doing a pilot study of the type of each column
-initial <- read.table(“datatable.txt”, nrows=100) # try the first 100 rows first
-classes <- sapply(initial, class)
-tabAll <- read.table(“datatable.txt”, colClasses=classes)
-
-*** dget and dput
-read and write R code files, contain the metadata from R for a single object
-> y<-data.frame(a=1,b='a')
-> dput(y) # dput to the console
-structure(list(a = 1, b = structure(1L, .Label = "a", class = "factor")), .Names = c("a", 
-"b"), row.names = c(NA, -1L), class = "data.frame")
-> dput(y,file='y.R') # dput to a file
-> new.y <- dget('y.R')
-> new.y
-  a b
-1 1 a
-
-*** source and dump
-read and  write R code files, contain the metadata from R, possibly for multiple objects
-> x<-'foo'
-> y<-data.frame(a=1,b='a')
-> dump(c('x','y'), file='data.R')
-> rm(x,y)
-> source('data.R')
-
-*** sink
-this redirect any "cat"s to file without printing to terminal
-sink("/home/wanding/myfile.csv")
-datafile
-sink()
-
-*** write.table
-write.table(datafile,file="/home/wanding/myfile.csv")
-
-*** load and save
-read and write workspaces
-*** serialize and unserialize
-write and read single R object in binary form
-
-*** file connections
-file, opens a connection to a file
-gzfile, opens a connection to a gzip file
-bzfile, opens a connection to a bzip2 file
-url, opens a connection to a webpage
-> str(file)
-function (description = "", open = "", blocking = TRUE, encoding = getOption("encoding"),  raw = FALSE)  
-str(file) see the description of a command (in this case “file”)
-open is a code indicating
-'r' read only
-'w' writing
-'a' appending
-'rb','wb','ab' for binary
-con ← file(“foo.txt”, 'r')
-data ← read.csv(con)
-close(con)
-the same as 
-data ← read.csv('foo.txt')
-
-**** readLines and writeLines
-> con ← gzfile(“words.gz”)
-> x ← readLines(con,10) # read in 10 lines.
-
-**** Read in lines of a webpage
-con ← url(“http://www.jhsph.edu”,'r')
-x ← readLines(con)
-
-*** Print
-**** Print without quote “”
-> print("a")
-[1] "a"
-> print("a",quote=FALSE)
-[1] a
-
-**** print without array index using cat
-> cat("a\n")
-a
-but in this case, one needs to append “\n”.
-
-the best solution to use C-type printf is to use cat + sprintf
-cat(sprintf('%1.3f\t%s\n', a.sorted[i], names(a.sorted)[i]))
-
-** Manipulate Data
-**** cut
-group data into intervals
-> a=c(3,7,2,5,7,12,15,13,17)
-> cut(a, br=c(1,5,10,15))
-[1] (1,5]   (5,10]  (1,5]   (1,5]   (5,10]  (10,15] (10,15] (10,15] <NA>   
-Levels: (1,5] (5,10] (10,15]
-> ac=cut(a, br=c(1,5,10,15))
-> class(ac)
-[1] "factor"
-> as.character(ac)
-[1] "(1,5]"   "(5,10]"  "(1,5]"   "(1,5]"   "(5,10]"  "(10,15]" "(10,15]" "(10,15]"
-[9] NA
-
-***** specify labels
-> cut(a, br=c(1,5,10,15),labels=c('1-5','5 to 10','10~15'))
-[1] 1-5     5 to 10 1-5     1-5     5 to 10 10~15   10~15   10~15   <NA>   
-Levels: 1-5 5 to 10 10~15
-
-**** tertiary operator vectorization (ifelse)
-a <- 1
-x <- if(a==1) 2 else 1
-x
-#> [1] 2
-
-a <- c(1,2,1)
-x <- ifelse(a==2,1,2)
-x
-#> [1] 2 1 2
-
-**** string regular expression
-fetch pattern
-txt <- "aaa12xxx"
-regmatches(txt,regexpr("[0-9]+",txt))
-**** assign()
-assign("x", function(arguments)) # Has the same effect, but uses the assignment function instead of the assignment operator.
-x<-function(arguments)
-
-**** how to round a number using floor and ceiling
-sapply(vec, floor)
-trunc
-round
-signif
-**** word wrap using strwrap function
-sapply(names(t), function(x) paste(strwrap(x,width=40),collapse="\n"))
-
-**** view the class (type) of an object
-class(x)
-in fact “class” is an attribute of x, see below.
-
-**** names()
-> x<-1:3
-> names(x) # no names by default
-NULL
-> names(x)<-c('foo','bar','norf')
-> x
- foo  bar norf 
-  1    2    3 
-> names(x)
-[ 1 ] "foo"  "bar"  "norf"
-# note that even with names, x remains a vector, not a data.frame
-**** explicit type coersion
-as.numeric()
-as.character()
-as.logical()
-as.complex()
-
-**** integer and numeric
-numeric is equivalent to "double"
-“1” is numeric and “1L” is integer.
-
-**** NULL, NaN and NA
-***** basics
-NULL is nothing. is.null()
-
-NA has a class too, there's integer NA and character NA.
-default is a logical NA
-NaN is NA, but NA is not NaN.
-> x<-c(1,2,NA,10,3)
-> is.na(x)
-[ 1 ] FALSE FALSE  TRUE FALSE FALSE
-> is.nan(x)
-[ 1 ] FALSE FALSE FALSE FALSE FALSE
-> x<-c(1,2,NaN,NA,4)
-> is.na(x)
-[1] FALSE FALSE  TRUE  TRUE FALSE
-> is.nan(x)
-[1] FALSE FALSE  TRUE FALSE FALSE
-***** omit all NA in a data.frame (this omit any row with at least 1 NA)
-na.omit(dat)
-***** omit rows with all NA in a data.frame
-
-df2 <- df[rowSums(is.na(df)) == 0,];
-cat(sprintf('Removed %d rows from %d.\n', dim(df)[1]-dim(df2)[1], dim(df)[1]));
-return(df2);
-
-***** filter out NA - is.na
-> x<-c(1,2,NA,4,NA,5)
-> x[!is.na(x)]
-[ 1 ] 1 2 4 5
-
-***** filter out NA for two vectors simultaneously using complete.cases.
-> x<-c(1,NA,2,4,NA,5)
-> y<-c('a','b',NA,'d',NA,'f')
-> good<-complete.cases(x,y)
-> good
-[ 1 ]  TRUE FALSE FALSE  TRUE FALSE  TRUE
-> x[good]
-[ 1 ] 1 4 5
-> y[good]
-[ 1 ] "a" "d" "f"
-
-**** concatenate two string - paste
-paste("wan","ding")
-this would insert a " "
-
-paste0("wan", "ding")
-this results in "wanding"
-
-**** trim whitespace
-library(stringr)
-str_trim(string)
-**** substring
-substring:
-substring("wanding",1,3)
-gives "wan"
-*** vector
-numeric, character, integer are all vectors, there is no atomic unit in R. 4L is a vector of length 1.
-integer are with "L" suffix, 1L, 3L etc.
-numeric are essentially floating numbers, 1.2, 3.1 etc.
-**** sort a vector
-x <- c("b","c","a")
-order(x)
-#> [1] 3 1 2
-x[order(x)]
-#> [1] "a" "b" "c"
-**** take absolute value
-abs()
-or
-y[y<0]<- -y[y<0]
-**** repeat
-c(2,3)[rep(c(2,1),times=2)] gives 3 2 3 2
-
-rep(1:3,times=5)
-#> [1] 1 2 3 1 2 3 1 2 3 1 2 3 1 2 3
-
-rep(1:3,each=5)
-#> [1] 1 1 1 1 1 2 2 2 2 2 3 3 3 3 3
-**** how to create X1, Y2, X3, Y4 ... quickly
-labs<-paste(c("X","Y"),1:10,sep"")
-== c("X1", "Y2", "X3", "Y4", "X5", "Y6", "X7", "Y8", "X9", "Y10")
-the recycling of short lists takes place here.
-
-**** delete elements from vector
-x[-c(1,2,3)]	删掉第1，2，3个元素
-**** how to generate (1,1,1,2,2,2,3,3,3) from (1,2,3)
-> rep(c("g1","g2","g3"),times=c(1,3,4))
-[1] "g1" "g2" "g2" "g2" "g3" "g3" "g3" "g3"
-**** create an empty vector
-x ← vector(“numeric”, length=10)
-vector elements are initialized to 0.0
-logical vector
-x ← c(T,F)
-x ← c(TRUE, FALSE)
-
-**** range
-x <- 1:20
-seq
-seq(from = 1, to = 1, by = ((to - from)/(length.out - 1))
-seq(-5, 5, by = .2)
-***** sample 51 points from -5 by interval 0.2
-seq(length = 51, from = -5, by = 0.2)
-***** sample 50 points from 3 to 7 evenly
-***** seq_along - the counterpart of python enumerate
-seq_along(x) is equivalent to seq(along=x)
-**** type coersion in vectors
-elements in a vector must be of the same type, there will be implicit type coersion when different types are mixed.
-y ← c(1.7, “a”) ## character 1.7 → “1.7”
-y ← c(TRUE,2) ## numeric TRUE → 1
-y ← c(“a”, TRUE) ## character TRUE → “TRUE”
-
-**** subset a vector
-# different from python, 1-based, last element included.
-x[1:10] select the first 10 components of x
-y<-x[x<10]
-y<-x[!is.na(x)]
-(x+1)[(!is.na(x)) & x>0] ->z
-A<-c(1,2,3)
-B<-c(0,1,0)
-change A's element to 0 if B's element is 1: A[B==1]<-0
-
-y<-x[-(1:5)] gives y all but the first five elements of x
-
-> x<-c('a','b','c','c','d','a')
-> x[ 2 ]
-[ 1 ] "b"
-> x[1:4]
-[ 1 ] "a" "b" "c" "c"
-> x[x>"a"]
-[ 1 ] "b" "c" "c" "d"
-> u<-x > 'a'
-> u
-[ 1 ] FALSE  TRUE  TRUE  TRUE  TRUE FALSE
-> x[u]
-[ 1 ] "b" "c" "c" "d"
-
-**** vectorized operations
-> x <- 1:4; y <- 6:9
-> x+y
-[1]  7  9 11 13
-> x>=2
-[1] FALSE  TRUE  TRUE  TRUE
-> y==9
-[1] FALSE FALSE FALSE  TRUE
-> x*y
-[1]  6 14 24 36
-> x/y
-[1] 0.1666667 0.2857143 0.3750000 0.4444444
-
-**** count using sum
-> sum(x>4)
-count the number of elements in x that are larger than 4
-
-**** vector type check
-is.vector()
-
-**** use match to find mapping between two vectors
-ma=match(cats, names(t))
-
-**** reverse the vector
-rev(vec)
-**** get index of an element in a vector
-which(vector == element_value)
-**** create a numeric vector - numeric()
-e<-numeric()		create an empty numeric vector
-**** create a character vector - character()
-as.character(z)	convert to character
-**** create an integer vector - integer()
-as.integer(z)	convert to integer
-**** create empty vector
-list of empty character string vector is listed as character(0) and the empty numeric vector as numeric(0)
-*** factor (factor is a special vector with attribute "levels" and "class")
-
-if something is a factor, then typing "something" will give levels information.Besides, typing "attributes(something)"will have "levels" option. So we can use levels(something)
-
-**** create label from factor
-
-> f <- factor(c('a','b','a','a','a'))
-> f
-[1] a b a a a
-Levels: a b
-> c('F','M')[f]
-[1] "F" "M" "F" "F" "F"
-
-This is useful when you want to create colors and label for plots, e.g.,
-plot(md,pch=c('F','M')[pData(mldat)$Gender],col=c('red','blue')[pData(mldat)$Gender])
-
-**** Ordered or unordered, represent categorical data
-> x ← factor(c(“yes”, “no”, “yes”, “no”, “yes”))
-> x
-[1] yes no  yes no  yes
-Levels: no yes
-
-**** "table" - frequency count of factor levels
-> table(x)
-x
- no yes
- 2   3
-
-**** see the underlying representation of the factor (really an integer vector)
-> unclass(x)
-[1] 2 1 2 1 2
-attr(,"levels")
-[1] "no"  "yes"
-> attr(x,'levels')
-[1] "no"  "yes"
-
-**** make something a factor:
-something<-factor(something)
-
-**** setup baseline level
-setup the baseline level, the baseline level would be the first level that is encountered in the “levels” option, otherwise it is determined by the alphabetic order.
-> x<-factor(c("yes","no", "yes", "no"), levels=c("yes","no"))
-> x
-[1] yes no  yes no 
-Levels: yes no
-if levels is not specified, “no” is before “yes” because “n” is before “y” in the alphabetic order.
-> y<-factor(c("yes","no", "yes", "no"))
-> y
-[1] yes no yes no 
-Levels: no yes
-
-**** generate factor levels
-> f<-gl(40,10)
-generate forty factor levels (each labeled as an integer), each level is repeated 10 times.
-
-**** convert factors to numeric
-t3<-as.numeric(as.character(f))
-Or more efficiently, as.numberic(levels(f))[as.integer(f)]
-*** list
-List can mix objects of different types
-> x ← list(1, “a”, TRUE, 1+4i)
-> x
-[[1]]
-[1] 1
-
-[[2]]
-[1] "a"
-
-[[3]]
-[1] TRUE
-
-[[4]]
-[1] 1+4i
-
-**** A list with name
-> x<-list(a=1,b=2,c=3)
-> x
-$a
-[1] 1
-
-$b
-[1] 2
-
-$c
-[1] 3
-
-**** subset a list
-> x<-list(foo=1:4,bar=0.6)
-> x[1] # single bracket always return object of the same class, in this case a list.
-$foo
-[1] 1 2 3 4
-
-> x[ [1] ]
-[1] 1 2 3 4
-> x$bar
-[1] 0.6
-> x[ ["bar"] ]
-[1] 0.6
-> x["bar"]
-$bar
-[1] 0.6
-
-**** extract multiple elements
-> x<-list(foo=1:4,bar=0.6,baz='hello')
-> x[c(1,3)]
-$foo
-[1] 1 2 3 4
-
-$baz
-[1] "hello"
-
-**** [[]] can be used to subset elements whose name is determined at runtime
-> x<-list(foo=1:4, bar=0.6, baz='hello')
-> name<-'foo'
-> x[ [name] ]
-[1] 1 2 3 4
-> x$name
-NULL
-> x$foo
-[1] 1 2 3 4
-
-**** create a list
-Lst<-list(name_1=object_1,...,name_m=object_m)	construct a new list
-
-Lst<-c(list.A, list.B, list.C)	concatenate lists
-
-Lst<-list(name="Fred",wife="Mary",no.children=3,child.ages=c(4,7,9))
-Lst[ [ 1 ] ] is equivalent to Lst$name.
-Lst[ [ 2 ] ] is equivalent to Lst$wife.
-Lst[ [ 3 ] ] is equivalent to Lst$no.children
-Lst[ [ 4 ] ][1] is equivalent to Lst$child.ages[1]
-
-**** double subset using [[]]
-> x<-list(a=list(10,12,14),b=c(3.14,2.81))
-> x[ [c(1,3)] ] # the third element of the first element
-[1] 14
-> x[ [1] ][ [3] ]
-[1] 14
-> x[ [c(2,1)] ]
-[1] 3.14
-
-**** partial matching
-> x<-list(aardvark=1:5)
-> x$a
-[1] 1 2 3 4 5
-> x[ ["a"] ]
-NULL
-> x[ ["a",exact=FALSE] ]
-[1] 1 2 3 4 5
-
-**** list coersion
-as.list()
-
-**** list type check
-is.list()
-
-**** append to list
-# Initial list:
-List <- list()
-
-# Now the new experiments
-for(i in 1:3){
-  List[as.character(i)] <- list(sample(1:3))
-}
-*** matrix (matrix is a special case of "array" which is by itself vector with attribute "dim"). "array"s are in fact nd-arrays.
-**** make a matrix
-> m ← matrix(nrow=2, ncol=3)
-initialized to “NA”
-> m ← matrix(1:6, nrow=2, ncol=3)
-> m
-     [,1] [,2] [,3]
-[1,]    1    3    5
-[2,]    2    4    6
-matrix initialization is “column first” or “columnwise”
-> m ← 1:10
-> dim(m) ← c(2,5)
-> m
-     [,1] [,2] [,3] [,4] [,5]
-[1,]    1    3    5    7    9
-[2,]    2    4    6    8   10
-
-**** create a matrix
-diag(v) gives a diagonal matrix with elements of the vector as the diagonal entries.
-diag(M) gives the vector of main diagonal entries of M.
-diag(k) gives a k by k identity matrix
-**** create a matrix by concatenation
-cbind(arg_1,arg_2,arg_3,...) forms matrices by binding together matrices horizontally, or column-wise.
-rbind(arg_1,arg_2,arg_3,...) forms matrices by binding together matrices vertically, or row-wise.
-**** matrix multiplication
-"*" normal multiplication
-"%*%" matrix multiplication
-
-**** matrix transposition
-t() matrix transposition
-
-**** cross product two vector
-crossprod(x,y)==t(x)%*%y
-**** dimension of a matrix
-> dim(m)
-[1] 2 5
-
-**** remove a column/row of a matrix
-d[,-5] deletes column 5
-mat[-3,] remove the 3rd row of the matrix
-t[-1,] remove the first row
-
-**** remove several rows
-df[-(416:472), ]
-
-**** view attributes of objects, e.g., names, dimnames, dimensions, class, length are all attributes.
-> attributes(m)
-$dim
-[1] 2 3
-
-**** cbind and rbind
-> x ← 1:3
-> y ← 10:12
-> cbind(x,y)
-     x  y
-[1,] 1 10
-[2,] 2 11
-[3,] 3 12
-> rbind(x,y) 
-  [,1] [,2] [,3]
-x    1    2    3
-y   10   11   12
-
-**** add two columns rowwise using cbind
-ctbl = cbind(tbl[,"Freq"], tbl[,"None"] + tbl[,"Some"])
-
-**** matrix with dimnames (row names, column names)
-> m<-matrix(1:4, nrow=2,ncol=2)
-> dimnames(m)<-list(c('a','b'),c('c','d'))
-> m
-  c d
-a 1 3
-b 2 4
-
-**** get or set the names of rows and columns
-rownames(matrix)
-colnames(matrix)
-
-can also use dimnames(matrix),where
-"rownames()" is equivalent to "dimnames(matrix)[ [1] ]"
-"colnames()" is equivalent to "dimnames(matrix)[ [2] ]"
-actually [[]] can be substituted by []
-dimnames() is built for high dimensional matrix e.g. 3,4...
-
-colnames(data)<-c('Apple','Orange')
-colnames(data)<-"Q"
-
-**** build matrix by column
-matrix <- cbind(column1 = 3, column2 = c(4:1,2:5))
-
-**** apply on rows/columns
-col.sums <- apply(matrix,2,sum)
-row.sums <- apply(matrix,1,sum)
-
-**** use sweep to normalize data
-
-#+BEGIN_SRC R
-x <- sweep(x, 2, rowMeans(x, na.rm = na.rm))
-sx <- apply(x, 1, sd, na.rm = na.rm)
-x <- sweep(x, 1, sx, "/")
-#+END_SRC
-
-**** subset a matrix
-> x<-matrix(1:6,2,3)
-> x[1,2]
-[1] 3
-> x[2,1]
-[1] 2
-> x[1,]
-[1] 1 3 5
-> x[,2]
-[1] 3 4
-
-by default when a matrix is subsetted, one get a vector instead of a matrix, if one wants a submatrix, specify drop=FALSE
-> x[1,]
-[1] 1 3 5
-> x[1,,drop=FALSE]
-     [,1] [,2] [,3]
-[1,]    1    3    5
-
-**** vectorized operations
-> x <- matrix(1:4, 2, 2); y <- matrix(rep(10, 4), 2, 2) 
-> x * y ## element-wise multiplication 
-   [,1] [,2] 
-[1,] 10 30 
-[2,] 20 40 
-> x / y 
-   [,1] [,2] 
-[1,] 0.1 0.3 
-[2,] 0.2 0.4 
-> x %*% y ## true matrix multiplication 
-   [,1] [,2] 
-[1,] 40 40 
-[2,] 60 60
-
-*** data frame
-heterogenous columns, as opposed to matrix.
-**** convert data frame to numeric matrix
-data.matrix
-
-**** remove rows with any value NA
-#+BEGIN_SRC R
-na.omit(x)
-#+END_SRC
-
-**** remove rows with all values NA
-#+BEGIN_SRC R
-x[apply(x, 1, function(y) !all(is.na(y))),]
-or 
-x[rowSums(is.na(x))!=num_columns, ]
-#+END_SRC
-
-**** count the number of NAs in each row
-apply(x, 1, function(z) sum(is.na(z)))
-**** remove rows with more than 3 NAs
-numNAs = apply(x, 1, function(z) sum(is.na(z)))
-x[!(numNAs > 3),]
-**** accessing column of data frame
-#+BEGIN_SRC R
-data <- data.frame (id=1:3, weight=c(20,27,24))
-# id weight
-#  1     20
-#  2     27
-#  3     24
-
-
-# Ways to add a column
-data$size      <- c("small", "large", "medium")
-data[["size"]] <- c("small", "large", "medium")
-data["size"]   <- c("small", "large", "medium")
-data[,"size"]  <- c("small", "large", "medium")
-data$size      <- 0
-
-
-# Ways to remove the column
-data$size      <- NULL
-data[["size"]] <- NULL
-data["size"]   <- NULL
-data[,"size"]  <- NULL
-data[3]        <- NULL
-data[,3]       <- NULL
-data           <- subset(data, select=-size)
-#+END_SRC
-
-**** create a dataframe
-bubba<-data.frame(first=a second=b f=levels)
-**** add new column
->saida["MY_NEW_COLUMN"] <- NA # That creates the new column named "MY_NEW_COLUMN" filled with "NA"
->saida$MY_NEW_COLUMN <- saida$C - saida$D  # As an example, the new column receives the result of C - D
-or
-cbind(df, data.frame(z=3:1))
-**** add a new row
-rbind(df, data.frame(column1=10, column2="z"))
-**** rownames (or row.names) and colnames
-**** rename column of data frame
-names(d)[4]='ratio'
-
-**** build a data frame in a loop, adding row by row
-***** method 1
-d <- data.frame()
-for (i in 1:20) {d <- rbind(d,c(i+i, i*i, i/1))}
-
-similarly
-d = NULL
-
-And in the loop:
-
-d = rbind(d, data.frame(x, y, z))
-Note: this solution is not efficient.
-
-***** method 2
-Build vectors first, dataframe after the loop
-
-x = NULL
-y = NULL
-z = NULL
-
-in the loop:
-
-x = append(x, runif(1))
-...
-
-After loop:
-
-d = data.frame(x, y, z)
-
-***** method 3 (best)
-
-Build empty data frame of desired size beforehand and fill by row
-
-E.g. for 10 rows:
-d = data.frame( x=rep(0, 10), y=rep(0,10), z=rep(0,10))
-
-And in the loop (index i):
-
-d[i, ] = c(x, y, z)
-**** see the beginning of the data frame
-head(df)
-
-**** filter rows of a data frame
-df[apply(df > 5, 1, all)]
-df[apply(df > 5, 1, any)]
-1 means row and “all” and “any” are logical functions.
-
-**** create a data frame
-dat <- data.frame(x1 = c(1,2,3, NA, 5), x2 = c(100, NA, 300, 400, 500))
-> x<-data.frame(foo=1:4, bar=c(T,T,F,F))
-> x
-  foo   bar
-1   1  TRUE
-2   2  TRUE
-3   3 FALSE
-4   4 FALSE
-> nrow(x)
-[1] 4
-> ncol(x)
-[1] 2
-> attributes(x)
-$names
-[1] "foo" "bar"
-
-$row.names
-[1] 1 2 3 4
-
-$class
-[1] "data.frame"
-> attr(x, "row.names")
-[1] 1 2 3 4
-
-**** subset out NA using complete.cases (remove NA)
-> airquality[1:6,]
-  Ozone Solar.R Wind Temp Month Day
-1    41     190  7.4   67     5   1
-2    36     118  8.0   72     5   2
-3    12     149 12.6   74     5   3
-4    18     313 11.5   62     5   4
-5    NA      NA 14.3   56     5   5
-6    28      NA 14.9   66     5   6
-> good<-complete.cases(airquality)
-> airquality[good,][1:6,]
-  Ozone Solar.R Wind Temp Month Day
-1    41     190  7.4   67     5   1
-2    36     118  8.0   72     5   2
-3    12     149 12.6   74     5   3
-4    18     313 11.5   62     5   4
-7    23     299  8.6   65     5   7
-8    19      99 13.8   59     5   8
-
-**** split a data frame by a column into lists
-s<-split(airquality, airquality$Month)
-str(s)
-
-**** how to remove duplicate rows
-df <- data.frame(a = c(1:4, 1:4), 
-                 b = c(4:1, 4:1), 
-                 d = LETTERS[1:8])
-
-df[!duplicated(df[c("a", "b")]),]
-**** number of rows and columns
-nrow()
-ncol()
-higher dimensional matrix:
-NROW()
-NCOL()
-**** randomly sample rows
-df[sample(nrow(df), 10),]
-
-Note that this is equivalent to (and is a convenient feature of sample)
-df[sample(1:nrow(df), 10),]
-or
-df[sample(seq(1:nrow(df)), 10),]
-
-**** build contigency table
-table(vec)
-table(vec,vec2) 2-d contingency table(matrix)
-
-**** merge two data frame on common column
-merge(probes.sampled, sampledata, by.x="pname", by.y="Composite Element REF")
-**** sort a data frame by a certain column
-sortd=d[with(d, order(-ratio)),]
-*** data.table - contingency table
-**** table - create table from vector
-a<-c("Sometimes","Sometimes","Never","Always","Always","Sometime","Sometimes","Never")
-b<-c("Maybe","Maybe","Yes","Maybe","Maybe","No","Yes","No")
-results2<-table(a,b)
-
-**** as.table - convert matrix to table
-sexsmoke<-matrix(c(70,120,65,140),ncol=2,byrow=TRUE)
-rownames(sexsmoke)<-c("male","female")
-colnames(sexsmoke)<-c("smoke","nosmoke")
-sexsmoke <- as.table(sexsmoke)
-
-**** xtabs - convert data.frame to table
-** control structure
-**** if structure
-if (<condition1>) {
-	## do something
-} else if (<condition2>) {
-	## do something different
-} else {
-	## do something different
-}
-
-y ← if(x>3) { 10 } else { 0 }
-
-**** for structure
-for(i in 1:10) {
-	print (i)
-}
-
-x ← c(“a”,”b”,”c”,”d”)
-for(i in seq_along(x)) {
-	print(x[i])
-}
-
-for(letter in x) {
-	print(letter)
-}
-
-for(i in 1:4) print(x[i]) # omit “{}” if only one statement exists
-
-**** loop over a matrix
-x ← matrix(1:6, 2, 3)
-
-for(i in seq_len(nrow(x))) {
-	for(j in seq_len(ncol(x))) {
-		print(x[i,j])
-	}
-}
-
-**** while
-count ← 0
-while(count < 10) {
-	print(count)
-	count ← count + 1
-}
-
-**** more than 1 conditions
-z ← 5
-while(z >= 3 && z <= 10) {
-	print(z)
-	coin ← rbinom(1,1,0.5)
-
-	if(coin == 1) { ## random walk
-		z ← z + 1
-	} else {
-		z ← z – 1
-	}
-}
-
-**** repeat (and break)
-x0 ← 1
-tol ← 1e-8
-repeat {
-	x1 ← computeEstimate()
-	
-	if(abs(x1 – x0) < tol) {
-		break
-	} else {
-		x0 ← x1
-	}
-}
-
-**** next
-for(i in 1:100) {
-	if (I <= 20) {
-		next # skip the first 20 iterations
-	}
-	# Do something here.
-}
-
-*** compact looping
-**** lapply – loop apply
-loop over a list or a vector and evaluate a function on each element
-lapply(X, FUN, ...)
-lapply takes a list X, a function FUN, and other arguments via …. if X is not a list, it will be coerced using as.list.
-Always return a list, list names are preserved.
-> x<-list(a=1:5,b=rnorm(10))
-> lapply(x,mean)
-$a
-
-[1] 3
-
-$b
-[1] 0.3474802
-generate uniform random variables using lapply
-> x<-1:4
-> lapply(x,runif,min=0,max=10)
-[ [1] ]
-[1] 3.472307
-
-[ [2] ]
-[1] 1.314423 3.744869
-
-[ [3] ]
-[1] 6.314202 3.900789 6.896278
-
-[ [4] ]
-[1] 6.894134 5.549006 4.296244 4.527201
-
-***** use anonymous function
->lapply(x, function(elt) etl[,1])
-
-**** sapply – simplified apply
-same as lapply but try to simplify the result
-If the result is a list where every element is length 1, then a vector is returned.
-If the result is a list where every element is a vector of the same length (>1), a matrix is returned.
-If else, a list is returned.
-e.g.,
-> x<-list(a=1:4, b=rnorm(10),c=rnorm(20,1),d=rnorm(100,5))
-> lapply(x,mean)
-$a
-[1] 2.5
-
-$b
-[1] -0.006170834
-
-$c
-[1] 0.5080433
-
-$d
-[1] 5.022779
-
-> sapply(x,mean)
-           a            b            c            d 
- 2.500000000 -0.006170834  0.508043328  5.022778795 
-but direct application of mean doesn't work
-> mean(x)
-[1] NA
-Warning message:
-In mean.default(x) : argument is not numeric or logical: returning NA
-
-**** apply
-apply a function over the margins of an array
-apply a function to the rows or columns of a matrix
-can be used with general arrays, e.g., taking the average of an array of matrices
-> str(apply)
-function (X, MARGIN, FUN, …
-MARGIN is the index of the dimension that will be preserved.
-
-***** find the means of each column
-> x<-matrix(rnorm(200),20,10)
-> apply(x,2,mean)
- [1]  0.31764279 -0.20359102  0.27766089 -0.11381463 -0.24245208  0.08050356  0.04293477
- [8]  0.42504710  0.17117791 -0.36513407
-
-***** find the sums of each row
-> apply(x,1,sum)
- [1] -3.9535466  3.5378914  4.8657229  2.1557528 -1.2801329 -1.6267276  1.4089528
- [8] -5.7330351  0.2595242  3.4015684  3.6012107 -3.0530614  7.9383705  4.2204701
-[15]  2.0523599 -4.0927801 -2.7655184 -0.8362684 -4.0963852  1.7951365
-
-***** shortcut functions
-Other shortcut functions (which are faster than “apply”)
-rowSums = apply(x, 1, sum)
-rowMeans = apply(x, 1, mean)
-colSums = apply(x, 2, sum)
-colMeans = apply(x, 2, mean)
-
-***** quantiles of the rows
-Find quantiles of the rows of a matrix, create a matrix of two rows and 20 columns
-> apply(x,1,quantile, probs=c(0.25,0.75))
-          [,1]       [,2]       [,3]       [,4]       [,5]       [,6]      [,7]
-25% -0.9239855 -0.1499241 -0.4175811 -0.3613111 -0.7518307 -0.8027004 -0.915204
-75%  0.2370467  0.9444296  1.1890847  0.8302415  0.2443323  0.5562284  1.166624
-          [,8]       [,9]     [,10]     [,11]      [,12]       [,13]      [,14]
-25% -1.1292202 -1.0858680 -0.609356 -0.291738 -1.5721484 -0.08286563 -0.5172696
-75%  0.1851672  0.6926818  1.569856  1.019504  0.9787008  1.38228732  1.3543220
-         [,15]      [,16]      [,17]      [,18]      [,19]      [,20]
-25% -0.3594793 -1.3583341 -0.6312026 -0.6608781 -1.1903123 -0.4987485
-75%  0.7911442  0.5423904  0.1620909  0.4539918  0.6021955  0.8130619
-
-***** collapse the third dimension of a 3-dimensional array
-> a<-array(rnorm(2*2*10),c(2,2,10))
-> apply(a,c(1,2),mean)
-            [,1]       [,2]
-[1,]  0.42410042 -0.3661022
-[2,] -0.07362168 -0.3439171
-or
-> rowMeans(a,dims=2)
-            [,1]       [,2]
-[1,]  0.42410042 -0.3661022
-[2,] -0.07362168 -0.3439171
-
-**** tapply – table apply
-***** apply a function over subsets of a vector
->str(tapply)
-function (X, INDEX, FUN = NULL, ..., simplify = TRUE)
-X is a vector
-INDEX is a factor or a list of factors (or else they are coerced to factors)
-FUN is the function to apply
-> x<-c(rnorm(10),runif(10),rnorm(10,1)) 
-runif(10): 10 random variables from uniform distribution [0,1].
-rnorm(10,1): 10 random variables from normal distribution with mean 1.
-> f<-gl(3,10) 
-gl: generate levels, in this case 3 levels each repeating 10 times.
-> f 
- [1] 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 3 3 3 3 3 3 3 3 3 3 
-Levels: 1 2 3 
-> tapply(x,f,mean) 
-         1          2          3 
--0.2476370  0.5634356  0.6739376 
-“do not simplify” gives back a list:
-> tapply(x,f,mean, simplify=FALSE) 
-$`1` 
-[1] -0.247637 
-
-$`2` 
-[1] 0.5634356 
-
-$`3` 
-[1] 0.6739376 
-
-***** find group ranges (which returns two values for each factor):
-> tapply(x,f,range) 
-$`1` 
-[1] -1.648938  1.321278 
-
-$`2` 
-[1] 0.03362691 0.98146410 
-
-$`3` 
-[1] -1.888952  2.737393 
-
-**** split
-> str(split) 
-function (x, f, drop = FALSE, …)
-split a vector into a list of vectors based on a factor
-x: vector (or list) or data frame
-f: factor or a list of factors
-drop indicates whether empty factors levels should be dropped.
-> x<-c(rnorm(10),runif(10),rnorm(10,1)) 
-> f<-gl(3,10) 
-> split(x,f) 
-$`1` 
- [1]  0.248778156  1.334741866 -0.881660069  1.628081242  0.386855405 
- [6]  2.029278781 -0.581958243  0.585995546  0.001749236 -0.126356265 
-
-$`2` 
- [1] 0.56698467 0.98970559 0.56405445 0.09636717 0.81920102 0.30759100 
- [7] 0.28073524 0.74154150 0.11624665 0.02004426 
-
-$`3` 
- [1]  0.26474370  0.54080495  1.64569571 -0.03437529  1.76457570  1.21412163 
- [7] -0.30767157  3.32346077  1.78569698  2.65727270 
-
-**** lapply + split (in this case, can be substituted by tapply)
-> lapply(split(x,f), mean)
-$`1` 
-[1] 0.4625506 
-
-$`2` 
-[1] 0.4502472 
-
-$`3` 
-[1] 1.285433
-
-**** classify and calculate mean
-calculate the mean of Ozone and Solar.R based on month
-> library(datasets) 
-> head(airquality) 
-  Ozone Solar.R Wind Temp Month Day 
-1    41     190  7.4   67     5   1 
-2    36     118  8.0   72     5   2 
-3    12     149 12.6   74     5   3 
-4    18     313 11.5   62     5   4 
-5    NA      NA 14.3   56     5   5 
-6    28      NA 14.9   66     5   6
-split the entire table by Month
-s<-split(airquality, airquality$Month)
-> lapply(s, function(x) colMeans(x[,c("Ozone","Solar.R","Wind")])) 
-$`5` 
-   Ozone  Solar.R     Wind 
-      NA       NA 11.62258 
-
-$`6` 
-    Ozone   Solar.R      Wind 
-       NA 190.16667  10.26667 
-
-$`7` 
-     Ozone    Solar.R       Wind 
-        NA 216.483871   8.941935 
-
-$`8` 
-   Ozone  Solar.R     Wind 
-      NA       NA 8.793548 
-
-$`9` 
-   Ozone  Solar.R     Wind 
-      NA 167.4333  10.1800
-
-***** use sapply instead of lapply
-> sapply(s, function(x) colMeans(x[,c("Ozone","Solar.R","Wind")])) 
-               5         6          7        8        9 
-Ozone         NA        NA         NA       NA       NA 
-Solar.R       NA 190.16667 216.483871       NA 167.4333 
-Wind    11.62258  10.26667   8.941935 8.793548  10.1800 
-remove missing value when colMeans is called
-> sapply(s, function(x) colMeans(x[,c("Ozone","Solar.R","Wind")],na.rm=TRUE)) 
-                5         6          7          8         9 
-Ozone    23.61538  29.44444  59.115385  59.961538  31.44828 
-Solar.R 181.29630 190.16667 216.483871 171.857143 167.43333 
-Wind     11.62258  10.26667   8.941935   8.793548  10.18000 
-
-***** interaction - split on more than one factors
-use interaction function, make cartesian product of the two factors.
-> f1<-gl(2,5) 
-> f2<-gl(5,2) 
-> interaction(f1,f2) 
- [1] 1.1 1.1 1.2 1.2 1.3 2.3 2.4 2.4 2.5 2.5 
-Levels: 1.1 2.1 1.2 2.2 1.3 2.3 1.4 2.4 1.5 2.5 
-interaction (in this case produced by using “list” in split) can create empty levels
-> str(split(x, list(f1, f2)))
-List of 10 
- $ 1.1: num [1:6] 0.249 1.335 0.567 0.99 0.265 ... 
- $ 2.1: num(0) 
- $ 1.2: num [1:6] -0.8817 1.6281 0.5641 0.0964 1.6457 ... 
- $ 2.2: num(0) 
- $ 1.3: num [1:3] 0.387 0.819 1.765 
- $ 2.3: num [1:3] 2.029 0.308 1.214 
- $ 1.4: num(0) 
- $ 2.4: num [1:6] -0.582 0.586 0.281 0.742 -0.308 ... 
- $ 1.5: num(0) 
- $ 2.5: num [1:6] 0.00175 -0.12636 0.11625 0.02004 1.7857 ... 
-
-drop empty levels
-> str(split(x, list(f1, f2), drop=TRUE)) 
-List of 6 
- $ 1.1: num [1:6] 0.249 1.335 0.567 0.99 0.265 ... 
- $ 1.2: num [1:6] -0.8817 1.6281 0.5641 0.0964 1.6457 ... 
- $ 1.3: num [1:3] 0.387 0.819 1.765 
- $ 2.3: num [1:3] 2.029 0.308 1.214 
- $ 2.4: num [1:6] -0.582 0.586 0.281 0.742 -0.308 ... 
- $ 2.5: num [1:6] 0.00175 -0.12636 0.11625 0.02004 1.7857 ... 
-
-**** mapply – multivariate apply
-multivariate version of lapply
-lapply, sapply and tapply only apply a function to a single element. Mapply applies a function in parallel over a set of arguments.
-> str(mapply) 
-function (FUN, ..., MoreArgs = NULL, SIMPLIFY = TRUE, USE.NAMES = TRUE)
-… contains arguments to apply over
-MoreArgs is a list of other arguments to FUN
-> mapply(rep,1:4,4:1) 
-is equivalent to
-> list(rep(1,4), rep(2,3), rep(3,2),rep(4,1))
-[[1]]
-[1] 1 1 1 1
-
-[[2]]
-[1] 2 2 2 
-
-[[3]] 
-[1] 3 3 
-
-[[4]] 
-[1] 4 
-another examle of “instant vectorization”
-> noise<-function(n,mean,sd){rnorm(n,mean,sd)}
-> mapply(noise,1:5,1:5,2) 
-[[1]] 
-[1] -0.5250608 
-
-[[2]] 
-[1] 4.684903 1.778944 
-
-[[3]] 
-[1] 7.540316 5.528719 5.501906 
-
-[[4]] 
-[1] 5.190458 5.318942 2.206801 3.286727 
-
-[[5]] 
-[1] 2.245433 1.933995 8.561300 4.059340 2.559799 
-is equivalent to
-list(noise(1,1,2), noise(2,2,2), noise(3,3,2), noise(4,4,2),noise(5,5,2))
-
-** Functions
-
-3 major components of a function are
-1. formals
-2. body
-3. environment
-
-f <- function(x) x^2
-f
-#> function(x) x^2
-
-formals(f)
-#> $x
-body(f)
-#> x^2
-environment(f)
-#> <environment: R_GlobalEnv>
-
-# for many base function
-attr(f, "srcref") return the source code
-
-# for primitive functions all 3 components are NULL
-sum
-#> function (..., na.rm = FALSE) .Primitive("sum")
-formals(sum)
-#> NULL
-body(sum)
-#> NULL
-environment(sum)
-#> NULL
-*** lexical scoping (see environment section)
-one comment: R is aware of whether a symbol desired is a function or a variable.
-#+BEGIN_SRC R
-n <- function(x) x / 2
-o <- function() {
-  n <- 10
-  n(n)
-}
-o()
-#> [1] 5
-rm(n, o)
-#+END_SRC
-
-**** lexical scoping can be "dynamic"
-lexical scoping determines where to look for values, not when
-f <- function() x
-x <- 15
-f()
-#> [1] 15
-
-x <- 20
-f()
-#> [1] 20
-
-**** find external dependencies of a function
-
-f <- function() x+1
-codetools::findGlobals(f)
-#> [1] "+" "x"
-
-*** operators are all functions
-All the following are equivalent operator expression and function expression
-` (the backtick) is for referringn to functions or variables that have otherwise reserved or illegal names.
-
-x <- 10; y <-5
-x + y
-#> [1] 15
-`+`(x, y)
-#> [1] 15
-
-for (i in 1:2) print(i)
-#> [1] 1
-#> [1] 2
-`for`(i, 1:2, print(i))
-#> [1] 1
-#> [2] 2
-
-if (i==1) print("yes!") else print("no.")
-#> [1] "no."
-`if`(i==1, print("yes!"), print("no."))
-#> [1] "no."
-
-x[3]
-#> [1] NA
-`[`(x,3)
-#> [1] NA
-
-{print(1); print(2); print(3) }
-#> [1] 1
-#> [1] 2
-#> [1] 3
-`{`(print(1), print(2), print(3))
-#> [1] 1
-#> [1] 2
-#> [1] 3
-
-**** use operator as functions in constructs such as sapply
-sapply(1:5, `+`, 3)
-#> [1] 4 5 6 7 8
-sapply(1:5, "+", 3)
-#> [1] 4 5 6 7 8
-
-There is a difference between `+` and "+". `+` refers to the operator function itself with backtick to escape the reserved name. "+" is the name of that function which also works since sapply can take both operator and its name. (see match.fun() in body(sapply).
-
-example, take 2nd element from each element in the list
-x <- list(1:3, 4:9, 10:12)
-sapply(x, "[", 2)
-#> [1] 2 5 11
-# equivalent to
-sapply(x, function(x) x[2])
-#> [1] 2 5 11
-
-*** check out what arguments are needed
-args(function)
-
-*** arguments matching
-> args(sd)
-function (x, na.rm = FALSE) 
-> mydata ← rnorm(100)
-> sd(mydata)
-> sd(x = mydata)
-> sd(x = mydata, na.rm = FALSE)
-> sd(na.rm = FALSE, x = mydata)
-> sd(na.rm = FALSE, mydata)
-
-*** lazy evaluation
-
-#+BEGIN_SRC R
-f <- function(a, b) {
-	a^2
-}
-f(2) # function call OK!
-
-f <- function(a, b) {
-	print(a)
-	print(b)
-}
-f(45) # function call Error!
-
-… argument
-… is often used when extending another function and you don't want to copy the entire argument list of the original function
-myplot ← function(x, y, type=”l”, …) {
-	plot(x, y, type = type, …)
-}
-#+END_SRC
-
-*** generic function
-> mean
-function (x, ...) 
-UseMethod("mean")
-
-**** "..." usage
-when the number of arguments is unknown one should use … and any arguments that appear after … on the argument list must be named explicitly and cannot be partially matched.
-> args(paste)
-function (..., sep = " ", collapse = NULL) 
-> args(cat)
-function (..., file = "", sep = " ", fill = FALSE, labels = NULL, 
-    append = FALSE)
-
-define a generator function to make an optimization function to feed “optim”, “nlm”, and “optimize”
-the generator function fix the data argument
-make.NegLogLik <- function(data, fixed=c(FALSE, FALSE)) {
-	params <- fixed
-	function(p) {
-		params[!fixed] <- p
-		mu <- params[1]
-		sigma <- params[2]
-		a <- -0.5 * length(data) * log(2*pi*sigma^2)
-		b <- -0.5 * sum((data-mu)^2) / (sigma^2)
-		-(a+b)
-	}
-}
-
-**** to use generator function to make a negative log likelihood function
-> set.seed(1); normals<-rnorm(100,1,2)
-> nLL<-make.NegLogLik(normals)
-> nLL
-function(p) {
-        params[!fixed] <- p
-        mu <- params[1]
-        sigma <- params[2]
-        a <- -0.5 * length(data) * log(2*pi*sigma^2)
-        b <- -0.5 * sum((data-mu)^2) / (sigma^2)
-        -(a+b)
-    }
-<environment: 0xb647a480> # the pointer to the defining environment
-> ls(environment(nLL))
-[1] "data"   "fixed"  "params"
-
-**** to use nLL, with initial value of mu and sigma
-> optim(c(mu=0, sigma=1), nLL)$par
-      mu    sigma 
-1.218239 1.787343 
-
-fixing sigma = 2
-> nLL<-make.NegLogLik(normals, c(FALSE,2))
-> optimize(nLL,c(-1,3))$minimum
-[1] 1.217775
-
-fixing mu = 1
-> nLL<-make.NegLogLik(normals, c(1,FALSE))
-> optimize(nLL,c(1e-6,10))$minimum
-[1] 1.800596
-
-**** plot log likelihood function against mean
-> nLL<-make.NegLogLik(normals,c(1,FALSE))
-> x<-seq(1.7,1.9,len=100)
-> y<-sapply(x,nLL)
-> plot(x,exp(-(y-min(y))),type='l')
-
-**** plot log likelihood function against sigma
-> nLL<-make.NegLogLik(normals, c(FALSE,2))
-> x<-seq(0.5,1.5,len=100)
-> y<-sapply(x,nLL)
-> plot(x,exp(-(y-min(y))),type="l")
-
-**** capture "..." in function definition
-f <- function(...) {
-  names(list(...))
-}
-f(a=1,b=2)
-#> [1] "a" "b"
-*** anonymous function
-suppose we have x
-> x<-list(a=matrix(1:4,2,2),b=matrix(1:6,3,2))
-> x
-$a
-     [,1] [,2]
-[1,]    1    3
-[2,]    2    4
-
-$b
-     [,1] [,2]
-[1,]    1    4
-[2,]    2    5
-[3,]    3    6
-and we want to grab the first column of the two matrices, we can use an anonymous function
->lapply(x, function(elt) etl[,1])
-
-use invisible to refrain auto-printing (but still return the object)
-printmessage <- function(x) {
-	if (x>0)
-		print(“x is greater than zero”)
-	else
-		print(“x is less than or equal to zero”)
-	invisible(x)
-}
-
-“print” function will return the string it prints
-*** call a function given arguments in a list using "do.call"
-
-args <- list(1:10, na.rm = TRUE)
-do.call(mean, list(1:10, na.rm = TRUE))
-#> [1] 5.5
-# Equivalent to
-mean(1:10, na.rm = TRUE)
-#> [1] 5.5
-
-*** default and missing argument
-f <- function(a=1,b=2) {
- c(a,b)
-}
-f(
-#> [1] 1 2
-
-Since arguments are evaluated lazily, default value can be dependent on other values
-g <- function(a=1, b=a*2) {
-  c(a,b)
-}
-g()
-#> [1] 1 2
-g(10)
-#> [1] 10 20
-
-or dependent on local variables created within the function
-h <- function(a=1, b=d) {
-  d <- (a+1)^2
-  c(a,b)
-}
-h()
-#> [1] 1 4
-h(10)
-#>[1] 10 121
-
-test whether an argument is supplied using "missing()"
-i <- function(a, b) {
- c(missing(a), missing(b))
-}
-i()
-#> [1] TRUE FALSE
-i(a=1)
-#> [1] FALSE TRUE
-i(b=2)
-#> [1] TRUE FALSE
-i(1,2)
-#> [1] FALSE FALSE
-One can also set default value to NULL and use is.null to determine missing argument.
-
-*** argument evaluation is lazy
-f <- function(x) {
- 10
-}
-f(stop("This is an error!"))
-#>[1] 10
-
-one can force evaluation using "force"
-f <- function(x) {
-  force(x)
-  10
-}
-f(stop("This is an error!"))
-#> Error in force(x): This is an error.
-
-default can depend on the current environment
-f <- function(x=ls()) {
-  a <- 1
-  x
-}
-
-# ls() is evaluated inside f
-f()
-#> [1] "a" "x"
-
-# ls() evaluated in global environment
-f(ls())
-#>  [1] "add"   "adders" "adders2" "args" "f"
-#>  [6] "funs"  "g"      "h"       "i"    "objs"
-#> [11] "x"     "y"
-
-*** make sure one override lazy evaluation when using closure
-
-# without force
-add <- function(x) {
-  function(y) x+y
-}
-adders <- lapply(1:10, add)
-adders[ [1]](10)
-#> [1] 20
-adders[ [10]](10)
-#> [1] 20
-
-# with force
-add <- function(x) {
-  force(x) # equivalent to just "x", since force(x) <- function(x) x
-  function(y) x+y
-}
-adders2 <- lapply(1:10, add)
-adders2[ [1]](10)
-#> [1] 11
-adders2[ [10]](10)
-#> [1] 20
-
-*** infix function e.g., %in%
-every infix function must be flanked by % on both sides
-predefined: %%, %*%, %/%, %in%, %o%, %x%
-
-# define a new infix function (note the special backtick "`")
-`%+%` <- function(a,b) paste0(a,b)
-"new" %+% " string"
-#> [1] "new string"
-`%+%`("new", " string")
-#> [1] "new string"
-
-escape special charactersinthe string used to defined the function, but not when you call it.
-`%/\\%` <- function(a,b) paste(a,b)
-"a" %/\% "b"
-#> [1] "a b"
-
-`%-%` <- function(a,b) paste0("(", a, " %-% ", b, ")")
-"a" %-% "b" %-% "c"
-#> [1] "((a %-% b) %-% c)"
-
-**** a useful infix function %||%
-`%||%` <- function(a,b) if (!is.null(a)) a else b
-function_that_might_return_null() %||% default value
-
-*** replacement functions
-
-`second<-` <- function(x, value) {
-  x[2] <- value
-  x
-}
-x <- 1:10
-second(x) <- 5L
-x
-#> [1] 1 5 3 4 5 6 7 8 9 10
-
-** Statistics
-
-描述性统计量
-sum mean median var sd min max range quantile summary 
-max(x),min(x),mean(x),range(x),sum(x),prod(x),length(x),
-var(x),sort(x),sort.list(),order(),quantile(x),sd(x)
-
-Summary will print out the statistics of all columns in the dataframe
-summary(argument)	print the five point descriptive statistics if the argument is a factor
-summary(factor)	print the frequency of each key if the argument is NOT a factor
-
-Wilcoxon
-wilcox.test(t$enzymes[t$symbiotic.!='endosymbiotic'], t$enzymes[t$symbiotic.=='endosymbiotic'], alternative='greater')
-
-wilcox.test(t$Qnorm[t$symbiotic.!='endosymbiotic'], t$Qnorm[t$symbiotic.=='endosymbiotic'], alternative='greater')
-
-wilcox.test(t$V3[t$V2=='Obligate'], t$V3[t$V2=='Facultative'], alternative='less')
-
-Pearson's Chi-squared test of independence on a contingency table
-chisq.test(table(survey$Smoke, survey$Exer))
-
-chisq.test(x[,2],p=dbinom(x[,1],5,0.5))
-
-Spearman's Correlation
-cor.test(method='spearman')
-
-*** ave - take average over a factor
-
-ave(breaks, wool)
-
-breaks
-
-*** cmdscale
-#+BEGIN_SRC R
-
-# classical multidimensional scaling
-md <- cmdscale(dist(t(exprs(mldat)[fData(mldat)$CHROMOSOME=='X',])),2)
-plot(md,pch=c('F','M')[pData(mldat)$Gender],col=c('red','blue')[pData(mldat)$Gender])
-#+END_SRC
-
-*** sample random variables
-set.seed
-> set.seed(1)
-> rnorm(5)
-[1] -0.6264538  0.1836433 -0.8356286  1.5952808  0.3295078
-> rnorm(5)
-[1] -0.8204684  0.4874291  0.7383247  0.5757814 -0.3053884
-> set.seed(1)
-> rnorm(5)
-[1] -0.6264538  0.1836433 -0.8356286  1.5952808  0.3295078
-
-Binomial distribution
-dbinom(x,size,prob)	size is the number of trials, prob is the probability of success of each trial
-pbinom(q,size,prob)
-qbinom(p,size,prob)	p is the number of successes among size
-rbinom(p,size,prob)
-
-Normal distribution:
-help(Normal)
-1. dnorm(0,mean=0,sd=1)	returns the height of the probability distribution at each point. Assume zero-mean and one-standard deviation
-x<-seq(from=-10,to=10,by=0.1)
-y<-dnorm(x,mean=0,sd=1)
-plot(x,y)
-2. pnorm(v,mean=0,sd=1)	calculate the probability that a normally distributed random number will be less than v(cummulative probability).
-3. qnorm(v,mean=0,sd=1) calculate the number whose cummulative probability is v.
-4. rnorm(n,mean=0,sd=1)	gives n random numbers following the normal distribution.
-Two generic functions: qqnorm(y) and qqline(y) provide a normal QQ plot of the values in 'y'.qqline is a line connecting the first and the third quartiles.
-**** sample from vector with replacement
-sample(vec,10,replace=TRUE)     sample from a vector
-**** uniform distribution
-sample
-> set.seed(1)
-> sample(1:10,4)
-[1] 3 4 5 7
-> sample(1:10,4)
-[1] 3 9 8 5
-> sample(letters, 5)
-[1] "q" "b" "e" "x" "p"
-> sample(1:10) # permutation
- [1]  4  7 10  6  9  2  8  3  1  5
-> sample(1:10)
- [1]  2  3  4  1  9  5 10  8  6  7
-> sample(1:10, replace=TRUE) # sample with replacement (same number may appear multiple times)
- [1] 2 9 7 8 2 8 5 9 7 8
-
-**** normal distribution
-rnorm(n, mu, sigma)
-r: random number generation
-sample n random variable from normal distribution
-rnorm(n, mean = 0, sd = 1, log = FALSE) 
-x <- rnorm(10) # generate 10 random variables from a normal distribution with mean 0 sd 1.
-x <- rnorm(10,20,2) # generate 10 random variables from a normal distribution with mean 20 and sd 2.
-> summary(x)
-   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-  17.39   19.22   19.97   20.05   20.70   23.11 
-
-
-dnorm
-d: density
-evaluate density
-dnorm (x, mean = 0, sd = 1, log = FALSE)
-
-pnorm
-evaluate cumulative distribution function
-given value of x compute cumulative probability
-pnorm (q, mean = 0, sd = 1, lower.tail = TRUE, log.p = FALSE) 
-
-
-qnorm
-q: quantile function, given cumulative probability, compute value of x, the inverse function of pnorm.
-qnorm (p, mean = 0, sd = 1, lower.tail = TRUE, log.p = FALSE)
-
-**** Poisson distribution
-rpois
-generate random Poisson variate with a given rate
-rpois (n, lambda)
-> rpois(10,1)
- [1] 0 0 1 1 2 1 1 4 1 2
-> rpois(10,2)
- [1] 4 1 2 0 1 1 0 1 4 1
-> rpois(10,20)
- [1] 19 19 24 23 22 24 23 20 11 22
-model log.mu = 0.5 + 0.3 * x where x is standard normal distribution
-> set.seed(1)
-> x<-rnorm(100)
-> log.mu<-0.5+0.3*x
-> y<-rpois(100,exp(log.mu))
-> summary(y)
-   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-   0.00    1.00    1.00    1.55    2.00    6.00 
-
-ppois
-cumulative distribution Poisson distribution
-> ppois(2,2)
-[1] 0.6766764
-> ppois(4,2)
-[1] 0.947347
-> ppois(6,2)
-[1] 0.9954662
-
-**** binomial distribution
-rbinom(100, 1, 0.5)
-
-*** other descriptive statistics
-
-frequency count of discrete values
-Tabulate frequency counts
-table(d$numcc)
-*** linear regression:
-
-Before doing linear regression, one have to check if the factor attribute of the argument is removed or not first. In other words, one need to make sure x is not a factor. Otherwise, it would become an ANOVA on with categories corresponding to different levels of x.
-fm<-lm(y~x,data=dummy)
-fit<-lm(rate~year)
-To get the interest rate in year 2015:	Note that one should use two square braces to get the number.
-#+BEGIN_SRC R
-fit$coefficients[[2]]*2015 + fit$coefficients[[1]]
-#+END_SRC
-
-residuals(fit)	the residuals of the fit. By definition is the difference between the each data point with the predicted value.
-
-abline(fit)	add fitted line onto the data plot.
-summary(fit)	can get the result of F-test.
-fm$call
-fm$coefficient: Intercept & x
-*** formula and design matrix
-a formula is something like: 
-#+BEGIN_SRC R
-log(Volume) ~ log(Height) + log(Girth)
-#+END_SRC
-when one supply a formula into a regression model, a function called "data.matrix" is automatically called to produce a design matrix.
-
-*** model.matrix (build design matrix)
-when one supply a formula, R automatically computes the design matrix. When doing so, R appends the intercept term, which is a column of 1's. One could suppress the intercept term by "y~0+x" or "y~x-1". All the character columns are converted to factors. Factors are then 'dummy-indexed', meaning they are splitted into levels(f)-1 variables and each variable has 0 or 1 binary values corresponding to whether the sample falls into the category or not.
-
-#+BEGIN_SRC R
-
-df
-# A B C
-# 1 2 3
-# ...
-
-model.matrix(C~log(B),df)
-# (intercept) log(B)
-# 1 0.693
-# 1 ...
-
-#+END_SRC
-
-or if a column is a factor
-
-#+BEGIN_SRC R
-> df <- data.frame(A=c('a','b','c'),B=c(1,2,3))
-> df
-  A B
-1 a 1
-2 b 2
-3 c 3
-
-> model.matrix(B~A,df)
-  (Intercept) Ab Ac
-1           1  0  0
-2           1  1  0
-3           1  0  1
-attr(,"assign")
-[1] 0 1 1
-attr(,"contrasts")
-attr(,"contrasts")$A
-[1] "contr.treatment"
-
-# the first column is intercept. Only two of the three levels of A is used. Aa is used as reference group. degree of freedom = levels(A)-1
-
-#+END_SRC
-
-*** model.frame
-
-extract columns and apply function
-#+BEGIN_SRC R
-df
-# A B C
-# 1 2 3
-# ...
-
-model.frame(log(B)~C,df)
-# log(B) C
-# 0.693 3
-# ...
-
-#+END_SRC
-
-** Plotting
-graphics package
-plot, hist, boxplot
-
-lattice package
-xyplot, bwplot, levelplot
-
-grid package
-the package lattrice package depend on
-
-grDevices package
-code for implementing graphics devices such as X11, PDF, PostScript, PNG, etc.
-
-*** histogram with y log
-barplot(hist(x, plot=F)$counts,log='y')
-*** quickly show a color vector
-pie(rep(1,n), col=jet.colors(n))
-barplot(seq(1:n), col=topo.colors(12))
-
-*** never use palette
-all it does is to let one specify color by integer index
-e.g.,
-palette(rainbow(6))
-then one can do
-col=1:30
-
-*** get color gradient
-ColorRampPalette(c("red","green"))(5)
-colorRampPalette(c("#3794bf", "#FFFFFF", "#df8640"))(5)
-*** basic graphics
-**** common arguments
-***** cex
-****** cex.lab
-change label size relative to the plot
-magnification of x and y labels relative to cex
-cex.lab = 1.5
-****** cex.axis
-magnification of axis annotation relative to cex
-***** xlim, ylim - x, y plotting range
-plot(x, y, log='y', ylim=c(10, 20))
-***** pch - plotting character
-plot character/marker/symbol
-+: 3
-***** col - border color of the symbol
-***** bg - fill color of the symbol
-***** xlab, ylab - put labels
-**** smoothScatter
-smoothScatter(d$oldfitness, d$newfitness, xlab='iJR904 fitness', ylab='iAF1260 fitness', cex.lab=1.5)
-***** making a log scale smoothScatter
-smoothScatter(x, log(y))
-instead of using
-smoothScatter(x, y, log='y')
-see
-https://stat.ethz.ch/pipermail/r-help/2009-July/205922.html
-**** plot
-plot(x,y) scatter plot
-plot(... type="h") histogram
-plot(... type="p") point graph
-plot(... type="l") line graph
-plot(... type="b") both line and points
-plot(density(x)) density plot
-**** lines
-add line using lines
-x<-c(1,2,5,10,20,50,100)
-y<-sapply(x, log2)
-plot(d$numdiffcogs, d$entropy, log='x', xlab='alphabet size', ylab='entropy')
-lines(x, y, lty='dashed')
-***** lty - line type
-dashed: 2
-***** lwd - line width
-relative to the default (default=1). 2 is twice as wide.
-**** abline
-abline(0, 1, lty='dashed')
-**** title
-title(main = NULL, sub = NULL, xlab = NULL, ylab = NULL)
-**** hist
-hist(w1$vals)
-hist(w1$vals,breaks=2)	breaks defines how many hists there are.
-hist(w1$vals,breaks=4)
-hist(w1$vals,breaks=12)
-hist(w1$vals,breaks=12,xlim=c(0,10))	xlim defines the ranges of the x axis for display
-hist(w1$vals,breaks=12,xlim=c(-1,2))
-**** stripchart
-stripchart(w1$vals)
-stripchart(w1$vals,method="stack")
-stripchart(w1$vals,method="jitter")
-stripchart(w1$vals,vertical=TRUE)
-stripchart(w1$vals,vertical=TRUE,method="jitter")
-stripchart(w1$vals,method="stack",main='Leaf BioMass in High CO2 Environment',xlab="BioMass of Leaves"
-add title and label: title('Leaf BioMass in High CO2 Environment',xlab='BioMass of Leave')
-**** matplot
-x<-seq(-4,4,len=101)
-y<-cbind(sin(x),cos(x))
-matplot(x,y,type="l",xaxt="n",main=expression(paste(plain(sin)*phi," and ",plain(cos)*phi)),ylab=expression("sin"*phi,"cos"*phi),#only 1st is taken
-xlab=expression(past("Phase Angle ",phi)),
-col.main="blue")
-axis(1,at=c(-pi,-pi/2,0,pi/2,pi),labels=expression(-pi,-pi/2,0,pi/2,pi)) add an axis to a plot.
-**** Venn's diagram
-===================
-library(limma)
-hsb2<-read.table("http://www.ats.ucla.edu/stat/R/notes/hsb2.csv",sep=',',header=T)
-attach(hsb2)
-hw<-(write>=60) # the result is an array of TRUE or FALSE.
-hm<-(math>=60)  # the result is an array of TRUE or FALSE.
-hr<-(read>=60)  # the result is an array of TRUE or FALSE.
-c3<-cbind(hw,hm,hr)
-a<-vennCounts(c3)
-vennDiagram(a)
-===================
-vennDiagram(a,include="both", names=c("High Writing","High Math","High Reading"), cex=1, counts.sol="red")
-g1<-c(rep(0,6),rep(1,3))
-g2<-c(rep(1,6),rep(0,3))
-g<-cbind(g1,g2)
-c<-vennCounts(g)
-vennDiagram(c)
-**** combined plots
-
-1. Combine hist and stripchart
-hist(w1$vals,main='Leaf BioMass in High CO2 Environment',xlab='BioMass of Leaves',ylim=c(0,16))
-stripchart(w1$vals,add=TRUE,at=15.5)
-
-2. Combine hist with boxplot
-hist(w1$vals,main='Leaf BioMass in High CO2 Environment',xlab='BioMass of Leaves',ylim=c(0,16))
-boxplot(w1$vals,horizontal=TRUE,at=15.5,add=TRUE,axes=FALSE)
-boxplot(w1$vals,main='Leaf BioMass in High CO2 Environment',ylab="BioMass of Leaves",horizontal=TRUE)
-boxplot(tree$STBM~tree$C)	tree$C is a factor vector.
-
-layout.show()  显示layout分布和编号
-**** legend
-legend(-3,.9,ex.cs1,lty=1:2,col=2:3,adj=c(0,.6))	##the components of each vector have to match. 
-##col: the color vector of each component.
-##lty: the line type 0=blank 1=solid 2=dashed 3=dotted 4=dotdash,5,longdash,6,twodash.
-op<-par(bg="white")	get an opaque box for the legend
-
-legend("topright",expression(paste("sin",phi),paste("cos",phi)),lty=1:1,col=c(1,2),title="right")
-Or we can designate the character on the line with exact coordinate of the legend by specifying pch:
-legend(-3,.9,expression(paste("sin",phi),paste("cos",phi)),lty=1:1,col=c(1,2),title="right",pch=2)
-
-legend("topright","(x,y)",pch=1,title="right")
-legend(-1,1.9,c("sin","cos","tan"),col=c(3,4,6),text.col="green4",lty=c(2,-1,1),pch=c(-1,3,4),merge=TRUE,bg='gray90')
-
-**** mtext - margin text
-mtext() add text into the margin of a plot.
-mtext(c("Low","High"),side=1,line=2,at=c(5,7))
-mtext(text,side=,line=,outer=FALSE,at=NA,adj=NA,padj=NA,cex=NA,col=NA,font=NA,...)
-side=1(bottom),2(left),3(top),4(right)
-line: Margin line starting at 0 counting outwards.
-outer=TRUE,use outer margins if available.
-adj,padj: used to adjust the location of the text.
-col: the color to use,e.g. col=100 or col="darkred"
-font: the font for text
-
-**** text
-plot(1:10,1:10)
-text(4,9,expression(hat(beta)==(X^t *X)^{-1}*X^t*y))	add text to a plot.
-text(4,8.4,"expression(hat(beta)==(X^t*X)^{-1}*X^t*y)",cex=.8)
-text(4,7,expression(bar(x)==sum(frac(x[i],n),i==1,n))
-text(4,6.4,"expression(bar(x)==sum(frac(x[i],n),i==1,n))",cex=.8)
-text(8,5,expression(paste(frac(1,sigma*sqrt(2*pi))," ",plain(e)^{frac(-(x-mu)^2,2*sigma^2)})),cex=1.2)
-
-text(x,y,labels,adj=,pos=,offset=,vfont=,cex=,col=,font=)
-	adj: adjustment of relative position of the text
-	pos=1,2,3,4,correspond to below, left, above, right. This overrides adj
-	cex= a value with 1 for normal size. for minization and enlargement
-
-**** the special math symbols
-demo(Hershey)   see how to draw special font in detail
-**** combine math and numeric variable
-plot(1:10,type="n",xlab="",ylab="",main="plot math & numbers")
-theta<-1.23;
-mtext(bquote(hat(theta)==.(theta)))
-for(i in 2:9)
-text(i,i+1,substitute(list(xi,eta)==group("(",list(x,y),")"),
-list(x=i,y=i+1)))
-**** colors
-colors(): list all the colors available and their index
-
-**** save figure as pdf
-pdf(file="my2.pdf")
-<do my plot,which won't display>
-dev.off()
-**** add line using lines
-x<-c(1,2,5,10,20,50,100)
-y<-sapply(x, log2)
-plot(d$numdiffcogs, d$entropy, log='x', xlab='alphabet size', ylab='entropy')
-lines(x, y, lty='dashed')
-
-change label size relative to the plot
-use argument
-cex.lab = 1.5
-**** smoothScatter
-**** change to 1 row
-par(mfrow=c(1,1))
-**** par
-change parameters of the plotting
-multiple subplots
-par(mfrow=c(2,1))
-
-margin
-par(mar=c(2,2,1,1))
-bottom, left, top, right
-
-xtick positions
-xaxp=c(0,136,8)
-start, end, number of ticks
-***** mfrow and mfcol
-multiple subplots
-par(mfrow=c(1,1))
-**** make x-axis label vertical
-par(las=2)
-
-**** boxplot
-boxplot() 带error bar的盒装图
-
-boxplot(list(d$numhsp[d$density < 0.5], d$numhsp[d$density >= 0.5]), log='y', names=c("density < 0.5", "density >= 0.5"), ylab="connected component size", cex.lab=1.4, cex.axis=1.4)
-cex.axis change the size of label on x axis
-names
-labels on x-axis
-
-another way to boxplot against some factor
-boxplot(envcnt ~ gltrunc12, data=d, xlab='number of gains and losses')
-
-**** vioplot
-do.call(vioplot,c(unname(a), col='red', names=list(names(a))))
-*** lattice plotting
-library(lattice)
-package ? Lattice
-library(help=lattice)
-data(environmental)
-?environmental
-head(environmental)
-xyplot(ozone ~ radiation, data=environmental)
-xyplot(ozone ~ radiation, data=environmental, main=”Ozone vs. Radiation”)
-
-#+BEGIN_SRC R
-xyplot(-log10(adj.P.Val)~CHROMOSOME, tt, ylab='-log10(Adjusted P-value)', main='P-values for probes\ndistinguishing males from females')
-# tt is the data.frame containing columns adj.P.Val and CHROMOSOME
-#+END_SRC
-
-*** ggplot2
-
-**** scatter plot
-qplot(x, y, data=dataframe)
-color category based on "colorcolumn"
-qplot(x, y, data=dataframe, color=colorcolumn)
-color category based on "shapecolumn"
-qplot(x, y, data=dataframe, color=shapecolumn)
-
-add LOESS
-qplot(x, y, data=dataframe, geom=c("point","smooth"))
-use linear regression instead of LOESS
-qplot(x, y, data=df, geom=c("point","smooth"), method="lm")
-
-**** histogram
-qplot(x, data=df, fill=colorcolumn)
-"fill" defines a 3rd category that defines the color
-
-**** subplot in "facets"
-data are first divided by certain column into row and column of the subplots
-qplot(x, y, data=df, facets=.~facetcolumncolumn)
-qplot(x, y, data=df, facets=facetrowcolumn~., binwidth=2)
-
-**** density plot
-qplot(x, data=maacs, geom="density")
-further split by colorcolumn
-qplot(x, data=df, geom="density", color="colorcolumn") # this results in n curves each corresponding to an alphabet found in colorcolumn
-
-*** convert R table to LaTeX table
-library(xtable)
-xt <- xtable(x, label="tab:chromosomepvals", caption="The median adjusted p-value ...")
-digits(xt) <- 6
-print(xt, include.rownames=FALSE, align='cr')
-** data IO
-*** read.table
-**** commonly used arguments
-***** file
-***** header
-***** sep
-default to space
-***** colClasses=c("character", "integer", "numeric")
-this may speed the data import
-e.g., colClasses=”numeric”
-***** nrows
-***** comment.char
-default to “#”, set comment.char=”” if there are no commented lines in your file.
-***** skip
-the number of lines to skip from the beginning
-***** stringsAsFactors
-hould character variables be coded as factors?
-**** read.table("clipboard")
-Read table from clipboard
-read.table(“clipboard”)
-One can copy a region in Excel then use this command to import to R.
-**** handle large data
-d.full=read.table('/home/wanding/sync/project_HGT/data2/2013_02_04_eval2alen.tab', header=T, comment.char="", colClasses=c("character", "integer", "numeric"), stringsAsFactors=F)
-** scripting
-*** Old style: R CMD BATCH --args my_arg
-*** New style: ./script.R my_arg
-*** get command line argument
-args<-(commandArgs(TRUE))
-args
-"lalala"
-** packaging
-http://cran.r-project.org/doc/contrib/Leisch-CreatingPackages.pdf
-
-to build the package tarball
-R CMD build
-
-to check the package tarball
-R CMD check
-
- Edit the help file skeletons in 'man', possibly combining help files for multiple functions.
- Edit the exports in 'NAMESPACE', and add necessary imports.
- Put any C/C++/Fortran code in 'src'.
- If you have compiled code, add a useDynLib() directive to 'NAMESPACE'.
-
-what "build and reload" in Rstudio do
-1. Unloads any existing version of the package (including shared libraries if necessary).
-2. Builds and installs the package using R CMD INSTALL.
-3. Restarts the underlying R session to ensure a clean environment for re-loading the package.
-4. Reloads the package in the new R session by executing the library function.
-
-** debug
-
-*** the browser
-insert "browser()" to where you want to stop the program and the execution will give an interactive session at that location.
-you can also set option(error=browser) to invoke a browser when an error occurs
-点击RStudio的左栏也可实现加入breakpoint效果。
-
-In browser
-type "help" to list all the options.
-
-flag a function for “debug” mode which allows you to step through execution of a function one line a time
-n: next line
-Q: quit
-c: continue without single stepping
-where: show call stack
-
-> debug(lm)
-> lm(y~x)
-debugging in: lm(y ~ x)
-debug: {
-    ret.x <- x
-    ret.y <- y
-…
-    if (!qr) 
-        z$qr <- NULL
-    z
-}
-Browse[2]> n
-debug: ret.x <- x
-Browse[2]> n
-debug: ret.y <- y
-
-# what's Browse?
-suspend the execution of a function wherever it is called and puts the function in debug mode
-the browser is just like your R work space (interactive shell)
-
-Message, warning, error, condition
-condition: a generic concept for indicating that something unexpected can occur; programmers can create their own conditions.
-Warning
->log(-1)
-[1] NaN
-Warning message: 
-In log(-1) : NaNs produced 
-
-*** traceback() 
-prints out the function call stack, does nothing if there's no error
-> mean(x)
-Error in mean(x) : object 'x' not found
-> traceback()
-1: mean(x)
-or
-> lm(y~x)
-Error in eval(expr, envir, enclos) : object 'y' not found
-> traceback()
-7: eval(expr, envir, enclos)
-6: eval(predvars, data, env)
-5: model.frame.default(formula = y ~ x, drop.unused.levels = TRUE)
-4: model.frame(formula = y ~ x, drop.unused.levels = TRUE)
-3: eval(expr, envir, enclos)
-2: eval(mf, parent.frame())
-1: lm(y ~ x)
-
-*** notice that Rstudio breakpoint cannot be set inside packaged sources (source file inside a package).
-
-*** trace S4 method (use signature= argument)
-setMethod("plot", signature(x = "track", y = "missing"), 
-
-R> trace("plot", browser, exit=browser, signature = c("track",
-"missing"))
-
-** other
-
-*** littler
-
-# do the following during your R installation
-./configure --prefix=/home/wanding.zhou/.Renv/versions/3.2.3 --enable-R-shlib=yes
-
-install.packages("littler")
-# link binary
-ln -s /primary/home/wanding.zhou/.Renv/versions/3.2.3/lib64/R/library/littler/bin/r ~/bin/
-# under macosx, R and r are the same, so use lr
-ln -s /Library/Frameworks/R.framework/Resources/library/littler/bin/r ~/bin/lr
-
-*** set library path
-default library location
-/Library/Frameworks/R.framework/Resources/library
-
-To change libPath temporarily:
-.libPaths(c("/usr/lib/R/library","/usr/share/R/library"))
-
-permanently add the library path:
-in ~/.Renviron add R_LIBS="home/wan/lib/R"
-
-*** set default packages that are loaded on start
-options(defaultPackages=c(getOption("defaultPackages"),
-       "mypackage1","mypackage2", ... [etc.]))
-
-*** parallel
-#+BEGIN_SRC R
-mclapply(x, func)
-
-#+END_SRC
-
-*** display the internal structure of an R object using "str"
-diagnostic function and alternative to “summary”
-> str(str)
-function (object, ...)
-> str(lm)
-function (formula, data, subset, weights, na.action, method = "qr", 
-    model = TRUE, x = FALSE, y = FALSE, qr = TRUE, singular.ok = TRUE, 
-    contrasts = NULL, offset, ...)  
-> str(ls)
-function (name, pos = -1, envir = as.environment(pos), all.names = FALSE, 
-    pattern)  
-> x<-rnorm(100,2,4)
-> summary(x)
-   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
--6.0210 -0.6476  2.0160  2.1340  4.5160 14.4300 
-> str(x)
- num [1:100] -0.61 3.586 2.446 -0.265 2.366 …
-*** time your code
-system.time(yourcodehere)
-
-*** recover
-allows you to modify the error behavior so that you can browse the function call stack
-> options(error=recover)
-> read.csv("nosuchfile")
-Error in file(file, "rt") : cannot open the connection
-In addition: Warning message:
-In file(file, "rt") :
-  cannot open file 'nosuchfile': No such file or directory
-
-Enter a frame number, or 0 to exit   
-
-1: read.csv("nosuchfile")
-2: read.table(file = file, header = header, sep = sep, quote = quote, dec = dec, fill 
-3: file(file, "rt")
-
-Selection: 1
-select a level in the call stack to see around, in this case, read.csv, for example. The control is handed over to browse.
-Called from: top level 
-Browse[1]> Q
-*** convert to LaTeX table
-#+BEGIN_SRC R
-library(xtable)
-print(xtable(res), file="~/tab.tex", digits=2, floating=FALSE)
-#+END_SRC
-
-*** list file in the working directory
-> dir()
-*** list files in current dir
-list.files(directory_name)
-list.files(pattern=".pairs")	list all the files satisfying some pattern in the current directory.
-file.show(filepath)	display the file indicated in the filepath
-*** list object in the work space
-> ls()
-
-*** free variables are searched in the parent closure
-> make.power <- function(n) {pow <-function(x) {x^n}; pow}
-> cube <- make.power(3)
-> square <- make.power(2)
-> cube(3)
-[1] 27
-> square(3)
-[1] 9
-> ls(environment(cube))
-[1] "n"   "pow"
-> get('n',environment(cube))
-[1] 3
-> ls(environment(square))
-[1] "n"   "pow"
-> get('n',environment(square))
-[1] 2
-
-*** use html help
-options(htmlhelp=FALSE)
-*** type <- in Rstudio, emacs ESS
-RStudio ALT -
-emacs ESS SHIFT -
-
-*** edit spreadsheet manually
-x <- edit(data.frame()) # Starts empty GUI spreadsheet editor for manual data entry
-x <- edit(x) # Opens existing data frame (table) 'x' in GUI spreadsheet editor.
-x <- scan(w="c") # Lets you enter values from the keyboard or by copy&paste and assigns them to vector 'x'.
-*** get help
-example(topic)
-?chisq.test
-?help.search("chi-square")	fuzzy-match search for chi-square
-help.search(igraph)	to search for topic in documents
-help("[[")
-?"[["
-vignette("sandwich")	## a brief introduction to the package sandwich
-*** attach data
-attach(data1)	使data1的列自动储入，无须data1$...
-*** clear workspace
-rm(list=ls())
-*** change directory, get working directory
-getwd()
-setwd(dir)
-
 * Python
 ** docopt
 args = docopt(__doc__, version=__version__)
@@ -11948,7 +11935,6 @@ $a = new SimpleClass();
 echo $a->var;
 $a->displayVar();
 #+END_SRC
-
 * Java
 ** Basic concepts
 *** Java version history
@@ -12320,6 +12306,25 @@ Have fun!
     go back to history
 ** st
     hg st | awk '/\?/{print $2;}' | hg add
+* Excel VBA
+** color cell by hex (e.g., column D and E)
+Sub SetHexColors()
+Dim i, LastRow
+LastRow = Range("A" & Rows.Count).End(xlUp).Row
+For i = 1 To LastRow
+Cells(i, "D").Interior.Color = HEXCOL2RGB(Cells(i, "D"))
+Cells(i, "E").Interior.Color = HEXCOL2RGB(Cells(i, "E"))
+Next
+End Sub
+
+Public Function HEXCOL2RGB(ByVal HexColor As String) As String
+Dim Red As String, Green As String, Blue As String
+HexColor = Replace(HexColor, "#", "")
+Red = Val("&H" & Mid(HexColor, 1, 2))
+Green = Val("&H" & Mid(HexColor, 3, 2))
+Blue = Val("&H" & Mid(HexColor, 5, 2))
+HEXCOL2RGB = RGB(Red, Green, Blue)
+End Function
 * bash
 ** difference between | and <<<
 echo -e $lines | while read line 
