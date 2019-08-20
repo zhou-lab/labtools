@@ -51,6 +51,7 @@ make install
 
 ./configure --prefix=/home/wanding.zhou/.Renv/versions/3.2.5 --without-x --with-cairo --with-libpng --with-libtiff --with-jpeglib --enable-R-shlib
 *** example add R3.5.2
+export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/primary/vari/software/curl/default/lib/pkgconfig/
 
 ** install Cairo on cluster
 export CAIRO_LIBS="-L/primary/vari/software/cairo/default/lib/ -L/primary/vari/software/pixman/default/lib/ -lcairo -lpixman-1"
@@ -3183,6 +3184,16 @@ rm(list=ls())
 getwd()
 setwd(dir)
 * MacOSX
+** override MS onedrive max upload limit
+How to do the same on Mac OS X
+
+The same setting can be changed in ClientPolicy.ini on a Mac. To find the file go here:
+
+~/Library/Containers/com.microsoft.OneDrive-mac/Data/Library/Application Support/OneDrive/settings/Personal
+
+Where ~ is your user directory.
+make the following number higher
+MaxClientMBTransferredPerDay = 1537600
 ** keyboard shortcut
 Ctrl + Up # show all windows
 Alt + Command + Space # loop over input methods
