@@ -3184,6 +3184,10 @@ rm(list=ls())
 getwd()
 setwd(dir)
 * MacOSX
+** magnify screen
+command-option +
+command-option -
+command-option 8
 ** override MS onedrive max upload limit
 How to do the same on Mac OS X
 
