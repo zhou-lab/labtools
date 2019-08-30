@@ -133,9 +133,9 @@ function wzgreppdf {
 ## usage:
 ## s [query]
 ## s open [query] # directly open
-## s goto [query] # directly open folder in finder, any level
-## s cd # cd into the folder containing the directory
+## s cd # cd into the folder containing the file
 ## s show # show things in finder
+## s echo # just echo things in terminal
 function s {
 
   to_open=0
@@ -156,13 +156,13 @@ function s {
     to_cd=1;
     shift;
   fi
-  
-  if [[ $1 == "goto" ]]; then
-    to_open=1;
-    is_directory=1;
+
+  if [[ $1 == "echo" ]]; then
+    to_open=0;
+    is_directory=0;
     shift;
-  fi  
-  
+  fi
+
   location=$1
   shift;
 
@@ -192,6 +192,7 @@ function s {
     location=$HOME/Dropbox/Documents/Writing/
   fi
 
+  ## TODO test if link is pointed to a directory
   if [[ ! -d $location ]]; then
     location=$HOME/Dropbox/Documents/
   fi
@@ -409,3 +410,4 @@ function dt() {
 function dt2() {
   date +%Y_%m_%d
 }
+

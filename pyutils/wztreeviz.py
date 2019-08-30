@@ -219,7 +219,7 @@ class PhyloGram():
                      [t._r]*40, color=ec, lw=self.lw, alpha=self.alpha)
         
 
-    def add_leaf_bar_track(self, srs, inner_space = None, track_color='k', track_height = None):
+    def add_leaf_bar_track(self, srs, inner_space_ratio = 0.1, track_color='k', track_height = None, tick_length=0.03):
 
         """
         srs is a pandas Series, indexed by t.name 
@@ -229,8 +229,7 @@ class PhyloGram():
         if track_height is None:
             track_height = self.blv
             
-        if inner_space is None:
-            inner_space = 0.5 * track_height
+        inner_space = inner_space_ratio * track_height
             
         y_max = srs.max() # the data maximum
         for t in self.root.get_leaves():
@@ -241,7 +240,16 @@ class PhyloGram():
         # the base line
         self.ax.plot(np.linspace(self.angle_beg, self.angle_end, 100), [t._r2]*100, color=track_color, lw=0.5)
 
-    def add_leaf_bubble_track(self, srs, inner_space = None, track_color='k', track_height = None):
+        # y-axis
+        self.ax.plot([self.angle_beg, self.angle_beg], [t._r2, t._r2-track_height], color=track_color, lw=0.5)
+
+        # y-axis ticks
+        self.ax.plot(np.linspace(self.angle_beg, self.angle_beg-tick_length, 3), [t._r2]*3, color=track_color, lw=1)
+        self.ax.plot(np.linspace(self.angle_beg, self.angle_beg-tick_length, 3), [t._r2-track_height]*3, color=track_color, lw=1)
+        self.ax.text(self.angle_beg, t._r2 - track_height, "%1.2g" % y_max,
+                     rotation=self.angle_beg/np.pi*180+90, verticalalignment='bottom', horizontalalignment='right')
+
+    def add_leaf_bubble_track(self, srs, inner_space = None, track_color='k', track_height = None, max_radius = 9999):
 
         """
         srs is a pandas Series, indexed by t.name
@@ -257,7 +265,7 @@ class PhyloGram():
         y_max = srs.max() # the data maximum
         for t in self.root.get_leaves():
             t._r2 += inner_space + track_height
-            circle_radius = srs[t.name] / y_max * track_height/2
+            circle_radius = srs[t.name] / y_max * min(track_height/2, max_radius)
             self.ax.add_artist(plt.Circle(polar2cart(t._angle_mid, t._r2-track_height/2), circle_radius, transform=self.ax.transData._b))
 
     def add_leaf_labels(self, labels=None, r_pad=1):

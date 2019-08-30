@@ -150,7 +150,8 @@
 (global-set-key (kbd "<f18>") 'switch-to-buffer)
 (global-set-key (kbd "<f10>") 'yas-reload-all)
 (global-set-key (kbd "<f9>") 'yas-describe-tables)
-(global-set-key (kbd "<f13>") 'kill-ring-save)
+;; (global-set-key (kbd "<f13>") 'kill-ring-save)
+(global-set-key (kbd "<f13>") 'ess-eval-region-or-function-or-paragraph-and-step)
 (global-set-key (kbd "<f14>") 'jao-copy-line)
 (global-set-key (kbd "<f16>") 'yank)
 (global-set-key (kbd "<help>") 'other-window)
@@ -206,10 +207,15 @@
   (interactive "r")
   (replace-regexp "\n\\{2,\\}" " " nil start end))
 
+(global-set-key (kbd "<f6>") 'make-paragraph)
+
 ;; split a paragraph into sentences
 (defun split-paragraph (start end)
   (interactive "r")
   (replace-regexp "\\. " ".\n\n" nil start end))
+
+(global-set-key (kbd "<f5>") 'split-paragraph)
+
 
 ;; the following is not useful at all, just for learning purpose
 (defun remove-vowel ($string &optional $from $to)
@@ -507,6 +513,10 @@ Then move to that line and indent according to mode"
 ;; The default style is RRR. Even changing this thing to
 ;; DEFAULT won't work. So far only the following works.
 (custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
  '(ess-own-style-list
    (quote
     ((ess-indent-offset . 4)
@@ -520,7 +530,10 @@ Then move to that line and indent according to mode"
      (ess-align-blocks control-flow)
      (ess-indent-from-lhs)
      (ess-indent-from-chain-start)
-     (ess-indent-with-fancy-comments . t)))))
+     (ess-indent-with-fancy-comments . t))))
+ '(package-selected-packages
+   (quote
+    (projectile abs-mode markdown-mode yaml-mode yasnippet-snippets yasnippet toc-org tabbar helm fill-column-indicator))))
 
 (setq-default ess-indent-offset 4)
 
@@ -576,14 +589,7 @@ Then move to that line and indent according to mode"
 ;; (global-set-key (kbd "C-c k") 'counsel-ag)
 ;; (global-set-key (kbd "C-x l") 'counsel-locate)
 ;; (define-key minibuffer-local-map (kbd "C-r") 'counsel-minibuffer-history)
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(package-selected-packages
-   (quote
-    (abs-mode markdown-mode yaml-mode yasnippet-snippets yasnippet toc-org tabbar helm fill-column-indicator))))
+
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
