@@ -25,12 +25,12 @@ PS1='\u@\h:\w\$ '
 
 HOME=/Users/wanding.zhou
 
-export PATH=~/bin:~/tools/circos/current/bin:~/tools/bin/:~/wzlib/bin/:$PATH
-export SCREENRC=$HOME/wzlib/screenrc/screenrc_hp
-export PYTHONPATH=$HOME:~/wzlib/pyutils
-# export PYTHONPATH=$HOME/wzlib/pyutils:$PYTHONPATH:$HOME/pythonlib/lib/python2.7/site-packages/
-# /usr/local/lib/python2.7/site-packages/:$HOME/wzlib/pyutils:$HOME/pythonlib/Library/Python/2.7/site-packages/:/usr/local/Cellar/pyqt/4.11.3/lib/python2.7/site-packages/:/System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/:$PYTHONPATH
-export AWKPATH=$HOME/wzlib/awkutils
+export PATH=~/bin:~/tools/circos/current/bin:~/tools/bin/:~/repo/wzlib/bin/:$PATH
+export SCREENRC=$HOME/repo/wzlib/screenrc/screenrc_hp
+export PYTHONPATH=$HOME:~/repo/wzlib/pyutils
+# export PYTHONPATH=$HOME/repo/wzlib/pyutils:$PYTHONPATH:$HOME/pythonlib/lib/python2.7/site-packages/
+# /usr/local/lib/python2.7/site-packages/:$HOME/repo/wzlib/pyutils:$HOME/pythonlib/Library/Python/2.7/site-packages/:/usr/local/Cellar/pyqt/4.11.3/lib/python2.7/site-packages/:/System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/:$PYTHONPATH
+export AWKPATH=$HOME/repo/wzlib/awkutils
 export EDITOR='subl -w'
 
 
@@ -108,7 +108,10 @@ prompt
 # esac
 
 
-
+function newdoc {
+  touch $1
+  open $1
+}
 
 
 ##########################
@@ -116,15 +119,20 @@ prompt
 ##########################
 ## for code
 function wzgrep {
-  # grep --recursive --color=always "$1" ~/wzprojects/*.{R,py,org,sh} | less -SR;
-  # grep --recursive --color=always "$1" ~/wzprojects/* | less -R;
-  ag "$1" ~/wzprojects --pager="less -R"
+  # grep --recursive --color=always "$1" ~/repo/wzprojects/*.{R,py,org,sh} | less -SR;
+  # grep --recursive --color=always "$1" ~/repo/wzprojects/* | less -R;
+  [[ -z "$1" ]] || ag "$1" ~/repo/wzprojects --pager="less -R"
 }
 
 ## for PDF documents, DON'T WORK WELL, TRY SEARCHING IN MENDELEY
 function wzgreppdf {
   pattern="$@";
   find ~/Dropbox/Literature -name '*.pdf' -exec pdfgrep "$pattern" {} \;
+}
+
+## the following utilize the built-in mac MS Word reader
+function wzwriting {
+  textutil -stdout -cat txt *.docx
 }
 
 ###################
@@ -167,9 +175,9 @@ function s {
   shift;
 
   if [[ $location =~ ^wzp ]]; then
-    location=$HOME/wzprojects/
+    location=$HOME/repo/wzprojects/
   elif [[ $location =~ ^wzl ]]; then
-    location=$HOME/wzlib/
+    location=$HOME/repo/wzlib/
   elif [[ $location =~ ^ga ]]; then
     location=$HOME/gallery/
   elif [[ $location =~ ^dr ]]; then
@@ -179,7 +187,7 @@ function s {
   elif [[ $location =~ ^do ]]; then
     location=$HOME/Dropbox/Documents/
   elif [[ $location =~ ^re ]]; then
-    location=$HOME/review/
+    location=$HOME/repo/review/
   elif [[ $location =~ ^sp ]]; then
     location=$HOME/Dropbox/Documents/SpreadSheets/
   elif [[ $location =~ ^pa ]]; then
@@ -298,6 +306,15 @@ alias gpu="git push"
 alias gc="git commit -a"
 # alias ga="git add"
 
+function allgpl {
+  for f in ~/repo/*; do
+    cd $f;
+    git pull
+    git commit -am "minor, message omitted"
+    git push
+  done
+}
+
 # lazy git
 function gl {
 
@@ -319,10 +336,10 @@ sort -k1,1 -k2,2n $1
 
 ## circos
 export PATH=~/tools/circos/circos-0.67-7/bin/:$PATH
-alias wzseq='. /Users/wandingzhou/wzlib/bash/wzseq.sh'
-alias wzutils='. /Users/wandingzhou/wzlib/bash/wzutils.sh'
+alias wzseq='. /Users/wandingzhou/repo/wzlib/bash/wzseq.sh'
+alias wzutils='. /Users/wandingzhou/repo/wzlib/bash/wzutils.sh'
 
-alias wzmouse='. ~/wzprojects/meth/2016_03_22_mouse_array_figures.sh'
+alias wzmouse='. ~/repo/wzprojects/meth/2016_03_22_mouse_array_figures.sh'
 
 # test -r ~/tools/EMAN2/eman2.bashrc && source ~/tools/EMAN2/eman2.bashrc
 
@@ -410,4 +427,7 @@ function dt() {
 function dt2() {
   date +%Y_%m_%d
 }
+
+export TRANSVAR_CFG=/Users/wanding.zhou/Google/20190822_transvar_development/transvar.cfg
+export TRANSVAR_DOWNLOAD_DIR=/Users/wanding.zhou/Google/20190822_transvar_development/transvar.download
 

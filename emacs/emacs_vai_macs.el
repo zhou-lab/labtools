@@ -84,6 +84,8 @@
 (setq org-edit-src-content-indentation 0)
 (setq org-src-tab-acts-natively t)
 
+;; (require 'org-drill)
+
 ;; R support inside org-babel
 ;; (useful only for export R code-containing org files)
 ;; (setq org-babel-R-command "/usr/local/bin/R --no-save")
@@ -533,7 +535,7 @@ Then move to that line and indent according to mode"
      (ess-indent-with-fancy-comments . t))))
  '(package-selected-packages
    (quote
-    (projectile abs-mode markdown-mode yaml-mode yasnippet-snippets yasnippet toc-org tabbar helm fill-column-indicator))))
+    (org-drill projectile abs-mode markdown-mode yaml-mode yasnippet-snippets yasnippet toc-org tabbar helm fill-column-indicator))))
 
 (setq-default ess-indent-offset 4)
 
