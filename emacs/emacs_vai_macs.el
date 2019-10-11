@@ -103,6 +103,7 @@
 (global-set-key (kbd "M-q") 'toggle-truncate-lines)
 
 (setq word-wrap nil)
+;; command as control
 (setq mac-command-modifier 'control)
 
 (add-to-list 'default-frame-alist '(height . 50))
@@ -535,7 +536,7 @@ Then move to that line and indent according to mode"
      (ess-indent-with-fancy-comments . t))))
  '(package-selected-packages
    (quote
-    (org-drill projectile abs-mode markdown-mode yaml-mode yasnippet-snippets yasnippet toc-org tabbar helm fill-column-indicator))))
+    (helm-R org-drill projectile abs-mode markdown-mode yaml-mode yasnippet-snippets yasnippet toc-org tabbar helm fill-column-indicator))))
 
 (setq-default ess-indent-offset 4)
 

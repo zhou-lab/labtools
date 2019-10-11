@@ -23,7 +23,7 @@ function emacs {
 
 PS1='\u@\h:\w\$ '
 
-HOME=/Users/wanding.zhou
+HOME=/Users/zhouw3
 
 export PATH=~/bin:~/tools/circos/current/bin:~/tools/bin/:~/repo/wzlib/bin/:$PATH
 export SCREENRC=$HOME/repo/wzlib/screenrc/screenrc_hp
@@ -40,7 +40,7 @@ function addPy2 {
 }
 
 function addPy3 {
-	export PATH="/Users/wanding.zhou/anaconda3/bin:$PATH"
+	export PATH="/Users/zhouw3/anaconda3/bin:$PATH"
 }
 addPy3
 
@@ -428,6 +428,6 @@ function dt2() {
   date +%Y_%m_%d
 }
 
-export TRANSVAR_CFG=/Users/wanding.zhou/Google/20190822_transvar_development/transvar.cfg
-export TRANSVAR_DOWNLOAD_DIR=/Users/wanding.zhou/Google/20190822_transvar_development/transvar.download
+export TRANSVAR_CFG=/Users/zhouw3/Google/20190822_transvar_development/transvar.cfg
+export TRANSVAR_DOWNLOAD_DIR=/Users/zhouw3/Google/20190822_transvar_development/transvar.download
 
