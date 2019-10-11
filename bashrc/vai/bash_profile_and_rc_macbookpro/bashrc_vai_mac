@@ -31,7 +31,6 @@ export PYTHONPATH=$HOME:~/repo/wzlib/pyutils
 # export PYTHONPATH=$HOME/repo/wzlib/pyutils:$PYTHONPATH:$HOME/pythonlib/lib/python2.7/site-packages/
 # /usr/local/lib/python2.7/site-packages/:$HOME/repo/wzlib/pyutils:$HOME/pythonlib/Library/Python/2.7/site-packages/:/usr/local/Cellar/pyqt/4.11.3/lib/python2.7/site-packages/:/System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/:$PYTHONPATH
 export AWKPATH=$HOME/repo/wzlib/awkutils
-export EDITOR='subl -w'
 
 
 #### python ####
