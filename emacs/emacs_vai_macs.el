@@ -110,6 +110,7 @@
 (global-set-key (kbd "M-q") 'toggle-truncate-lines)
 
 (setq word-wrap nil)
+;; command as control
 (setq mac-command-modifier 'control)
 
 (add-to-list 'default-frame-alist '(height . 50))
