@@ -46,14 +46,14 @@
 
 (setenv "PATH" (concat (getenv "PATH") ":/usr/local/texlive/2014/bin/x86_64-darwin/"))
 (setq exec-path (append exec-path '("/usr/local/texlive/2014/bin/x86_64-darwin/")))
-
+;; (load-theme 'adwaita t)
 ;; (load-theme 'ample-zen t)
 ;; (load-theme 'airline-badwolf t)
 ;; (load-theme 'tsdh-light t)
-;; (load-theme 'leuven t)
+(load-theme 'leuven t)
+;; (load-theme 'leuven-dark t)
 ;; (load-theme 'zenburn t)
 ;; (load-theme 'deeper-blue t)
-(load-theme 'adwaita t)
 ;; (load-theme 'dracula t)
 ;; (setq-default cursor-type 'bar)
 
@@ -83,6 +83,13 @@
 (setq org-src-fontify-natively t)
 (setq org-edit-src-content-indentation 0)
 (setq org-src-tab-acts-natively t)
+
+(setq org-todo-keywords
+      '((sequence "TODO"
+                  "|"
+                  "DONE"
+                  "OBSOLETE"
+                  "DEFERRED")))
 
 ;; (require 'org-drill)
 
@@ -519,6 +526,9 @@ Then move to that line and indent according to mode"
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(custom-safe-themes
+   (quote
+    ("fa2af0c40576f3bde32290d7f4e7aa865eb6bf7ebe31eb9e37c32aa6f4ae8d10" default)))
  '(ess-own-style-list
    (quote
     ((ess-indent-offset . 4)
@@ -535,7 +545,7 @@ Then move to that line and indent according to mode"
      (ess-indent-with-fancy-comments . t))))
  '(package-selected-packages
    (quote
-    (org-drill projectile abs-mode markdown-mode yaml-mode yasnippet-snippets yasnippet toc-org tabbar helm fill-column-indicator))))
+    (leuven-theme org-drill projectile abs-mode markdown-mode yaml-mode yasnippet-snippets yasnippet toc-org tabbar helm fill-column-indicator))))
 
 (setq-default ess-indent-offset 4)
 
