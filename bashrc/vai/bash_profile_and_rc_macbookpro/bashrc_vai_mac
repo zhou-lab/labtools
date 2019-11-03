@@ -63,6 +63,7 @@ export PERL5LIB=${PERL5LIB}:/Users/wandingzhou/tools/ensembl_api/ensembl-funcgen
 
 alias scp='rsync -Pravdtze ssh'
 alias awk='gawk -F"\t" -v OFS="\t"'
+alias zcat="gzcat"
 alias les="less -S"
 alias zles="zless -S"
 alias qsuball="find $HOME/htcpbs/ -type f | sort | xargs -I {} qsub {}"
