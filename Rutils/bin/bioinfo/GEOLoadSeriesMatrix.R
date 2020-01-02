@@ -1,8 +1,8 @@
 #!/usr/bin/env Rscript
 library(stringr)
 args <- commandArgs(trailingOnly=TRUE)
-system(sprintf("gzcat %s | gawk '!/^!/ && length($0)>0' >1", args[1]))
-system(sprintf("gzcat %s | gawk '/^!Sample/' | wzmanip transpose - >samplesheet.tsv", args[1]))
+system(sprintf("zcat %s | awk '!/^!/ && length($0)>0' >1", args[1]))
+system(sprintf("zcat %s | awk '/^!Sample/' | wzmanip transpose - >samplesheet.tsv", args[1]))
 
 samples <- read.table('samplesheet.tsv', stringsAsFactors=F, header=T)
 
