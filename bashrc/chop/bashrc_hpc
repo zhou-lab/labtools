@@ -1,8 +1,8 @@
 #!/bin/bash
 # Source global definitions
-# if [ -f /etc/bashrc ]; then
-# 	. /etc/bashrc
-# fi
+ if [ -f /etc/bashrc ]; then
+ 	. /etc/bashrc
+ fi
 
 ############# the following copied from /etc/bashrc ##############
 # are we an interactive shell?
@@ -127,14 +127,14 @@ alias wzseq=". $HOME/repo/wzlib/bash/wzseq.sh"
 alias wzcore=". $HOME/repo/wzlib/bash/wzcore.sh"
 
 export SCREENRC=$HOME/repo/wzlib/screenrc/screenrc_hp
-export PYTHONPATH=$HOME/repo/wzlib/pyutils
+# export PYTHONPATH=$HOME/repo/wzlib/pyutils
 ## :$HOME/pythonlib/lib/python2.7/site-packages/
 ##:/primary/home/wanding.zhou/.local/lib/python2.7/site-packages
 export AWKPATH=$HOME/repo/wzlib/awkutils
 
 # /home/wanding.zhou/tools/anaconda/anaconda/bin, instead put python as a symlink to that location
 export PATH=~/bin:~/local/bin:$PATH
-export PATH=~/pythonlib/bin:$PATH
+# export PATH=~/pythonlib/bin:$PATH
 export PATH=/home/zhouw3/repo/PipelineCollections/pipelines:$PATH
 # export PATH=/secondary/projects/laird/projects/2018_05_02_Wanding_tools/go/go/bin:$PATH
 export PATH=/primary/vari/software/UCSC_Browser_Tools/default/:$PATH
