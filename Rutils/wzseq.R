@@ -1,3 +1,5 @@
+library(GenomicRanges)
+
 ##   df <- data.frame(seqnames=seqnames(gr),
 ##                    starts=start(gr)-1,
 ##                    ends=end(gr),

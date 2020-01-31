@@ -133,3 +133,7 @@ slideMean <- function(data, window, step){
   }
   return(result)
 }
+
+smoothScatter1 <- function(...) {
+    smoothScatter(..., nrpoints=0, colramp=colorRampPalette(c("white","white","lightblue","blue","green","yellow","orange","red","darkred"),space = "Lab"), col='blue')
+}

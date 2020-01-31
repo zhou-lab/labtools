@@ -41,7 +41,7 @@ function addPy2 {
 function addPy3 {
 	export PATH="/Users/zhouw3/anaconda3/bin:$PATH"
 }
-addPy3
+# addPy3
 
 function switchPy3 {
   export PATH=$(echo "$PATH" | sed -e 's/2017_11_09_WZ_anaconda/2017_11_09_WZ_anaconda_python3.6\/anaconda3/')
@@ -148,6 +148,7 @@ function s {
 
   to_open=0
   to_cd=0;
+  to_finder=0;
   is_directory=0;
   if [[ $1 == "open" ]]; then
     to_open=1;
@@ -155,19 +156,17 @@ function s {
   fi
   
   if [[ $1 == "show" ]]; then
-    to_open=0;
+    to_finder=1;
     shift;
   fi
 
   if [[ $1 == "cd" ]]; then
-    to_open=0;
     to_cd=1;
     shift;
   fi
 
   if [[ $1 == "echo" ]]; then
-    to_open=0;
-    is_directory=0;
+    ## do nothing really, since echo will always be done
     shift;
   fi
 
@@ -214,6 +213,7 @@ function s {
   
   if [[ ! -z "$fpath" ]]; then
     echo $fpath
+    export SHOWLOC=$fpath
     if [[ $to_open -eq 1 ]]; then
       open "$fpath"
     elif [[ $to_cd -eq 1 ]]; then
@@ -222,10 +222,26 @@ function s {
       else
         cd $(dirname "$fpath")
       fi
-    else
+    elif [[ $to_finder -eq 1 ]]; then
       open -R "$fpath"
     fi
   fi
+}
+
+function openf {
+  [[ -z "$SHOWLOC" ]] || open "$SHOWLOC"
+}
+
+function opend {
+  [[ -z "$SHOWLOC" ]] || open -R "$SHOWLOC"
+}
+
+function cdd {
+  [[ -z "$SHOWLOC" ]] || cd $(dirname "$SHOWLOC")
+}
+
+function cdf {
+  [[ -z "$SHOWLOC" ]] || cd "$SHOWLOC"
 }
 
 ####################
@@ -419,6 +435,8 @@ function wzcd() {
 
 export GEM_HOME=$HOME/gems
 export PATH=$HOME/gems/bin:$PATH
+## /Users/zhouw3/.gem/ruby/2.3.0/bin
+export PATH="/usr/local/opt/ruby/bin:$PATH"
 
 function dt() {
   date +%Y%m%d
@@ -431,3 +449,6 @@ function dt2() {
 export TRANSVAR_CFG=/Users/zhouw3/Google/20190822_transvar_development/transvar.cfg
 export TRANSVAR_DOWNLOAD_DIR=/Users/zhouw3/Google/20190822_transvar_development/transvar.download
 
+## in Linux it can be
+## function ppgrep() { pgrep "$@" | xargs --no-run-if-empty ps fp; }
+function ppgrep() { pgrep "$@" | xargs ps -fp 2> /dev/null; }

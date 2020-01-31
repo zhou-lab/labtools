@@ -16,15 +16,15 @@
 ;;;;;;; fonts ;;;;;;
 ;;;;;;;;;;;;;;;;;;;;
 ;; I must say the default emacs font is pretty good to the eyes already
-;; (add-to-list 'default-frame-alist '(font . "Inconsolata-12"))
-;; (add-to-list 'default-frame-alist '(font . "Source Code Prod 10"))
+(add-to-list 'default-frame-alist '(font . "Inconsolata-13"))
+;; (add-to-list 'default-frame-alist '(font . "Anonymous Pro-13"))
+;; (add-to-list 'default-frame-alist '(font . "Source Code Pro 10"))
 ;; (set-default-font "Source Code Pro 10")
 ;; (add-to-list 'default-frame-alist '(font . "Source Code Pro-11"))
 ;; (add-to-list 'default-frame-alist '(font . "Consolas-12"))
 ;; (add-to-list 'default-frame-alist '(font . "Latin Modern Mono-12"))
 ;; (add-to-list 'default-frame-alist '(font . "Monaco-12"))
 ;; (add-to-list 'default-frame-alist '(font . "Iosevka-12:light"))
-;; (add-to-list 'default-frame-alist '(font . "Anonymous Pro-13"))
 
 ;; auto-mode-alist (append (list '("\\.c$" . c-mode)	
 ;; 			      '("\\.tex$" . latex-mode)
@@ -159,7 +159,7 @@
 ;; (global-set-key (kbd "<f9>") 'switch-to-buffer)
 (global-set-key (kbd "<f18>") 'switch-to-buffer)
 (global-set-key (kbd "<f10>") 'yas-reload-all)
-(global-set-key (kbd "<f9>") 'yas-describe-tables)
+;; (global-set-key (kbd "<f9>") 'yas-describe-tables)
 ;; (global-set-key (kbd "<f13>") 'kill-ring-save)
 (global-set-key (kbd "<f13>") 'ess-eval-region-or-function-or-paragraph-and-step)
 (global-set-key (kbd "<f14>") 'jao-copy-line)
@@ -488,6 +488,7 @@ Then move to that line and indent according to mode"
 ;;       backup-by-copying-when-linked t) ; Copy linked files, don't rename.
 
 (global-set-key (kbd "M-i") 'kill-whole-line)
+(global-set-key (kbd "<f8>") 'switch-to-buffer)
 (global-set-key (kbd "<f9>") 'other-window)
 (global-set-key (kbd "<f18>") 'delete-other-windows)
 (global-set-key (kbd "<clear>") 'goto-line)
@@ -511,6 +512,8 @@ Then move to that line and indent according to mode"
 ;; ESS
 ;;;;;;;;;;
 (require 'ess-r-mode)
+
+(setq inferior-R-program-name "/Users/zhouw3/.Renv/versions/3.6.1/bin/R")
 ;; Note that there are a lot of out-dated information out
 ;; there on the internet. ESS has changed a lot in terms of
 ;; the variables for customization. Look at ess-custom.el
@@ -552,7 +555,7 @@ Then move to that line and indent according to mode"
 
 (setq ess-style 'OWN)
 (ess-toggle-underscore nil)
-(setq inferior-R-program-name "/usr/local/bin/R")
+(setq inferior-R-program-name "/Users/zhouw3/.Renv/versions/3.6.1/bin/R")
 
 ;; (defun rmd-mode ()
 ;;  "ESS Markdown mode for rmd files"

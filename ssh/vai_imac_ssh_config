@@ -22,6 +22,14 @@ Host hpc
      HostName submit.hpc.vai.org
      User wanding.zhou
 
+Host hpc2
+     HostName respublica-an01.research.chop.edu
+     User zhouw3
+
+Host hpc3
+     HostName respublica-an02.research.chop.edu
+     User zhouw3
+     
 Host hpclogin
      HostName login.hpc.vai.org
      User wanding.zhou

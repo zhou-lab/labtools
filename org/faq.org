@@ -52,6 +52,17 @@ make install
 ./configure --prefix=/home/wanding.zhou/.Renv/versions/3.2.5 --without-x --with-cairo --with-libpng --with-libtiff --with-jpeglib --enable-R-shlib
 *** example add R3.5.2
 export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/primary/vari/software/curl/default/lib/pkgconfig/
+*** example add R3.6.1 (CHOP respublica) ## MAKE SURE YOU TURN OFF ANACONDA!!!!!!
+export LD_LIBRARY_PATH=
+# add the following in config.site 
+CPPFLAGS='-I/home/zhouw3/tools/readline/readline-8.0/include/'
+LDFLAGS='-L/home/zhouw3/tools/readline/readline-8.0/lib/'
+export LD_LIBRARY_PATH='/home/zhouw3/tools/readline/readline-8.0/lib/'
+# export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/primary/vari/software/curl/default/lib/pkgconfig/
+./configure --prefix=/home/zhouw3/.Renv/versions/3.6.1 -with-recommended-packages=no --without-x --with-cairo --with-libpng --with-libtiff --with-jpeglib --enable-R-shlib
+
+# --with-readline=no
+make
 
 *** example on MAC
 # preparation
