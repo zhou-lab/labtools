@@ -1,0 +1,422 @@
+#!/bin/bash
+# Source global definitions
+ if [ -f /etc/bashrc ]; then
+ 	. /etc/bashrc
+ fi
+
+############# the following copied from /etc/bashrc ##############
+# are we an interactive shell?
+if [ "$PS1" ]; then
+  if [ -z "$PROMPT_COMMAND" ]; then
+    case $TERM in
+    xterm*|vte*)
+      if [ -e /etc/sysconfig/bash-prompt-xterm ]; then
+          PROMPT_COMMAND=/etc/sysconfig/bash-prompt-xterm
+      elif [ "${VTE_VERSION:-0}" -ge 3405 ]; then
+          PROMPT_COMMAND="__vte_prompt_command"
+      else
+          PROMPT_COMMAND='printf "\033]0;%s@%s:%s\007" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/~}"'
+      fi
+      ;;
+    screen*)
+      if [ -e /etc/sysconfig/bash-prompt-screen ]; then
+          PROMPT_COMMAND=/etc/sysconfig/bash-prompt-screen
+      else
+          PROMPT_COMMAND='printf "\033k%s@%s:%s\033\\" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/~}"'
+      fi
+      ;;
+    *)
+      [ -e /etc/sysconfig/bash-prompt-default ] && PROMPT_COMMAND=/etc/sysconfig/bash-prompt-default
+      ;;
+    esac
+  fi
+  # Turn on parallel history
+  shopt -s histappend
+  history -a
+  # Turn on checkwinsize
+  shopt -s checkwinsize
+  [ "$PS1" = "\\s-\\v\\\$ " ] && PS1="[\u@\h \W]\\$ "
+  # You might want to have e.g. tty in prompt (e.g. more virtual machines)
+  # and console windows
+  # If you want to do so, just add e.g.
+  # if [ "$PS1" ]; then
+  #   PS1="[\u@\h:\l \W]\\$ "
+  # fi
+  # to your custom modification shell script in /etc/profile.d/ directory
+fi
+
+if ! shopt -q login_shell ; then # We're not a login shell
+    # Need to redefine pathmunge, it get's undefined at the end of /etc/profile
+    pathmunge () {
+        case ":${PATH}:" in
+            *:"$1":*)
+                ;;
+            *)
+                if [ "$2" = "after" ] ; then
+                    PATH=$PATH:$1
+                else
+                    PATH=$1:$PATH
+                fi
+        esac
+    }
+
+    # By default, we want umask to get set. This sets it for non-login shell.
+    # Current threshold for system reserved uid/gids is 200
+    # You could check uidgid reservation validity in
+    # /usr/share/doc/setup-*/uidgid file
+    if [ $UID -gt 199 ] && [ "`id -gn`" = "`id -un`" ]; then
+       umask 002
+    else
+       umask 022
+    fi
+
+    SHELL=/bin/bash
+    # Only display echos from profile.d scripts if we are no login shell
+    # and interactive - otherwise just process them to set envvars
+    for i in /etc/profile.d/*.sh; do
+      if [[ $i == *man.sh* ]]; then
+        continue
+      fi
+        if [ -r "$i" ]; then
+            if [ "$PS1" ]; then
+                . "$i"
+            else
+                . "$i" >/dev/null
+            fi
+        fi
+    done
+
+    unset i
+    unset -f pathmunge
+fi
+
+
+
+####################### my own settings ######################
+
+# # User specific alias and functions
+# module load gcc
+# module load torque
+module load uge
+module load singularity/3.2.0
+
+alias ls='ls --color'
+alias rm='rm -i'
+alias lc="wc -l"
+alias ll="ls -l"
+alias lv="ls -v"
+alias rf="readlink -f"
+alias parallel="parallel --gnu --progress"
+alias igv="~/tools/igv/IGV_2.3.60/igv.sh"
+alias du="du -sh"
+alias st="qstat"
+alias bs=". ~/.bashrc"
+# alias ta="tmux a" # tmux is still not as robust as screen
+alias sr="screen -r"
+# alias sort="LC_ALL=C /home/wandingzhou/tools/coreutils/coreutils-8.23/src/sort"
+
+alias biscuittest=". ~/tools/biscuit/development/biscuit/test.sh"
+
+# export CC=/home/wandingzhou/tools/gcc/gcc-4.9.2/objdir/bin/gcc
+
+# PS1='\u@\h:\w\$ '
+
+HOME=/home/zhouw3
+
+alias wzseq=". $HOME/repo/wzlib/bash/wzseq.sh"
+alias wzcore=". $HOME/repo/wzlib/bash/wzcore.sh"
+
+export SCREENRC=$HOME/repo/wzlib/screenrc/screenrc_hp
+# export PYTHONPATH=$HOME/repo/wzlib/pyutils
+## :$HOME/pythonlib/lib/python2.7/site-packages/
+##:/primary/home/wanding.zhou/.local/lib/python2.7/site-packages
+export AWKPATH=$HOME/repo/wzlib/awkutils
+
+# /home/wanding.zhou/tools/anaconda/anaconda/bin, instead put python as a symlink to that location
+export PATH=~/bin:~/local/bin:$PATH
+# export PATH=~/pythonlib/bin:$PATH
+export PATH=/home/zhouw3/repo/PipelineCollections/pipelines:$PATH
+# export PATH=/secondary/projects/laird/projects/2018_05_02_Wanding_tools/go/go/bin:$PATH
+export PATH=/primary/vari/software/UCSC_Browser_Tools/default/:$PATH
+# export PATH=/primary/vari/software/valgrind/default/bin:$PATH
+# export PATH=/primary/shared/production/software/python/default/bin/:$PATH
+export PATH=$HOME/.Renv/bin:$PATH
+export PATH=$HOME/software/zacks_usc_devel/zacks_PBS_Tools/:$PATH
+export PATH=/primary/vari/software/latex/20160405/bin/x86_64-linux/:$PATH
+# export JAVA_HOME=/primary/vari/software/java/jdk1.8.0_60
+
+eval "$(Renv init -)"
+
+# anaconda might interfere with R package installation!!!
+# function addPy2 {
+#   export PATH="/secondary/projects/laird/projects/2017_11_09_WZ_anaconda/bin:$PATH"
+# }
+
+# function addPy3 {
+#   export PATH="/secondary/projects/laird/projects/2017_11_09_WZ_anaconda_python3.6/anaconda3/bin:$PATH"
+# }
+# #
+# function switchPy3 {
+#   export PATH=$(echo "$PATH" | sed -e 's/2017_11_09_WZ_anaconda/2017_11_09_WZ_anaconda_python3.6\/anaconda3/')
+# }
+# function switchPy2 {
+#   export PATH=$(echo "$PATH" | sed -e 's/2017_11_09_WZ_anaconda_python3.6\/anaconda3/2017_11_09_WZ_anaconda/')
+# }
+
+# added by Anaconda3 installer
+# export PATH="/secondary/projects/laird/projects/2017_11_09_WZ_anaconda_python3.6/anaconda3/bin:$PATH"
+
+# % cpan
+# cpan> o conf makepl_arg INSTALL_BASE=/mydir/perl
+# cpan> o conf commitlk
+# export PERL5LIB=/home/wandingzhou1/tools/perltools/lib/perl5:/home/wandingzhou1/tools/vcftools/vcftools_0.1.11/lib/perl5/site_perl:${PERL5LIB}
+
+alias scp='rsync -Pravdtze ssh'
+# alias awk='$HOME/tools/awk4.01/gawk-4.01-install/bin/awk -F"\t" -v OFS="\t"'
+alias awk='awk -F"\t" -v OFS="\t"'
+alias les="less -S"
+alias qsuball="find pbs/ -type f -name '*.pbs' | sort | xargs -I {} qsub {}"
+alias rdf="readlink -f"
+alias qsubi='qlogin -q interactive.q'
+alias qstatall='qstat -u "*" | less'
+alias qstatallrun='qstat -u "*" -s r | less'
+alias qhost='qhost | less'
+# alias qsubi='qsub -I -l nodes=1:ppn=1 -l mem=10gb -l walltime=8:00:00'
+# alias qsubim='qsub -I -l nodes=1:ppn=6 -l mem=10gb -l walltime=8:00:00'
+# alias qsubil28='qsub -I -l nodes=1:ppn=28 -l walltime=48:00:00'
+# alias qsubil40='qsub -I -l nodes=1:ppn=40 -l walltime=48:00:00 -q longq'
+# alias qsubiltriche='qsub -I -l nodes=1:ppn=40 -l walltime=48:00:00 -q triche'
+alias downloadsrr='~/software/sra-toolkit/default/bin/fastq-dump --gzip'
+
+function qdelall {
+   qstat | grep 'zhouw3' | awk '{split($1,a,".");print a[1]}' | xargs -I {} qdel {}
+}
+function wzqdel {
+  for ((i=$1;i<=$2;i++)); do qdel $i;done
+}
+# alias curl="curl -OL"
+
+#export PERL5LIB=$HOME/perl5/lib/perl5:$PERL5LIB
+
+function prompt {
+  local BLACK="\[\033[0;30m\]"
+  local BLACKBOLD="\[\033[1;30m\]"
+  local GREY="\[\033[00m\]"
+  local RED="\[\033[0;31m\]"
+  local REDBOLD="\[\033[1;31m\]"
+  local GREEN="\[\033[0;32m\]"
+  local GREENBOLD="\[\033[1;32m\]"
+  local YELLOW="\[\033[0;33m\]"
+  local YELLOWBOLD="\[\033[1;33m\]"
+  local BLUE="\[\033[0;34m\]"
+  local BLUEBOLD="\[\033[1;34m\]"
+  local PURPLE="\[\033[0;35m\]"
+  local PURPLEBOLD="\[\033[1;35m\]"
+  local CYAN="\[\033[0;36m\]"
+  local CYANBOLD="\[\033[1;36m\]"
+  local WHITE="\[\033[0;37m\]"
+  local WHITEBOLD="\[\033[1;37m\]"
+  # export PS1="$REDBOLD[\t]${SCREENTITLE}$GREY[$GREENBOLD\u@\h $YELLOWBOLD\w$GREY]"'$ '
+  export PS1="$REDBOLD[\t]${SCREENTITLE}$GREY[$GREENBOLD\u@\h $YELLOWBOLD\w$GREY]\$ "
+
+}
+
+prompt
+
+# PROMPT_COMMAND='echo -ne "\033k\033\134\033k${HOSTNAME}[`basename ${PWD}`]\033\134"'
+# PROMPT_COMMAND='echo -ne "\033k\033\134\033k[`basename ${PWD}`]\033\134"'
+PROMPT_COMMAND='/bin/echo -ne "\033k\033\0134\033k[`basename ${PWD}`]\033\0134"'
+
+case "$TERM" in
+    screen*) PROMPT_COMMAND='echo -ne "\033k\033\0134"'
+esac
+
+## search wzprojects
+function wzgrep {
+  # grep --color=always --recursive "$1" ~/wzprojects/* | less -SR;
+  ag "$1" ~/wzprojects --pager="less -R"
+}
+
+function wzfind {
+  find ~/wzprojects/ -name "*$1*" | less -S
+}
+
+function wz_vcffilter {
+    vcffile=$1;
+    if [[ $3 == "-s" ]]; then
+  awk -v threshold=$2 '
+(!/^#/){
+if($6>threshold) print;
+}' $vcffile | sort -k6,6 -nr
+    else
+  awk -v threshold=$2 '
+(!/^#/){
+if($6>threshold) print;
+}' $vcffile
+    fi
+}
+
+function wzsum {
+  awk -v column=$2 '(NR==1){min=$column;max=$column}{sum += $column; if(min>$column) min=$c\
+olumn; if(max < $column) max=$column; }END{print "sum: "sum"\tcount: "NR"\tmean: "sum/NR"\t\
+min: "min"\tmax: "max}' $1
+}
+
+function wzsum_slow {
+  column=$2
+  sort -n $1 -k$column,$column | awk -v column=$column 'BEGIN{c=0;sum=0;} {a[c++]=$column; \
+sum+=$column;} END{ave=sum/c; if((c%2)==1){median=a[int(c/2)];} else{median=(a[c/2]+a[c/2-1\
+])/2;} print "sum: "sum"\tcount: "c"\tmean: "ave"\tmedian: "median"\tmin: "a[0]"\tmax: "a[c\
+-1]"\t25%: "a[c/4]"\t75%: "a[c/4*3]}'
+}
+
+function wztop {
+  top -c -p `pgrep -f $1 | tr '\n' , | sed s/,$// | head -20`
+}
+
+function dnarev {
+  echo $1 | tr ATGC TACG | rev;
+}
+
+# eval $(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib)
+function getseq {
+    samtools faidx /workspace/zchong/clinsek/test_data/hg19.fa $1
+}
+
+function tv {
+    samtools tview $1 ~/genomes/hg19_rCRSchrm/hg19_rCRSchrm.fa
+}
+function sv {
+    samtools view $@ |& les
+}
+
+function bt {
+    bcftools view $1 |& les
+}
+
+# MANPATH=$MANPATH:$HOME/share/man
+
+function wzqsub {
+    find ~/pbs/ -type f | sort | sed -n "${1},${2}"p | xargs -I {} qsub {}
+}
+
+function mkdircd {
+  mkdir $1 && cd $_;
+}
+
+function hist {
+  history | les
+}
+
+### git ###
+
+alias gst="git status" # this interfere with ghostscript program gs
+# alias gu="git pull"
+alias gp="git pull"
+alias gpu="git push"
+alias gc="git commit -a -m"
+# alias ga="git add"
+
+# lazy git
+function gl {
+
+  if [ -z "$1" ]; then message="minor, message omitted"; else message="$1"; fi;
+  git commit -a -m "$message";
+  git push;
+}
+
+sortbed ()
+{
+    LC_ALL=C sort -k1,1 -k2,2n -T . $1
+}
+export -f sortbed
+
+samnohead() { awk '!/^@/' $1; }
+export -f samnohead
+
+export TMPDIR=/mnt/isilon/zhoulab/tmp/zhouw3/
+export TEMP=/mnt/isilon/zhoulab/tmp/zhouw3/
+alias R="LANG=en_US.UTF-8 R"
+# export TRANSVAR_CFG=/primary/vari/software/transvar/TransVar-2.1.9/transvar.cfg
+
+#source /home/wanding.zhou/tools/EMAN2/EMAN2/eman2.bashrc
+#source /primary/vari/software/eman2/default/eman2.bashrc
+
+# export SESAMEHOME=/secondary/projects/shen/projects/2016_12_06_sesame_home
+# export WZARDHOME=/secondary/projects/laird/projects/2016_12_14_wzard_home
+
+function findc {
+   find . -regex '.*\.\(c\|h\)' -exec grep -H "$1" {} \;
+}
+
+function etagsc {
+   find . -regex '.*\.\(c\|h\)' | xargs etags -
+}
+
+# source ~/tools/git-subrepo/.rc
+
+alias wget="wget --limit-rate 4M"
+# source ~/perl5/perlbrew/etc/bashrc
+
+function comparesam {
+ paste <(awk -f wanding.awk -e '!/^@/{print joinr(1,8),joinr(12,NF,"__")}' $1) <(awk -f wanding.awk -e '!/^@/{print joinr(1,8),joinr(12,NF,"__")}' $2) | awk -f wanding.awk -e 'BEGIN{cnt=0}{d=0; if ($1!=$10) d=1; if ($2!=$11) d=1; if ($3!=$12) d=1; if ($4!=$13) d=1; if ($5!=$14) d=1; if (d==1) { cnt+=1; print joinr(1,9)"\n"joinr(10,NF)"\n\n"; }}END{print cnt}'
+}
+
+## fzf and z
+. ~/tools/z/z.sh
+[ -f ~/.fzf.bash ] && source ~/.fzf.bash
+
+## re-define z with coupling with fzf, you need to install fzf (but needn't
+## to invoke its key-binding or auto-completion)
+## https://github.com/junegunn/fzf/wiki/examples#z
+unalias z
+z() {
+  if [[ -z "$*" ]]; then        # when there is no argument
+    cd "$(_z -l 2>&1 | fzf +s --tac | sed 's/^[0-9,.]* *//')"
+  else                          # when there is argument
+    if [[ $1 == -* ]]; then
+      _z "$@"
+    else
+      cd "$(_z -l 2>&1 | fzf -q "$@" | sed 's/^[0-9,.]* *//')"
+    fi
+  fi
+}
+
+
+if [ -d ~/.bash_completion.d ]; then
+  for file in ~/.bash_completion.d/*; do
+    . $file
+  done
+fi
+
+[[ -z ${PBS_O_WORKDIR+x} ]] || cd ${PBS_O_WORKDIR}
+
+# alias wzmultiqc='rm -rf multiqc_*; /secondary/projects/laird/projects/2017_11_09_WZ_anaconda/bin/multiqc raw'
+
+## source .bashrc
+alias sb="source ~/.bashrc"
+alias eb="vim ~/.bashrc"
+
+
+export GOPATH=${HOME}/go
+
+
+# >>> conda initialize >>>
+# !! Contents within this block are managed by 'conda init' !!
+
+# __conda_setup="$('/home/zhouw3/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+# if [ $? -eq 0 ]; then
+#     eval "$__conda_setup"
+# else
+#   if [ -f "/home/zhouw3/anaconda3/etc/profile.d/conda.sh" ]; then
+#        . "/home/zhouw3/anaconda3/etc/profile.d/conda.sh"
+#    else
+#        export PATH="/home/zhouw3/anaconda3/bin:$PATH"
+#    fi
+# fi
+# unset __conda_setup
+
+
+# <<< conda initialize <<<
+
+export WZSEQ_ENTRY=/home/zhouw3/repo/PipelineCollections/entry/wzseq.sh
