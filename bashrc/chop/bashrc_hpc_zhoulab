@@ -125,6 +125,7 @@ alias qstatall='qstat -u "*" | less'
 alias qstatallrun='qstat -u "*" -s r | less'
 alias qhost='qhost | less'
 alias qsuball="find pbs/ -type f -name '*.pbs' | sort | xargs -I {} qsub {}"
+alias sort="LC_ALL=C sort"
 
 function qdelall {
    qstat | grep 'zhouw3' | awk '{split($1,a,".");print a[1]}' | xargs -I {} qdel {}
@@ -166,11 +167,11 @@ esac
 
 ## search wzprojects
 function wzgrep {
-  ag "$1" /mnt/isilon/zhoulab/labprojects --pager="less -R"
+  ag "$1" /mnt/isilon/zhoulab/labjournal --pager="less -R"
 }
 
 function wzfind {
-  find /mnt/isilon/zhoulab/labprojects -name "*$1*" | less -S
+  find /mnt/isilon/zhoulab/labjournal -name "*$1*" | fzf
 }
 
 function mkdircd {
