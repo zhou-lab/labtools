@@ -115,6 +115,7 @@ export AWKPATH=/mnt/isilon/zhoulab/labtools/awkutils
 export PATH=~/bin:$PATH
 export PATH=/mnt/isilon/zhoulab/labbin:$PATH
 export PATH=/mnt/isilon/zhoulab/labpipelines/pipelines:$PATH
+export PATH=/mnt/isilon/zhoulab/labsoftware/valgrind/valgrind-3.15/bin:$PATH
 # export JAVA_HOME=/primary/vari/software/java/jdk1.8.0_60
 
 alias scp='rsync -Pravdtze ssh'
@@ -127,10 +128,50 @@ alias qhost='qhost | less'
 alias qsuball="find pbs/ -type f -name '*.pbs' | sort | xargs -I {} qsub {}"
 alias sort="LC_ALL=C sort"
 
+### some convenience function to auto job submission
+
+# change this if you want to just change the folder where pbs file is auto-generated
+export PBSDIR=/mnt/isilon/zhoulab/tmp/pbs
+# change this if you don't like the job name
+export PBSROOT=LabJob
+# change this if you want to explicitly control pbs file location
+export PBSPATH=NA
+
+## the following needs be ended with
+## QSEND
+## )"
+alias qsub24='pbsgen one -dest $PBSPATH -pbs $PBSDIR -jobroot $PBSROOT -submit -ppn 24 "$(cat <<'"'"'QSEND'"'
+" # 24-core job
+alias qsub12='pbsgen one -dest $PBSPATH -pbs $PBSDIR -jobroot $PBSROOT -submit -ppn 12 "$(cat <<'"'"'QSEND'"'
+" # 12-core job
+alias qsub4='pbsgen one -dest $PBSPATH -pbs $PBSDIR -jobroot $PBSROOT -submit -ppn 4 "$(cat <<'"'"'QSEND'"'
+" # 4-core job
+alias qsub1='pbsgen one -dest $PBSPATH -pbs $PBSDIR -jobroot $PBSROOT -submit -ppn 1 "$(cat <<'"'"'QSEND'"'
+" # 1-core job
+
+## the following needs be ended with
+## QSREND
+## QSEND
+## )"
+alias qsubR24='pbsgen one -dest $PBSPATH -pbs $PBSDIR -jobroot $PBSROOT -submit -ppn 24 "$(cat <<'"'"'QSEND'"'"'
+Rscript - <<'"'"'QSREND'"'
+"
+alias qsubR12='pbsgen one -dest $PBSPATH -pbs $PBSDIR -jobroot $PBSROOT -submit -ppn 12 "$(cat <<'"'"'QSEND'"'"'
+Rscript - <<'"'"'QSREND'"'
+"
+alias qsubR4='pbsgen one -dest $PBSPATH -pbs $PBSDIR -jobroot $PBSROOT -submit -ppn 4 "$(cat <<'"'"'QSEND'"'"'
+Rscript - <<'"'"'QSREND'"'
+"
+alias qsubR1='pbsgen one -dest $PBSPATH -pbs $PBSDIR -jobroot $PBSROOT -submit -ppn 1 "$(cat <<'"'"'QSEND'"'"'
+Rscript - <<'"'"'QSREND'"'
+"
+
+# change this in your own .bashrc
+export HPCUSERNAME="zhouw3"
 function qdelall {
-   qstat | grep 'zhouw3' | awk '{split($1,a,".");print a[1]}' | xargs -I {} qdel {}
+   qstat | grep $HPCUSERNAME | awk '{split($1,a,".");print a[1]}' | xargs -I {} qdel {}
 }
-function wzqdel {
+function qdelrange {
   for ((i=$1;i<=$2;i++)); do qdel $i;done
 }
 

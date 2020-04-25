@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 import sys
 import argparse
 import numpy as np
@@ -91,6 +91,7 @@ def main_getfasta(args):
     out = open(args.o, 'w') if args.o is not None else sys.stdout
     for line in args.i:
         fields = line.strip().split('\t')
+        print(fields[0])
         chrm = fields[0]
         beg = int(fields[1])
         end = int(fields[2])
