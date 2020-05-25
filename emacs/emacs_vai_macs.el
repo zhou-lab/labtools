@@ -513,7 +513,11 @@ Then move to that line and indent according to mode"
 ;;;;;;;;;;
 (require 'ess-r-mode)
 
-(setq inferior-R-program-name "/Users/zhouw3/.Renv/versions/3.6.1/bin/R")
+;; YOU NEED TO UPDATE R VERSION FOR EVERY UPDATE
+;; (setq inferior-R-program-name "/Users/zhouw3/.Renv/versions/3.6.1/bin/R")
+(setq inferior-R-program-name "/Users/zhouw3/.Renv/versions/4.0.0/bin/R")
+
+
 ;; Note that there are a lot of out-dated information out
 ;; there on the internet. ESS has changed a lot in terms of
 ;; the variables for customization. Look at ess-custom.el
@@ -555,7 +559,6 @@ Then move to that line and indent according to mode"
 
 (setq ess-style 'OWN)
 (ess-toggle-underscore nil)
-(setq inferior-R-program-name "/Users/zhouw3/.Renv/versions/3.6.1/bin/R")
 
 ;; (defun rmd-mode ()
 ;;  "ESS Markdown mode for rmd files"

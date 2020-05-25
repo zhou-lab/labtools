@@ -61,8 +61,14 @@ export LD_LIBRARY_PATH='/home/zhouw3/tools/readline/readline-8.0/lib/'
 # export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/primary/vari/software/curl/default/lib/pkgconfig/
 ./configure --prefix=/home/zhouw3/.Renv/versions/3.6.1 -with-recommended-packages=no --without-x --with-cairo --with-libpng --with-libtiff --with-jpeglib --enable-R-shlib
 
-# --with-readline=no
+*** example add R4.0.0
+
+cd ~/.Renv/versions/4.0.0/R-4.0.0
+./configure --prefix=/home/zhouw3/.Renv/versions/4.0.0 --with-pcre1
 make
+make install
+# -with-recommended-packages=yes --without-x --with-cairo --with-libpng --with-libtiff --with-jpeglib --enable-R-shlib
+
 
 *** example on MAC
 # preparation
@@ -76,6 +82,10 @@ brew cask install basictex
 make
 make install
 
+./configure --prefix=/Users/zhouw3/.Renv/versions/4.0.0.20200421devel --enable-R-shlib --with-cairo --with-libpng --with-libtiff --with-jpeglib --with-pcre1
+
+cd ~/.Renv/versions/4.0.0/R-4.0.0
+./configure --prefix=/Users/zhouw3/.Renv/versions/4.0.0 --enable-R-shlib --with-cairo --with-libpng --with-libtiff --with-jpeglib --with-pcre1
 
 ** install Cairo on cluster
 export CAIRO_LIBS="-L/primary/vari/software/cairo/default/lib/ -L/primary/vari/software/pixman/default/lib/ -lcairo -lpixman-1"

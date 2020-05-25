@@ -124,6 +124,10 @@ function wzgrep {
   [[ -z "$1" ]] || ag "$1" ~/repo/wzprojects --pager="less -R"
 }
 
+function wzfind {
+  find ~/repo/wzprojects/ -name "*$1*" | fzf
+}
+
 ## for PDF documents, DON'T WORK WELL, TRY SEARCHING IN MENDELEY
 function wzgreppdf {
   pattern="$@";
@@ -186,7 +190,7 @@ function s {
   elif [[ $location =~ ^do ]]; then
     location=$HOME/Dropbox/Documents/
   elif [[ $location =~ ^re ]]; then
-    location=$HOME/repo/review/
+    location=$HOME/repo/
   elif [[ $location =~ ^sp ]]; then
     location=$HOME/Dropbox/Documents/SpreadSheets/
   elif [[ $location =~ ^pa ]]; then

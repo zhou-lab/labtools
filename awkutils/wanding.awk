@@ -229,7 +229,8 @@ function escape(pat,   safe) {
 
 function resplit(       a, l, i, j, b, k, BNF) # all are local variables
 {
-    l=split($0, a, /[\"\']/)
+    ## l=split($0, a, /[\"\']/)
+    l=split($0, a, /[\\"\\']/)
     BNF=0
     delete B
     for (i=1;i<=l;++i)
