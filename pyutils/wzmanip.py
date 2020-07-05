@@ -85,6 +85,24 @@ def main_reorder(args):
 
     return
 
+def main_melt(args):
+
+    indices = parse_indices(args.c)
+
+    for i, line in enumerate(args.table):
+        fields = line.strip('\n').split(args.delim)
+        to_melt = [_.split(args.delim2) for _ in indices.extract(fields)]
+        num_items = len(to_melt[0])
+        for j in range(num_items):
+            try:
+                print('%s\t%s' % (line.strip('\n'), '\t'.join([_[j] for _ in to_melt])))
+            except IndexError as e:
+                sys.stderr.write(line)
+                raise(e)
+
+
+    return
+
 def main_transpose(args):
 
     data = []
@@ -775,6 +793,13 @@ if __name__ == '__main__':
     parser_reorder.add_argument('-n', default=None, help='header names, e.g., col1,col2 ...')
     parser_reorder.add_argument('-nskip', default=0, type=int, help='number of lines to skip before header')
     parser_reorder.set_defaults(func=main_reorder)
+
+    parser_melt = subparsers.add_parser("melt", help="melt ;-delimited columns")
+    parser_melt.add_argument('table', help='data table', type = argparse.FileType('r'), default='-')
+    parser_melt.add_argument('--delim', default="\t", help="table delimiter [\\t]")
+    parser_melt.add_argument('--delim2', default=";", help="field delimiter inside a column[\\t]")
+    parser_melt.add_argument('-c', default=None, help="columns to be melted in the output, 1-based. E.g., -c 1,3-4 [None]")
+    parser_melt.set_defaults(func=main_melt)
 
     parser_colindex = subparsers.add_parser("colindex", help="find the index of a particular column, indices are 1-based")
     parser_colindex.add_argument('table', help="data table", type = argparse.FileType('r'), default='-')

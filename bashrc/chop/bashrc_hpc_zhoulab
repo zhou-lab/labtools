@@ -95,16 +95,16 @@ fi
 
 module load uge
 module load singularity/3.2.0
+module load java/1.8.0_144
 
 alias ls='ls --color'
 alias rm='rm -i'
 alias lc="wc -l"
-alias ll="ls -l"
+alias ll="ls -lst"
 alias lv="ls -v"
 alias rf="readlink -f"
 alias parallel="parallel --gnu --progress"
 alias du="du -sh"
-alias st="qstat"
 alias bs=". ~/.bashrc"
 alias sr="screen -r"
 alias wget="wget --limit-rate 4M"
@@ -125,46 +125,28 @@ alias qsubi='qlogin -q interactive.q'
 alias qstatall='qstat -u "*" | less'
 alias qstatallrun='qstat -u "*" -s r | less'
 alias qhost='qhost | less'
-alias qsuball="find pbs/ -type f -name '*.pbs' | sort | xargs -I {} qsub {}"
+alias qwatch="watch qstat"
+
+function qstatz() {
+  qstat | awk -F" " '$0~/@/ && NR==FNR{match($0,/@([^.]*)/,a); jobids[a[1]]=gensub(/[ ]+/,"|","g",$0);}NR==FNR&&FNR==1{jobids["HOSTNAME"]=gensub(/[ ]+/,"|","g",$0);}NR!=FNR && ($1 in jobids || FNR==1){split($0,a,/[ ]+/); print a[1]"\t"a[3]"|"a[4]"|"a[5]"|"a[6]"\t\033[1;31m"a[7]"\t"a[8]"|"a[9]"\033[0m\t"a[10]"|"a[11]"\t"jobids[$1];}' - <(/cm/shared/apps/uge/8.6.6/bin/lx-amd64/qhost)
+}
+# export -f qstatz
+alias qwatchz="watch --color 'bash -c qstatz'"
+
+alias qsub1="qsub -pe smp 1 -l m_mem_free=5G -l h_vmem=5G"
+alias qsub4="qsub -pe smp 4 -l m_mem_free=5G -l h_vmem=5G"
+alias qsub12="qsub -pe smp 12 -l m_mem_free=5G -l h_vmem=5G"
+alias qsub24="qsub -pe smp 24 -l m_mem_free=5G -l h_vmem=5G"
+# alias pbsnodez='qhost | less'
+# alias qsuball="find pbs/ -type f -name '*.pbs' | sort | xargs -I {} qsub {}"
+
 alias sort="LC_ALL=C sort"
 
-### some convenience function to auto job submission
-
-# change this if you want to just change the folder where pbs file is auto-generated
+############################################
+### auto job script generation with pbsgen
+############################################
 export PBSDIR=/mnt/isilon/zhoulab/tmp/pbs
-# change this if you don't like the job name
-export PBSROOT=LabJob
-# change this if you want to explicitly control pbs file location
-export PBSPATH=NA
-
-## the following needs be ended with
-## QSEND
-## )"
-alias qsub24='pbsgen one -dest $PBSPATH -pbs $PBSDIR -jobroot $PBSROOT -submit -ppn 24 "$(cat <<'"'"'QSEND'"'
-" # 24-core job
-alias qsub12='pbsgen one -dest $PBSPATH -pbs $PBSDIR -jobroot $PBSROOT -submit -ppn 12 "$(cat <<'"'"'QSEND'"'
-" # 12-core job
-alias qsub4='pbsgen one -dest $PBSPATH -pbs $PBSDIR -jobroot $PBSROOT -submit -ppn 4 "$(cat <<'"'"'QSEND'"'
-" # 4-core job
-alias qsub1='pbsgen one -dest $PBSPATH -pbs $PBSDIR -jobroot $PBSROOT -submit -ppn 1 "$(cat <<'"'"'QSEND'"'
-" # 1-core job
-
-## the following needs be ended with
-## QSREND
-## QSEND
-## )"
-alias qsubR24='pbsgen one -dest $PBSPATH -pbs $PBSDIR -jobroot $PBSROOT -submit -ppn 24 "$(cat <<'"'"'QSEND'"'"'
-Rscript - <<'"'"'QSREND'"'
-"
-alias qsubR12='pbsgen one -dest $PBSPATH -pbs $PBSDIR -jobroot $PBSROOT -submit -ppn 12 "$(cat <<'"'"'QSEND'"'"'
-Rscript - <<'"'"'QSREND'"'
-"
-alias qsubR4='pbsgen one -dest $PBSPATH -pbs $PBSDIR -jobroot $PBSROOT -submit -ppn 4 "$(cat <<'"'"'QSEND'"'"'
-Rscript - <<'"'"'QSREND'"'
-"
-alias qsubR1='pbsgen one -dest $PBSPATH -pbs $PBSDIR -jobroot $PBSROOT -submit -ppn 1 "$(cat <<'"'"'QSEND'"'"'
-Rscript - <<'"'"'QSREND'"'
-"
+export NAMEROOT=LabJob
 
 # change this in your own .bashrc
 export HPCUSERNAME="zhouw3"
