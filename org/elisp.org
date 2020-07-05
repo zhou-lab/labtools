@@ -196,6 +196,8 @@ C-s C-w search the word beginning from the curser
 *** search several files
     C-x d then type directory path, mark files you want using 'm'('u' to unmark), then press 'Q'(which invokes dired-do-query-replace-regexp)
 ** delete
+*** delete to sentence beginning
+C-x <DEL> backward-kill-sentence
 *** how to delete whole words in one key
 M-d brutally-kill-word
 *** how to delete until the beginning of the line                :memorize:

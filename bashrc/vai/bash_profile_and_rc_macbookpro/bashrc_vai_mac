@@ -183,6 +183,8 @@ function s {
     location=$HOME/repo/wzlib/
   elif [[ $location =~ ^ga ]]; then
     location=$HOME/gallery/
+  elif [[ $location =~ ^go ]]; then
+    location=$HOME/Google/
   elif [[ $location =~ ^dr ]]; then
     location=$HOME/Dropbox/
   elif [[ $location =~ ^pe ]]; then

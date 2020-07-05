@@ -9,16 +9,8 @@ if (length(target) > 1) {
 
 if (dir.exists(target)) {
   library(devtools)
-  # build_vignettes(target)
-  # cat("=================== document =============\n")
-  # document()
   cat("=================== test =============\n")
   test()
-  cat("=================== check =============\n")
-  check()
-  cat("=================== BiocCheck =============\n")
-  library(BiocCheck)
-  BiocCheck()
 } else {
   if (format == 'pdf') {
     library(rmarkdown)

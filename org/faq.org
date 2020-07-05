@@ -1,7 +1,25 @@
 #+STARTUP: overview
 #+STARTUP: indent
 #+TAGS: memorize(a) unknown(u)
-      
+* Writing
+** list the key points
+** How to make long sentences?
+*** and
+Eric is truly passionate about science and has a consistent history of developing and applying quantitative approaches in molecular biology to answer fundamental questions in biology.
+*** What ... is ...
+What really impresses me, however, is that his work at several points in his career led to the development of highly risky, yet innovative technologies that overcomes the bottle neck limitation in the genomic organization field. 
+*** that
+What really impresses me, however, is that his work at several points in his career led to the development of highly risky, yet innovative technologies that overcomes the bottle neck limitation in the genomic organization field. 
+*** as
+These technologies have been pivotal in his success as he continues to identify and characterize new molecular players in genome organization. 
+
+*** not only .. but also ..
+In my view, what separates Eric from others is not only his technology and ability to adapt it to different questions, but also his generosity, collegiality, and confidence to venture into new methodological and biological territory.
+
+*** As part of ...
+As part of that goal and evidence of Eric’s innovativeness, he was the first to conduct a genome-wide RNAi screen using fluorescent in situ hybridization (FISH) in combination with high-content imaging. 
+
+
 * R
 ** ESS emacs memory, the most important usage
 the most important use is
@@ -3359,6 +3377,8 @@ o - jump to other end
 
 *** delete
 
+das / dis delete a sentence.
+dap / dip delete a paragraph.
 dw - delete to end of word
 dW - delete to end of non-blank
 diw - delete entire word
