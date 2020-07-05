@@ -109,6 +109,10 @@ alias bs=". ~/.bashrc"
 alias sr="screen -r"
 alias wget="wget --limit-rate 4M"
 
+function vcfsort() {
+  awk '$1 ~ /^#/ {print $0;next} {print $0 | "sort -k1,1 -k2,2n"}' $1;
+}
+
 export SCREENRC=/mnt/isilon/zhoulab/labtools/screenrc/screenrc_hp
 export AWKPATH=/mnt/isilon/zhoulab/labtools/awkutils
 

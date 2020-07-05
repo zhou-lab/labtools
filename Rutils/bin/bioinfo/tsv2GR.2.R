@@ -15,6 +15,6 @@ bed[is.na(bed$end),'end'] <- 0
 bed[is.na(bed$chrm),'chrm'] <- '*'
 gr <- GRanges(seqnames=bed$chrm, ranges=IRanges(bed$beg, bed$end), strand=bed$strand, seqinfo=Seqinfo(chrms))
 mcols(gr) <- bed[,!(colnames(bed) %in% c('chrm','beg','end','strand','cg'))]
-names(gr) <- bed$cg
+names(gr) <- bed$rs
 gr <- sort(gr, by = ~ seqnames + start + end)
 saveRDS(gr, file=grfile) # compress='xz' is about half the size compared to gz, but they are not directly downloadable through gzcon(url())
