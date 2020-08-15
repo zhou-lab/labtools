@@ -325,7 +325,7 @@ alias gst="git status"
 # alias gu="git pull"
 alias gp="git pull"
 alias gpu="git push"
-alias gc="git commit -a"
+alias gc="git commit -am"
 # alias ga="git add"
 
 function allgpl {
