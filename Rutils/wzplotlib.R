@@ -1,3 +1,5 @@
+library(tidyverse)
+
 hist_logy <- function(x) {
   hd <- hist(x,plot=F);
   hd$counts <- log10(hd$counts);

@@ -137,7 +137,7 @@
 ;; (add-hook 'prog-mode-hook #'whitespace-mode)
 
 (setq-default c-default-style "k&r"
-              c-basic-offset 3)
+              c-basic-offset 2)
 
 (show-paren-mode 1)
 (require 'mouse)
