@@ -16,7 +16,6 @@ alias wget='wget --no-check-certificate'
 alias du="du -sh"
 alias R='R --no-save'
 
-
 function emacs {
   touch $1
   open -a /Applications/Emacs.app $1
