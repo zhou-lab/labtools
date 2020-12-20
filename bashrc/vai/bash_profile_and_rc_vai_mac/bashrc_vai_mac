@@ -1,9 +1,11 @@
+#!/bin/bash
 # Source global definitions
 if [ -f /etc/bashrc ]; then
 	. /etc/bashrc
 fi
 
-alias ls='ls -G'
+# note --color is -G on a mac ls
+alias ls='/usr/local/bin/gls -v --color --ignore-backups'
 alias rm='rm -i'
 alias lc="wc -l"
 alias ll="ls -l"
@@ -14,6 +16,10 @@ alias hs="history | sed 's/^ *[0-9]* *//' | tail -r | less -S"
 alias wget='wget --no-check-certificate'
 alias du="du -sh"
 alias R='R --no-save'
+function emacs {
+  touch $1;
+  open -a /Applications/Emacs.app $1
+}
 
 PS1='\u@\h:\w\$ '
 
@@ -81,16 +87,118 @@ prompt
 #     screen*) PROMPT_COMMAND='echo -ne "\033k\033\0134"'
 # esac
 
-## search wzprojects
+##########################
+## grep contents
+##########################
+## for code
 function wzgrep {
   # grep --recursive --color=always "$1" ~/wzprojects/*.{R,py,org,sh} | less -SR;
   # grep --recursive --color=always "$1" ~/wzprojects/* | less -R;
   ag "$1" ~/wzprojects --pager="less -R"
 }
-function wzfind {
-  find ~/wzprojects/ -name "*$1*" | less -S
+
+## for PDF documents, DON'T WORK WELL, TRY SEARCHING IN MENDELEY
+function wzgreppdf {
+  pattern="$@";
+  find ~/Dropbox/Literature -name '*.pdf' -exec pdfgrep "$pattern" {} \;
 }
 
+
+###################
+## show location
+###################
+## usage:
+## s [query]
+## s open [query] # directly open
+## s goto [query] # directly open folder in finder, any level
+## s cd # cd into the folder containing the directory
+## s show # show things in finder
+function s {
+
+  to_open=0
+  to_cd=0;
+  is_directory=0;
+  if [[ $1 == "open" ]]; then
+    to_open=1;
+    shift;
+  fi
+  
+  if [[ $1 == "show" ]]; then
+    to_open=0;
+    shift;
+  fi
+
+  if [[ $1 == "cd" ]]; then
+    to_open=0;
+    to_cd=1;
+    shift;
+  fi
+  
+  if [[ $1 == "goto" ]]; then
+    to_open=1;
+    is_directory=1;
+    shift;
+  fi  
+  
+  location=$1
+  shift;
+
+  if [[ $location =~ ^wzp ]]; then
+    location=$HOME/wzprojects/
+  elif [[ $location =~ ^wzl ]]; then
+    location=$HOME/wzlib/
+  elif [[ $location =~ ^ga ]]; then
+    location=$HOME/gallery/
+  elif [[ $location =~ ^dr ]]; then
+    location=$HOME/Dropbox/
+  elif [[ $location =~ ^pe ]]; then
+    location=$HOME/Dropbox/personal/
+  elif [[ $location =~ ^do ]]; then
+    location=$HOME/Dropbox/Documents/
+  elif [[ $location =~ ^re ]]; then
+    location=$HOME/review/
+  elif [[ $location =~ ^sp ]]; then
+    location=$HOME/Dropbox/Documents/SpreadSheets/
+  elif [[ $location =~ ^pa ]]; then
+    location=$HOME/Dropbox/Documents/Paper/
+  elif [[ $location =~ ^pr ]]; then
+    location=$HOME/Dropbox/Documents/Presentation/
+  elif [[ $location =~ ^li ]]; then
+    location=$HOME/Dropbox/Literature/
+  elif [[ $location =~ ^wr ]]; then
+    location=$HOME/Dropbox/Documents/Writing/
+  fi
+
+  if [[ ! -d $location ]]; then
+    location=$HOME/Dropbox/Documents/
+  fi
+
+  pattern="$@"
+  if [[ $is_directory -eq 1 ]]; then
+    fpath=$(find "$location" -type d | fzf -q "$pattern")
+  else
+    fpath=$(find "$location" -type f | fzf -q "$pattern")
+  fi
+  
+  if [[ ! -z "$fpath" ]]; then
+    echo $fpath
+    if [[ $to_open -eq 1 ]]; then
+      open "$fpath"
+    elif [[ $to_cd -eq 1 ]]; then
+      if [[ -d "$fpath" ]]; then
+        cd "$fpath"
+      else
+        cd $(dirname "$fpath")
+      fi
+    else
+      open -R "$fpath"
+    fi
+  fi
+}
+
+####################
+## VCF tools
+####################
 function wz_vcffilter {
     vcffile=$1;
     if [[ $3 == "-s" ]]; then
@@ -123,7 +231,7 @@ sum+=$column;} END{ave=sum/c; if((c%2)==1){median=a[int(c/2)];} else{median=(a[c
 alias qsubi='qsub -I -q default -l nodes=1:ppn=1'
 
 function dnarev {
-  echo $1 | tr ATGC TACG | rev;
+  echo $1 | tr ATGC TACG | tr atgc tacg | rev;
 }
 
 # eval $(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib)
@@ -160,6 +268,7 @@ function mkdircd {
 ### git ###
 
 alias gst="git status"
+alias gdiff="git diff --color"
 # alias gu="git pull"
 alias gp="git pull"
 alias gpu="git push"
@@ -231,4 +340,40 @@ function windows2unix {
 ## z - jump around
 . ~/tools/z/z.sh
 
+## re-define z with coupling with fzf, you need to install fzf (but needn't
+## to invoke its key-binding or auto-completion)
+## https://github.com/junegunn/fzf/wiki/examples#z
+unalias z
+z() {
+  if [[ -z "$*" ]]; then        # when there is no argument
+    cd "$(_z -l 2>&1 | fzf +s --tac | sed 's/^[0-9,.]* *//')"
+  else                          # when there is argument
+    if [[ $1 == -* ]]; then
+      _z "$@"
+    else
+      cd "$(_z -l 2>&1 | fzf -q "$@" | sed 's/^[0-9,.]* *//')"
+    fi
+  fi
+}
+
+# zy() {
+#   if [[ -z "$*" ]]; then        # when there is no argument
+#     cd "$(_z -l 2>&1 | fzy | sed 's/^[0-9,.]* *//')"
+#   else                          # when there is argument
+#     if [[ $1 == -* ]]; then
+#       _z "$@"
+#     else
+#       cd "$(_z -l 2>&1 | fzy -q "$@" | sed 's/^[0-9,.]* *//')"
+#     fi
+#   fi
+# }
+
 export PATH=/usr/local/texlive/2014/bin/x86_64-darwin/:$PATH
+
+function dt() {
+  date +%Y%m%d
+}
+
+function dt2() {
+  date +%Y_%m_%d
+}

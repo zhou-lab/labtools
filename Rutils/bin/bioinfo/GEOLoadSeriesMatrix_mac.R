@@ -1,0 +1,136 @@
+#!/usr/bin/env Rscript
+library(stringr)
+args <- commandArgs(trailingOnly=TRUE)
+system(sprintf("gzcat %s | gawk '!/^!/ && length($0)>0' >1", args[1]))
+system(sprintf("gzcat %s | gawk '/^!Sample/' | wzmanip transpose - >samplesheet.tsv", args[1]))
+
+samples <- read.table('samplesheet.tsv', stringsAsFactors=F, header=T)
+
+select.cols <- c(1,2)
+select.cols <- sort(unique(c(select.cols, grep('characteristics', colnames(samples)))))
+## chr1.cols <- sort(unique(c(select.cols, grep('ch1', colnames(samples)))))
+select.cols <- sort(unique(c(select.cols, grep('source_name', colnames(samples)))))
+
+samples <- samples[,select.cols]
+cat('Expect:', nrow(samples), 'samples\n')
+
+## if there is a column with all sex, then remove sex and that column title
+for (i in 1:ncol(samples)) {
+  if (all(grepl('^Sex: ', samples[,i], ignore.case = TRUE))) {
+    samples[,i] <- sub('Sex: ','', samples[,i])
+    colnames(samples)[i] <- 'Sex'
+  }
+  if (all(grepl('^gender: ', samples[,i], ignore.case = TRUE))) {
+    samples[,i] <- sub('gender: ','', samples[,i])
+    colnames(samples)[i] <- 'sex'
+  }
+  if (all(grepl('^age: ', samples[,i], ignore.case = TRUE))) {
+    samples[,i] <- sub('age: ','', samples[,i])
+    colnames(samples)[i] <- 'age'
+  }
+  if (all(grepl('^race: ', samples[,i], ignore.case = TRUE))) {
+    samples[,i] <- sub('race: ','', samples[,i])
+    colnames(samples)[i] <- 'race'
+  }
+  if (all(grepl('^cell line: ', samples[,i], ignore.case = TRUE))) {
+    samples[,i] <- sub('cell line: ','', samples[,i])
+    colnames(samples)[i] <- 'cellline'
+  }
+  if (all(grepl('^cell type: ', samples[,i], ignore.case = TRUE))) {
+    samples[,i] <- sub('cell type: ','', samples[,i])
+    colnames(samples)[i] <- 'celltype'
+  }
+  if (all(grepl('^cell population: ', samples[,i], ignore.case = TRUE))) {
+    samples[,i] <- sub('cell population: ','', samples[,i])
+    colnames(samples)[i] <- 'celltype'
+  }
+  if (all(grepl('^disease state: ', samples[,i], ignore.case = TRUE))) {
+    samples[,i] <- sub('disease state: ','', samples[,i])
+    colnames(samples)[i] <- 'diseasestate'
+  }
+  if (all(grepl('^smoking status: ', samples[,i], ignore.case = TRUE))) {
+    samples[,i] <- sub('smoking status: ','', samples[,i])
+    colnames(samples)[i] <- 'smoking'
+  }
+  if (all(grepl('^differentiation stage: ', samples[,i], ignore.case = TRUE))) {
+    samples[,i] <- sub('differentiation stage: ','', samples[,i])
+    colnames(samples)[i] <- 'differentiationstage'
+  }
+  if (all(grepl('^age \\(y\\): ', samples[,i], ignore.case = TRUE))) {
+    samples[,i] <- sub('age \\(y\\): ','', samples[,i])
+    colnames(samples)[i] <- 'age'
+  }
+  if (all(grepl('^source: ', samples[,i], ignore.case = TRUE))) {
+    samples[,i] <- sub('source: ','', samples[,i])
+    colnames(samples)[i] <- 'source'
+  }
+  if (all(grepl('^plate: ', samples[,i], ignore.case = TRUE))) {
+    samples[,i] <- sub('plate: ','', samples[,i])
+    colnames(samples)[i] <- 'plate'
+  }
+  if (all(grepl('^ethnicity: ', samples[,i], ignore.case = TRUE))) {
+    samples[,i] <- sub('ethnicity: ','', samples[,i])
+    colnames(samples)[i] <- 'race'
+  }
+  if (all(grepl('^tissue: ', samples[,i], ignore.case = TRUE))) {
+    samples[,i] <- sub('tissue: ','', samples[,i])
+    colnames(samples)[i] <- 'tissue'
+  }
+
+  fk <- str_match(samples[,i], '^([^:]*):\\s+([^ ]*)')
+  if ((!any(is.na(fk))) && ncol(fk)==3 && length(unique(fk[,2])) == 1) {
+    samples[,i] <- fk[,3]
+    colnames(samples)[i] <- unique(fk[,2])
+  }
+
+  samples[,i] <- gsub('\\s+','.',samples[,i])
+  ## samples[,i] <- gsub('[-]+','.',samples[,i])
+  cat(colnames(samples)[i],'\t')
+  if (all(!is.na(as.numeric(samples[,i])))) {
+    cat('numeric')
+    samples[,i] <- as.numeric(samples[,i])
+  }
+  cat('\n')
+}
+colnames(samples) <- gsub('\\s+','.', colnames(samples))
+colnames(samples)[colnames(samples) == 'X.Sample_geo_accession'] <- 'geo'
+colnames(samples)[colnames(samples) == 'X.Sample_title'] <- 'title'
+colnames(samples)[colnames(samples) == 'X.Sample_source_name_ch1'] <- 'sourceName'
+
+
+if (length(args) > 1) {
+  if (args[2] == 'usetitle') {
+    rownames(samples) <- paste0(samples$geo, '.', samples$title)
+  } else if (args[2] == 'usegeo') {
+    rownames(samples) <- samples$geo
+  } else if (args[2] == 'usesource') {
+    rownames(samples) <- paste0(samples$geo, '.', samples$sourceName)
+  }
+} else {
+  rownames(samples) <- samples$geo
+}
+
+suppressWarnings(suppressPackageStartupMessages(library(data.table)))
+a <- fread('1', sep='\t', header=TRUE)
+betas <- as.matrix(a[,2:ncol(a)])
+rownames(betas) <- a$ID_REF
+
+if (!is.numeric(betas)) {
+  aa <- as.numeric(betas)
+  dim(aa) <- dim(betas)
+  dimnames(aa) <- dimnames(betas)
+  betas <- aa
+}
+
+## betas <- as.matrix(read.table('1',header=T, row.names='ID_REF', sep='\t'))
+
+## colnames(betas) <- rownames(samples)[match(colnames(betas), samples$geo)]
+
+write.table(samples, file='samples.tsv', quote=F, sep='\t', row.names=FALSE)
+save(betas, samples, file='betas.rda')
+cat('Read:', ncol(betas), 'samples.\n')
+cat('Meta:', colnames(samples), '\n')
+cat('Sname:', rownames(samples)[1:10], '\n')
+cat('#Probes:', nrow(betas), '\n')
+
+## system('rm -f 1')

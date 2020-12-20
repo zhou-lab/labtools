@@ -71,6 +71,7 @@ class PhyloGram():
                  target_clade=None, # a special clade to zoom in
                  target_clade_angle_span=np.pi, # set when target_clade is not None
                  clade_colors = pd.Series(),
+                 phylo_contraction = 1,
                  leaffix = False, # whether all leaves are of the same depth
                  fig = None
              ):
@@ -116,7 +117,7 @@ class PhyloGram():
         self.internal_drawer_f = None  # draw on internal node
         self.leaf_drawer_f = None     # draw on leaf node
         self.leafratio = 3 # leaf branch length ratio w.r.t internal branches
-        self.blv = 1       # unit branch length radial
+        self.blv = 1 * phylo_contraction # unit branch length radial
         self.lw = 1        # line width
         self.alpha = 0.7   # alpha
         self.fontsize = 12 # font size
@@ -218,16 +219,17 @@ class PhyloGram():
                      [t._r]*40, color=ec, lw=self.lw, alpha=self.alpha)
         
 
-    def add_leaf_bar_track(self, srs, inner_space = None, track_color='k'):
+    def add_leaf_bar_track(self, srs, inner_space_ratio = 0.1, track_color='k', track_height = None, tick_length=0.03):
 
         """
         srs is a pandas Series, indexed by t.name 
         inner_space is default to 0.5*track_height
         """
 
-        track_height = self.blv
-        if inner_space is None:
-            inner_space = 0.5 * track_height
+        if track_height is None:
+            track_height = self.blv
+            
+        inner_space = inner_space_ratio * track_height
             
         y_max = srs.max() # the data maximum
         for t in self.root.get_leaves():
@@ -238,21 +240,32 @@ class PhyloGram():
         # the base line
         self.ax.plot(np.linspace(self.angle_beg, self.angle_end, 100), [t._r2]*100, color=track_color, lw=0.5)
 
-    def add_leaf_bubble_track(self, srs, inner_space = None, track_color='k'):
+        # y-axis
+        self.ax.plot([self.angle_beg, self.angle_beg], [t._r2, t._r2-track_height], color=track_color, lw=0.5)
+
+        # y-axis ticks
+        self.ax.plot(np.linspace(self.angle_beg, self.angle_beg-tick_length, 3), [t._r2]*3, color=track_color, lw=1)
+        self.ax.plot(np.linspace(self.angle_beg, self.angle_beg-tick_length, 3), [t._r2-track_height]*3, color=track_color, lw=1)
+        self.ax.text(self.angle_beg, t._r2 - track_height, "%1.2g" % y_max,
+                     rotation=self.angle_beg/np.pi*180+90, verticalalignment='bottom', horizontalalignment='right')
+
+    def add_leaf_bubble_track(self, srs, inner_space = None, track_color='k', track_height = None, max_radius = 9999):
 
         """
         srs is a pandas Series, indexed by t.name
         inner_space is default to 0.5*track_height
         """
 
-        track_height = self.blv
+        if track_height is None:
+            track_height = self.blv
+            
         if inner_space is None:
             inner_space = 0.5 * track_height
             
         y_max = srs.max() # the data maximum
         for t in self.root.get_leaves():
             t._r2 += inner_space + track_height
-            circle_radius = srs[t.name] / y_max * track_height/2
+            circle_radius = srs[t.name] / y_max * min(track_height/2, max_radius)
             self.ax.add_artist(plt.Circle(polar2cart(t._angle_mid, t._r2-track_height/2), circle_radius, transform=self.ax.transData._b))
 
     def add_leaf_labels(self, labels=None, r_pad=1):

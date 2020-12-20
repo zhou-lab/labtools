@@ -139,10 +139,10 @@ def main_comp(args):
     beg = int(m.group(2))
     end = int(m.group(3))
     seq = genome.fetch_sequence(chrm, beg, end, uppercase=True)
-    print 'n:%d' % (end-beg)
-    print 'C:%d' % seq.count('C')
-    print 'G:%d' % seq.count('G')
-    print 'CG:%d' % seq.count('CG')
+    print('n:%d' % (end-beg))
+    print('C:%d' % seq.count('C'))
+    print('G:%d' % seq.count('G'))
+    print('CG:%d' % seq.count('CG'))
 
 def main_runningcomp(args):
 
@@ -235,9 +235,13 @@ def main_internal(args):
                 continue
             if seq[i:i+2] == 'CG':
                 if args.nobrackets:
-                    print '\t'.join(map(str, [".",i,i+2, '|'.join(seq_record.description.split()), seq[max(0,i-args.l):i+args.l+2]]))
+                    print('\t'.join(map(
+                        str, [".",i,i+2, '|'.join(seq_record.description.split()),
+                              seq[max(0,i-args.l):i+args.l+2]])))
                 else:
-                    print '\t'.join(map(str, [".",i,i+2, '|'.join(seq_record.description.split()), seq[max(0,i-args.l):i]+'['+seq[i:i+2]+']'+seq[i+2:i+args.l+2]]))
+                    print('\t'.join(map(
+                        str, [".",i,i+2, '|'.join(seq_record.description.split()),
+                              seq[max(0,i-args.l):i]+'['+seq[i:i+2]+']'+seq[i+2:i+args.l+2]])))
 
 def main_filter(args):
 
@@ -246,7 +250,7 @@ def main_filter(args):
     for seq_record in SeqIO.parse(args.i, "fasta"):
 
         if re.search(args.k, seq_record.description):
-            print seq_record.format("fasta")
+            print(seq_record.format("fasta"))
 
 def main_cleanhead(args):
 
@@ -256,7 +260,7 @@ def main_cleanhead(args):
     for seq_record in SeqIO.parse(args.i, "fasta"):
 
         seq_record.description = '|'.join(seq_record.description.split())
-        print seq_record.format("fasta")
+        print(seq_record.format("fasta"))
 
 def wrap(seq, l = 80):
     s2 = ''
@@ -299,8 +303,8 @@ def main_consensus(args):
         else:
             if seq and len(seq) > args.l:
                 # [the index of concensus sequence]_[start of concensus sequence column]
-                print '>%sconsensus%d_%d' % (args.p, k,j)
-                print wrap(''.join(seq))
+                print('>%sconsensus%d_%d' % (args.p, k,j))
+                print(wrap(''.join(seq)))
                 k += 1
             seq = []
 

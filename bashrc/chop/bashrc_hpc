@@ -1,8 +1,8 @@
 #!/bin/bash
 # Source global definitions
-# if [ -f /etc/bashrc ]; then
-# 	. /etc/bashrc
-# fi
+ if [ -f /etc/bashrc ]; then
+ 	. /etc/bashrc
+ fi
 
 ############# the following copied from /etc/bashrc ##############
 # are we an interactive shell?
@@ -96,8 +96,9 @@ fi
 
 # # User specific alias and functions
 # module load gcc
-module load torque
-
+# module load torque
+module load uge
+module load singularity/3.2.0
 
 alias ls='ls --color'
 alias rm='rm -i'
@@ -108,7 +109,7 @@ alias rf="readlink -f"
 alias parallel="parallel --gnu --progress"
 alias igv="~/tools/igv/IGV_2.3.60/igv.sh"
 alias du="du -sh"
-alias st="zstat"
+alias st="qstat"
 alias bs=". ~/.bashrc"
 # alias ta="tmux a" # tmux is still not as robust as screen
 alias sr="screen -r"
@@ -120,46 +121,47 @@ alias biscuittest=". ~/tools/biscuit/development/biscuit/test.sh"
 
 # PS1='\u@\h:\w\$ '
 
-HOME=/home/wanding.zhou
+HOME=/home/zhouw3
 
-alias wzseq=". $HOME/wzlib/bash/wzseq.sh"
-alias wzcore=". $HOME/wzlib/bash/wzcore.sh"
+alias wzseq=". $HOME/repo/wzlib/bash/wzseq.sh"
+alias wzcore=". $HOME/repo/wzlib/bash/wzcore.sh"
 
-export SCREENRC=$HOME/wzlib/screenrc/screenrc_hp
-export PYTHONPATH=$HOME/wzlib/pyutils
+export SCREENRC=$HOME/repo/wzlib/screenrc/screenrc_hp
+# export PYTHONPATH=$HOME/repo/wzlib/pyutils
 ## :$HOME/pythonlib/lib/python2.7/site-packages/
 ##:/primary/home/wanding.zhou/.local/lib/python2.7/site-packages
-export AWKPATH=$HOME/wzlib/awkutils
+export AWKPATH=$HOME/repo/wzlib/awkutils
 
 # /home/wanding.zhou/tools/anaconda/anaconda/bin, instead put python as a symlink to that location
 export PATH=~/bin:~/local/bin:$PATH
-export PATH=~/pythonlib/bin:$PATH
-export PATH=/secondary/projects/laird/projects/2018_05_02_Wanding_tools/go/go/bin:$PATH
+# export PATH=~/pythonlib/bin:$PATH
+export PATH=/home/zhouw3/repo/PipelineCollections/pipelines:$PATH
+# export PATH=/secondary/projects/laird/projects/2018_05_02_Wanding_tools/go/go/bin:$PATH
 export PATH=/primary/vari/software/UCSC_Browser_Tools/default/:$PATH
 # export PATH=/primary/vari/software/valgrind/default/bin:$PATH
 # export PATH=/primary/shared/production/software/python/default/bin/:$PATH
 export PATH=$HOME/.Renv/bin:$PATH
 export PATH=$HOME/software/zacks_usc_devel/zacks_PBS_Tools/:$PATH
 export PATH=/primary/vari/software/latex/20160405/bin/x86_64-linux/:$PATH
-export JAVA_HOME=/primary/vari/software/java/jdk1.8.0_60
+# export JAVA_HOME=/primary/vari/software/java/jdk1.8.0_60
 
 eval "$(Renv init -)"
 
 # anaconda might interfere with R package installation!!!
-function addPy2 {
-  export PATH="/secondary/projects/laird/projects/2017_11_09_WZ_anaconda/bin:$PATH"
-}
+# function addPy2 {
+#   export PATH="/secondary/projects/laird/projects/2017_11_09_WZ_anaconda/bin:$PATH"
+# }
 
-function addPy3 {
-  export PATH="/secondary/projects/laird/projects/2017_11_09_WZ_anaconda_python3.6/anaconda3/bin:$PATH"
-}
-#
-function switchPy3 {
-  export PATH=$(echo "$PATH" | sed -e 's/2017_11_09_WZ_anaconda/2017_11_09_WZ_anaconda_python3.6\/anaconda3/')
-}
-function switchPy2 {
-  export PATH=$(echo "$PATH" | sed -e 's/2017_11_09_WZ_anaconda_python3.6\/anaconda3/2017_11_09_WZ_anaconda/')
-}
+# function addPy3 {
+#   export PATH="/secondary/projects/laird/projects/2017_11_09_WZ_anaconda_python3.6/anaconda3/bin:$PATH"
+# }
+# #
+# function switchPy3 {
+#   export PATH=$(echo "$PATH" | sed -e 's/2017_11_09_WZ_anaconda/2017_11_09_WZ_anaconda_python3.6\/anaconda3/')
+# }
+# function switchPy2 {
+#   export PATH=$(echo "$PATH" | sed -e 's/2017_11_09_WZ_anaconda_python3.6\/anaconda3/2017_11_09_WZ_anaconda/')
+# }
 
 # added by Anaconda3 installer
 # export PATH="/secondary/projects/laird/projects/2017_11_09_WZ_anaconda_python3.6/anaconda3/bin:$PATH"
@@ -175,22 +177,26 @@ alias awk='awk -F"\t" -v OFS="\t"'
 alias les="less -S"
 alias qsuball="find pbs/ -type f -name '*.pbs' | sort | xargs -I {} qsub {}"
 alias rdf="readlink -f"
-alias qsubi='qsub -I -l nodes=1:ppn=1 -l mem=10gb -l walltime=8:00:00'
-alias qsubim='qsub -I -l nodes=1:ppn=6 -l mem=10gb -l walltime=8:00:00'
-alias qsubil28='qsub -I -l nodes=1:ppn=28 -l walltime=48:00:00'
-alias qsubil40='qsub -I -l nodes=1:ppn=40 -l walltime=48:00:00 -q longq'
-alias qsubiltriche='qsub -I -l nodes=1:ppn=40 -l walltime=48:00:00 -q triche'
+alias qsubi='qlogin -q interactive.q'
+alias qstatall='qstat -u "*" | less'
+alias qstatallrun='qstat -u "*" -s r | less'
+alias qhost='qhost | less'
+# alias qsubi='qsub -I -l nodes=1:ppn=1 -l mem=10gb -l walltime=8:00:00'
+# alias qsubim='qsub -I -l nodes=1:ppn=6 -l mem=10gb -l walltime=8:00:00'
+# alias qsubil28='qsub -I -l nodes=1:ppn=28 -l walltime=48:00:00'
+# alias qsubil40='qsub -I -l nodes=1:ppn=40 -l walltime=48:00:00 -q longq'
+# alias qsubiltriche='qsub -I -l nodes=1:ppn=40 -l walltime=48:00:00 -q triche'
 alias downloadsrr='~/software/sra-toolkit/default/bin/fastq-dump --gzip'
 
 function qdelall {
-   qstat | grep 'wanding.zhou' | awk '{split($1,a,".");print a[1]}' | xargs -I {} qdel {}
+   qstat | grep 'zhouw3' | awk '{split($1,a,".");print a[1]}' | xargs -I {} qdel {}
 }
 function wzqdel {
   for ((i=$1;i<=$2;i++)); do qdel $i;done
 }
 # alias curl="curl -OL"
 
-export PERL5LIB=$HOME/perl5/lib/perl5:$PERL5LIB
+#export PERL5LIB=$HOME/perl5/lib/perl5:$PERL5LIB
 
 function prompt {
   local BLACK="\[\033[0;30m\]"
@@ -328,17 +334,16 @@ export -f sortbed
 samnohead() { awk '!/^@/' $1; }
 export -f samnohead
 
-TMPBOSSNAME=shen
-export TMPDIR=/secondary/projects/$TMPBOSSNAME/tmp
-export TEMP=/secondary/projects/$TMPBOSSNAME/tmp
+export TMPDIR=/mnt/isilon/zhoulab/tmp/zhouw3/
+export TEMP=/mnt/isilon/zhoulab/tmp/zhouw3/
 alias R="LANG=en_US.UTF-8 R"
 # export TRANSVAR_CFG=/primary/vari/software/transvar/TransVar-2.1.9/transvar.cfg
 
 #source /home/wanding.zhou/tools/EMAN2/EMAN2/eman2.bashrc
 #source /primary/vari/software/eman2/default/eman2.bashrc
 
-export SESAMEHOME=/secondary/projects/shen/projects/2016_12_06_sesame_home
-export WZARDHOME=/secondary/projects/laird/projects/2016_12_14_wzard_home
+# export SESAMEHOME=/secondary/projects/shen/projects/2016_12_06_sesame_home
+# export WZARDHOME=/secondary/projects/laird/projects/2016_12_14_wzard_home
 
 function findc {
    find . -regex '.*\.\(c\|h\)' -exec grep -H "$1" {} \;
@@ -348,41 +353,45 @@ function etagsc {
    find . -regex '.*\.\(c\|h\)' | xargs etags -
 }
 
-source ~/tools/git-subrepo/.rc
+# source ~/tools/git-subrepo/.rc
 
 alias wget="wget --limit-rate 4M"
-source ~/perl5/perlbrew/etc/bashrc
+# source ~/perl5/perlbrew/etc/bashrc
 
 function comparesam {
  paste <(awk -f wanding.awk -e '!/^@/{print joinr(1,8),joinr(12,NF,"__")}' $1) <(awk -f wanding.awk -e '!/^@/{print joinr(1,8),joinr(12,NF,"__")}' $2) | awk -f wanding.awk -e 'BEGIN{cnt=0}{d=0; if ($1!=$10) d=1; if ($2!=$11) d=1; if ($3!=$12) d=1; if ($4!=$13) d=1; if ($5!=$14) d=1; if (d==1) { cnt+=1; print joinr(1,9)"\n"joinr(10,NF)"\n\n"; }}END{print cnt}'
 }
 
-################
 ## fzf and z
-################
 . ~/tools/z/z.sh
-# [ -f ~/.fzf.bash ] && source ~/.fzf.bash
-# if [ -d ~/.bash_completion.d ]; then
-#   for file in ~/.bash_completion.d/*; do
-#     . $file
-#   done
-# fi
+[ -f ~/.fzf.bash ] && source ~/.fzf.bash
+
+## re-define z with coupling with fzf, you need to install fzf (but needn't
+## to invoke its key-binding or auto-completion)
+## https://github.com/junegunn/fzf/wiki/examples#z
 unalias z
 z() {
   if [[ -z "$*" ]]; then        # when there is no argument
     cd "$(_z -l 2>&1 | fzf +s --tac | sed 's/^[0-9,.]* *//')"
   else                          # when there is argument
     if [[ $1 == -* ]]; then
-      _z $@
+      _z "$@"
     else
       cd "$(_z -l 2>&1 | fzf -q "$@" | sed 's/^[0-9,.]* *//')"
     fi
   fi
 }
 
-[[ -z "${PBS_O_WORKDIR+x}" ]] || cd "${PBS_O_WORKDIR}"
 
-alias wzmultiqc='rm -rf multiqc_*; /secondary/projects/laird/projects/2017_11_09_WZ_anaconda/bin/multiqc raw'
+if [ -d ~/.bash_completion.d ]; then
+  for file in ~/.bash_completion.d/*; do
+    . $file
+  done
+fi
+
+[[ -z ${PBS_O_WORKDIR+x} ]] || cd ${PBS_O_WORKDIR}
+
+# alias wzmultiqc='rm -rf multiqc_*; /secondary/projects/laird/projects/2017_11_09_WZ_anaconda/bin/multiqc raw'
 
 ## source .bashrc
 alias sb="source ~/.bashrc"
@@ -390,3 +399,24 @@ alias eb="vim ~/.bashrc"
 
 
 export GOPATH=${HOME}/go
+
+
+# >>> conda initialize >>>
+# !! Contents within this block are managed by 'conda init' !!
+
+# __conda_setup="$('/home/zhouw3/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+# if [ $? -eq 0 ]; then
+#     eval "$__conda_setup"
+# else
+#   if [ -f "/home/zhouw3/anaconda3/etc/profile.d/conda.sh" ]; then
+#        . "/home/zhouw3/anaconda3/etc/profile.d/conda.sh"
+#    else
+#        export PATH="/home/zhouw3/anaconda3/bin:$PATH"
+#    fi
+# fi
+# unset __conda_setup
+
+
+# <<< conda initialize <<<
+
+export WZSEQ_ENTRY=/home/zhouw3/repo/PipelineCollections/entry/wzseq.sh

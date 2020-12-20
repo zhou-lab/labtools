@@ -1,47 +1,71 @@
 
-(when (>= emacs-major-version 24)
-  (require 'package)
-  (add-to-list 'package-archives '("melpa" . "http://melpa.milkbox.net/packages/") t)
-  (add-to-list 'package-archives '("marmalade" . "http://marmalade-repo.org/packages/"))
-	;; (add-to-list 'package-archives '("ELPA", "http://tromey.com/elpa/"))
-  (package-initialize)
-  )
+;; you need to install
+;; tabbar
+;; yasnippet, ESS, polymode, helm, toc-org, fill-column-indicator
+;; other things: ivy+counsel+swiper
 
+(require 'package)
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+;; Comment/uncomment this line to enable MELPA Stable if desired.  See `package-archive-priorities`
+;; and `package-pinned-packages`. Most users will not need or want to do this.
+;;(add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/") t)
+(package-initialize)
+
+(server-start)
+
+;; (when (>= emacs-major-version 24)
+;;   (require 'package)
+;; ;;  (add-to-list 'package-archives '("melpa" . "http://melpa.milkbox.net/packages/") t)
+;; ;;  (add-to-list 'package-archives '("marmalade" . "http://marmalade-repo.org/packages/"))
+;; 	;; (add-to-list 'package-archives '("ELPA", "http://tromey.com/elpa/"))
+;;   (package-initialize)
+;;   )
+
+;;;;;;;;;;;;;;;;;;;;
+;;;;;;; fonts ;;;;;;
+;;;;;;;;;;;;;;;;;;;;
+;; I must say the default emacs font is pretty good to the eyes already
+(add-to-list 'default-frame-alist '(font . "Inconsolata-13"))
+;; (add-to-list 'default-frame-alist '(font . "Anonymous Pro-13"))
 ;; (add-to-list 'default-frame-alist '(font . "Source Code Pro 10"))
 ;; (set-default-font "Source Code Pro 10")
 ;; (add-to-list 'default-frame-alist '(font . "Source Code Pro-11"))
 ;; (add-to-list 'default-frame-alist '(font . "Consolas-12"))
-(add-to-list 'default-frame-alist '(font . "Inconsolata-12"))
 ;; (add-to-list 'default-frame-alist '(font . "Latin Modern Mono-12"))
 ;; (add-to-list 'default-frame-alist '(font . "Monaco-12"))
 ;; (add-to-list 'default-frame-alist '(font . "Iosevka-12:light"))
 
-;; (require 'ess)
-(load "ess-site")
-auto-mode-alist (append (list '("\\.c$" . c-mode)	
-			      '("\\.tex$" . latex-mode)
-			      '("\\.S$" . S-mode)
-			      '("\\.s$" . S-mode)
-			      '("\\.R$" . R-mode)
-			      '("\\.r$" . R-mode)
-			      '("\\.html$" . html-mode)
-            '("\\.emacs" . emacs-lisp-mode)
-						)
-						auto-mode-alist)
+;; auto-mode-alist (append (list '("\\.c$" . c-mode)	
+;; 			      '("\\.tex$" . latex-mode)
+;; 			      '("\\.S$" . S-mode)
+;; 			      '("\\.s$" . S-mode)
+;; 			      '("\\.R$" . R-mode)
+;; 			      '("\\.r$" . R-mode)
+;; 			      '("\\.html$" . html-mode)
+;;             '("\\.emacs" . emacs-lisp-mode)
+;; 						)
+;; 						auto-mode-alist)
+
+;; for Rmarkdown to find pandoc
+;; (setq markdown-command "/Applications/RStudio.app/Contents/MacOS/pandoc")
+(setq markdown-command "/usr/local/bin/pandoc")
 
 ;; open file in existing frame
 (setq ns-pop-up-frames nil)
 
 (setenv "PATH" (concat (getenv "PATH") ":/usr/local/texlive/2014/bin/x86_64-darwin/"))
 (setq exec-path (append exec-path '("/usr/local/texlive/2014/bin/x86_64-darwin/")))
-
+;; (load-theme 'adwaita t)
 ;; (load-theme 'ample-zen t)
 ;; (load-theme 'airline-badwolf t)
 ;; (load-theme 'tsdh-light t)
 ;; (load-theme 'leuven t)
+;; (load-theme 'leuven-dark t)
+;; (load-theme 'zenburn t)
+(load-theme 'misterioso t)
 ;; (load-theme 'deeper-blue t)
-(load-theme 'adwaita t)
-(setq-default cursor-type 'bar)
+;; (load-theme 'dracula t)
+;; (setq-default cursor-type 'bar)
 
 (setq-default indent-tabs-mode nil)
 
@@ -51,9 +75,10 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 ;;       '~/emacs.d/.elpa/snippets/
 ;;       )
 (yas-global-mode 1)
-;; need to link ~/emacs.d/snippets to ~/wzlib/emacs/emacs_linux/wanding-config/snippets
+;; need to link
+;; ln -s `rf ~/wzlib/emacs/emacs_linux/wanding-config/snippets` ~/.emacs.d/snippets
 ;; (yas/load-directory "~/wzlib/emacs/emacs_linux/wanding-config/snippets/")
-;; (add-to-list 'yas-snippet-dirs "~/wzlib/emacs/emacs_linux/wanding-config/snippets")
+(add-to-list 'yas-snippet-dirs "~/wzlib/emacs/emacs_linux/wanding-config/snippets")
 
 ;; (global-linum-mode t)
 
@@ -62,29 +87,30 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 (setq sh-basic-offset 2
       sh-indentation 2)
 
-;; the following is important to pass R CMD BiocCheck
-(add-hook 'ess-mode-hook (lambda () (setq ess-indent-level 4)))
-(add-hook 'ess-mode-hook
-          (lambda ()
-            (ess-set-style 'C++ 'quiet)
-            ;; Because
-            ;;                                 DEF GNU BSD K&R  C++
-            ;; ess-indent-level                  2   2   8   5  4
-            ;; ess-continued-statement-offset    2   2   8   5  4
-            ;; ess-brace-offset                  0   0  -8  -5 -4
-            ;; ess-arg-function-offset           2   4   0   0  0
-            ;; ess-expression-offset             4   2   8   5  4
-            ;; ess-else-offset                   0   0   0   0  0
-            ;; ess-close-brace-offset            0   0   0   0  0
-            (add-hook 'local-write-file-hooks
-                      (lambda ()
-                        (ess-nuke-trailing-whitespace)))))
-
 (setq-default indent-tabs-mode nil)
 (setq org-startup-indented t)
 (setq org-startup-folded 'content)
 (setq org-src-fontify-natively t)
 (setq org-edit-src-content-indentation 0)
+(setq org-src-tab-acts-natively t)
+
+(setq org-todo-keywords
+      '((sequence "TODO"
+                  "|"
+                  "DONE"
+                  "OBSOLETE"
+                  "DEFERRED")))
+
+;; (require 'org-drill)
+
+;; R support inside org-babel
+;; (useful only for export R code-containing org files)
+;; (setq org-babel-R-command "/usr/local/bin/R --no-save")
+
+;; TOC in org mode
+(if (require 'toc-org nil t)
+    (add-hook 'org-mode-hook 'toc-org-mode)
+  (warn "toc-org not found"))
 
 (setq mouse-wheel-scroll-amount '(2))
 (setq mouse-wheel-progressive-speed nil)
@@ -94,10 +120,34 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 (global-set-key (kbd "M-q") 'toggle-truncate-lines)
 
 (setq word-wrap nil)
+;; command as control
 (setq mac-command-modifier 'control)
 
 (add-to-list 'default-frame-alist '(height . 50))
 (add-to-list 'default-frame-alist '(width . 100))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; fill-column-indicator mode
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; (define-globalized-minor-mode
+;;   global-fci-mode fci-mode (lambda () (fci-mode 1)))
+;; (global-fci-mode 1)
+
+(setq-default fill-column 79)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; visualize long lines > 80
+;; using whitespace-mode
+;; see https://emacs.stackexchange.com/questions/147/how-can-i-get-a-ruler-at-column-80
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; The following solution just highlight lines that exceeds 80
+;; (setq-default
+;;  whitespace-line-column 80
+;;  whitespace-style
+;;  '(face lines-tail))
+;; (add-hook 'prog-mode-hook #'whitespace-mode)
+
+(setq-default c-default-style "k&r"
+              c-basic-offset 2)
 
 (show-paren-mode 1)
 (require 'mouse)
@@ -113,19 +163,35 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 			    (interactive)
 			    (scroll-up 1)))
 (global-set-key (kbd "<f12>") 'save-buffer)
-
 (global-set-key (kbd "<f11>") 'dabbrev-expand)
 ;; (global-set-key (kbd "<f9>") 'my-switch-to-other-buffer)
 (global-set-key (kbd "<f19>") 'my-switch-to-other-buffer)
 ;; (global-set-key (kbd "<f9>") 'switch-to-buffer)
 (global-set-key (kbd "<f18>") 'switch-to-buffer)
 (global-set-key (kbd "<f10>") 'yas-reload-all)
-(global-set-key (kbd "<f9>") 'yas-describe-tables)
-(global-set-key (kbd "<f13>") 'kill-ring-save)
+;; (global-set-key (kbd "<f9>") 'yas-describe-tables)
+;; (global-set-key (kbd "<f13>") 'kill-ring-save)
+(global-set-key (kbd "<f13>") 'ess-eval-region-or-function-or-paragraph-and-step)
 (global-set-key (kbd "<f14>") 'jao-copy-line)
 (global-set-key (kbd "<f16>") 'yank)
+(global-set-key (kbd "<help>") 'other-window)
 
+;; copy/paste
+(defun zhou-copy-line-or-region ()
+  "Copy current line, or region if active."
+  (interactive)
+  (if (use-region-p)
+      (kill-ring-save (region-beginning) (region-end))
+    (kill-ring-save (line-beginning-position)
+                    (line-end-position)))
+  (message "line/region copied"))
+
+(global-set-key (kbd "<f1>") 'zhou-copy-line-or-region) ; copy
+(global-set-key (kbd "<f2>") 'yank)           ; paste
+
+;;;;;;;;;;;;;;;;;;;;;;;
 ;; Wanding functions
+;;;;;;;;;;;;;;;;;;;;;;;
 (defun my-switch-to-other-buffer ()
   "Switch to other buffer"
   (interactive)
@@ -150,6 +216,54 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
 (defun collapse-blank-lines (start end)
   (interactive "r")
   (replace-regexp "^\n\\{2,\\}" "\n" nil start end))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; paragraph-sentence convertion
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; collapse sentences into a paragraph
+(defun make-paragraph (start end)
+  (interactive "r")
+  (replace-regexp "\n\\{2,\\}" " " nil start end))
+
+(global-set-key (kbd "<f6>") 'make-paragraph)
+
+;; split a paragraph into sentences
+(defun split-paragraph (start end)
+  (interactive "r")
+  (replace-regexp "\\. " ".\n\n" nil start end))
+
+(global-set-key (kbd "<f5>") 'split-paragraph)
+
+
+;; the following is not useful at all, just for learning purpose
+(defun remove-vowel ($string &optional $from $to)
+  "Remove the following letters: {a e i o u}.
+
+When called interactively, work on current paragraph or text selection.
+
+When called in lisp code, if ξstring is non-nil, returns a changed string.
+If ξstring nil, change the text in the region between positions ξfrom ξto."
+  (interactive
+   (if (use-region-p)
+       (list nil (region-beginning) (region-end))
+     (let ((bds (bounds-of-thing-at-point 'paragraph)) )
+       (list nil (car bds) (cdr bds)) ) ) )
+
+  (let (workOnStringP inputStr outputStr)
+    (setq workOnStringP (if $string t nil))
+    (setq inputStr (if workOnStringP $string (buffer-substring-no-properties $from $to)))
+    (setq outputStr
+          (let ((case-fold-search t))
+            (replace-regexp-in-string "a\\|e\\|i\\|o\\|u\\|" "" inputStr) )  )
+
+    (if workOnStringP
+        outputStr
+      (save-excursion
+        (delete-region $from $to)
+        (goto-char $from)
+        (insert outputStr) )) ) )
 
 
 ;; kill whole word implementation
@@ -264,7 +378,6 @@ auto-mode-alist (append (list '("\\.c$" . c-mode)
   (yank)
   (goto-char (line-beginning-position 0))
 )
-
 
 (defun insert-before-line ()
   "insert the content yanked (e.g., copied) before the current line"
@@ -385,37 +498,19 @@ Then move to that line and indent according to mode"
 ;;       backup-by-copying-when-linked t) ; Copy linked files, don't rename.
 
 (global-set-key (kbd "M-i") 'kill-whole-line)
-(global-set-key (kbd "<f16>") 'other-window)
+(global-set-key (kbd "<f8>") 'switch-to-buffer)
+(global-set-key (kbd "<f9>") 'other-window)
 (global-set-key (kbd "<f18>") 'delete-other-windows)
 (global-set-key (kbd "<clear>") 'goto-line)
 (global-set-key (kbd "M-<up>") 'move-line-upward)
 (global-set-key (kbd "M-<down>") 'move-line-downward)
+(global-set-key (kbd "<home>") 'beginning-of-line)
+(global-set-key (kbd "<end>") 'end-of-line)
+(global-set-key (kbd "C-c C-q") 'fill-paragraph)
 
 ;; helm
 (setq recentf-max-saved-items 10000)
 (global-set-key (kbd "M-r") 'helm-recentf)
-
-
-(global-set-key (kbd "<home>") 'beginning-of-line)
-(global-set-key (kbd "<end>") 'end-of-line)
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(custom-safe-themes
-   (quote
-    ("c006bc787154c31d5c75e93a54657b4421e0b1a62516644bd25d954239bc9933" "c237299ad2385b4e59767eeb55a0a7e888ebbabec9975be9ae63eec2ff74668d" "f08c2405a7e71e568b784ae0145a86e48e1b4ea8ba33d231a4ad21b52495de5e" "5b86be6c49b591ec04aa238b929f0f4a8d79364653c8482ba69db698645b4de1" "ab8033276aa563bc7373f78aeefef69e1e25083266b44116341f0a8096657463" "40b7687853f3d6921eba3afed50c532bbf4a66959554d32adf1899a675926b2d" "7db66dafe7a65a8a6a403014edb5e53deca2da82279cb8f3f55e4bc336bf48af" "de309af2ced9914b67077eecd0b89412dd9a60c5eb823e5c5ed66170bd4495a7" "de05e8c13f7b8f3f3b9aaee44855c43dcdfd4db8b93c15af2bdcaf2528154ebc" "b69df114abdbbf223e1ad2c98ad1abee04ac2a5070aeb8b7ceefcf00aa5e43f8" "de8fa309eed1effea412533ca5d68ed33770bdf570dcaa458ec21eab219821fd" "3b0f554ddd413e74b82854d78c7c22df6cb4298413f69b514b2884fa84d42f30" "e8a9dfa28c7c3ae126152210e3ccc3707eedae55bdc4b6d3e1bb3a85dfb4e670" "1db337246ebc9c083be0d728f8d20913a0f46edc0a00277746ba411c149d7fe5" "eaf4cb94ad96e1659f9254db8efb799deb1885e97884f8f971ff1e6a4114500a" "356f57a98f35c8ead5a349408cab69f8d4d92baea131e9531611d0d82190fedf" default)))
- '(package-selected-packages
-   (quote
-    (tabbar-ruler polymode php-mode markdown-mode leuven-theme helm ess-R-object-popup ess auto-yasnippet auctex ample-zen-theme ample-theme airline-themes ahungry-theme))))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
-
 
 (defun insert-file-name ()
   "Insert the full path file name into the current buffer."
@@ -423,8 +518,54 @@ Then move to that line and indent according to mode"
   (insert (buffer-file-name (window-buffer (minibuffer-selected-window)))))
 (put 'upcase-region 'disabled nil)
 
-(setq ess-default-style 'OWN)
-(setq ess-indent-level 2)
+;;;;;;;;;;
+;; ESS
+;;;;;;;;;;
+(require 'ess-r-mode)
+
+;; YOU NEED TO UPDATE R VERSION FOR EVERY UPDATE
+;; (setq inferior-R-program-name "/Users/zhouw3/.Renv/versions/3.6.1/bin/R")
+(setq inferior-R-program-name "/Users/zhouw3/.Renv/versions/4.0.0/bin/R")
+
+
+;; Note that there are a lot of out-dated information out
+;; there on the internet. ESS has changed a lot in terms of
+;; the variables for customization. Look at ess-custom.el
+;; and C-h v ess-style-alist for the most updated information.
+;;
+;; Make sure you use the most updated version of ESS!!
+;;
+;; To customize, you need to change the default list to OWN
+;; all the other style are FIXED!!
+;; The default style is RRR. Even changing this thing to
+;; DEFAULT won't work. So far only the following works.
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(custom-safe-themes
+   '("da53c5d117ebada2664048682a345935caf8e54094a58febd5f021462ef20ba2" "614a8fc7db02cb99d9f1acf1297b26f8224cf80bf6c0ec31d30c431503e8b59f" "f2c35f8562f6a1e5b3f4c543d5ff8f24100fae1da29aeb1864bbc17758f52b70" "fa2af0c40576f3bde32290d7f4e7aa865eb6bf7ebe31eb9e37c32aa6f4ae8d10" default))
+ '(ess-own-style-list
+   '((ess-indent-offset . 4)
+     (ess-offset-arguments . prev-line)
+     (ess-offset-arguments-newline . prev-line)
+     (ess-offset-block . prev-line)
+     (ess-offset-continued . straight)
+     (ess-align-nested-calls)
+     (ess-align-arguments-in-calls)
+     (ess-align-continuations-in-calls)
+     (ess-align-blocks control-flow)
+     (ess-indent-from-lhs)
+     (ess-indent-from-chain-start)
+     (ess-indent-with-fancy-comments . t)))
+ '(package-selected-packages
+   '(ess laguna-theme zencoding-mode anti-zenburn-theme hc-zenburn-theme labburn-theme zenburn-theme leuven-theme org-drill projectile abs-mode markdown-mode yaml-mode yasnippet-snippets yasnippet toc-org tabbar helm fill-column-indicator)))
+
+(setq-default ess-indent-offset 4)
+
+(setq ess-style 'OWN)
+(ess-toggle-underscore nil)
 
 ;; (defun rmd-mode ()
 ;;  "ESS Markdown mode for rmd files"
@@ -432,8 +573,17 @@ Then move to that line and indent according to mode"
 ;;  (require 'poly-R)
 ;;  (require 'poly-markdown)     
 ;;  (poly-markdown+r-mode))
-
 (add-to-list 'auto-mode-alist '("\\.Rmd" . poly-markdown+r-mode))
+;; the shortcut for R
+(defun then_R_operator ()
+  "R - %>% operator or 'then' pipe operator"
+  (interactive)
+  (just-one-space 1)
+  (insert "%>%")
+  ;; (reindent-then-newline-and-indent)
+  (just-one-space 1))
+(define-key ess-mode-map (kbd "C-%") 'then_R_operator)
+(define-key inferior-ess-mode-map (kbd "C-%") 'then_R_operator)
 
 (setq column-number-mode t)
 
@@ -442,3 +592,33 @@ Then move to that line and indent according to mode"
      (interactive "DDirectory: ")
      (eshell-command 
       (format "find %s -type f -name \"*.[ch]\" | etags -" dir-name)))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; I don't find ivy mode that compelling compared to helm
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; (ivy-mode 1)
+;; (setq ivy-use-virtual-buffers t)
+;; (setq enable-recursive-minibuffers t)
+;; (global-set-key "\C-s" 'swiper)
+;; (global-set-key (kbd "C-c C-r") 'ivy-resume)
+;; (global-set-key (kbd "<f6>") 'ivy-resume)
+;; (global-set-key (kbd "M-x") 'counsel-M-x)
+;; (global-set-key (kbd "C-x C-f") 'counsel-find-file)
+;; (global-set-key (kbd "<f1> f") 'counsel-describe-function)
+;; (global-set-key (kbd "<f1> v") 'counsel-describe-variable)
+;; (global-set-key (kbd "<f1> l") 'counsel-find-library)
+;; (global-set-key (kbd "<f2> i") 'counsel-info-lookup-symbol)
+;; (global-set-key (kbd "<f2> u") 'counsel-unicode-char)
+;; (global-set-key (kbd "C-c g") 'counsel-git)
+;; (global-set-key (kbd "C-c j") 'counsel-git-grep)
+;; (global-set-key (kbd "C-c k") 'counsel-ag)
+;; (global-set-key (kbd "C-x l") 'counsel-locate)
+;; (define-key minibuffer-local-map (kbd "C-r") 'counsel-minibuffer-history)
+
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )

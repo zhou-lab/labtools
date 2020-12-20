@@ -1,3 +1,5 @@
+library(tidyverse)
+
 hist_logy <- function(x) {
   hd <- hist(x,plot=F);
   hd$counts <- log10(hd$counts);
@@ -132,5 +134,16 @@ plotdens <- function(x, normalize=FALSE, add=FALSE, ...) {
   } else {
     plot(d, ...)
   }
+}
+
+wzSmoothDensity <- function(x, y, xlim=c(-2,2), nrpoints=100, nbins=256, ...) {
+    palette <- colorRampPalette(
+        c("white","lightblue","blue","green","yellow","orange","red","darkred"),
+        space = "Lab")
+
+    smoothScatter(x, y, xlim = xlim,
+        nrpoints=nrpoints,
+        nbin=c(nbins,nbins),
+        colramp=palette, col='blue', ...)
 }
 

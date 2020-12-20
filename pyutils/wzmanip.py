@@ -8,7 +8,7 @@ from wzcore import *
 
 def pipeprint(s):
     try:
-        print s
+        print(s)
     except IOError:
         sys.exit(1)
         
@@ -25,7 +25,7 @@ class Indices:
         for start, end in self.spans:
             if not end:
                 end = len(lst)
-            result.extend([lst[_] for _ in xrange(start, end)])
+            result.extend([lst[_] for _ in range(start, end)])
 
         return result
 
@@ -59,7 +59,7 @@ def parse_indices(indstr):
 def main_reorder(args):
 
     if args.n:
-        for i in xrange(args.nskip):
+        for i in range(args.nskip):
             args.table.readline()
         header = args.table.readline().strip()
         names = args.n.split(',')
@@ -67,7 +67,7 @@ def main_reorder(args):
         for line in args.table:
             fields = line.strip('\n').split(args.delim)
             try:
-                print '\t'.join([fields[i] for i in indices])
+                print('\t'.join([fields[i] for i in indices]))
             except IndexError as e:
                 sys.stderr.write(line)
                 raise(e)
@@ -77,7 +77,7 @@ def main_reorder(args):
         for i, line in enumerate(args.table):
             fields = line.strip('\n').split(args.delim)
             try:
-                print '\t'.join(indices.extract(fields))
+                print('\t'.join(indices.extract(fields)))
             except IndexError as e:
                 sys.stderr.write(line)
                 raise(e)
@@ -96,7 +96,7 @@ def main_transpose(args):
         data.append(fields)
 
     for fields in zip(*data):
-        print args.delimo.join(fields)
+        print(args.delimo.join(fields))
 
     return
 
@@ -161,7 +161,7 @@ def main_compare3(args):
             if map1[e]: prncol.append(map1[e])
             if map2[e]: prncol.append(map2[e])
             if map3[e]: prncol.append(map3[e])
-            print '\t'.join(prncol)
+            print('\t'.join(prncol))
 
     if args.p == '12not3':
         for e in (set1 & set2) - set3:
@@ -169,7 +169,7 @@ def main_compare3(args):
             if not args.rk: prncol.append(e)
             if map1[e]: prncol.append(map1[e])
             if map2[e]: prncol.append(map2[e])
-            print '\t'.join(prncol)
+            print('\t'.join(prncol))
 
     if args.p == '13not2':
         for e in (set1 & set3) - set2:
@@ -177,7 +177,7 @@ def main_compare3(args):
             if not args.rk: prncol.append(e)
             if map1[e]: prncol.append(map1[e])
             if map3[e]: prncol.append(map3[e])
-            print '\t'.join(prncol)
+            print('\t'.join(prncol))
 
     if args.p == '23not1':
         for e in (set2 & set3) - set1:
@@ -185,28 +185,28 @@ def main_compare3(args):
             if not args.rk: prncol.append(e)
             if map2[e]: prncol.append(map2[e])
             if map3[e]: prncol.append(map3[e])
-            print '\t'.join(prncol)
+            print('\t'.join(prncol))
 
     if args.p == '1not23':
         for e in set1 - set2 - set3:
             prncol = []
             if not args.rk: prncol.append(e)
             if map1[e]: prncol.append(map1[e])
-            print '\t'.join(prncol)
+            print('\t'.join(prncol))
 
     if args.p == '2not13':
         for e in set2 - set1 - set3:
             prncol = []
             if not args.rk: prncol.append(e)
             if map2[e]: prncol.append(map2[e])
-            print '\t'.join(prncol)
+            print('\t'.join(prncol))
 
     if args.p == '3not12':
         for e in set3 - set1 - set2:
             prncol = []
             if not args.rk: prncol.append(e)
             if map3[e]: prncol.append(map3[e])
-            print '\t'.join(prncol)
+            print('\t'.join(prncol))
 
     return
     
@@ -233,7 +233,7 @@ def main_compare(args):
             if not args.rk: prncol.append(e)
             if map1[e]: prncol.append(map1[e])
             if map2[e]: prncol.append(map2[e])
-            print '\t'.join(prncol)
+            print('\t'.join(prncol))
 
     if args.p == '1or2':
         for e in set1 | set2:
@@ -241,21 +241,21 @@ def main_compare(args):
             if not args.rk: prncol.append(e)
             if e in map1 and map1[e]: prncol.append(map1[e])
             if e in map2 and map2[e]: prncol.append(map2[e])
-            print '\t'.join(prncol)
+            print('\t'.join(prncol))
 
     if args.p == '1not2':
         for e in set1 - set2:
             prncol = []
             if not args.rk: prncol.append(e)
             if map1[e]: prncol.append(map1[e])
-            print '\t'.join(prncol)
+            print('\t'.join(prncol))
 
     if args.p == '2not1':
         for e in set2 - set1:
             prncol = []
             if not args.rk: prncol.append(e)
             if map2[e]: prncol.append(map2[e])
-            print '\t'.join(prncol)
+            print('\t'.join(prncol))
 
 def main_tabulate(args):
 
@@ -294,7 +294,7 @@ def main_tabulate(args):
         colnames.sort()
         rownames.sort()
 
-    print 'header\t%s' % '\t'.join(colnames)
+    print('header\t%s' % '\t'.join(colnames))
     for row in rownames:
         line = row
         for col in colnames:
@@ -302,7 +302,7 @@ def main_tabulate(args):
                 line += '\t%s' % str(rc_map[row][col])
             else:
                 line += '\t0' if args.cnt else '\tNA'
-        print line
+        print(line)
 
 def main_untabulate(args):
 
@@ -313,7 +313,7 @@ def main_untabulate(args):
         fields = line.strip().split('\t')
         for i, d in enumerate(fields):
             if i>0:
-                print '%s\t%s\t%s' % (fields[0], rownames[i], d)
+                print('%s\t%s\t%s' % (fields[0], rownames[i], d))
     
     return
 
@@ -329,13 +329,13 @@ def main_linejoin(args):
         if prevkey is None:
             prevkey = key
         elif key != prevkey:
-            print '%s\t%d\t%s' % (prevkey, len(content), '\t'.join(content))
+            print('%s\t%d\t%s' % (prevkey, len(content), '\t'.join(content)))
             prevkey = key
             content = []
         content.append(line.strip())
 
     if prevkey is None or prevkey != key:
-        print '%s\t%d\t%s' % (prevkey, len(content), '\t'.join(content))
+        print('%s\t%d\t%s' % (prevkey, len(content), '\t'.join(content)))
 
 def main_match(args):
 
@@ -386,7 +386,7 @@ def main_match(args):
                     if val2:
                         prncols.append(val2)
 
-                    print '\t'.join(prncols)
+                    print('\t'.join(prncols))
 
             keyprinted.add(key)
 
@@ -398,7 +398,7 @@ def main_match(args):
             if val:
                 prncols.append(val2)
                 
-            print '\t'.join(prncols)
+            print('\t'.join(prncols))
 
     if args.um1:
         for key in key2prints:
@@ -409,7 +409,7 @@ def main_match(args):
                         prncols.append(key)
                     if val:
                         prncols.append(val)
-                    print '\t'.join(prncols)
+                    print('\t'.join(prncols))
 
 
 def main_colindex(args):
@@ -417,7 +417,7 @@ def main_colindex(args):
     p = re.compile(args.r)
     for line in args.table:
         fields = line.strip().split(args.delim)
-        print [(i+1, _) for i, _ in enumerate(fields) if p.search(_)]
+        print([(i+1, _) for i, _ in enumerate(fields) if p.search(_)])
         if not args.all:
             break
 
@@ -440,7 +440,7 @@ def main_classify(args):
         if args.nv:
             prncol.append(str(len(vs)))
         prncol.append('\t'.join(vs))
-        print '\t'.join(prncol)
+        print('\t'.join(prncol))
 
 def main_dedupmax(args):
 
@@ -459,7 +459,7 @@ def main_dedupmax(args):
             k2v[k] = v
 
     for k, v in k2v.iteritems():
-        print '\t'.join(v[1])
+        print('\t'.join(v[1]))
 
 
 def main_sample(args):
@@ -514,9 +514,9 @@ def main_dupcompress(args):
 
     for k, v in k2v.iteritems():
         if args.nc:
-            print '%s\t%s' % ('\t'.join(k), args.od.join(v))
+            print('%s\t%s' % ('\t'.join(k), args.od.join(v)))
         else:
-            print '%s\t%d\t%s' % ('\t'.join(k), len(v), args.od.join(v))
+            print('%s\t%d\t%s' % ('\t'.join(k), len(v), args.od.join(v)))
 
 def main_number(args):
 
@@ -557,11 +557,11 @@ def main_headerexp(args):
     exp = args.e
     if args.list:
         for i, field in enumerate(fields):
-            print i+1, field
+            print(i+1, field)
     if exp is not None:
         for i, field in enumerate(fields):
             exp = re.sub('\|'+field+'\|', '$'+str(i+1), exp)
-        print exp
+        print(exp)
 
 def main_nameawk(args):
 
@@ -585,7 +585,7 @@ def main_nameawk(args):
     exp = re.sub(r'\|[^\|]*\|','None',exp)
         
     if args.header:
-        print re.sub(',', '\t', args.header)
+        print(re.sub(',', '\t', args.header))
     else:                       # use expression as header
         # ',' vs ', '
         # note that ', ' is used to separate fields
@@ -594,7 +594,7 @@ def main_nameawk(args):
         h = re.sub('\|, \|', '\t', args.e)
         h = re.sub('^\|' ,'', h)
         h = re.sub('\|$', '', h)
-        print h
+        print(h)
 
     try:
         for line in args.table:
@@ -605,7 +605,7 @@ def main_nameawk(args):
                 if not args.silent:
                     sys.stderr.write("Aberrantly short line: %s skip\n" % line.strip())
                 continue
-            print result
+            print(result)
     except IOError:
         sys.exit(1)
 
@@ -703,7 +703,7 @@ def main_replace(args):
                         break
                     # field = field.replace(k, v)
             nf.append(field)
-        print args.delim.join(nf)
+        print(args.delim.join(nf))
 
     return
 
@@ -744,13 +744,13 @@ def main_join(args):
                 k2fn2v[k][fn] = v
 
     if args.u:
-        print '\t'.join(args.i)
+        print('\t'.join(args.i))
 
     if args.a:
-        print '\t'.join(args.a.split(','))
+        print('\t'.join(args.a.split(',')))
 
     for k, fn2v in k2fn2v.iteritems():
-        print '%s\t%s' % (k, '\t'.join([fn2v[f] if f in fn2v else args.e for f in args.i]))
+        print('%s\t%s' % (k, '\t'.join([fn2v[f] if f in fn2v else args.e for f in args.i])))
 
 if __name__ == '__main__':
 

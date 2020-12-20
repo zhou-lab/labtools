@@ -1,3 +1,4 @@
+#!/bin/bash
 # Source global definitions
 if [ -f /etc/bashrc ]; then
 	. /etc/bashrc
@@ -15,35 +16,22 @@ alias wget='wget --no-check-certificate'
 alias du="du -sh"
 alias R='R --no-save'
 
+function emacs {
+  touch $1
+  open -a /Applications/Emacs.app $1
+}
+
 PS1='\u@\h:\w\$ '
 
-HOME=/Users/wanding.zhou
+HOME=/Users/zhouw3
 
-export PATH=~/bin:~/tools/circos/current/bin:$PATH
-export SCREENRC=$HOME/wzlib/screenrc/screenrc_hp
-export PYTHONPATH=$HOME:~/wzlib/pyutils
-# export PYTHONPATH=$HOME/wzlib/pyutils:$PYTHONPATH:$HOME/pythonlib/lib/python2.7/site-packages/
-# /usr/local/lib/python2.7/site-packages/:$HOME/wzlib/pyutils:$HOME/pythonlib/Library/Python/2.7/site-packages/:/usr/local/Cellar/pyqt/4.11.3/lib/python2.7/site-packages/:/System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/:$PYTHONPATH
-export AWKPATH=$HOME/wzlib/awkutils
-export EDITOR='subl -w'
+export PATH=~/bin:~/tools/circos/current/bin:~/tools/bin/:~/repo/wzlib/bin/:$PATH
+export SCREENRC=$HOME/repo/wzlib/screenrc/screenrc_hp
+export PYTHONPATH=$HOME:~/repo/wzlib/pyutils
+# export PYTHONPATH=$HOME/repo/wzlib/pyutils:$PYTHONPATH:$HOME/pythonlib/lib/python2.7/site-packages/
+# /usr/local/lib/python2.7/site-packages/:$HOME/repo/wzlib/pyutils:$HOME/pythonlib/Library/Python/2.7/site-packages/:/usr/local/Cellar/pyqt/4.11.3/lib/python2.7/site-packages/:/System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/:$PYTHONPATH
+export AWKPATH=$HOME/repo/wzlib/awkutils
 
-
-#### python ####
-function addPy2 {
-  export PATH="/secondary/projects/laird/projects/2017_11_09_WZ_anaconda/bin:$PATH"
-}
-
-function addPy3 {
-	export PATH="/Users/wanding.zhou/anaconda3/bin:$PATH"
-}
-addPy3
-
-function switchPy3 {
-  export PATH=$(echo "$PATH" | sed -e 's/2017_11_09_WZ_anaconda/2017_11_09_WZ_anaconda_python3.6\/anaconda3/')
-}
-function switchPy2 {
-  export PATH=$(echo "$PATH" | sed -e 's/2017_11_09_WZ_anaconda_python3.6\/anaconda3/2017_11_09_WZ_anaconda/')
-}
 
 
 # % cpan
@@ -58,6 +46,7 @@ export PERL5LIB=${PERL5LIB}:/Users/wandingzhou/tools/ensembl_api/ensembl-funcgen
 
 alias scp='rsync -Pravdtze ssh'
 alias awk='gawk -F"\t" -v OFS="\t"'
+alias zcat="gzcat"
 alias les="less -S"
 alias zles="zless -S"
 alias qsuball="find $HOME/htcpbs/ -type f | sort | xargs -I {} qsub {}"
@@ -101,16 +90,171 @@ prompt
 #     screen*) PROMPT_COMMAND='echo -ne "\033k\033\0134"'
 # esac
 
-## search wzprojects
-function wzgrep {
-  # grep --recursive --color=always "$1" ~/wzprojects/*.{R,py,org,sh} | less -SR;
-  # grep --recursive --color=always "$1" ~/wzprojects/* | less -R;
-  ag "$1" ~/wzprojects --pager="less -R"
-}
-function wzfind {
-  find ~/wzprojects/ -name "*$1*" | less -S
+
+## the following two are the same
+function newdoc {
+  touch $1
+  open $1
 }
 
+function touchopen {
+  touch $1
+  open $1
+}
+
+##########################
+## grep contents
+##########################
+## for code
+function wzgrep {
+  # grep --recursive --color=always "$1" ~/repo/wzprojects/*.{R,py,org,sh} | less -SR;
+  # grep --recursive --color=always "$1" ~/repo/wzprojects/* | less -R;
+  [[ -z "$1" ]] || ag "$1" ~/repo/wzprojects --pager="less -R"
+}
+
+function wzgrep2 {
+  [[ -z "$1" ]] || ag "$1" . --pager="less -R"
+}
+
+function wzfind {
+  find ~/repo/wzprojects/ -name "*$1*" | fzf
+}
+
+## for PDF documents, DON'T WORK WELL, TRY SEARCHING IN MENDELEY
+function wzgreppdf {
+  pattern="$@";
+  find ~/Dropbox/Literature -name '*.pdf' -exec pdfgrep "$pattern" {} \;
+}
+
+## the following utilize the built-in mac MS Word reader
+function wzwriting {
+  textutil -stdout -cat txt *.docx
+}
+
+###################
+## show location
+###################
+## usage:
+## s [query]
+## s open [query] # directly open
+## s cd # cd into the folder containing the file
+## s show # show things in finder
+## s echo # just echo things in terminal
+function s {
+
+  to_open=0
+  to_cd=0;
+  to_finder=0;
+  is_directory=0;
+  if [[ $1 == "open" ]]; then
+    to_open=1;
+    shift;
+  fi
+  
+  if [[ $1 == "show" ]]; then
+    to_finder=1;
+    shift;
+  fi
+
+  if [[ $1 == "cd" ]]; then
+    to_cd=1;
+    shift;
+  fi
+
+  if [[ $1 == "echo" ]]; then
+    ## do nothing really, since echo will always be done
+    shift;
+  fi
+
+  location=$1
+  shift;
+
+  if [[ $location =~ ^wzp ]]; then
+    location=$HOME/repo/wzprojects/
+  elif [[ $location =~ ^wzl ]]; then
+    location=$HOME/repo/wzlib/
+  elif [[ $location =~ ^sa ]]; then
+    location=$HOME/samplesheets/
+  elif [[ $location =~ ^ga ]]; then
+    location=$HOME/gallery/
+  elif [[ $location =~ ^go ]]; then
+    location=$HOME/Google/
+  elif [[ $location =~ ^on ]]; then
+    location=$HOME/OneDrive/
+  elif [[ $location =~ ^gr ]]; then
+    location=$HOME/Google/Grant
+  elif [[ $location =~ ^dr ]]; then
+    location=$HOME/Dropbox/
+  elif [[ $location =~ ^pe ]]; then
+    location=$HOME/Dropbox/personal/
+  elif [[ $location =~ ^do ]]; then
+    location=$HOME/Dropbox/Documents/
+  elif [[ $location =~ ^re ]]; then
+    location=$HOME/repo/
+  elif [[ $location =~ ^sp ]]; then
+    location=$HOME/Dropbox/Documents/SpreadSheets/
+  elif [[ $location =~ ^pa ]]; then
+    location=$HOME/Dropbox/Documents/Paper/
+  elif [[ $location =~ ^pr ]]; then
+    location=$HOME/Dropbox/Documents/Presentation/
+  # elif [[ $location =~ ^li ]]; then
+  #   location=$HOME/Dropbox/Literature/
+  # elif [[ $location =~ ^wr ]]; then
+  #   location=$HOME/Dropbox/Documents/Writing/
+  fi
+
+  ## TODO test if link is pointed to a directory
+  ## if link is not given (simple "s"), then use current directory
+  if [[ ! -d $location ]]; then
+    location="." # $HOME/Dropbox/Documents/
+  fi
+
+  pattern="$@"
+  if [[ $is_directory -eq 1 ]]; then
+    fpath=$(find "$location" -type d | fzf -q "$pattern")
+  else
+    fpath=$(find "$location" -type f | fzf -q "$pattern")
+  fi
+  
+  if [[ ! -z "$fpath" ]]; then
+    echo $fpath
+    export SHOWLOC="$fpath"
+    if [[ $to_open -eq 1 ]]; then
+      open "$fpath"
+    elif [[ $to_cd -eq 1 ]]; then
+      if [[ -d "$fpath" ]]; then
+        cd "$fpath"
+      else
+        cd $(dirname "$fpath")
+      fi
+    elif [[ $to_finder -eq 1 ]]; then
+      open -R "$fpath"
+    fi
+  fi
+}
+
+function openf {
+  [[ -z "$SHOWLOC" ]] || open "$SHOWLOC"
+}
+
+function opend {
+  [[ -z "$SHOWLOC" ]] || open -R "$SHOWLOC"
+}
+
+function cdd {
+  if [[ ! -z "$SHOWLOC" ]]; then
+    showdir="$(dirname "$SHOWLOC")"
+    cd "$showdir"
+  fi
+}
+
+# function cdf {
+#   [[ -z "$SHOWLOC" ]] || cd "$SHOWLOC"
+# }
+
+####################
+## VCF tools
+####################
 function wz_vcffilter {
     vcffile=$1;
     if [[ $3 == "-s" ]]; then
@@ -183,8 +327,17 @@ alias gst="git status"
 # alias gu="git pull"
 alias gp="git pull"
 alias gpu="git push"
-alias gc="git commit -a"
+alias gc="git commit -am"
 # alias ga="git add"
+
+function allgpl {
+  for f in ~/repo/*; do
+    cd $f;
+    git pull
+    git commit -am "minor, message omitted"
+    git push
+  done
+}
 
 # lazy git
 function gl {
@@ -207,10 +360,10 @@ sort -k1,1 -k2,2n $1
 
 ## circos
 export PATH=~/tools/circos/circos-0.67-7/bin/:$PATH
-alias wzseq='. /Users/wandingzhou/wzlib/bash/wzseq.sh'
-alias wzutils='. /Users/wandingzhou/wzlib/bash/wzutils.sh'
+alias wzseq='. /Users/wandingzhou/repo/wzlib/bash/wzseq.sh'
+alias wzutils='. /Users/wandingzhou/repo/wzlib/bash/wzutils.sh'
 
-alias wzmouse='. ~/wzprojects/meth/2016_03_22_mouse_array_figures.sh'
+alias wzmouse='. ~/repo/wzprojects/meth/2016_03_22_mouse_array_figures.sh'
 
 # test -r ~/tools/EMAN2/eman2.bashrc && source ~/tools/EMAN2/eman2.bashrc
 
@@ -229,6 +382,8 @@ function findc {
 #export PATH="$HOME/.Renv/bin:$PATH"
 #eval "$(Renv init -)"
 
+## texlive
+export PATH=/usr/local/texlive/2014/bin/x86_64-darwin/:$PATH
 
 # source ~/tools/git-subrepo/.rc
 
@@ -246,13 +401,61 @@ function windows2unix {
 }
 
 
-############## FZF ##############
-## [ -f ~/.fzf.bash ] && source ~/.fzf.bash
-
+########################
 ## z - jump around
+########################
 . ~/tools/z/z.sh
 
-export PATH=/usr/local/texlive/2014/bin/x86_64-darwin/:$PATH
+## re-define z with coupling with fzf, you need to install fzf (but needn't
+## to invoke its key-binding or auto-completion)
+## https://github.com/junegunn/fzf/wiki/examples#z
+unalias z
+z() {
+  if [[ -z "$*" ]]; then        # when there is no argument
+    cd "$(_z -l 2>&1 | fzf +s --tac | sed 's/^[0-9,.]* *//')"
+  else                          # when there is argument
+    if [[ $1 == -* ]]; then
+      _z "$@"
+    else
+      cd "$(_z -l 2>&1 | fzf -q "$@" | sed 's/^[0-9,.]* *//')"
+    fi
+  fi
+}
 
+############## FZF ##############
+## Wanding Note1:
+## if you want autocompletion (triggered by **) and key-binding for C-T
+## to me this is not that necessary
+## ZFZ is no good since it only supports bash version >= 4 (and most mac
+## unfortunately supports only version 3)
+## Wanding Note2:
+## and you need to put it to bash_profile in mac to have it work properly
+# [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 
+function wzcd() {
+  cd $(find . -type d | fzf)
+}
 
+export GEM_HOME=$HOME/gems
+export PATH=$HOME/gems/bin:$PATH
+## /Users/zhouw3/.gem/ruby/2.3.0/bin
+export PATH="/usr/local/opt/ruby/bin:$PATH"
+
+function dt() {
+  date +%Y%m%d
+}
+
+function dt2() {
+  date +%Y_%m_%d
+}
+
+export TRANSVAR_CFG=/Users/zhouw3/Google/20190822_transvar_development/transvar.cfg
+export TRANSVAR_DOWNLOAD_DIR=/Users/zhouw3/Google/20190822_transvar_development/transvar.download
+
+## in Linux it can be
+## function ppgrep() { pgrep "$@" | xargs --no-run-if-empty ps fp; }
+function ppgrep() { pgrep "$@" | xargs ps -fp 2> /dev/null; }
+
+#### python ####
+## activate anaconda
+source /Users/zhouw3/anaconda3/bin/activate
