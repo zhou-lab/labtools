@@ -3,6 +3,9 @@ if [ -f /etc/bashrc ]; then
 	. /etc/bashrc
 fi
 
+# z.sh
+. ~/tools/z/z.sh
+
 alias ls='ls -G'
 alias rm='rm -i'
 alias lc="wc -l"
