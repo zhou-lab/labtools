@@ -4,13 +4,22 @@
 ;; yasnippet, ESS, polymode, helm, toc-org, fill-column-indicator
 ;; other things: ivy+counsel+swiper
 
-(when (>= emacs-major-version 24)
-  (require 'package)
-  (add-to-list 'package-archives '("melpa" . "http://melpa.milkbox.net/packages/") t)
-  ;; (add-to-list 'package-archives '("marmalade" . "http://marmalade-repo.org/packages/"))
-	;; (add-to-list 'package-archives '("ELPA", "http://tromey.com/elpa/"))
-  (package-initialize)
-  )
+(require 'package)
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+;; Comment/uncomment this line to enable MELPA Stable if desired.  See `package-archive-priorities`
+;; and `package-pinned-packages`. Most users will not need or want to do this.
+;;(add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/") t)
+(package-initialize)
+
+(server-start)
+
+;; (when (>= emacs-major-version 24)
+;;   (require 'package)
+;; ;;  (add-to-list 'package-archives '("melpa" . "http://melpa.milkbox.net/packages/") t)
+;; ;;  (add-to-list 'package-archives '("marmalade" . "http://marmalade-repo.org/packages/"))
+;; 	;; (add-to-list 'package-archives '("ELPA", "http://tromey.com/elpa/"))
+;;   (package-initialize)
+;;   )
 
 ;;;;;;;;;;;;;;;;;;;;
 ;;;;;;; fonts ;;;;;;
@@ -50,9 +59,10 @@
 ;; (load-theme 'ample-zen t)
 ;; (load-theme 'airline-badwolf t)
 ;; (load-theme 'tsdh-light t)
-(load-theme 'leuven t)
+;; (load-theme 'leuven t)
 ;; (load-theme 'leuven-dark t)
 ;; (load-theme 'zenburn t)
+(load-theme 'misterioso t)
 ;; (load-theme 'deeper-blue t)
 ;; (load-theme 'dracula t)
 ;; (setq-default cursor-type 'bar)
@@ -535,11 +545,9 @@ Then move to that line and indent according to mode"
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
-   (quote
-    ("fa2af0c40576f3bde32290d7f4e7aa865eb6bf7ebe31eb9e37c32aa6f4ae8d10" default)))
+   '("da53c5d117ebada2664048682a345935caf8e54094a58febd5f021462ef20ba2" "614a8fc7db02cb99d9f1acf1297b26f8224cf80bf6c0ec31d30c431503e8b59f" "f2c35f8562f6a1e5b3f4c543d5ff8f24100fae1da29aeb1864bbc17758f52b70" "fa2af0c40576f3bde32290d7f4e7aa865eb6bf7ebe31eb9e37c32aa6f4ae8d10" default))
  '(ess-own-style-list
-   (quote
-    ((ess-indent-offset . 4)
+   '((ess-indent-offset . 4)
      (ess-offset-arguments . prev-line)
      (ess-offset-arguments-newline . prev-line)
      (ess-offset-block . prev-line)
@@ -550,10 +558,9 @@ Then move to that line and indent according to mode"
      (ess-align-blocks control-flow)
      (ess-indent-from-lhs)
      (ess-indent-from-chain-start)
-     (ess-indent-with-fancy-comments . t))))
+     (ess-indent-with-fancy-comments . t)))
  '(package-selected-packages
-   (quote
-    (leuven-theme org-drill projectile abs-mode markdown-mode yaml-mode yasnippet-snippets yasnippet toc-org tabbar helm fill-column-indicator))))
+   '(ess laguna-theme zencoding-mode anti-zenburn-theme hc-zenburn-theme labburn-theme zenburn-theme leuven-theme org-drill projectile abs-mode markdown-mode yaml-mode yasnippet-snippets yasnippet toc-org tabbar helm fill-column-indicator)))
 
 (setq-default ess-indent-offset 4)
 
