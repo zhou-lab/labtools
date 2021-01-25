@@ -5,12 +5,18 @@ options(stringsAsFactors = FALSE)
 ## source('~/wzlib/Rutils/wzcore.R')
 ## source('~/wzlib/Rutils/wzplotlib.R')
 
+# .First <- function(){
+# }
 
-.First <- function(){
-    return()
+load_default <- function() {
   library(grDevices)
   library(tidyverse)
   library(wheatmap)
+  library(sesame)
+  library(ggplot2)
+  library(reshape2)
+  library(devtools)
+  library(readxl)
 }
 
 ## .Last <- function(){

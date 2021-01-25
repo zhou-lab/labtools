@@ -87,13 +87,25 @@ make
 make install
 # -with-recommended-packages=yes --without-x --with-cairo --with-libpng --with-libtiff --with-jpeglib --enable-R-shlib
 
+*** example add R-devel
 
-*** example on MAC
+cd ~/.Renv/versions/4.1.devel/R-devel
+wget "https://cloud.r-project.org/src/base-prerelease/R-devel.tar.gz"
+./configure --prefix=/home/zhouw3/.Renv/versions/4.1.devel --with-pcre1 --without-x --with-cairo
+
+If the output of R CMD config CXX11 is empty, try editing the Makeconf in echo $(R RHOME)/etc/Makeconf and manually set the variable for CXX11 to the same value as CXX. 
+
+CXX11 = g++
+CXX11FLAGS = -g -O2 $(LTO)
+CXX11PICFLAGS = -fpic
+
+** install R on MAC (TURN OFF ANACONDA!!!!)
 # preparation
 brew install gcc
 brew install xz
 brew install pcre
 brew cask install basictex
+brew install xquartz
 # install jdk
 
 ./configure --prefix=/Users/zhouw3/.Renv/versions/3.6.1 --enable-R-shlib --with-cairo --with-libpng --with-libtiff --with-jpeglib
@@ -104,6 +116,32 @@ make install
 
 cd ~/.Renv/versions/4.0.0/R-4.0.0
 ./configure --prefix=/Users/zhouw3/.Renv/versions/4.0.0 --enable-R-shlib --with-cairo --with-libpng --with-libtiff --with-jpeglib --with-pcre1
+
+cd ~/.Renv/versions/4.0.3/R-4.0.3
+./configure --prefix=/Users/zhouw3/.Renv/versions/4.0.3 --enable-R-shlib --with-cairo --with-libpng --with-libtiff --with-jpeglib --with-pcre1
+
+# use R-devel instead of R-patched
+wget https://cloud.r-project.org/src/base-prerelease/R-patched_2021-01-08_r79815.tar.gz
+cd ~/.Renv/versions/4.1.dev/R-devel
+./configure --prefix=/Users/zhouw3/.Renv/versions/4.1.dev --enable-R-shlib --with-cairo --with-libpng --with-libtiff --with-jpeglib --with-pcre1
+
+
+# If you need to have curl first in your PATH run:
+#   echo 'export PATH="/usr/local/opt/curl/bin:$PATH"' >> ~/.zshrc
+
+# For compilers to find curl you may need to set:
+#   export LDFLAGS="-L/usr/local/opt/curl/lib"
+#   export CPPFLAGS="-I/usr/local/opt/curl/include"
+
+# For pkg-config to find curl you may need to set:
+#   export PKG_CONFIG_PATH="/usr/local/opt/curl/lib/pkgconfig"
+
+** install Cairo on mac
+wget "https://www.cairographics.org/releases/cairo-1.16.0.tar.xz"
+tar -xf cairo-1.16.0.tar.xz
+./configure --enable-tee --enable-xml --enable-quartz-image
+make
+make install
 
 ** install Cairo on cluster
 export CAIRO_LIBS="-L/primary/vari/software/cairo/default/lib/ -L/primary/vari/software/pixman/default/lib/ -lcairo -lpixman-1"
@@ -3107,7 +3145,6 @@ R> trace("plot", browser, exit=browser, signature = c("track",
 "missing"))
 
 ** other
-
 *** littler
 
 # do the following during your R installation

@@ -103,10 +103,10 @@ wzBaseAxisLabel <- function(lab, ax='x', line=3, ...) {
 
 
 #######################################
-## Scatter plot with coloring density
+## 2D Scatter plot with coloring density
 #######################################
-
-wzPlotDens <- function(x1,x2,pch=16,...) {
+## old name wzPlotDens
+wzPlotDens2d <- function(x1,x2,pch=16,...) {
   df <- data.frame(x1,x2)
   x <- densCols(x1,x2, colramp=colorRampPalette(c("black", "white")))
   df$dens <- col2rgb(x)[1,] + 1L
@@ -116,15 +116,11 @@ wzPlotDens <- function(x1,x2,pch=16,...) {
 }
 
 
-
-###############################################
-################## OBSOLETE ###################
-###############################################
-
 #########################
 ## 1-D density plot
 #########################
-plotdens <- function(x, normalize=FALSE, add=FALSE, ...) {
+## old plotdens
+wzPlotDens1d <- function(x, normalize=FALSE, add=FALSE, ...) {
   d <- density(na.omit(x))
   if (normalize) {
     d$y <- d$y / max(d$y)
@@ -136,7 +132,16 @@ plotdens <- function(x, normalize=FALSE, add=FALSE, ...) {
   }
 }
 
-wzSmoothDensity <- function(x, y, xlim=c(-2,2), nrpoints=100, nbins=256, ...) {
+wzPlotDens1d.fromMatrix <- function(x, normalize=FALSE, ...) {
+    for (i in seq_len(ncol(x))) {
+        if (i==1) { add <- FALSE;
+        } else { add <- TRUE; }
+        wzPlotDens1d(x[,i], normalize=normalize, add=add, ...);
+    }
+}
+
+## old name: wzSmoothDensity
+wzPlotDens2d.smooth <- function(x, y, xlim=c(-2,2), nrpoints=100, nbins=256, ...) {
     palette <- colorRampPalette(
         c("white","lightblue","blue","green","yellow","orange","red","darkred"),
         space = "Lab")

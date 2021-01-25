@@ -63,6 +63,7 @@
 ;; (load-theme 'leuven-dark t)
 ;; (load-theme 'zenburn t)
 (load-theme 'misterioso t)
+;; (load-theme 'spacemacs-dark t)
 ;; (load-theme 'deeper-blue t)
 ;; (load-theme 'dracula t)
 ;; (setq-default cursor-type 'bar)
@@ -148,6 +149,9 @@
 
 (setq-default c-default-style "k&r"
               c-basic-offset 2)
+
+;; always follow symlinks
+(setq vc-follow-symlinks t)
 
 (show-paren-mode 1)
 (require 'mouse)
@@ -525,7 +529,7 @@ Then move to that line and indent according to mode"
 
 ;; YOU NEED TO UPDATE R VERSION FOR EVERY UPDATE
 ;; (setq inferior-R-program-name "/Users/zhouw3/.Renv/versions/3.6.1/bin/R")
-(setq inferior-R-program-name "/Users/zhouw3/.Renv/versions/4.0.0/bin/R")
+(setq inferior-R-program-name "/Users/zhouw3/.Renv/versions/4.1.dev/bin/R")
 
 
 ;; Note that there are a lot of out-dated information out
@@ -545,7 +549,7 @@ Then move to that line and indent according to mode"
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
-   '("da53c5d117ebada2664048682a345935caf8e54094a58febd5f021462ef20ba2" "614a8fc7db02cb99d9f1acf1297b26f8224cf80bf6c0ec31d30c431503e8b59f" "f2c35f8562f6a1e5b3f4c543d5ff8f24100fae1da29aeb1864bbc17758f52b70" "fa2af0c40576f3bde32290d7f4e7aa865eb6bf7ebe31eb9e37c32aa6f4ae8d10" default))
+   '("bffa9739ce0752a37d9b1eee78fc00ba159748f50dc328af4be661484848e476" "da53c5d117ebada2664048682a345935caf8e54094a58febd5f021462ef20ba2" "614a8fc7db02cb99d9f1acf1297b26f8224cf80bf6c0ec31d30c431503e8b59f" "f2c35f8562f6a1e5b3f4c543d5ff8f24100fae1da29aeb1864bbc17758f52b70" "fa2af0c40576f3bde32290d7f4e7aa865eb6bf7ebe31eb9e37c32aa6f4ae8d10" default))
  '(ess-own-style-list
    '((ess-indent-offset . 4)
      (ess-offset-arguments . prev-line)
@@ -560,7 +564,7 @@ Then move to that line and indent according to mode"
      (ess-indent-from-chain-start)
      (ess-indent-with-fancy-comments . t)))
  '(package-selected-packages
-   '(ess laguna-theme zencoding-mode anti-zenburn-theme hc-zenburn-theme labburn-theme zenburn-theme leuven-theme org-drill projectile abs-mode markdown-mode yaml-mode yasnippet-snippets yasnippet toc-org tabbar helm fill-column-indicator)))
+   '(spacemacs-theme ess laguna-theme zencoding-mode anti-zenburn-theme hc-zenburn-theme labburn-theme zenburn-theme leuven-theme org-drill projectile abs-mode markdown-mode yaml-mode yasnippet-snippets yasnippet toc-org tabbar helm fill-column-indicator)))
 
 (setq-default ess-indent-offset 4)
 

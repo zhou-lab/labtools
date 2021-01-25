@@ -1,7 +1,7 @@
 import wzcore
 import faidx
 
-refgenomehg19 = faidx.RefGenome('/Users/wandingzhou/references/hg19/hg19.fa')
+refgenomehg19 = faidx.RefGenome('/Users/zhouw3/references/hg19/hg19.fa')
 
 class GeneticElement(object):
 

@@ -17,7 +17,7 @@ eval "$(Renv init -)"
 
 ## Emacs
 function start_emacs() {
-  (exec emacsclient --alternate-editor="" -c "$@" $1 >/dev/null &)
+  (exec emacsclient --alternate-editor="" "$@" $1 >/dev/null &)
 }
 alias emacs=start_emacs
 
@@ -133,7 +133,14 @@ alias R='R --no-save'
 alias scp='rsync -Pravdtze ssh'
 alias awk='gawk -F"\t" -v OFS="\t"'
 alias zcat="gzcat"
-alias les="less -S"
+alias les="less -SR"
+alias colorify="grc -es --colour=auto" # need to install grc
+alias diff="colordiff"
+alias sb="source ~/.zshrc"
+# alias diff='colorify diff'
+# alias make='colorify make'
+# alias head='colorify head'
+# alias tail='colorify tail'
 
 ## screen
 export SCREENRC=$HOME/repo/wzlib/screenrc/screenrc_hp
@@ -286,6 +293,11 @@ function sortbed {
   sort -k1,1 -k2,2n $1
 }
 
+function newdoc {
+  touch $1
+  open $1
+}
+
 # get all the C header/files
 # findc .
 function findc {
@@ -315,7 +327,7 @@ z() {
 
 #### python ####
 ## activate anaconda
-source /Users/zhouw3/anaconda3/bin/activate
+# source /Users/zhouw3/anaconda3/bin/activate
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
