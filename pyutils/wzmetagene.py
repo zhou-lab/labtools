@@ -10,7 +10,7 @@ import numpy as np
 def sample_forward(args, chrm, beg, end, fields, index_func):
 
     _window_end = end + args.step
-    for i in xrange(args.numflank):
+    for i in range(args.numflank):
         _window_beg = _window_end - args.windowsize
         if args.middle:
             window_mid = int((_window_beg + _window_end)/2.0)
@@ -29,7 +29,7 @@ def sample_forward(args, chrm, beg, end, fields, index_func):
 def sample_backward(args, chrm, beg, end, fields, index_func):
 
     _window_beg = beg - args.step
-    for i in xrange(args.numflank):
+    for i in range(args.numflank):
         _window_end = _window_beg + args.windowsize
         if args.middle:
             window_mid = int((_window_beg + _window_end)/2.0)
@@ -48,7 +48,7 @@ def sample_backward(args, chrm, beg, end, fields, index_func):
 def sample_internal(args, chrm, beg, end, fields, index_func):
 
     sentinels = list(np.linspace(beg, end, args.numinternal+1))
-    for i in xrange(len(sentinels)-1):
+    for i in range(len(sentinels)-1):
         window_beg = int(sentinels[i])
         window_end = int(sentinels[i+1])
         if args.middle:

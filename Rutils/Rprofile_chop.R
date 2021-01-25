@@ -6,11 +6,20 @@ options(stringsAsFactors = FALSE)
 ## source('~/wzlib/Rutils/wzplotlib.R')
 
 
-.First <- function(){
-    return()
+# .First <- function(){
+#   library(grDevices)
+#   library(tidyverse)
+# }
+
+load_default <- function() {
   library(grDevices)
-  library(tidyverse)
-  library(wheatmap)
+    library(tidyverse)
+    library(wheatmap)
+    library(sesame)
+    library(ggplot2)
+    library(reshape2)
+    library(devtools)
+    library(readxl)
 }
 
 ## .Last <- function(){

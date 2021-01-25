@@ -1,8 +1,0 @@
-#!/bin/bash
-
-echo "all variants"
-perl -nle '$count++ while /\/1/g; END {print $count}' $1
-echo "hets"
-perl -nle '$count++ while /0\/1/g; END {print $count}' $1
-echo "homovar"
-perl -nle '$count++ while /1\/1/g; END {print $count}' $1

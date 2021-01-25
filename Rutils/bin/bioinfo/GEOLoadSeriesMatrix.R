@@ -127,7 +127,10 @@ if (!is.numeric(betas)) {
 ## colnames(betas) <- rownames(samples)[match(colnames(betas), samples$geo)]
 
 write.table(samples, file='samples.tsv', quote=F, sep='\t', row.names=FALSE)
-save(betas, samples, file='betas.rda')
+# save(betas, samples, file='betas.rda')
+saveRDS(samples, file='samples_GEOLoadSeriesMatrix.rds')
+saveRDS(betas, file='betas_GEOLoadSeriesMatrix.rds')
+system('rm -f 1')
 cat('Read:', ncol(betas), 'samples.\n')
 cat('Meta:', colnames(samples), '\n')
 cat('Sname:', rownames(samples)[1:10], '\n')
