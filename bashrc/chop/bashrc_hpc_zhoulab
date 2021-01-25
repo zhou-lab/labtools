@@ -96,6 +96,7 @@ fi
 module load uge
 module load singularity/3.2.0
 module load java/1.8.0_144
+module load gcc/6.4.0
 
 alias ls='ls --color'
 alias rm='rm -i'
@@ -107,7 +108,10 @@ alias parallel="parallel --gnu --progress"
 alias du="du -sh"
 alias bs=". ~/.bashrc"
 alias sr="screen -r"
-alias wget="wget --limit-rate 4M"
+# alias wget="wget --limit-rate 4M"
+
+# new folder and file will be writable by the group
+umask 002
 
 function vcfsort() {
   awk '$1 ~ /^#/ {print $0;next} {print $0 | "sort -k1,1 -k2,2n"}' $1;
@@ -120,10 +124,12 @@ export PATH=~/bin:$PATH
 export PATH=/mnt/isilon/zhoulab/labbin:$PATH
 export PATH=/mnt/isilon/zhoulab/labpipelines/pipelines:$PATH
 export PATH=/mnt/isilon/zhoulab/labsoftware/valgrind/valgrind-3.15/bin:$PATH
+
+export PERL5LIB=/mnt/isilon/zhoulab/labsoftware/perl5lib
 # export JAVA_HOME=/primary/vari/software/java/jdk1.8.0_60
 
 alias scp='rsync -Pravdtze ssh'
-alias awk='awk -F"\t" -v OFS="\t"'
+# alias awk='awk -F"\t" -v OFS="\t"'
 alias les="less -S"
 alias qsubi='qlogin -q interactive.q'
 alias qstatall='qstat -u "*" | less'
@@ -131,9 +137,9 @@ alias qstatallrun='qstat -u "*" -s r | less'
 alias qhost='qhost | less'
 alias qwatch="watch qstat"
 
-function qstatz() {
-  qstat | awk -F" " '$0~/@/ && NR==FNR{match($0,/@([^.]*)/,a); jobids[a[1]]=gensub(/[ ]+/,"|","g",$0);}NR==FNR&&FNR==1{jobids["HOSTNAME"]=gensub(/[ ]+/,"|","g",$0);}NR!=FNR && ($1 in jobids || FNR==1){split($0,a,/[ ]+/); print a[1]"\t"a[3]"|"a[4]"|"a[5]"|"a[6]"\t\033[1;31m"a[7]"\t"a[8]"|"a[9]"\033[0m\t"a[10]"|"a[11]"\t"jobids[$1];}' - <(/cm/shared/apps/uge/8.6.6/bin/lx-amd64/qhost)
-}
+# function qstatz() {
+#   qstat | awk -F" " '$0~/@/ && NR==FNR{match($0,/@([^.]*)/,a); jobids[a[1]]=gensub(/[ ]+/,"|","g",$0);}NR==FNR&&FNR==1{jobids["HOSTNAME"]=gensub(/[ ]+/,"|","g",$0);}NR!=FNR && ($1 in jobids || FNR==1){split($0,a,/[ ]+/); print a[1]"\t"a[3]"|"a[4]"|"a[5]"|"a[6]"\t\033[1;31m"a[7]"\t"a[8]"|"a[9]"\033[0m\t"a[10]"|"a[11]"\t"jobids[$1];}' - <(/cm/shared/apps/uge/8.6.6/bin/lx-amd64/qhost)
+# }
 # export -f qstatz
 alias qwatchz="watch --color 'bash -c qstatz'"
 
@@ -152,11 +158,6 @@ alias sort="LC_ALL=C sort"
 export PBSDIR=/mnt/isilon/zhoulab/tmp/pbs
 export NAMEROOT=LabJob
 
-# change this in your own .bashrc
-export HPCUSERNAME="zhouw3"
-function qdelall {
-   qstat | grep $HPCUSERNAME | awk '{split($1,a,".");print a[1]}' | xargs -I {} qdel {}
-}
 function qdelrange {
   for ((i=$1;i<=$2;i++)); do qdel $i;done
 }
@@ -257,3 +258,89 @@ z() {
 }
 
 export WZSEQ_ENTRY=/mnt/isilon/zhoulab/labpipelines/entry/wzseq.sh
+
+
+###################
+## show location
+###################
+## usage:
+## s [query]
+## s open [query] # directly open
+## s cd # cd into the folder containing the file
+## s show # show things in finder
+## s echo # just echo things in terminal
+function s {
+
+  to_open=0
+  to_cd=0;
+  to_finder=0;
+  is_directory=0;
+  if [[ $1 == "open" ]]; then
+    to_open=1;
+    shift;
+  fi
+  
+  if [[ $1 == "show" ]]; then
+    to_finder=1;
+    shift;
+  fi
+
+  if [[ $1 == "cd" ]]; then
+    to_cd=1;
+    shift;
+  fi
+
+  if [[ $1 == "echo" ]]; then
+    ## do nothing really, since echo will always be done
+    shift;
+  fi
+
+  location=$1
+  shift;
+
+  if [[ $location =~ ^labj ]]; then
+    location=$HOME/zhoulab/labjournal/
+  elif [[ $location =~ ^labp ]]; then
+    location=$HOME/zhoulab/labprojects/
+  elif [[ $location =~ ^labp2 ]]; then
+    location=$HOME/zhou_lab/projects/
+  elif [[ $location =~ ^re ]]; then
+    location=$HOME/repo/
+  fi
+
+  ## TODO test if link is pointed to a directory
+  ## if link is not given (simple "s"), then use current directory
+  if [[ ! -d $location ]]; then
+    location="." # $HOME/Dropbox/Documents/
+  fi
+
+  pattern="$@"
+  if [[ $is_directory -eq 1 ]]; then
+    fpath=$(find "$location" -type d | fzf -q "$pattern")
+  else
+    fpath=$(find "$location" -type f | fzf -q "$pattern")
+  fi
+  
+  if [[ ! -z "$fpath" ]]; then
+    echo $(readlink -f $fpath)
+    export SHOWLOC="$fpath"
+    if [[ $to_open -eq 1 ]]; then
+      open "$fpath"
+    elif [[ $to_cd -eq 1 ]]; then
+      if [[ -d "$fpath" ]]; then
+        cd "$fpath"
+      else
+        cd $(dirname "$fpath")
+      fi
+    elif [[ $to_finder -eq 1 ]]; then
+      open -R "$fpath"
+    fi
+  fi
+}
+
+function cdd {
+  if [[ ! -z "$SHOWLOC" ]]; then
+    showdir="$(dirname "$SHOWLOC")"
+    cd "$showdir"
+  fi
+}
