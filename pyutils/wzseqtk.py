@@ -62,7 +62,7 @@ class Indices:
         for start, end in self.spans:
             if not end:
                 end = len(lst)
-            result.extend([lst[_] for _ in xrange(start, end)])
+            result.extend([lst[_] for _ in range(start, end)])
 
         return result
 
@@ -91,11 +91,17 @@ def main_getfasta(args):
     out = open(args.o, 'w') if args.o is not None else sys.stdout
     for line in args.i:
         fields = line.strip().split('\t')
+        # print(fields[0])
         chrm = fields[0]
         beg = int(fields[1])
         end = int(fields[2])
 
-        out.write('%s\t%s\n' % (line.strip(), genome.fetch_sequence(chrm, beg+1, end)))
+        try:
+            seq = genome.fetch_sequence(chrm, beg+1, end)
+        except IndexError:
+            seq = "OVERFLOW"
+
+        out.write('%s\t%s\n' % (line.strip(), seq))
 
 def main_printc(args):
 
@@ -106,7 +112,7 @@ def main_printc(args):
         if args.v:
             err_print(c)
         gseq = genome.fetch_chrmseq(c)
-        for i in xrange(len(gseq)-2):
+        for i in range(len(gseq)-2):
             # for CG (symmetric), print the position of CG (2-bases)
             if gseq[i] == 'C' and gseq[i+1] == 'G':
                 tprint([c, i, i+2, 'CG', '+', 'CG'],out)
@@ -161,7 +167,7 @@ def main_runningcomp(args):
         if len(gseq) <= args.k*2:
             continue
         c,g,n,cg = compute_comp(gseq[:args.k*2])
-        for i in xrange(len(gseq)-args.k*2):
+        for i in range(len(gseq)-args.k*2):
             b1 = gseq[i]
             b2 = gseq[i+args.k*2]
             if b1 == 'N':
@@ -208,7 +214,7 @@ def main_orphan(args):
         gseq = genome.fetch_chrmseq(c)
         prev = None
         prev_is_good_left = True
-        for i in xrange(len(gseq)-2):
+        for i in range(len(gseq)-2):
 
             if gseq[i] == 'C' and gseq[i+1] == 'G':
                 if prev and prev_is_good_left and i-prev >= args.l:
@@ -226,8 +232,8 @@ def main_internal(args):
     for seq_record in SeqIO.parse(args.i, "fasta"):
         
         seq = seq_record.seq.upper()
-        # for i in xrange(args.l, len(seq)-args.l-2):
-        for i in xrange(len(seq)-2):
+        # for i in range(args.l, len(seq)-args.l-2):
+        for i in range(len(seq)-2):
             if args.strict:
                 if (len(seq[max(0,i-args.l):i]) != args.l or len(seq[i+2:i+args.l+2]) != args.l):
                     continue
@@ -265,7 +271,7 @@ def main_cleanhead(args):
 def wrap(seq, l = 80):
     s2 = ''
     sl = len(seq)/l
-    for i in xrange(sl+1):
+    for i in range(sl+1):
         s2 += seq[i*l:(i+1)*l]
         if i != sl:
             s2 += '\n'
@@ -285,7 +291,7 @@ def main_consensus(args):
     nseqs = len(align)
     consensus = []
     consupport = []
-    for i in xrange(align.get_alignment_length()):
+    for i in range(align.get_alignment_length()):
         a = align[:,i]
         support.append(nseqs - a.count('-'))
         most_common, num_most_common = Counter([_ for _ in a if _ != '-']).most_common(1)[0]
@@ -295,7 +301,7 @@ def main_consensus(args):
     seq = []
     k = 1
     j = 0
-    for i in xrange(len(consensus)):
+    for i in range(len(consensus)):
         if consupport[i]>args.s:
             if not seq:
                 j = i
