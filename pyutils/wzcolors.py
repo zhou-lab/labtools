@@ -71,13 +71,13 @@ def hex2rgb(x):
     return tuple(map(lambda _: ord(_)/256.0, x.decode('hex')))
 
 def get_spectral_colors_rgb_dark(n, lightness=0.4, saturation=0.25):
-    return [colorsys.hls_to_rgb(1.0/n*i,lightness,saturation) for i in xrange(n)]
+    return [colorsys.hls_to_rgb(1.0/n*i,lightness,saturation) for i in range(n)]
 
 def map2l_spectral_colors(p2c, lightness=0.4, saturation=0.25):
     """ map two levels of spectral colors """
     
     nump = len(p2c)
-    pcolors_hl = [(1.0/nump*i, lightness) for i in xrange(nump)]
+    pcolors_hl = [(1.0/nump*i, lightness) for i in range(nump)]
     p2colors = {}
     c2colors = {}
     for i, (p, cl) in enumerate(p2c.iteritems()):
@@ -221,7 +221,20 @@ def getncolors(n, cm='jet'):
     cmo = cmx.get_cmap(cm) 
     cNorm  = mcolors.Normalize(vmin=0, vmax=n-1)
     scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmo)
-    return [scalarMap.to_rgba(_) for _ in xrange(n)]
+    return [scalarMap.to_rgba(_) for _ in range(n)]
+
+
+def getColorMapper(lst, cm_name = "Blues"):
+
+    import matplotlib.colors as mcolors
+    import matplotlib.cm as cm
+    # cmpr = get_colorMapper(lst)
+    # for v in lst:
+    #     print(mapper.to_rgba(v))
+    minima = min(lst)
+    maxima = max(lst)
+    norm = mcolors.Normalize(vmin=minima, vmax=maxima, clip=True)
+    return(cm.ScalarMappable(norm=norm, cmap=cm.get_cmap(cm_name)))
 
 if __name__ == "__main__":
     # print(list(itertools.islice(gethtmlcolors(), 1,100)))

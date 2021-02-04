@@ -1,0 +1,333 @@
+#!/bin/zsh
+
+# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
+# Initialization code that may require console input (password prompts, [y/n]
+# confirmations, etc.) must go above this block; everything else may go below.
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+# If you come from bash you might have to change your $PATH.
+# export PATH=$HOME/bin:/usr/local/bin:$PATH
+export PATH=~/bin:~/repo/wzlib/bin/:$PATH
+
+## Renv
+export PATH="$HOME/.Renv/bin:$PATH"
+eval "$(Renv init -)"
+
+## Emacs
+function start_emacs() {
+  (exec emacsclient --alternate-editor="" "$@" $1 >/dev/null &)
+}
+alias emacs=start_emacs
+
+# Path to your oh-my-zsh installation.
+export ZSH="/Users/zhouw3/.oh-my-zsh"
+
+# Set name of the theme to load --- if set to "random", it will
+# load a random theme each time oh-my-zsh is loaded, in which case,
+# to know which specific one was loaded, run: echo $RANDOM_THEME
+# See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
+# ZSH_THEME="robbyrussell"
+ZSH_THEME="powerlevel10k/powerlevel10k"
+
+# Set list of themes to pick from when loading at random
+# Setting this variable when ZSH_THEME=random will cause zsh to load
+# a theme from this variable instead of looking in $ZSH/themes/
+# If set to an empty array, this variable will have no effect.
+# ZSH_THEME_RANDOM_CANDIDATES=( "robbyrussell" "agnoster" )
+
+# Uncomment the following line to use case-sensitive completion.
+# CASE_SENSITIVE="true"
+
+# Uncomment the following line to use hyphen-insensitive completion.
+# Case-sensitive completion must be off. _ and - will be interchangeable.
+# HYPHEN_INSENSITIVE="true"
+
+# Uncomment the following line to disable bi-weekly auto-update checks.
+# DISABLE_AUTO_UPDATE="true"
+
+# Uncomment the following line to automatically update without prompting.
+# DISABLE_UPDATE_PROMPT="true"
+
+# Uncomment the following line to change how often to auto-update (in days).
+# export UPDATE_ZSH_DAYS=13
+
+# Uncomment the following line if pasting URLs and other text is messed up.
+# DISABLE_MAGIC_FUNCTIONS="true"
+
+# Uncomment the following line to disable colors in ls.
+# DISABLE_LS_COLORS="true"
+
+# Uncomment the following line to disable auto-setting terminal title.
+# DISABLE_AUTO_TITLE="true"
+
+# Uncomment the following line to enable command auto-correction.
+# ENABLE_CORRECTION="true"
+
+# Uncomment the following line to display red dots whilst waiting for completion.
+# COMPLETION_WAITING_DOTS="true"
+
+# Uncomment the following line if you want to disable marking untracked files
+# under VCS as dirty. This makes repository status check for large repositories
+# much, much faster.
+# DISABLE_UNTRACKED_FILES_DIRTY="true"
+
+# Uncomment the following line if you want to change the command execution time
+# stamp shown in the history command output.
+# You can set one of the optional three formats:
+# "mm/dd/yyyy"|"dd.mm.yyyy"|"yyyy-mm-dd"
+# or set a custom format using the strftime function format specifications,
+# see 'man strftime' for details.
+# HIST_STAMPS="mm/dd/yyyy"
+
+# Would you like to use another custom folder than $ZSH/custom?
+# ZSH_CUSTOM=/path/to/new-custom-folder
+
+# Which plugins would you like to load?
+# Standard plugins can be found in $ZSH/plugins/
+# Custom plugins may be added to $ZSH_CUSTOM/plugins/
+# Example format: plugins=(rails git textmate ruby lighthouse)
+# Add wisely, as too many plugins slow down shell startup.
+plugins=(git)
+
+source $ZSH/oh-my-zsh.sh
+
+# User configuration
+
+# export MANPATH="/usr/local/man:$MANPATH"
+
+# You may need to manually set your language environment
+# export LANG=en_US.UTF-8
+
+# Preferred editor for local and remote sessions
+# if [[ -n $SSH_CONNECTION ]]; then
+#   export EDITOR='vim'
+# else
+#   export EDITOR='mvim'
+# fi
+
+# Compilation flags
+# export ARCHFLAGS="-arch x86_64"
+
+# Set personal aliases, overriding those provided by oh-my-zsh libs,
+# plugins, and themes. Aliases can be placed here, though oh-my-zsh
+# users are encouraged to define aliases within the ZSH_CUSTOM folder.
+# For a full list of active aliases, run `alias`.
+#
+# Example aliases
+# alias zshconfig="mate ~/.zshrc"
+# alias ohmyzsh="mate ~/.oh-my-zsh"
+#
+alias ls='ls -G'
+alias rm='rm -i'
+alias lc="wc -l"
+alias ll="ls -l"
+alias rf="greadlink -f"
+alias parallel="parallel --gnu --progress"
+alias sort="LC_ALL=C sort"
+alias history="history | sed 's/^ *[0-9]* *//' | tail -r | less -S"
+alias wget='wget --no-check-certificate'
+alias du="du -sh"
+alias R='R --no-save'
+alias scp='rsync -Pravdtze ssh'
+alias awk='gawk -F"\t" -v OFS="\t"'
+alias zcat="gzcat"
+alias les="less -SR"
+alias colorify="grc -es --colour=auto" # need to install grc
+alias diff="colordiff"
+alias sb="source ~/.zshrc"
+# alias diff='colorify diff'
+# alias make='colorify make'
+# alias head='colorify head'
+# alias tail='colorify tail'
+
+## screen
+export SCREENRC=$HOME/repo/wzlib/screenrc/screenrc_hp
+
+## Python
+export PYTHONPATH=$HOME:~/repo/wzlib/pyutils
+
+## awk
+export AWKPATH=$HOME/repo/wzlib/awkutils
+
+## search functions
+function wzgrep { [[ -z "$1" ]] || ag "$1" ~/repo/wzprojects --pager="less -R"; }
+
+function wzgrep2 { [[ -z "$1" ]] || ag "$1" . --pager="less -R"; }
+
+###################
+## show location
+###################
+## usage:
+## s [query]
+## s open [query] # directly open
+## s cd # cd into the folder containing the file
+## s show # show things in finder
+## s echo # just echo things in terminal
+function s {
+
+  to_open=0
+  to_cd=0;
+  to_finder=0;
+  is_directory=0;
+  if [[ $1 == "open" ]]; then
+    to_open=1;
+    shift;
+  fi
+  
+  if [[ $1 == "show" ]]; then
+    to_finder=1;
+    shift;
+  fi
+
+  if [[ $1 == "cd" ]]; then
+    to_cd=1;
+    shift;
+  fi
+
+  if [[ $1 == "echo" ]]; then
+    ## do nothing really, since echo will always be done
+    shift;
+  fi
+
+  location=$1
+  shift;
+
+  if [[ $location =~ ^wzp ]]; then
+    location=$HOME/repo/wzprojects/
+  elif [[ $location =~ ^wzl ]]; then
+    location=$HOME/repo/wzlib/
+  elif [[ $location =~ ^sa ]]; then
+    location=$HOME/samplesheets/
+  elif [[ $location =~ ^ga ]]; then
+    location=$HOME/gallery/
+  elif [[ $location =~ ^go ]]; then
+    location=$HOME/Google/
+  elif [[ $location =~ ^on ]]; then
+    location=$HOME/OneDrive/
+  elif [[ $location =~ ^gr ]]; then
+    location=$HOME/Google/Grant
+  elif [[ $location =~ ^dr ]]; then
+    location=$HOME/Dropbox/
+  elif [[ $location =~ ^pe ]]; then
+    location=$HOME/Dropbox/personal/
+  elif [[ $location =~ ^do ]]; then
+    location=$HOME/Dropbox/Documents/
+  elif [[ $location =~ ^re ]]; then
+    location=$HOME/repo/
+  elif [[ $location =~ ^sp ]]; then
+    location=$HOME/Dropbox/Documents/SpreadSheets/
+  elif [[ $location =~ ^pa ]]; then
+    location=$HOME/Dropbox/Documents/Paper/
+  elif [[ $location =~ ^pr ]]; then
+    location=$HOME/Dropbox/Documents/Presentation/
+  fi
+
+  ## TODO test if link is pointed to a directory
+  ## if link is not given (simple "s"), then use current directory
+  if [[ ! -d $location ]]; then
+    location="." # $HOME/Dropbox/Documents/
+  fi
+
+  pattern="$@"
+  if [[ $is_directory -eq 1 ]]; then
+    wzfpath=$(find "$location" -type d | fzf -q "$pattern")
+  else
+    wzfpath=$(find "$location" -type f | fzf -q "$pattern")
+  fi
+  
+  if [[ ! -z "$wzfpath" ]]; then
+    echo $wzfpath
+    export SHOWLOC="$wzfpath"
+    if [[ $to_open -eq 1 ]]; then
+      open "$wzfpath"
+    elif [[ $to_cd -eq 1 ]]; then
+      if [[ -d "$wzfpath" ]]; then
+        cd "$wzfpath"
+      else
+        cd $(dirname "$wzfpath")
+      fi
+    elif [[ $to_finder -eq 1 ]]; then
+      open -R "$wzfpath"
+    fi
+  fi
+}
+
+function openf {
+  [[ -z "$SHOWLOC" ]] || open "$SHOWLOC"
+}
+
+function opend {
+  [[ -z "$SHOWLOC" ]] || open -R "$SHOWLOC"
+}
+
+function cdd {
+  if [[ ! -z "$SHOWLOC" ]]; then
+    showdir="$(dirname "$SHOWLOC")"
+    cd "$showdir"
+  fi
+}
+
+## git
+alias gst="git status"
+alias gpl="git pull"
+alias gpu="git push"
+
+function allgpl {
+  for f in ~/repo/*; do
+    cd $f;
+    git pull
+    git commit -am "minor, message omitted"
+    git push
+  done
+}
+
+function gll {
+  if [ -z "$1" ]; then message="minor, message omitted"; else message="$1"; fi;
+  git commit -a -m "$message";
+  git push;
+}
+
+function sortbed {
+  sort -k1,1 -k2,2n $1
+}
+
+function newdoc {
+  touch $1
+  open $1
+}
+
+# get all the C header/files
+# findc .
+function findc {
+  find . -regex '.*.c' -o -regex '.*.h' -exec grep -H "$1" {} \;
+}
+
+########################
+## z - jump around
+########################
+. ~/tools/z/z.sh
+## re-define z with coupling with fzf, you need to install fzf (but needn't
+## to invoke its key-binding or auto-completion)
+## https://github.com/junegunn/fzf/wiki/examples#z
+unalias z
+z() {
+  if [[ -z "$*" ]]; then        # when there is no argument
+    cd "$(_z -l 2>&1 | fzf +s --tac | sed 's/^[0-9,.]* *//')"
+  else                          # when there is argument
+    if [[ $1 == -* ]]; then
+      _z "$@"
+    else
+      cd "$(_z -l 2>&1 | fzf -q "$@" | sed 's/^[0-9,.]* *//')"
+    fi
+  fi
+}
+
+
+#### python ####
+## activate anaconda
+source /Users/zhouw3/anaconda3/bin/activate
+
+# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh

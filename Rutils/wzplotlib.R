@@ -1,3 +1,6 @@
+library(RColorBrewer)
+library(tidyverse)
+
 hist_logy <- function(x) {
   hd <- hist(x,plot=F);
   hd$counts <- log10(hd$counts);
@@ -101,10 +104,10 @@ wzBaseAxisLabel <- function(lab, ax='x', line=3, ...) {
 
 
 #######################################
-## Scatter plot with coloring density
+## 2D Scatter plot with coloring density
 #######################################
-
-wzPlotDens <- function(x1,x2,pch=16,...) {
+## old name wzPlotDens
+wzPlotDens2d <- function(x1,x2,pch=16,...) {
   df <- data.frame(x1,x2)
   x <- densCols(x1,x2, colramp=colorRampPalette(c("black", "white")))
   df$dens <- col2rgb(x)[1,] + 1L
@@ -114,27 +117,35 @@ wzPlotDens <- function(x1,x2,pch=16,...) {
 }
 
 
-
-###############################################
-################## OBSOLETE ###################
-###############################################
-
 #########################
 ## 1-D density plot
 #########################
-plotdens <- function(x, normalize=FALSE, add=FALSE, ...) {
-  d <- density(na.omit(x))
-  if (normalize) {
-    d$y <- d$y / max(d$y)
-  }
-  if (add) {
-    lines(d, ...)
-  } else {
-    plot(d, ...)
-  }
+## old plotdens
+wzPlotDens1d <- function(x, normalize=FALSE, bw="nrd0", add=FALSE, ...) {
+    d <- density(na.omit(x), bw=bw)
+    if (normalize) {
+        d$y <- d$y / max(d$y)
+    }
+    if (add) {
+        lines(d, ...)
+    } else {
+        plot(d, ...)
+    }
 }
 
-wzSmoothDensity <- function(x, y, xlim=c(-2,2), nrpoints=100, nbins=256, ...) {
+wzPlotDens1d.fromMatrix <- function(x, bw="nrd0", normalize=FALSE, ...) {
+    for (i in seq_len(ncol(x))) {
+        if (i==1) {
+            add <- FALSE;
+        } else {
+            add <- TRUE;
+        }
+        wzPlotDens1d(x[,i], normalize=normalize, bw=bw, add=add, ...);
+    }
+}
+
+## old name: wzSmoothDensity
+wzPlotDens2d.smooth <- function(x, y, xlim=c(-2,2), nrpoints=100, nbins=256, ...) {
     palette <- colorRampPalette(
         c("white","lightblue","blue","green","yellow","orange","red","darkred"),
         space = "Lab")
@@ -146,3 +157,10 @@ wzSmoothDensity <- function(x, y, xlim=c(-2,2), nrpoints=100, nbins=256, ...) {
 }
 
 
+wzGetColors <- function(grouping, palette.name='Paired') {
+    groups <- unique(grouping)
+    if (palette.name == 'Set1') nclr = 9
+    else if (palette.name == 'Dark2') nclr = 8
+    else nclr = 12
+    setNames(colorRampPalette(brewer.pal(nclr, palette.name))(length(groups)), groups)
+}

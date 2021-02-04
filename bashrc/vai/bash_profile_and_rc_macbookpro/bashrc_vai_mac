@@ -33,23 +33,6 @@ export PYTHONPATH=$HOME:~/repo/wzlib/pyutils
 export AWKPATH=$HOME/repo/wzlib/awkutils
 
 
-#### python ####
-function addPy2 {
-  export PATH="/secondary/projects/laird/projects/2017_11_09_WZ_anaconda/bin:$PATH"
-}
-
-function addPy3 {
-	export PATH="/Users/zhouw3/anaconda3/bin:$PATH"
-}
-# addPy3
-
-function switchPy3 {
-  export PATH=$(echo "$PATH" | sed -e 's/2017_11_09_WZ_anaconda/2017_11_09_WZ_anaconda_python3.6\/anaconda3/')
-}
-function switchPy2 {
-  export PATH=$(echo "$PATH" | sed -e 's/2017_11_09_WZ_anaconda_python3.6\/anaconda3/2017_11_09_WZ_anaconda/')
-}
-
 
 # % cpan
 # cpan> o conf makepl_arg INSTALL_BASE=/mydir/perl
@@ -108,11 +91,16 @@ prompt
 # esac
 
 
+## the following two are the same
 function newdoc {
   touch $1
   open $1
 }
 
+function touchopen {
+  touch $1
+  open $1
+}
 
 ##########################
 ## grep contents
@@ -122,6 +110,14 @@ function wzgrep {
   # grep --recursive --color=always "$1" ~/repo/wzprojects/*.{R,py,org,sh} | less -SR;
   # grep --recursive --color=always "$1" ~/repo/wzprojects/* | less -R;
   [[ -z "$1" ]] || ag "$1" ~/repo/wzprojects --pager="less -R"
+}
+
+function wzgrep2 {
+  [[ -z "$1" ]] || ag "$1" . --pager="less -R"
+}
+
+function wzfind {
+  find ~/repo/wzprojects/ -name "*$1*" | fzf
 }
 
 ## for PDF documents, DON'T WORK WELL, TRY SEARCHING IN MENDELEY
@@ -177,8 +173,16 @@ function s {
     location=$HOME/repo/wzprojects/
   elif [[ $location =~ ^wzl ]]; then
     location=$HOME/repo/wzlib/
+  elif [[ $location =~ ^sa ]]; then
+    location=$HOME/samplesheets/
   elif [[ $location =~ ^ga ]]; then
     location=$HOME/gallery/
+  elif [[ $location =~ ^go ]]; then
+    location=$HOME/Google/
+  elif [[ $location =~ ^on ]]; then
+    location=$HOME/OneDrive/
+  elif [[ $location =~ ^gr ]]; then
+    location=$HOME/Google/Grant
   elif [[ $location =~ ^dr ]]; then
     location=$HOME/Dropbox/
   elif [[ $location =~ ^pe ]]; then
@@ -186,22 +190,23 @@ function s {
   elif [[ $location =~ ^do ]]; then
     location=$HOME/Dropbox/Documents/
   elif [[ $location =~ ^re ]]; then
-    location=$HOME/repo/review/
+    location=$HOME/repo/
   elif [[ $location =~ ^sp ]]; then
     location=$HOME/Dropbox/Documents/SpreadSheets/
   elif [[ $location =~ ^pa ]]; then
     location=$HOME/Dropbox/Documents/Paper/
   elif [[ $location =~ ^pr ]]; then
     location=$HOME/Dropbox/Documents/Presentation/
-  elif [[ $location =~ ^li ]]; then
-    location=$HOME/Dropbox/Literature/
-  elif [[ $location =~ ^wr ]]; then
-    location=$HOME/Dropbox/Documents/Writing/
+  # elif [[ $location =~ ^li ]]; then
+  #   location=$HOME/Dropbox/Literature/
+  # elif [[ $location =~ ^wr ]]; then
+  #   location=$HOME/Dropbox/Documents/Writing/
   fi
 
   ## TODO test if link is pointed to a directory
+  ## if link is not given (simple "s"), then use current directory
   if [[ ! -d $location ]]; then
-    location=$HOME/Dropbox/Documents/
+    location="." # $HOME/Dropbox/Documents/
   fi
 
   pattern="$@"
@@ -213,7 +218,7 @@ function s {
   
   if [[ ! -z "$fpath" ]]; then
     echo $fpath
-    export SHOWLOC=$fpath
+    export SHOWLOC="$fpath"
     if [[ $to_open -eq 1 ]]; then
       open "$fpath"
     elif [[ $to_cd -eq 1 ]]; then
@@ -237,12 +242,15 @@ function opend {
 }
 
 function cdd {
-  [[ -z "$SHOWLOC" ]] || cd $(dirname "$SHOWLOC")
+  if [[ ! -z "$SHOWLOC" ]]; then
+    showdir="$(dirname "$SHOWLOC")"
+    cd "$showdir"
+  fi
 }
 
-function cdf {
-  [[ -z "$SHOWLOC" ]] || cd "$SHOWLOC"
-}
+# function cdf {
+#   [[ -z "$SHOWLOC" ]] || cd "$SHOWLOC"
+# }
 
 ####################
 ## VCF tools
@@ -319,7 +327,7 @@ alias gst="git status"
 # alias gu="git pull"
 alias gp="git pull"
 alias gpu="git push"
-alias gc="git commit -a"
+alias gc="git commit -am"
 # alias ga="git add"
 
 function allgpl {
@@ -392,11 +400,6 @@ function windows2unix {
 //g" $1
 }
 
-function touchopen {
-  touch $1
-  open $1
-}
-
 
 ########################
 ## z - jump around
@@ -452,3 +455,9 @@ export TRANSVAR_DOWNLOAD_DIR=/Users/zhouw3/Google/20190822_transvar_development/
 ## in Linux it can be
 ## function ppgrep() { pgrep "$@" | xargs --no-run-if-empty ps fp; }
 function ppgrep() { pgrep "$@" | xargs ps -fp 2> /dev/null; }
+
+#### python ####
+## activate anaconda
+source /Users/zhouw3/anaconda3/bin/activate
+
+export PATH="/Users/zhouw3/anaconda3/bin/:$PATH"

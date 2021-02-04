@@ -57,7 +57,10 @@ function dnarev(string,        i, chars, dic, new_string) {
     dic["T"] = "A";
     dic["G"] = "C";
     dic["C"] = "G";
+    dic["Y"] = "R";
+    dic["R"] = "Y";
     dic["-"] = "-";
+    dic["."] = ".";
 
     new_string = "";
     split(string, chars, "");
@@ -229,7 +232,8 @@ function escape(pat,   safe) {
 
 function resplit(       a, l, i, j, b, k, BNF) # all are local variables
 {
-    l=split($0, a, /[\"\']/)
+    ## l=split($0, a, /[\"\']/)
+    l=split($0, a, /[\\"\\']/)
     BNF=0
     delete B
     for (i=1;i<=l;++i)

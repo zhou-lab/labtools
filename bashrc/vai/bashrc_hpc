@@ -357,18 +357,30 @@ function comparesam {
  paste <(awk -f wanding.awk -e '!/^@/{print joinr(1,8),joinr(12,NF,"__")}' $1) <(awk -f wanding.awk -e '!/^@/{print joinr(1,8),joinr(12,NF,"__")}' $2) | awk -f wanding.awk -e 'BEGIN{cnt=0}{d=0; if ($1!=$10) d=1; if ($2!=$11) d=1; if ($3!=$12) d=1; if ($4!=$13) d=1; if ($5!=$14) d=1; if (d==1) { cnt+=1; print joinr(1,9)"\n"joinr(10,NF)"\n\n"; }}END{print cnt}'
 }
 
+################
 ## fzf and z
+################
 . ~/tools/z/z.sh
+# [ -f ~/.fzf.bash ] && source ~/.fzf.bash
+# if [ -d ~/.bash_completion.d ]; then
+#   for file in ~/.bash_completion.d/*; do
+#     . $file
+#   done
+# fi
+unalias z
+z() {
+  if [[ -z "$*" ]]; then        # when there is no argument
+    cd "$(_z -l 2>&1 | fzf +s --tac | sed 's/^[0-9,.]* *//')"
+  else                          # when there is argument
+    if [[ $1 == -* ]]; then
+      _z $@
+    else
+      cd "$(_z -l 2>&1 | fzf -q "$@" | sed 's/^[0-9,.]* *//')"
+    fi
+  fi
+}
 
-[ -f ~/.fzf.bash ] && source ~/.fzf.bash
-
-if [ -d ~/.bash_completion.d ]; then
-  for file in ~/.bash_completion.d/*; do
-    . $file
-  done
-fi
-
-[[ -z ${PBS_O_WORKDIR+x} ]] || cd ${PBS_O_WORKDIR}
+[[ -z "${PBS_O_WORKDIR+x}" ]] || cd "${PBS_O_WORKDIR}"
 
 alias wzmultiqc='rm -rf multiqc_*; /secondary/projects/laird/projects/2017_11_09_WZ_anaconda/bin/multiqc raw'
 

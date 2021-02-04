@@ -5,14 +5,13 @@ options(stringsAsFactors = FALSE)
 ## source('~/wzlib/Rutils/wzcore.R')
 ## source('~/wzlib/Rutils/wzplotlib.R')
 
-
 # .First <- function(){
-#   library(grDevices)
-#   library(tidyverse)
 # }
 
 load_default <- function() {
-  suppressMessages(source('https://raw.githubusercontent.com/zhou-lab/tbmate/master/scripts/tbmate.R'))
+    suppressMessages(source('https://raw.githubusercontent.com/zhou-lab/tbmate/master/scripts/tbmate.R'))
+    suppressMessages(source('~/repo/wzlib/Rutils/wzcore.R'))
+    suppressMessages(source('~/repo/wzlib/Rutils/wzplotlib.R'))
     suppressMessages(library(grDevices))
     suppressMessages(library(tidyverse))
     suppressMessages(library(wheatmap))
@@ -22,6 +21,7 @@ load_default <- function() {
     suppressMessages(library(reshape2))
     suppressMessages(library(devtools))
     suppressMessages(library(readxl))
+    suppressMessages(library('viridis'))
 }
 
 ## .Last <- function(){
