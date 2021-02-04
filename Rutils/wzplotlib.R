@@ -145,3 +145,4 @@ wzSmoothDensity <- function(x, y, xlim=c(-2,2), nrpoints=100, nbins=256, ...) {
         colramp=palette, col='blue', ...)
 }
 
+

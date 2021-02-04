@@ -12,14 +12,16 @@ options(stringsAsFactors = FALSE)
 # }
 
 load_default <- function() {
-  library(grDevices)
-    library(tidyverse)
-    library(wheatmap)
-    library(sesame)
-    library(ggplot2)
-    library(reshape2)
-    library(devtools)
-    library(readxl)
+  suppressMessages(source('https://raw.githubusercontent.com/zhou-lab/tbmate/master/scripts/tbmate.R'))
+    suppressMessages(library(grDevices))
+    suppressMessages(library(tidyverse))
+    suppressMessages(library(wheatmap))
+    suppressMessages(library(sesame))
+    suppressMessages(library(GenomicRanges))
+    suppressMessages(library(ggplot2))
+    suppressMessages(library(reshape2))
+    suppressMessages(library(devtools))
+    suppressMessages(library(readxl))
 }
 
 ## .Last <- function(){
