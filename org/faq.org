@@ -78,6 +78,14 @@ LDFLAGS='-L/home/zhouw3/tools/readline/readline-8.0/lib/'
 export LD_LIBRARY_PATH='/home/zhouw3/tools/readline/readline-8.0/lib/'
 # export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/primary/vari/software/curl/default/lib/pkgconfig/
 ./configure --prefix=/home/zhouw3/.Renv/versions/3.6.1 -with-recommended-packages=no --without-x --with-cairo --with-libpng --with-libtiff --with-jpeglib --enable-R-shlib
+*** example add R3.6.3
+cd ~/.Renv/versions/3.6.3/R-3.6.3
+module load XZ/5.2.4-GCCcore-7.3.0
+module load libreadline/7.0-GCCcore-7.3.0
+module load bzip2/1.0.6-GCCcore-7.3.0
+module load cURL/7.60.0-GCCcore-7.3.0
+
+./configure --prefix=/home/zhouw3/.Renv/versions/3.6.3 -with-recommended-packages=no --without-x --with-cairo --with-libpng --with-libtiff --with-jpeglib --enable-R-shlib
 
 *** example add R4.0.0
 
@@ -106,9 +114,10 @@ brew install xz
 brew install pcre
 brew cask install basictex
 brew install xquartz
+brew install bzip2
 # install jdk
 
-./configure --prefix=/Users/zhouw3/.Renv/versions/3.6.1 --enable-R-shlib --with-cairo --with-libpng --with-libtiff --with-jpeglib
+./configure --prefix=/Users/zhouw3/.Renv/versions/3.6.3 --enable-R-shlib --with-cairo --with-libpng --with-libtiff --with-jpeglib
 make
 make install
 

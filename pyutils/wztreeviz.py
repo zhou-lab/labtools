@@ -219,7 +219,7 @@ class PhyloGram():
                      [t._r]*40, color=ec, lw=self.lw, alpha=self.alpha)
         
 
-    def add_leaf_bar_track(self, srs, inner_space_ratio = 0.1, track_color='k', track_height = None, tick_length=0.03):
+    def add_leaf_bar_track(self, srs, inner_space_ratio = 0.1, track_color='k', baseline_color='k', track_height = None, tick_length=0.03, y_max = None):
 
         """
         srs is a pandas Series, indexed by t.name 
@@ -230,22 +230,32 @@ class PhyloGram():
             track_height = self.blv
             
         inner_space = inner_space_ratio * track_height
-            
-        y_max = srs.max() # the data maximum
+
+        if y_max is None:
+            y_max = srs.max() # the data maximum
+
+        # import pdb; pdb.set_trace()
         for t in self.root.get_leaves():
             t._r2 += inner_space + track_height
-            y = srs[t.name] / y_max * track_height
-            self.ax.bar(t._angle_mid, height = y, width = 0.04, bottom = t._r2 - y, facecolor=track_color, alpha=0.85)
+            y = srs[[t.name]].iloc[0] / y_max * track_height
+            if (isinstance(track_color, pd.Series)):
+                tc = track_color[[t.name]].iloc[0]
+            else:
+                tc = 'k'
+
+            # import pdb; pdb.set_trace()
+            self.ax.bar(t._angle_mid, height = y, width = 0.04, bottom = t._r2 - y, facecolor=tc, alpha=0.85)
 
         # the base line
-        self.ax.plot(np.linspace(self.angle_beg, self.angle_end, 100), [t._r2]*100, color=track_color, lw=0.5)
+        self.ax.plot(np.linspace(self.angle_beg, self.angle_end, 100), [t._r2]*100, color=baseline_color, lw=0.5)
 
         # y-axis
-        self.ax.plot([self.angle_beg, self.angle_beg], [t._r2, t._r2-track_height], color=track_color, lw=0.5)
+        self.ax.plot([self.angle_beg, self.angle_beg], [t._r2, t._r2-track_height], color=baseline_color, lw=0.5)
 
         # y-axis ticks
-        self.ax.plot(np.linspace(self.angle_beg, self.angle_beg-tick_length, 3), [t._r2]*3, color=track_color, lw=1)
-        self.ax.plot(np.linspace(self.angle_beg, self.angle_beg-tick_length, 3), [t._r2-track_height]*3, color=track_color, lw=1)
+        self.ax.plot(np.linspace(self.angle_beg, self.angle_beg-tick_length, 3), [t._r2]*3, color=baseline_color, lw=1)
+        self.ax.plot(np.linspace(
+            self.angle_beg, self.angle_beg-tick_length, 3), [t._r2-track_height]*3, color=baseline_color, lw=1)
         self.ax.text(self.angle_beg, t._r2 - track_height, "%1.2g" % y_max,
                      rotation=self.angle_beg/np.pi*180+90, verticalalignment='bottom', horizontalalignment='right')
 
@@ -266,7 +276,8 @@ class PhyloGram():
         for t in self.root.get_leaves():
             t._r2 += inner_space + track_height
             circle_radius = srs[t.name] / y_max * min(track_height/2, max_radius)
-            self.ax.add_artist(plt.Circle(polar2cart(t._angle_mid, t._r2-track_height/2), circle_radius, transform=self.ax.transData._b))
+            self.ax.add_artist(plt.Circle(polar2cart(
+                t._angle_mid, t._r2-track_height/2), circle_radius, transform=self.ax.transData._b))
 
     def add_leaf_labels(self, labels=None, r_pad=1):
 
@@ -282,10 +293,13 @@ class PhyloGram():
 
             if self.radialtext:
                 rot = PLG_normalize_angle(t._angle_mid / np.pi * 180)
-                ha, va = PLG_calc_text_aln(t._angle_mid / np.pi * 180)
+                ha, va = PLG_calc_text_aln(t._angle_mid / np.pi * 180, hc=0, vc=0)
             else:
                 rot = 0
-                ha, va = PLG_calc_text_aln(t._angle_mid / np.pi * 180)
+                ha, va = PLG_calc_text_aln(t._angle_mid / np.pi * 180, hc=0, vc=0)
+
+            # if label[:4] == 'Boli':
+            # import pdb; pdb.set_trace()
 
             # currently text are all center-adjusted
             # this is a hard adjustment and may be inaccturate due to

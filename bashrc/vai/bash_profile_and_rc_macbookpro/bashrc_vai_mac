@@ -459,3 +459,5 @@ function ppgrep() { pgrep "$@" | xargs ps -fp 2> /dev/null; }
 #### python ####
 ## activate anaconda
 source /Users/zhouw3/anaconda3/bin/activate
+
+export PATH="/Users/zhouw3/anaconda3/bin/:$PATH"

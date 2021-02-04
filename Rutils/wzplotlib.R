@@ -1,3 +1,4 @@
+library(RColorBrewer)
 library(tidyverse)
 
 hist_logy <- function(x) {
@@ -120,23 +121,26 @@ wzPlotDens2d <- function(x1,x2,pch=16,...) {
 ## 1-D density plot
 #########################
 ## old plotdens
-wzPlotDens1d <- function(x, normalize=FALSE, add=FALSE, ...) {
-  d <- density(na.omit(x))
-  if (normalize) {
-    d$y <- d$y / max(d$y)
-  }
-  if (add) {
-    lines(d, ...)
-  } else {
-    plot(d, ...)
-  }
+wzPlotDens1d <- function(x, normalize=FALSE, bw="nrd0", add=FALSE, ...) {
+    d <- density(na.omit(x), bw=bw)
+    if (normalize) {
+        d$y <- d$y / max(d$y)
+    }
+    if (add) {
+        lines(d, ...)
+    } else {
+        plot(d, ...)
+    }
 }
 
-wzPlotDens1d.fromMatrix <- function(x, normalize=FALSE, ...) {
+wzPlotDens1d.fromMatrix <- function(x, bw="nrd0", normalize=FALSE, ...) {
     for (i in seq_len(ncol(x))) {
-        if (i==1) { add <- FALSE;
-        } else { add <- TRUE; }
-        wzPlotDens1d(x[,i], normalize=normalize, add=add, ...);
+        if (i==1) {
+            add <- FALSE;
+        } else {
+            add <- TRUE;
+        }
+        wzPlotDens1d(x[,i], normalize=normalize, bw=bw, add=add, ...);
     }
 }
 
@@ -152,3 +156,10 @@ wzPlotDens2d.smooth <- function(x, y, xlim=c(-2,2), nrpoints=100, nbins=256, ...
         colramp=palette, col='blue', ...)
 }
 
+wzGetColors <- function(grouping, palette.name='Paired') {
+    groups <- unique(grouping)
+    if (palette.name == 'Set1') nclr = 9
+    else if (palette.name == 'Dark2') nclr = 8
+    else nclr = 12
+    setNames(colorRampPalette(brewer.pal(nclr, palette.name))(length(groups)), groups)
+}
