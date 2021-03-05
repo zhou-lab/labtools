@@ -3,7 +3,7 @@ import parser
 import argparse
 import sys
 # TCGA_HM450/hg38/output.bb
-# wztrack.py --type bigBed9 --name xxx --urlprefix TCGA_HM450/hg38 --urlsuffix bb --parent TCGA_ACC
+# wztrack.py --type bigBed9 --name xxx --url https://zwdzwd.s3.amazonaws.com/trackHubs/Mouse_MM285/mm10/204875570008_R06C01.bb --parent TCGA_ACC
 def main(args):
 
     if args.shortLabel is None:
@@ -23,7 +23,7 @@ def main(args):
         if args.indent: sys.stdout.write('    ')
         print('longLabel %s' % args.longLabel)
         if args.indent: sys.stdout.write('    ')
-        print('bigDataUrl https://zwdzwd.s3.amazonaws.com/trackHubs/%s/%s.%s' % (args.urlprefix, args.name, args.urlsuffix))
+        print('bigDataUrl %s' % args.url)
         if args.indent: sys.stdout.write('    ')
         print('itemRgb on')
         if args.indent: sys.stdout.write('    ')
@@ -41,7 +41,7 @@ def main(args):
         if args.indent: sys.stdout.write('    ')
         print('longLabel %s' % args.longLabel)
         if args.indent: sys.stdout.write('    ')
-        print('bigDataUrl https://zwdzwd.s3.amazonaws.com/trackHubs/%s/%s.%s' % (args.urlprefix, args.name, args.urlsuffix))
+        print('bigDataUrl %s' % args.url)
         if args.indent: sys.stdout.write('    ')
         print('parent %s on' % args.parent)
         if args.indent: sys.stdout.write('    ')
@@ -95,8 +95,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='create track')
     parser.add_argument('--name', type=str)
-    parser.add_argument('--urlprefix')
-    parser.add_argument('--urlsuffix')
+    parser.add_argument('--url')
     parser.add_argument('--parent')
     parser.add_argument('--shortLabel', default=None, type=str)
     parser.add_argument('--longLabel', default=None, type=str)

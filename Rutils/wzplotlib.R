@@ -107,11 +107,11 @@ wzBaseAxisLabel <- function(lab, ax='x', line=3, ...) {
 ## 2D Scatter plot with coloring density
 #######################################
 ## old name wzPlotDens
-wzPlotDens2d <- function(x1,x2,pch=16,...) {
+wzPlotDens2d <- function(x1,x2,pch=16,colorstops=c("#000099", "#00FEFF", "#45FE4F","#FCFF00", "#FF9400", "#FF3100"),...) {
   df <- data.frame(x1,x2)
   x <- densCols(x1,x2, colramp=colorRampPalette(c("black", "white")))
   df$dens <- col2rgb(x)[1,] + 1L
-  cols <-  colorRampPalette(c("#000099", "#00FEFF", "#45FE4F","#FCFF00", "#FF9400", "#FF3100"))(256)
+  cols <-  colorRampPalette(colorstops)(256)
   df$col <- cols[df$dens]
   plot(x2~x1, data=df[order(df$dens),], pch=pch, col=col, ...)
 }
@@ -131,6 +131,11 @@ wzPlotDens1d <- function(x, normalize=FALSE, bw="nrd0", add=FALSE, ...) {
     } else {
         plot(d, ...)
     }
+}
+
+wzPlotDens1d.fromMatrixGG <- function(x) {
+    xx <- melt(x)
+    ggplot(xx) + geom_density(aes(value, color=Var2))
 }
 
 wzPlotDens1d.fromMatrix <- function(x, bw="nrd0", normalize=FALSE, ...) {
@@ -157,10 +162,44 @@ wzPlotDens2d.smooth <- function(x, y, xlim=c(-2,2), nrpoints=100, nbins=256, ...
 }
 
 
-wzGetColors <- function(grouping, palette.name='Paired') {
+wzGetColors <- function(grouping, palette.name='Paired', group_name=TRUE) {
     groups <- unique(grouping)
     if (palette.name == 'Set1') nclr = 9
     else if (palette.name == 'Dark2') nclr = 8
     else nclr = 12
-    setNames(colorRampPalette(brewer.pal(nclr, palette.name))(length(groups)), groups)
+
+    colors = colorRampPalette(brewer.pal(nclr, palette.name))(length(groups))
+    if (group_name == TRUE) {
+        setNames(colors, groups)
+    } else {
+        colors
+    }
+}
+
+wzRepelLabel <- function(grouping, group2color) {
+
+    df <- data.frame(pos=sapply(split(seq_along(grouping), grouping), mean)) %>%
+        rownames_to_column(var='grouping')
+
+    library(ggrepel)
+    ggplot(df) +
+        geom_text_repel(aes(y=pos, x=1, label=grouping),
+            color=group2color[df$grouping],
+            segment.square = TRUE,
+            segment.inflect = TRUE,
+            force = 0.5, nudge_x = 0.1,
+            direction = "y", hjust = 0, segment.size = 0.6, segment.curvature = -0.5) +
+        theme_minimal() +
+        theme(axis.line.x  = element_blank(),
+            axis.ticks.x = element_blank(),
+            axis.text.x  = element_blank(),
+            axis.ticks.y = element_blank(),
+            axis.text.y  = element_blank(),
+            axis.title.x = element_blank(),
+            panel.border = element_blank(),
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
+            axis.line = element_blank(),
+            ) +
+        xlim(1,2.3) + scale_y_reverse() + ylab('')
 }
