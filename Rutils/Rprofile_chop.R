@@ -24,6 +24,8 @@ load_default <- function() {
     suppressMessages(library('viridis'))
 }
 
+ld <- load_default
+
 ## .Last <- function(){
 ##   if(!any(commandArgs()=='--no-readline') && interactive()) {
 ##     hist_file <- Sys.getenv("R_HISTFILE")

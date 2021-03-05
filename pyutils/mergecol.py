@@ -1,4 +1,6 @@
-#!/RIS/HPC_apps/AMD/python/python-2.7.2/bin/python
+#!/usr/bin/env python2
+
+#/RIS/HPC_apps/AMD/python/python-2.7.2/bin/python
 
 import argparse
 import re

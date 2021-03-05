@@ -114,6 +114,7 @@ function checkref16 {
 # # module load torque
 # module load uge
 # module load singularity/3.2.0
+module load emacs/27.1.91
 # alias ls='ls --color'
 # alias rm='rm -i'
 # alias lc="wc -l"
@@ -156,7 +157,7 @@ alias ta="tmux a" # tmux is still not as robust as screen
 # # export PATH=/primary/shared/production/software/python/default/bin/:$PATH
 
 ### deactivate this when installing R
-# source ~/software/anaconda/anaconda3_2020/bin/activate
+source ~/software/anaconda/anaconda3_2020/bin/activate
 export PATH=~/.Renv/bin/:$PATH
 export PATH=~/.Renv/shims/:$PATH
 # export PATH=$HOME/software/zacks_usc_devel/zacks_PBS_Tools/:$PATH

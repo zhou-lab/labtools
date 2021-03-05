@@ -21,7 +21,7 @@ class Indices:
         for start, end in self.spans:
             if not end:
                 end = len(lst)
-            result.extend([lst[_] for _ in xrange(start, end)])
+            result.extend([lst[_] for _ in range(start, end)])
 
         return result
 
@@ -78,7 +78,7 @@ def main_Utest(args):
         if args.outz:
             op.append("%.3f" % z)
 
-        print "\t".join(op)
+        print("\t".join(op))
 
     return
 
@@ -102,11 +102,11 @@ def main_basic(args):
 
 
     print('valid_count\t%s' % '\t'.join(map(str, map(len, vals))))
-    print('sum\t%s' % '\t'.join(map(str, map(sum, vals))))
-    print('median\t%s' % '\t'.join(map(str, map(np.median, vals))))
-    print('mean\t%s' % '\t'.join(map(str, map(np.mean, vals))))
-    print('max\t%s' % '\t'.join(map(str, map(max, vals))))
-    print('min\t%s' % '\t'.join(map(str, map(min, vals))))
+    print('sum\t%s' % '\t'.join(map(str, map(lambda x: sum(x) if(len(x)>=5) else None, vals))))
+    print('median\t%s' % '\t'.join(map(str, map(lambda x: np.median(x) if (len(x)>=5) else None, vals))))
+    print('mean\t%s' % '\t'.join(map(str, map(lambda x: np.mean(x) if (len(x)>=5) else None, vals))))
+    print('max\t%s' % '\t'.join(map(str, map(lambda x: max(x) if (len(x)>=5) else None, vals))))
+    print('min\t%s' % '\t'.join(map(str, map(lambda x: min(x) if (len(x)>=5) else None, vals))))
     
     # data = zip(*vals)
     # print "sum:\t%s" % '\t'.join([str(sum(d)) for d in data])
@@ -127,7 +127,7 @@ def main_rowstd(args):
         fields = line.strip('\n').split(args.delim)
         vals = [float(_) for _ in indices.extract(fields) if _ != args.x]
 
-        print '%s\t%d\t%s' % ('\t'.join(fields), len(vals), '%1.3f' % np.std(vals) if len(vals)>1 else '-1')
+        print('%s\t%d\t%s' % ('\t'.join(fields), len(vals), '%1.3f' % np.std(vals) if len(vals)>1 else '-1'))
 
 def main_overlap(args):
 
@@ -143,7 +143,7 @@ def main_overlap(args):
         fields = line.strip()
         set2.add(fields[args.c2])
     
-    print '\n'.join(set1 & set2)
+    print('\n'.join(set1 & set2))
 
 def main_rowentropy(args):
 
@@ -154,9 +154,9 @@ def main_rowentropy(args):
 
     for line in args.table:
         fields = line.strip().split(args.delim)
-        print '%s\t%1.2f' % (
+        print('%s\t%1.2f' % (
             '\t'.join(output.extract(fields)),
-            stats.entropy(colls.Counter(list(indices.extract(fields))).values()))
+            stats.entropy(colls.Counter(list(indices.extract(fields))).values())))
 
 def main_zscore(args):
 
@@ -180,9 +180,9 @@ def main_zscore(args):
     for i, val in enumerate(vals):
         fields = fieldss[i]
         if val is None:
-            print '%s\tNA' % ('\t'.join(fields), )
+            print('%s\tNA' % ('\t'.join(fields), ))
         else:
-            print '%s\t%1.3f' % ('\t'.join(fields), (val - vmean) / vstd)
+            print('%s\t%1.3f' % ('\t'.join(fields), (val - vmean) / vstd))
 
 def main_ttest(args):
 
@@ -208,8 +208,8 @@ def main_ttest(args):
             p = 'NA'
 
         if (not args.rmNA) or (p != 'NA' and t != 'NA'):
-            print '%s\t%d\t%1.3f\t%1.3f\t%1.3f\t%s\t%s' % (
-                '\t'.join(k), len(c1), np.median(c1), np.median(c2), np.median(c1)-np.median(c2), t, p)
+            print('%s\t%d\t%1.3f\t%1.3f\t%1.3f\t%s\t%s' % (
+                '\t'.join(k), len(c1), np.median(c1), np.median(c2), np.median(c1)-np.median(c2), t, p))
         
     k = None                    # key
     c1 = []
