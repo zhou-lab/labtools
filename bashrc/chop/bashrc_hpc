@@ -125,7 +125,7 @@ function checkref16 {
 # alias du="du -sh"
 # alias st="qstat"
 # alias bs=". ~/.bashrc"
-# # alias ta="tmux a" # tmux is still not as robust as screen
+alias ta="tmux a" # tmux is still not as robust as screen
 # alias sr="screen -r"
 # # alias sort="LC_ALL=C /home/wandingzhou/tools/coreutils/coreutils-8.23/src/sort"
 
