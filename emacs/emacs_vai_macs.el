@@ -25,11 +25,11 @@
 ;;;;;;; fonts ;;;;;;
 ;;;;;;;;;;;;;;;;;;;;
 ;; I must say the default emacs font is pretty good to the eyes already
-(add-to-list 'default-frame-alist '(font . "Inconsolata-13"))
+;; (add-to-list 'default-frame-alist '(font . "Inconsolata-13"))
 ;; (add-to-list 'default-frame-alist '(font . "Anonymous Pro-13"))
 ;; (add-to-list 'default-frame-alist '(font . "Source Code Pro 10"))
 ;; (set-default-font "Source Code Pro 10")
-;; (add-to-list 'default-frame-alist '(font . "Source Code Pro-11"))
+(add-to-list 'default-frame-alist '(font . "Source Code Pro-13"))
 ;; (add-to-list 'default-frame-alist '(font . "Consolas-12"))
 ;; (add-to-list 'default-frame-alist '(font . "Latin Modern Mono-12"))
 ;; (add-to-list 'default-frame-alist '(font . "Monaco-12"))
@@ -59,11 +59,11 @@
 ;; (load-theme 'ample-zen t)
 ;; (load-theme 'airline-badwolf t)
 ;; (load-theme 'tsdh-light t)
-;; (load-theme 'leuven t)
+(load-theme 'leuven t)
 ;; (load-theme 'leuven-dark t)
 ;; (load-theme 'zenburn t)
-(load-theme 'misterioso t)
-;; (load-theme 'spacemacs-dark t)
+;; (load-theme 'misterioso t)
+;;  (load-theme 'spacemacs-dark t)
 ;; (load-theme 'deeper-blue t)
 ;; (load-theme 'dracula t)
 ;; (setq-default cursor-type 'bar)
@@ -79,7 +79,7 @@
 ;; need to link
 ;; ln -s `rf ~/wzlib/emacs/emacs_linux/wanding-config/snippets` ~/.emacs.d/snippets
 ;; (yas/load-directory "~/wzlib/emacs/emacs_linux/wanding-config/snippets/")
-(add-to-list 'yas-snippet-dirs "~/wzlib/emacs/emacs_linux/wanding-config/snippets")
+(add-to-list 'yas-snippet-dirs "~/repo/wzlib/emacs/emacs_linux/wanding-config/snippets")
 
 ;; (global-linum-mode t)
 
@@ -160,22 +160,30 @@
 (setq mouse-sel-mode t)
 (delete-selection-mode 1)
 
+(require 'expand-region)
+(global-set-key (kbd "C-=") 'er/expand-region)
+
 (global-set-key [mouse-4] (lambda ()
 			    (interactive)
 			    (scroll-down 1)))
 (global-set-key [mouse-5] (lambda ()
 			    (interactive)
 			    (scroll-up 1)))
-(global-set-key (kbd "<f12>") 'save-buffer)
-(global-set-key (kbd "<f11>") 'dabbrev-expand)
+;; (global-set-key (kbd "<f12>") 'save-buffer)
+;; (global-set-key (kbd "<f11>") 'dabbrev-expand)
 ;; (global-set-key (kbd "<f9>") 'my-switch-to-other-buffer)
 (global-set-key (kbd "<f19>") 'my-switch-to-other-buffer)
 ;; (global-set-key (kbd "<f9>") 'switch-to-buffer)
 (global-set-key (kbd "<f18>") 'switch-to-buffer)
-(global-set-key (kbd "<f10>") 'yas-reload-all)
+(global-set-key (kbd "<f10>") 'ess-display-help-on-object)
 ;; (global-set-key (kbd "<f9>") 'yas-describe-tables)
 ;; (global-set-key (kbd "<f13>") 'kill-ring-save)
-(global-set-key (kbd "<f13>") 'ess-eval-region-or-function-or-paragraph-and-step)
+
+;; step by function or region
+(global-set-key (kbd "<f12>") 'ess-eval-region-or-function-or-paragraph-and-step)
+;; step by line
+(global-set-key (kbd "<f11>") 'ess-eval-region-or-line-visibly-and-step)
+
 (global-set-key (kbd "<f14>") 'jao-copy-line)
 (global-set-key (kbd "<f16>") 'yank)
 (global-set-key (kbd "<help>") 'other-window)
@@ -564,7 +572,7 @@ Then move to that line and indent according to mode"
      (ess-indent-from-chain-start)
      (ess-indent-with-fancy-comments . t)))
  '(package-selected-packages
-   '(spacemacs-theme ess laguna-theme zencoding-mode anti-zenburn-theme hc-zenburn-theme labburn-theme zenburn-theme leuven-theme org-drill projectile abs-mode markdown-mode yaml-mode yasnippet-snippets yasnippet toc-org tabbar helm fill-column-indicator)))
+   '(expand-region doom-themes spacemacs-theme ess laguna-theme zencoding-mode anti-zenburn-theme hc-zenburn-theme labburn-theme zenburn-theme leuven-theme org-drill projectile abs-mode markdown-mode yaml-mode yasnippet-snippets yasnippet toc-org tabbar helm fill-column-indicator)))
 
 (setq-default ess-indent-offset 4)
 

@@ -12,6 +12,7 @@ load_default <- function() {
     suppressMessages(source('https://raw.githubusercontent.com/zhou-lab/tbmate/master/scripts/tbmate.R'))
     suppressMessages(source('~/repo/wzlib/Rutils/wzcore.R'))
     suppressMessages(source('~/repo/wzlib/Rutils/wzplotlib.R'))
+    suppressMessages(source('~/repo/wzlib/Rutils/wzfeature_selection.R'))
     suppressMessages(library(grDevices))
     suppressMessages(library(tidyverse))
     suppressMessages(library(wheatmap))
@@ -21,8 +22,14 @@ load_default <- function() {
     suppressMessages(library(reshape2))
     suppressMessages(library(devtools))
     suppressMessages(library(readxl))
-    suppressMessages(library('viridis'))
+    suppressMessages(library(viridis))
+    suppressMessages(library(ggsci))
+    suppressMessages(library(circlize))
+    suppressMessages(library(ggrepel))
+    suppressMessages(library(egg))
 }
+
+ld <- load_default
 
 ## .Last <- function(){
 ##   if(!any(commandArgs()=='--no-readline') && interactive()) {

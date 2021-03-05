@@ -151,3 +151,150 @@ tbk_pack_fromIDAT <- function(pfxs, out_dir, idx_dir='~/references/InfiniumArray
     } , mc.cores=mc.cores)
 }
 
+
+#' Extract the probe type field from probe ID
+#' This only works with the new probe ID system.
+#' See https://github.com/zhou-lab/InfiniumAnnotation for illustration
+#'
+#' @param Probe_ID Probe ID
+#' @return a vector of '1' and '2' suggesting Infinium-I and Infinium-II
+#' probeID_designType("cg36609548_TC21")
+probeID_designTypeW <- function(Probe_ID) {
+    stopifnot(all(grepl('_', Probe_ID))) # make sure it's the new ID system
+    vapply(Probe_ID, function(x) substr(
+        strsplit(x,'_')[[1]][2],3,3), character(1))
+}
+
+isUniqProbeIDW <- function(Probe_ID) {
+    all(grepl('_',Probe_ID))
+}
+
+extractDesignW <- function(design_str) {
+    vapply(
+        stringr::str_split(design_str, ','),
+        function(x) stringr::str_split(x[[1]],';')[[1]][1], character(1))
+}
+
+getProbesByRegionW <- function(
+    chrm, beg = 1, end = -1,
+    platform = c('EPIC','HM450'),
+    refversion = c('hg38','hg19')) {
+
+    platform <- match.arg(platform)
+    refversion <- match.arg(refversion)
+    
+    if (end < 0) {
+        end <- sesameDataGet(paste0(
+            'genomeInfo.', refversion))$seqInfo[chrm]@seqlengths
+    }
+
+    probes <- sesameDataGet(paste0(
+        platform, '.probeInfo'))[[paste0('mapped.probes.', refversion)]]
+    
+    if (!(chrm %in% GenomicRanges::seqinfo(probes)@seqnames)) {
+        stop('No probes found in this reference');
+    }
+    message(sprintf('Extracting probes from %s:%d-%d.\n', chrm, beg, end))
+    target.region <- GenomicRanges::GRanges(chrm, IRanges::IRanges(beg, end))
+    subsetByOverlaps(probes, target.region)
+}
+
+getProbesByChromosomeW <- function(
+    chrms, platform = c('EPIC','HM450'),
+    refversion=c('hg19','hg38')) {
+
+    platform <- match.arg(platform)
+    refversion <- match.arg(refversion)
+    
+    mft <- sesameDataGet(sprintf('%s.%s.manifest', platform, refversion))
+    names(mft)[as.character(GenomicRanges::seqnames(mft)) %in% chrms]
+}
+
+getAutosomeProbesW <- function(
+    platform=c('EPIC','HM450','MM285'),
+    refversion=c('hg19','hg38','mm10')) {
+
+    platform <- match.arg(platform)
+    refversion <- match.arg(refversion)
+    
+    mft <- sesameDataGet(sprintf(
+        '%s.%s.manifest', platform, refversion))
+    names(mft)[!(as.character(
+        GenomicRanges::seqnames(mft)) %in% c('chrX', 'chrY'))]
+}
+
+bSubMostVariableW <- function(betas, n=2000) {
+    std <- apply(betas, 1, sd, na.rm=TRUE)
+    betas[names(sort(std, decreasing=TRUE)[seq_len(n)]),]
+}
+
+bSubProbesW <- function(betas, probes, exclude=FALSE) {
+    if (is.null(dim(betas))) { # should also work for vector
+        if (exclude) {
+            betas[!(names(betas) %in% probes)]
+        } else {
+            betas[intersect(names(betas), probes)]
+        }
+    } else {
+        if (exclude) {
+            betas[!(rownames(betas) %in% probes),]
+        } else {
+            betas[intersect(rownames(betas), probes),]
+        }
+    }
+}
+
+bSubCompleteW <- function(betas) {
+    if (is.null(dim(betas))) { # should also work for vector
+        betas[!is.na(betas)]
+    } else {
+        betas[complete.cases(betas),]
+    }
+}
+
+bSubNonNAW <- function(betas, frac=0.5) {
+    if (is.null(dim(betas))) { # should also work for vector
+        betas[sum(!is.na(betas)) > frac*length(betas)]
+    } else {
+        betas[rowSums(!is.na(betas)) > frac*ncol(betas),]
+    }
+}
+
+bSubNonNAColW <- function(betas, frac=0.5) {
+    if (is.null(dim(betas))) { # should also work for vector
+        betas[sum(!is.na(betas)) > frac*length(betas)]
+    } else {
+        betas[,colSums(!is.na(betas)) > frac*nrow(betas)]
+    }
+}
+
+bSubCpGW <- function(betas) {
+    betas[grep('^cg', rownames(betas)),]
+}
+
+bSubNoMaskW <- function(betas, platform='EPIC', refversion='hg38') {
+    platform = 'EPIC'
+    refversion = 'hg38'
+    mft <- sesameDataGet(sprintf('%s.%s.manifest', platform, refversion))
+    p <- intersect(rownames(betas), names(mft[!mft$MASK_general]))
+    betas[p,]
+}
+
+extraHasW <- function(sset, k) {
+    k %in% names(extra(sset))
+}
+
+extraGetW <- function(sset, k) {
+    extra(sset)[[k]]
+}
+
+extraSetW <- function(sset, k, v) {
+    extra(sset)[[k]] <- v
+    sset
+}
+
+cbind_betas_onCommonW <- function(...) {
+    input <- list(...)
+    common <- Reduce(intersect, lapply(input, rownames))
+    do.call(cbind, lapply(input, function(x) x[common,]))
+}

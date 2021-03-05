@@ -23,7 +23,11 @@ Host hpc
      User wanding.zhou
 
 Host hpc4
-     HostName 10.30.29.8
+     HostName 10.30.28.114
+     User zhouw3
+
+Host zhouserver
+     HostName zhouserver.research.chop.edu
      User zhouw3
 
 Host hpc2
