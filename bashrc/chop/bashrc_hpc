@@ -160,6 +160,7 @@ alias ta="tmux a" # tmux is still not as robust as screen
 source ~/software/anaconda/anaconda3_2020/bin/activate
 export PATH=~/.Renv/bin/:$PATH
 export PATH=~/.Renv/shims/:$PATH
+
 # export PATH=$HOME/software/zacks_usc_devel/zacks_PBS_Tools/:$PATH
 # export PATH=/primary/vari/software/latex/20160405/bin/x86_64-linux/:$PATH
 # # export JAVA_HOME=/primary/vari/software/java/jdk1.8.0_60

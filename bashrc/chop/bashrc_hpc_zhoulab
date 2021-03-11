@@ -4,6 +4,8 @@
  	. /etc/bashrc
  fi
 
+ export BASHRC=/mnt/isilon/zhoulab/labtools/bashrc/chop/bashrc_hpc_zhoulab
+
 ############# the following copied from /etc/bashrc ##############
 # are we an interactive shell?
 if [ "$PS1" ]; then
@@ -105,6 +107,7 @@ module load cURL/7.60.0-GCCcore-7.3.0
 module load libxml2/2.9.8-GCCcore-7.3.0
 module load libpng/1.6.37
 
+## R versions
 alias R4.1dv='LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/mnt/isilon/zhoulab/labsoftware/shared_Renv/versions/4.1.devel/lib64/R/lib /mnt/isilon/zhoulab/labsoftware/shared_Renv/versions/4.1.devel/bin/R'
 alias ls='ls --color'
 alias rm='rm -i'
@@ -123,6 +126,14 @@ umask 002
 
 function vcfsort() {
   awk '$1 ~ /^#/ {print $0;next} {print $0 | "sort -k1,1 -k2,2n"}' $1;
+}
+
+function dnarev {
+    echo $1 | tr ATGC TACG | rev;
+}
+
+function labcol {
+  awk '{for(i=1;i<=NF;++i){$i=$i"_"i;}print $0;}' $1;
 }
 
 export SCREENRC=/mnt/isilon/zhoulab/labtools/screenrc/screenrc_hp
