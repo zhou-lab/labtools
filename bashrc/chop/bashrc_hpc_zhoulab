@@ -1,111 +1,120 @@
 #!/bin/bash
 # Source global definitions
- if [ -f /etc/bashrc ]; then
- 	. /etc/bashrc
- fi
+#  if [ -f /etc/bashrc ]; then
+# . /etc/bashrc
+# fi
 
- export BASHRC=/mnt/isilon/zhoulab/labtools/bashrc/chop/bashrc_hpc_zhoulab
 
-############# the following copied from /etc/bashrc ##############
+# ############ the following copied from /etc/bashrc ##############
 # are we an interactive shell?
-if [ "$PS1" ]; then
-  if [ -z "$PROMPT_COMMAND" ]; then
-    case $TERM in
-    xterm*|vte*)
-      if [ -e /etc/sysconfig/bash-prompt-xterm ]; then
-          PROMPT_COMMAND=/etc/sysconfig/bash-prompt-xterm
-      elif [ "${VTE_VERSION:-0}" -ge 3405 ]; then
-          PROMPT_COMMAND="__vte_prompt_command"
-      else
-          PROMPT_COMMAND='printf "\033]0;%s@%s:%s\007" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/~}"'
-      fi
-      ;;
-    screen*)
-      if [ -e /etc/sysconfig/bash-prompt-screen ]; then
-          PROMPT_COMMAND=/etc/sysconfig/bash-prompt-screen
-      else
-          PROMPT_COMMAND='printf "\033k%s@%s:%s\033\\" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/~}"'
-      fi
-      ;;
-    *)
-      [ -e /etc/sysconfig/bash-prompt-default ] && PROMPT_COMMAND=/etc/sysconfig/bash-prompt-default
-      ;;
-    esac
-  fi
+# if [ "$PS1" ]; then
+  # if [ -z "$PROMPT_COMMAND" ]; then
+    # case $TERM in
+    # xterm*|vte*)
+      # if [ -e /etc/sysconfig/bash-prompt-xterm ]; then
+          # PROMPT_COMMAND=/etc/sysconfig/bash-prompt-xterm
+      # elif [ "${VTE_VERSION:-0}" -ge 3405 ]; then
+          # PROMPT_COMMAND="__vte_prompt_command"
+      # else
+          # PROMPT_COMMAND='printf "\033]0;%s@%s:%s\007" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/~}"'
+      # fi
+      # ;;
+    # screen*)
+      # if [ -e /etc/sysconfig/bash-prompt-screen ]; then
+          # PROMPT_COMMAND=/etc/sysconfig/bash-prompt-screen
+      # else
+          # PROMPT_COMMAND='printf "\033k%s@%s:%s\033\\" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/~}"'
+      # fi
+      # ;;
+    # *)
+      # [ -e /etc/sysconfig/bash-prompt-default ] && PROMPT_COMMAND=/etc/sysconfig/bash-prompt-default
+      # ;;
+    # esac
+  # fi
   # Turn on parallel history
-  shopt -s histappend
-  history -a
+  # shopt -s histappend
+  # history -a
   # Turn on checkwinsize
-  shopt -s checkwinsize
-  [ "$PS1" = "\\s-\\v\\\$ " ] && PS1="[\u@\h \W]\\$ "
+  # shopt -s checkwinsize
+  # [ "$PS1" = "\\s-\\v\\\$ " ] && PS1="[\u@\h \W]\\$ "
   # You might want to have e.g. tty in prompt (e.g. more virtual machines)
   # and console windows
   # If you want to do so, just add e.g.
   # if [ "$PS1" ]; then
-  #   PS1="[\u@\h:\l \W]\\$ "
+    # PS1="[\u@\h:\l \W]\\$ "
   # fi
   # to your custom modification shell script in /etc/profile.d/ directory
-fi
+# fi
 
-if ! shopt -q login_shell ; then # We're not a login shell
+# if ! shopt -q login_shell ; then We're not a login shell
     # Need to redefine pathmunge, it get's undefined at the end of /etc/profile
-    pathmunge () {
-        case ":${PATH}:" in
-            *:"$1":*)
-                ;;
-            *)
-                if [ "$2" = "after" ] ; then
-                    PATH=$PATH:$1
-                else
-                    PATH=$1:$PATH
-                fi
-        esac
-    }
+    # pathmunge () {
+        # case ":${PATH}:" in
+            # *:"$1":*)
+                # ;;
+            # *)
+                # if [ "$2" = "after" ] ; then
+                    # PATH=$PATH:$1
+                # else
+                    # PATH=$1:$PATH
+                # fi
+        # esac
+    # }
 
     # By default, we want umask to get set. This sets it for non-login shell.
     # Current threshold for system reserved uid/gids is 200
     # You could check uidgid reservation validity in
     # /usr/share/doc/setup-*/uidgid file
-    if [ $UID -gt 199 ] && [ "`id -gn`" = "`id -un`" ]; then
-       umask 002
-    else
-       umask 022
-    fi
+    # if [ $UID -gt 199 ] && [ "`id -gn`" = "`id -un`" ]; then
+       # umask 002
+    # else
+       # umask 022
+    # fi
 
-    SHELL=/bin/bash
+    # SHELL=/bin/bash
     # Only display echos from profile.d scripts if we are no login shell
     # and interactive - otherwise just process them to set envvars
-    for i in /etc/profile.d/*.sh; do
-      if [[ $i == *man.sh* ]]; then
-        continue
-      fi
-        if [ -r "$i" ]; then
-            if [ "$PS1" ]; then
-                . "$i"
-            else
-                . "$i" >/dev/null
-            fi
-        fi
-    done
+    # for i in /etc/profile.d/*.sh; do
+      # if [[ $i == *man.sh* ]]; then
+        # continue
+      # fi
+        # if [ -r "$i" ]; then
+            # if [ "$PS1" ]; then
+                # . "$i"
+            # else
+                # . "$i" >/dev/null
+            # fi
+        # fi
+    # done
 
-    unset i
-    unset -f pathmunge
-fi
+    # unset i
+    # unset -f pathmunge
+# fi
 
 
 ####################### my own settings ######################
 
-module load uge
-module load singularity/3.2.0
-module load java/1.8.0_144
+export BASHRC=/mnt/isilon/zhoulab/labtools/bashrc/chop/bashrc_hpc_zhoulab
+
+#module load uge
+#module load singularity/3.2.0
+#module load java/1.8.0_144
 #module load gcc/6.4.0
 #module load libpng/1.6.34-GCCcore-6.4.0
-module load XZ/5.2.4-GCCcore-7.3.0
-module load libreadline/7.0-GCCcore-7.3.0
-module load bzip2/1.0.6-GCCcore-7.3.0
-module load cURL/7.60.0-GCCcore-7.3.0
-module load libxml2/2.9.8-GCCcore-7.3.0
-module load libpng/1.6.37
+
+
+alias activate_conda="source ~/software/anaconda/anaconda3_2020/bin/activate"
+
+function load_gcc7.3_for_R {
+  module load GCCcore/7.3.0
+  module load ncurses/6.1-GCCcore-7.3.0
+  module load zlib/1.2.11-GCCcore-7.3.0
+  module load XZ/5.2.4-GCCcore-7.3.0
+  module load libreadline/7.0-GCCcore-7.3.0
+  module load bzip2/1.0.6-GCCcore-7.3.0
+  module load cURL/7.60.0-GCCcore-7.3.0
+  module load libxml2/2.9.8-GCCcore-7.3.0
+}
 
 ## R versions
 alias R4.1dv='LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/mnt/isilon/zhoulab/labsoftware/shared_Renv/versions/4.1.devel/lib64/R/lib /mnt/isilon/zhoulab/labsoftware/shared_Renv/versions/4.1.devel/bin/R'
@@ -124,10 +133,6 @@ alias sr="screen -r"
 # new folder and file will be writable by the group
 umask 002
 
-function vcfsort() {
-  awk '$1 ~ /^#/ {print $0;next} {print $0 | "sort -k1,1 -k2,2n"}' $1;
-}
-
 function dnarev {
     echo $1 | tr ATGC TACG | rev;
 }
@@ -138,38 +143,51 @@ function labcol {
 
 export SCREENRC=/mnt/isilon/zhoulab/labtools/screenrc/screenrc_hp
 export AWKPATH=/mnt/isilon/zhoulab/labtools/awkutils
-
 export PATH=~/bin:$PATH
 export PATH=/mnt/isilon/zhoulab/labbin:$PATH
 export PATH=/mnt/isilon/zhoulab/labpipelines/pipelines:$PATH
 export PATH=/mnt/isilon/zhoulab/labsoftware/valgrind/valgrind-3.15/bin:$PATH
 
 export PERL5LIB=/mnt/isilon/zhoulab/labsoftware/perl5lib
-# export JAVA_HOME=/primary/vari/software/java/jdk1.8.0_60
 
 alias scp='rsync -Pravdtze ssh'
 alias awk='awk -F"\t" -v OFS="\t"'
 alias les="less -S"
-alias qsubi='qlogin -q interactive.q'
-alias qstatall='qstat -u "*" | less'
-alias qstatallrun='qstat -u "*" -s r | less'
-alias qhost='qhost | less'
-alias qwatch="watch qstat"
-
-# function qstatz() {
-#   qstat | awk -F" " '$0~/@/ && NR==FNR{match($0,/@([^.]*)/,a); jobids[a[1]]=gensub(/[ ]+/,"|","g",$0);}NR==FNR&&FNR==1{jobids["HOSTNAME"]=gensub(/[ ]+/,"|","g",$0);}NR!=FNR && ($1 in jobids || FNR==1){split($0,a,/[ ]+/); print a[1]"\t"a[3]"|"a[4]"|"a[5]"|"a[6]"\t\033[1;31m"a[7]"\t"a[8]"|"a[9]"\033[0m\t"a[10]"|"a[11]"\t"jobids[$1];}' - <(/cm/shared/apps/uge/8.6.6/bin/lx-amd64/qhost)
-# }
-# export -f qstatz
-alias qwatchz="watch --color 'bash -c qstatz'"
-
-alias qsub1="qsub -pe smp 1 -l m_mem_free=5G -l h_vmem=5G"
-alias qsub4="qsub -pe smp 4 -l m_mem_free=5G -l h_vmem=5G"
-alias qsub12="qsub -pe smp 12 -l m_mem_free=5G -l h_vmem=5G"
-alias qsub24="qsub -pe smp 24 -l m_mem_free=5G -l h_vmem=5G"
-# alias pbsnodez='qhost | less'
-# alias qsuball="find pbs/ -type f -name '*.pbs' | sort | xargs -I {} qsub {}"
-
 alias sort="LC_ALL=C sort"
+
+sortbed ()
+{
+    LC_ALL=C sort -k1,1 -k2,2n -T . $1
+}
+export -f sortbed
+
+function mkdircd {
+  mkdir $1 && cd $_;
+}
+
+######################
+## UGE job submission
+######################
+# alias qsubi='qlogin -q interactive.q'
+# alias qstatall='qstat -u "*" | less'
+# alias qstatallrun='qstat -u "*" -s r | less'
+# alias qhost='qhost | less'
+# alias qwatch="watch qstat"
+# alias qwatchz="watch --color 'bash -c qstatz'"
+
+# alias qsub1="qsub -pe smp 1 -l m_mem_free=5G -l h_vmem=5G"
+# alias qsub4="qsub -pe smp 4 -l m_mem_free=5G -l h_vmem=5G"
+# alias qsub12="qsub -pe smp 12 -l m_mem_free=5G -l h_vmem=5G"
+# alias qsub24="qsub -pe smp 24 -l m_mem_free=5G -l h_vmem=5G"
+
+# function qdelrange {
+  # for ((i=$1;i<=$2;i++)); do qdel $i;done
+# }
+
+########################
+## SLURM job submission
+########################
+
 
 ############################################
 ### auto job script generation with pbsgen
@@ -177,10 +195,7 @@ alias sort="LC_ALL=C sort"
 export PBSDIR=/mnt/isilon/zhoulab/tmp/pbs
 export NAMEROOT=LabJob
 
-function qdelrange {
-  for ((i=$1;i<=$2;i++)); do qdel $i;done
-}
-
+## prompt
 function prompt {
   local BLACK="\[\033[0;30m\]"
   local BLACKBOLD="\[\033[1;30m\]"
@@ -199,9 +214,7 @@ function prompt {
   local CYANBOLD="\[\033[1;36m\]"
   local WHITE="\[\033[0;37m\]"
   local WHITEBOLD="\[\033[1;37m\]"
-  # export PS1="$REDBOLD[\t]${SCREENTITLE}$GREY[$GREENBOLD\u@\h $YELLOWBOLD\w$GREY]"'$ '
   export PS1="$REDBOLD[\t]${SCREENTITLE}$GREY[$GREENBOLD\u@\h $YELLOWBOLD\w$GREY]\$ "
-
 }
 
 prompt
@@ -212,47 +225,21 @@ case "$TERM" in
     screen*) PROMPT_COMMAND='echo -ne "\033k\033\0134"'
 esac
 
-## search wzprojects
-function wzgrep {
-  ag "$1" /mnt/isilon/zhoulab/labjournal --pager="less -R"
-}
-
-function wzfind {
-  find /mnt/isilon/zhoulab/labjournal -name "*$1*" | fzf
-}
-
-function mkdircd {
-  mkdir $1 && cd $_;
-}
-
-function hist {
-  history | les
-}
-
 ###########
 ### git ###
 ###########
-
 alias gst="git status" # this interfere with ghostscript program gs
-alias gp="git pull"
-alias gpu="git push"
-alias gc="git commit -a -m"
 
 # lazy git
-function gl {
+function gll {
   if [ -z "$1" ]; then message="minor, message omitted"; else message="$1"; fi;
   git commit -a -m "$message";
   git push;
 }
 
-sortbed ()
-{
-    LC_ALL=C sort -k1,1 -k2,2n -T . $1
-}
-export -f sortbed
-
-samnohead() { awk '!/^@/' $1; }
-export -f samnohead
+##############
+## folders
+##############
 
 export TMPDIR=/mnt/isilon/zhoulab/tmp
 export TEMP=/mnt/isilon/zhoulab/tmp
@@ -278,7 +265,6 @@ z() {
 
 export WZSEQ_ENTRY=/mnt/isilon/zhoulab/labpipelines/entry/wzseq.sh
 export SLURM_ENTRY=/mnt/isilon/zhoulab/labpipelines/entry/slurm.sh
-
 
 ###################
 ## show location
