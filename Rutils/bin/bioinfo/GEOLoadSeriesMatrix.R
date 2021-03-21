@@ -1,10 +1,11 @@
 #!/usr/bin/env Rscript
 library(stringr)
 args <- commandArgs(trailingOnly=TRUE)
-system(sprintf("zcat %s | awk '!/^!/ && length($0)>0' >1", args[1]))
-system(sprintf("zcat %s | awk '/^!Sample/' | wzmanip transpose - >samplesheet.tsv", args[1]))
+system(sprintf("zcat %s | awk '!/^!/ && length($0)>0' >tmp_%s", args[1], sname))
+sname = args[1]
+system(sprintf("zcat %s | awk '/^!Sample/' | wzmanip transpose - >%s_samplesheets.tsv", sname, sname))
 
-samples <- read.table('samplesheet.tsv', stringsAsFactors=F, header=T)
+samples <- read.table(sprintf("%s_samplesheets.tsv", sname), stringsAsFactors=F, header=T)
 
 select.cols <- c(1,2)
 select.cols <- sort(unique(c(select.cols, grep('characteristics', colnames(samples)))))
@@ -111,7 +112,7 @@ if (length(args) > 1) {
 }
 
 suppressWarnings(suppressPackageStartupMessages(library(data.table)))
-a <- fread('1', sep='\t', header=TRUE)
+a <- fread(sprintf('tmp_%s', sname), sep='\t', header=TRUE)
 betas <- as.matrix(a[,2:ncol(a)])
 rownames(betas) <- a$ID_REF
 
@@ -122,15 +123,10 @@ if (!is.numeric(betas)) {
   betas <- aa
 }
 
-## betas <- as.matrix(read.table('1',header=T, row.names='ID_REF', sep='\t'))
-
-## colnames(betas) <- rownames(samples)[match(colnames(betas), samples$geo)]
-
-write.table(samples, file='samples.tsv', quote=F, sep='\t', row.names=FALSE)
-# save(betas, samples, file='betas.rda')
-saveRDS(samples, file='samples_GEOLoadSeriesMatrix.rds')
-saveRDS(betas, file='betas_GEOLoadSeriesMatrix.rds')
-system('rm -f 1')
+write.table(samples, file=sprintf('%s_samples.tsv', sname), quote=F, sep='\t', row.names=FALSE)
+saveRDS(samples, file=sprintf('%s_samples_GEOLoadSeriesMatrix.rds', sname))
+saveRDS(betas, file=sprintf('%s_betas_GEOLoadSeriesMatrix.rds', sname))
+system(sprintf('rm -f tmp_%s', sname))
 cat('Read:', ncol(betas), 'samples.\n')
 cat('Meta:', colnames(samples), '\n')
 cat('Sname:', rownames(samples)[1:10], '\n')
