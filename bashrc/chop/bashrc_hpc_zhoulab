@@ -1,123 +1,9 @@
 #!/bin/bash
-# Source global definitions
-#  if [ -f /etc/bashrc ]; then
-# . /etc/bashrc
-# fi
-
-
-# ############ the following copied from /etc/bashrc ##############
-# are we an interactive shell?
-# if [ "$PS1" ]; then
-  # if [ -z "$PROMPT_COMMAND" ]; then
-    # case $TERM in
-    # xterm*|vte*)
-      # if [ -e /etc/sysconfig/bash-prompt-xterm ]; then
-          # PROMPT_COMMAND=/etc/sysconfig/bash-prompt-xterm
-      # elif [ "${VTE_VERSION:-0}" -ge 3405 ]; then
-          # PROMPT_COMMAND="__vte_prompt_command"
-      # else
-          # PROMPT_COMMAND='printf "\033]0;%s@%s:%s\007" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/~}"'
-      # fi
-      # ;;
-    # screen*)
-      # if [ -e /etc/sysconfig/bash-prompt-screen ]; then
-          # PROMPT_COMMAND=/etc/sysconfig/bash-prompt-screen
-      # else
-          # PROMPT_COMMAND='printf "\033k%s@%s:%s\033\\" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/~}"'
-      # fi
-      # ;;
-    # *)
-      # [ -e /etc/sysconfig/bash-prompt-default ] && PROMPT_COMMAND=/etc/sysconfig/bash-prompt-default
-      # ;;
-    # esac
-  # fi
-  # Turn on parallel history
-  # shopt -s histappend
-  # history -a
-  # Turn on checkwinsize
-  # shopt -s checkwinsize
-  # [ "$PS1" = "\\s-\\v\\\$ " ] && PS1="[\u@\h \W]\\$ "
-  # You might want to have e.g. tty in prompt (e.g. more virtual machines)
-  # and console windows
-  # If you want to do so, just add e.g.
-  # if [ "$PS1" ]; then
-    # PS1="[\u@\h:\l \W]\\$ "
-  # fi
-  # to your custom modification shell script in /etc/profile.d/ directory
-# fi
-
-# if ! shopt -q login_shell ; then We're not a login shell
-    # Need to redefine pathmunge, it get's undefined at the end of /etc/profile
-    # pathmunge () {
-        # case ":${PATH}:" in
-            # *:"$1":*)
-                # ;;
-            # *)
-                # if [ "$2" = "after" ] ; then
-                    # PATH=$PATH:$1
-                # else
-                    # PATH=$1:$PATH
-                # fi
-        # esac
-    # }
-
-    # By default, we want umask to get set. This sets it for non-login shell.
-    # Current threshold for system reserved uid/gids is 200
-    # You could check uidgid reservation validity in
-    # /usr/share/doc/setup-*/uidgid file
-    # if [ $UID -gt 199 ] && [ "`id -gn`" = "`id -un`" ]; then
-       # umask 002
-    # else
-       # umask 022
-    # fi
-
-    # SHELL=/bin/bash
-    # Only display echos from profile.d scripts if we are no login shell
-    # and interactive - otherwise just process them to set envvars
-    # for i in /etc/profile.d/*.sh; do
-      # if [[ $i == *man.sh* ]]; then
-        # continue
-      # fi
-        # if [ -r "$i" ]; then
-            # if [ "$PS1" ]; then
-                # . "$i"
-            # else
-                # . "$i" >/dev/null
-            # fi
-        # fi
-    # done
-
-    # unset i
-    # unset -f pathmunge
-# fi
-
-
-####################### my own settings ######################
 
 export BASHRC=/mnt/isilon/zhoulab/labtools/bashrc/chop/bashrc_hpc_zhoulab
 
-#module load uge
-#module load singularity/3.2.0
-#module load java/1.8.0_144
-#module load gcc/6.4.0
-#module load libpng/1.6.34-GCCcore-6.4.0
-
-
 alias activate_conda="source ~/software/anaconda/anaconda3_2020/bin/activate"
 
-function load_gcc7.3_for_R {
-  module load GCCcore/7.3.0
-  module load ncurses/6.1-GCCcore-7.3.0
-  module load zlib/1.2.11-GCCcore-7.3.0
-  module load XZ/5.2.4-GCCcore-7.3.0
-  module load libreadline/7.0-GCCcore-7.3.0
-  module load bzip2/1.0.6-GCCcore-7.3.0
-  module load cURL/7.60.0-GCCcore-7.3.0
-  module load libxml2/2.9.8-GCCcore-7.3.0
-}
-
-## R versions
-alias R4.1dv='LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/mnt/isilon/zhoulab/labsoftware/shared_Renv/versions/4.1.devel/lib64/R/lib /mnt/isilon/zhoulab/labsoftware/shared_Renv/versions/4.1.devel/bin/R'
 alias ls='ls --color'
 alias rm='rm -i'
 alias lc="wc -l"
@@ -147,6 +33,7 @@ export PATH=~/bin:$PATH
 export PATH=/mnt/isilon/zhoulab/labbin:$PATH
 export PATH=/mnt/isilon/zhoulab/labpipelines/pipelines:$PATH
 export PATH=/mnt/isilon/zhoulab/labsoftware/valgrind/valgrind-3.15/bin:$PATH
+export PATH=/mnt/isilon/zhoulab/labsoftware/shared_Renv/shims:$PATH
 
 export PERL5LIB=/mnt/isilon/zhoulab/labsoftware/perl5lib
 
@@ -187,7 +74,20 @@ function mkdircd {
 ########################
 ## SLURM job submission
 ########################
+alias qstat="squeue --me"
+alias qwatch="watch squeue --me"
+alias qsubi="srun --mem=20G -c 4 -t 12:00:00 --pty bash"
+alias qsub="sbatch"
+alias qacct="sacct -j"
+alias qhost="sinfo"
+alias qdel="scancel"
 
+alias pbsgen='/mnt/isilon/zhoulab/labpipelines/pbsgen/pbsgen_slurm.py'
+alias Squeue='squeue -u $USER -o "%.8i %.4P %.30j %.8u %.2t %.5M %10L %.2D %.2C %.2m %30E %20R"'
+alias Scancel='scancel -u $USER'
+alias Srun='srun --mem 30G --pty bash'
+alias GPU='srun -p gpu --gres=gpu:1 --mem 40G --pty bash'
+alias Sinfo='sinfo -e -N -o "%10N  %15C  %10m  %15F %10e %10T %10L %20E"'
 
 ############################################
 ### auto job script generation with pbsgen
@@ -241,8 +141,8 @@ function gll {
 ## folders
 ##############
 
-export TMPDIR=/mnt/isilon/zhoulab/tmp
-export TEMP=/mnt/isilon/zhoulab/tmp
+export TMPDIR=/mnt/isilon/zhoulab/tmp2
+export TEMP=/mnt/isilon/zhoulab/tmp2
 
 ## fzf and z
 . /mnt/isilon/zhoulab/labsoftware/z/z.sh
@@ -262,6 +162,8 @@ z() {
     fi
   fi
 }
+
+export _Z_DATA=/mnt/isilon/zhoulab/labsoftware/z/shared_z
 
 export WZSEQ_ENTRY=/mnt/isilon/zhoulab/labpipelines/entry/wzseq.sh
 export SLURM_ENTRY=/mnt/isilon/zhoulab/labpipelines/entry/slurm.sh
