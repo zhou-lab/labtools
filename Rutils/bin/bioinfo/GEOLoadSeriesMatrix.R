@@ -5,7 +5,7 @@ system(sprintf("zcat %s | awk '!/^!/ && length($0)>0' >tmp_%s", args[1], sname))
 sname = args[1]
 system(sprintf("zcat %s | awk '/^!Sample/' | wzmanip transpose - >%s_samplesheets.tsv", sname, sname))
 
-samples <- read.table(sprintf("%s_samplesheets.tsv", sname), stringsAsFactors=F, header=T)
+samples <- read.table(sprintf("%s_samplesheets.tsv", sname), stringsAsFactors=F, header=T, sep='\t')
 
 select.cols <- c(1,2)
 select.cols <- sort(unique(c(select.cols, grep('characteristics', colnames(samples)))))
