@@ -1,24 +1,328 @@
 #+STARTUP: overview
 #+STARTUP: indent
 #+TAGS: memorize(a) unknown(u)
-* Writing
-** list the key points
-** How to make long sentences?
-*** and
-Eric is truly passionate about science and has a consistent history of developing and applying quantitative approaches in molecular biology to answer fundamental questions in biology.
-*** What ... is ...
-What really impresses me, however, is that his work at several points in his career led to the development of highly risky, yet innovative technologies that overcomes the bottle neck limitation in the genomic organization field. 
-*** that
-What really impresses me, however, is that his work at several points in his career led to the development of highly risky, yet innovative technologies that overcomes the bottle neck limitation in the genomic organization field. 
-*** as
-These technologies have been pivotal in his success as he continues to identify and characterize new molecular players in genome organization. 
 
-*** not only .. but also ..
-In my view, what separates Eric from others is not only his technology and ability to adapt it to different questions, but also his generosity, collegiality, and confidence to venture into new methodological and biological territory.
+* Elisp
+** make-paragraph
+#+begin_src elisp
+;; collapse sentences into a paragraph
+(defun make-paragraph (start end)
+  (interactive "r")
+  (replace-regexp "\n\\{2,\\}" " " nil start end))
 
-*** As part of ...
-As part of that goal and evidence of Eric’s innovativeness, he was the first to conduct a genome-wide RNAi screen using fluorescent in situ hybridization (FISH) in combination with high-content imaging. 
+(global-set-key (kbd "<f6>") 'make-paragraph)
+#+end_src
 
+** split-paragraph
+#+begin_src elisp
+;; split a paragraph into sentences
+(defun split-paragraph (start end)
+  (interactive "r")
+  (replace-regexp "\\. " ".\n\n" nil start end))
+
+(global-set-key (kbd "<f5>") 'split-paragraph)
+#+end_src
+
+** remove-vowel
+#+begin_src elisp
+;; the following is not useful at all, just for learning purpose
+(defun remove-vowel ($string &optional $from $to)
+  "Remove the following letters: {a e i o u}.
+
+When called interactively, work on current paragraph or text selection.
+
+When called in lisp code, if ξstring is non-nil, returns a changed string.
+If ξstring nil, change the text in the region between positions ξfrom ξto."
+  (interactive
+   (if (use-region-p)
+       (list nil (region-beginning) (region-end))
+     (let ((bds (bounds-of-thing-at-point 'paragraph)) )
+       (list nil (car bds) (cdr bds)) ) ) )
+
+  (let (workOnStringP inputStr outputStr)
+    (setq workOnStringP (if $string t nil))
+    (setq inputStr (if workOnStringP $string (buffer-substring-no-properties $from $to)))
+    (setq outputStr
+          (let ((case-fold-search t))
+            (replace-regexp-in-string "a\\|e\\|i\\|o\\|u\\|" "" inputStr) )  )
+
+    (if workOnStringP
+        outputStr
+      (save-excursion
+        (delete-region $from $to)
+        (goto-char $from)
+        (insert outputStr) )) ) )
+
+#+end_src
+
+** some key bindings
+#+begin_src elisp
+;; (global-set-key (kbd "<f19>") 'my-switch-to-other-buffer)
+;; (global-set-key (kbd "<f18>") 'switch-to-buffer)
+;; (global-set-key (kbd "<f12>") 'save-buffer)
+;; (global-set-key (kbd "<f11>") 'dabbrev-expand)
+;; (global-set-key (kbd "<f9>") 'my-switch-to-other-buffer)
+;; (global-set-key (kbd "<f9>") 'switch-to-buffer)
+;; (global-set-key (kbd "<f9>") 'yas-describe-tables)
+;; (global-set-key (kbd "<f13>") 'kill-ring-save)
+#+end_src
+** xah-extend-selection
+#+begin_src elisp
+(defun xah-extend-selection ()
+  "Select the current word, bracket/quote expression, or expand selection.
+Subsequent calls expands the selection.
+
+when there's no selection,
+• if cursor is on a any type of bracket (including parenthesis, quotation mark), select whole bracketed thing including bracket
+• else, select current word.
+
+when there's a selection, the selection extension behavior is still experimental. But when cursor is on a any type of bracket (parenthesis, quote), it extends selection to outer bracket.
+
+URL `http://ergoemacs.org/emacs/modernization_mark-word.html'
+Version 2020-02-04"
+  (interactive)
+  (if (region-active-p)
+      (progn
+        (let (($rb (region-beginning)) ($re (region-end)))
+          (goto-char $rb)
+          (cond
+           ((looking-at "\\s(")
+            (if (eq (nth 0 (syntax-ppss)) 0)
+                (progn
+                  ;; (message "left bracket, depth 0.")
+                  (end-of-line) ; select current line
+                  (set-mark (line-beginning-position)))
+              (progn
+                ;; (message "left bracket, depth not 0")
+                (up-list -1 t t)
+                (mark-sexp))))
+           ((eq $rb (line-beginning-position))
+            (progn
+              (goto-char $rb)
+              (let (($firstLineEndPos (line-end-position)))
+                (cond
+                 ((eq $re $firstLineEndPos)
+                  (progn
+                    ;; (message "exactly 1 line. extend to next whole line." )
+                    (forward-line 1)
+                    (end-of-line)))
+                 ((< $re $firstLineEndPos)
+                  (progn
+                    ;; (message "less than 1 line. complete the line." )
+                    (end-of-line)))
+                 ((> $re $firstLineEndPos)
+                  (progn
+                    ;; (message "beginning of line, but end is greater than 1st end of line" )
+                    (goto-char $re)
+                    (if (eq (point) (line-end-position))
+                        (progn
+                          ;; (message "exactly multiple lines" )
+                          (forward-line 1)
+                          (end-of-line))
+                      (progn
+                        ;; (message "multiple lines but end is not eol. make it so" )
+                        (goto-char $re)
+                        (end-of-line)))))
+                 (t (error "logic error 42946" ))))))
+           ((and (> (point) (line-beginning-position)) (<= (point) (line-end-position)))
+            (progn
+              ;; (message "less than 1 line" )
+              (end-of-line) ; select current line
+              (set-mark (line-beginning-position))))
+           (t
+            ;; (message "last resort" )
+            nil))))
+    (progn
+      (cond
+       ((looking-at "\\s(")
+        ;; (message "left bracket")
+        (mark-sexp)) ; left bracket
+       ((looking-at "\\s)")
+        ;; (message "right bracket")
+        (backward-up-list) (mark-sexp))
+       ((looking-at "\\s\"")
+        ;; (message "string quote")
+        (mark-sexp)) ; string quote
+       ;; ((and (eq (point) (line-beginning-position)) (not (looking-at "\n")))
+       ;;  (message "beginning of line and not empty")
+       ;;  (end-of-line)
+       ;;  (set-mark (line-beginning-position)))
+       ((or (looking-back "\\s_" 1) (looking-back "\\sw" 1))
+        ;; (message "left is word or symbol")
+        (skip-syntax-backward "_w" )
+        ;; (re-search-backward "^\\(\\sw\\|\\s_\\)" nil t)
+        (push-mark)
+        (skip-syntax-forward "_w")
+        (setq mark-active t)
+        ;; (exchange-point-and-mark)
+        )
+       ((and (looking-at "\\s ") (looking-back "\\s " 1))
+        ;; (message "left and right both space" )
+        (skip-chars-backward "\\s " ) (set-mark (point))
+        (skip-chars-forward "\\s "))
+       ((and (looking-at "\n") (looking-back "\n" 1))
+        ;; (message "left and right both newline")
+        (skip-chars-forward "\n")
+        (set-mark (point))
+        (re-search-forward "\n[ \t]*\n")) ; between blank lines, select next text block
+       (t
+        ;; (message "just mark sexp" )
+        (mark-sexp)
+        (exchange-point-and-mark))
+       ;;
+       ))))
+#+end_src
+
+** copy-quoted
+#+begin_src elisp
+(defun copy-quoted ()
+  "Copy current string into kill-ring.
+The point can be anywhere in the string."
+  (interactive)
+  (let ((beg (or (nth 8 (syntax-ppss))
+                 (and (memq (char-after (point))
+                            '(?\" ?\'))
+                      (point))))
+        end)
+    (when beg
+      (setq end
+            (save-excursion
+              (goto-char beg)
+              (forward-sexp)
+              (point)))
+      (kill-ring-save beg end))))
+
+#+end_src
+** brutally-kill-word
+#+begin_src elisp
+;; kill whole word implementation
+(defcustom brutal-word-regex "[-_A-Za-z0-9]"
+  "Regular expression that defines a character
+   allowed in a word, i.e., not word boundary. Should
+   match only one character at a time."
+  :type 'regexp
+  :group 'user)
+
+(defun brutally-kill-word ()
+  "Kills the whole word (as defined by the
+   brutal-word-regex) regardless of where the point is in it."
+  (interactive)
+  ;; Work only if point is inside of a word
+  (if (looking-at brutal-word-regex)
+      (save-excursion ; Back up till the word boundary, one char at a time.
+	      (while (looking-at brutal-word-regex) (backward-char)) 
+	      ;; (message "looking successful")
+	      ;; Search for the whole word ...
+	      (search-forward-regexp (concat brutal-word-regex "+") nil t)
+	      ;; ... and replace it with empty string
+	      (replace-match "")
+	      ;; Remove extra spaces if they are there
+	      (if (eq (char-after) ? ) (just-one-space)))))
+
+(global-set-key (kbd "M-d") 'brutally-kill-word)
+
+#+end_src
+** ivy customization
+#+begin_src elisp
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; I don't find ivy mode that compelling compared to helm
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; (ivy-mode 1)
+;; (setq ivy-use-virtual-buffers t)
+;; (setq enable-recursive-minibuffers t)
+;; (global-set-key "\C-s" 'swiper)
+;; (global-set-key (kbd "C-c C-r") 'ivy-resume)
+;; (global-set-key (kbd "<f6>") 'ivy-resume)
+;; (global-set-key (kbd "M-x") 'counsel-M-x)
+;; (global-set-key (kbd "C-x C-f") 'counsel-find-file)
+;; (global-set-key (kbd "<f1> f") 'counsel-describe-function)
+;; (global-set-key (kbd "<f1> v") 'counsel-describe-variable)
+;; (global-set-key (kbd "<f1> l") 'counsel-find-library)
+;; (global-set-key (kbd "<f2> i") 'counsel-info-lookup-symbol)
+;; (global-set-key (kbd "<f2> u") 'counsel-unicode-char)
+;; (global-set-key (kbd "C-c g") 'counsel-git)
+;; (global-set-key (kbd "C-c j") 'counsel-git-grep)
+;; (global-set-key (kbd "C-c k") 'counsel-ag)
+;; (global-set-key (kbd "C-x l") 'counsel-locate)
+;; (define-key minibuffer-local-map (kbd "C-r") 'counsel-minibuffer-history)
+
+#+end_src
+
+** zwd-path-mark-one
+#+begin_src elisp
+(defun zwd-path-mark-one ()
+  (interactive)
+  (if (looking-at zwd-path-regex)
+      (progn
+        (while (looking-at zwd-path-regex) (backward-char))
+        (forward-char)
+        (set-mark (point))
+        (while (looking-at "[-_A-Za-z0-9~]") (forward-char))
+        )))
+
+#+end_src
+
+** zhou-copy-line-or-region
+#+begin_src R
+;; copy/paste
+(defun zhou-copy-line-or-region ()
+  "Copy current line, or region if active."
+  (interactive)
+  (if (use-region-p)
+      (kill-ring-save (region-beginning) (region-end))
+    (kill-ring-save (line-beginning-position)
+                    (line-end-position)))
+  (message "line/region copied"))
+
+;; (global-set-key (kbd "<f14>") 'jao-copy-line)
+;; (global-set-key (kbd "<f16>") 'yank)
+;; (global-set-key (kbd "<help>") 'other-window)
+;; (global-set-key (kbd "<f1>") 'zhou-copy-line-or-region) ; copy
+;; (global-set-key (kbd "<f2>") 'yank)           ; paste
+
+#+end_src
+
+** my-swith-to-other-buffer
+#+begin_src elisp
+(defun my-switch-to-other-buffer ()
+  "Switch to other buffer"
+  (interactive)
+  (switch-to-buffer (other-buffer)))
+#+end_src
+
+** my-swith-to-previous-buffer
+#+begin_src elisp
+(defun my-switch-to-previous-buffer ()
+  (interactive)
+  (switch-to-buffer (other-buffer (current-buffer) 1)))
+#+end_src
+
+** select-current-line
+#+begin_src elisp
+(defun select-current-line ()
+  "Select the current line"
+  (interactive)
+  (end-of-line) ; move to end of line
+  (set-mark (line-beginning-position)))
+(global-set-key (kbd "C-'") 'select-current-line)
+
+#+end_src
+
+** flush-blank-lines
+#+begin_src elisp
+(defun flush-blank-lines (start end)
+  (interactive "r")
+  (flush-lines "^\\s-*$" start end nil))
+
+#+end_src
+
+** collapse-blank-lines
+#+begin_src elisp
+(defun collapse-blank-lines (start end)
+  (interactive "r")
+  (replace-regexp "^\n\\{2,\\}" "\n" nil start end))
+
+#+end_src
 
 * R
 ** ESS emacs memory, the most important usage
@@ -11038,6 +11342,24 @@ I am Thread-1, I awake...
 I am Thread-2, I awake...
 I am Thread-3, I awake...
 ---
+* Writing
+** list the key points
+** How to make long sentences?
+*** and
+Eric is truly passionate about science and has a consistent history of developing and applying quantitative approaches in molecular biology to answer fundamental questions in biology.
+*** What ... is ...
+What really impresses me, however, is that his work at several points in his career led to the development of highly risky, yet innovative technologies that overcomes the bottle neck limitation in the genomic organization field. 
+*** that
+What really impresses me, however, is that his work at several points in his career led to the development of highly risky, yet innovative technologies that overcomes the bottle neck limitation in the genomic organization field. 
+*** as
+These technologies have been pivotal in his success as he continues to identify and characterize new molecular players in genome organization. 
+
+*** not only .. but also ..
+In my view, what separates Eric from others is not only his technology and ability to adapt it to different questions, but also his generosity, collegiality, and confidence to venture into new methodological and biological territory.
+
+*** As part of ...
+As part of that goal and evidence of Eric’s innovativeness, he was the first to conduct a genome-wide RNAi screen using fluorescent in situ hybridization (FISH) in combination with high-content imaging. 
+
 * Perl
 
 ** Perl Brew

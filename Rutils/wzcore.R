@@ -1,3 +1,28 @@
+## probeChromosome <- function(
+##     probes,
+##     platform=c('EPIC','HM450','MM285'),
+##     refversion=c('hg19','hg38','mm10')) {
+
+##     platform <- match.arg(platform)
+##     refversion <- match.arg(refversion)
+    
+##     mft <- sesameDataGet(sprintf(
+##         '%s.%s.manifest', platform, refversion))[probes]
+##     as.character(GenomicRanges::seqnames(mft))
+## }
+
+## probeIsAuto <- function(
+##     probes,
+##     platform=c('EPIC','HM450','MM285'),
+##     refversion=c('hg19','hg38','mm10')) {
+
+##     platform <- match.arg(platform)
+##     refversion <- match.arg(refversion)
+
+##     mft <- sesameDataGet(sprintf(
+##         '%s.%s.manifest', platform, refversion))[probes]
+##     !(as.character(GenomicRanges::seqnames(mft)) %in% c('chrX','chrY'))
+## }
 
 printf <- function(...) cat(sprintf(...));
 
@@ -297,4 +322,103 @@ cbind_betas_onCommonW <- function(...) {
     input <- list(...)
     common <- Reduce(intersect, lapply(input, rownames))
     do.call(cbind, lapply(input, function(x) x[common,]))
+}
+
+#' subset beta value matrix by probes with minimal
+#' number of non-NA.
+#' 
+#' @param betas beta value matrix
+#' @param min_nonna_frac minimum fraction of Non-NA
+#' @return subsetted beta value matrix
+#' @examples
+#' betas <- sesameDataGet('HM450.1.TCGA.PAAD')$betas
+#' betas <- bSubAnyNonNAW(betas)
+#' @export
+bSubNonNAW <- function(betas, min_nonna_frac=0.5, max_na_cnt=NULL) {
+    if (!is.null(max_na_cnt)) {
+        return(betas[rowSums(is.na(betas)) <= max_na_cnt, ])
+    }
+    if (is.null(dim(betas))) { # should also work for vector
+        betas[sum(!is.na(betas)) > min_nonna_frac*length(betas)]
+    } else {
+        betas[rowSums(!is.na(betas)) > min_nonna_frac*ncol(betas),]
+    }
+}
+
+bSubCpGW <- function(betas) {
+    betas[grep('^cg', rownames(betas)),]
+}
+
+bSubNoMaskW <- function(betas, platform='EPIC', refversion='hg38') {
+    platform = 'EPIC'
+    refversion = 'hg38'
+    mft <- sesameDataGet(sprintf('%s.%s.manifest', platform, refversion))
+    p <- intersect(rownames(betas), names(mft[!mft$MASK_general]))
+    betas[p,]
+}
+
+cleanMatrixForClusterW <- function(mtx, f_row = 0.5, f_col = 0.5) {
+    cat("Before: ", nrow(mtx), "rows and ", ncol(mtx),"columns.\n")
+    namtx = is.na(mtx)
+    good_row = rowSums(namtx) <= ncol(mtx) * (1-f_row)
+    good_col = colSums(namtx) <= nrow(mtx) * (1-f_col)
+    cat("After: ", sum(good_row), "rows and ", sum(good_col),"columns.\n")
+    mtx[good_row, good_col]
+}
+
+sampleNMax <- function(df, column, k) {
+    do.call(rbind, lapply(split(df, df[[column]]), function(df1) {
+        if(nrow(df1) > 0) {
+            sample_n(df1, min(nrow(df1),k))
+        } else {
+            NULL
+        }
+    }))
+}
+
+sampleGroup <- function(df, column, groups, k) {
+    idx = df[[column]] %in% groups
+    df_t = sample_n(df[idx,], k)
+    df_n = df[!idx,]
+    rbind(df_t, df_n)
+}
+
+mapMatrixW <- function(mat, val2num) {
+    matrix(val2num[mat], nrow=nrow(mat), ncol=ncol(mat),
+        dimnames=list(rownames(mat), colnames(mat)))
+}
+
+AFtoGenotype <- function(AFs) {
+    AFs = matrix(cut(AFs, breaks=c(0,0.3,0.7,1), labels=c("R","H","A"), include.lowest=T), nrow=nrow(AFs), ncol=ncol(AFs), dimnames=list(rownames(AFs), colnames(AFs)))
+}
+
+#' calculate the AUC for scores to distinguish labels
+#' 
+#' @param labels 0-1 vector for case and control
+#' @param scores a numerical vector of the same length as labels
+#' @return the AUC (normalized Mann Whitney U)
+auc_wmw2 = function(labels, scores) {
+    labels <- as.logical(labels)
+    n1 <- sum(labels)
+    n2 <- sum(!labels)
+    R1 <- sum(rank(scores)[labels])
+    U1 <- R1 - n1 * (n1 + 1)/2
+    U1/(n1 * n2)
+}
+
+#' sequentially remove duplicate from a list of char vector
+removeDup = function(chars_list) {
+    existing = NULL
+    lapply(chars_list, function(chars) {
+        chars = chars[!(chars %in% existing)]
+        existing <<- c(existing, chars)
+        chars
+    })
+}
+
+
+imputeRowMean = function(mtx) {
+    k <- which(is.na(mtx), arr.ind=TRUE)
+    mtx[k] <- rowMeans(mtx, na.rm=TRUE)[k[,1]]
+    mtx
 }

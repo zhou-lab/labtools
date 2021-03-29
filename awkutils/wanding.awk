@@ -272,6 +272,10 @@ function repeats( str, n,    rep, i )
     return rep
 }
 
+function labcol() {
+  for(i=1;i<=NF;++i){$i=i"_"$i;}print $0;
+}
+
 function basename(file) {
     sub(".*/", "", file)
     return file

@@ -2,6 +2,7 @@
 ;; you need to install
 ;; tabbar
 ;; yasnippet, ESS, polymode, helm, toc-org, fill-column-indicator
+;; paredit
 ;; other things: ivy+counsel+swiper
 
 (require 'package)
@@ -20,6 +21,12 @@
 ;; 	;; (add-to-list 'package-archives '("ELPA", "http://tromey.com/elpa/"))
 ;;   (package-initialize)
 ;;   )
+
+;; not very useful actually
+;; (electric-pair-mode 1)
+;; (setq electric-pair-inhibit-predicate
+;;       (lambda (c)
+;;         (if (char-equal c ?\<) t (electric-pair-default-inhibit c))))
 
 ;;;;;;;;;;;;;;;;;;;;
 ;;;;;;; fonts ;;;;;;
@@ -72,25 +79,46 @@
 
 (tabbar-mode)
 
-;; (setq yas-snippet-dirs
-;;       '~/emacs.d/.elpa/snippets/
-;;       )
 (yas-global-mode 1)
-;; need to link
-;; ln -s `rf ~/wzlib/emacs/emacs_linux/wanding-config/snippets` ~/.emacs.d/snippets
-;; (yas/load-directory "~/wzlib/emacs/emacs_linux/wanding-config/snippets/")
 (add-to-list 'yas-snippet-dirs "~/repo/wzlib/emacs/emacs_linux/wanding-config/snippets")
+(yas-reload-all)
 
-;; (global-linum-mode t)
+(defun switch-to-existing-buffer-other-window (part)
+  "Switch to buffer with PART in its name."
+  (interactive
+   (list (read-buffer-to-switch "Switch to buffer in other window: ")))
+  (let ((candidates
+     (cl-remove
+      nil
+      (mapcar (lambda (buf)
+            (let ((pos (string-match part (buffer-name buf))))
+              (when pos
+            (cons pos buf))))
+          (buffer-list)))))
+    (unless candidates
+      (user-error "There is no buffers with %S in its name." part))
+    (setq candidates (cl-sort candidates #'< :key 'car))
+    (switch-to-buffer-other-window (cdr (car candidates)))))
+
+(defun update-r-session ()
+  "update the R session without moving focus"
+  (interactive)
+  (save-excursion
+    (progn
+      (switch-to-existing-buffer-other-window "*R")
+      (end-of-buffer)
+      (select-window (previous-window)))))
+
+(global-set-key (kbd "<f10>") `update-r-session)
 
 (setq tab-width 2)
 (setq-default tab-width 2)
 (setq sh-basic-offset 2
       sh-indentation 2)
-
 (setq-default indent-tabs-mode nil)
 (setq org-startup-indented t)
-(setq org-startup-folded 'content)
+(setq org-startup-folded t)
+;; (setq org-startup-folded 'content)
 (setq org-src-fontify-natively t)
 (setq org-edit-src-content-indentation 0)
 (setq org-src-tab-acts-natively t)
@@ -102,22 +130,13 @@
                   "OBSOLETE"
                   "DEFERRED")))
 
-;; (require 'org-drill)
-
-;; R support inside org-babel
-;; (useful only for export R code-containing org files)
-;; (setq org-babel-R-command "/usr/local/bin/R --no-save")
-
-;; TOC in org mode
 (if (require 'toc-org nil t)
     (add-hook 'org-mode-hook 'toc-org-mode)
   (warn "toc-org not found"))
 
 (setq mouse-wheel-scroll-amount '(2))
 (setq mouse-wheel-progressive-speed nil)
-;; (global-visual-line-mode nil)
 (set-default 'truncate-lines nil)
-;; (define-key org-mode-map "\M-q" 'toggle-truncate-lines)
 (global-set-key (kbd "M-q") 'toggle-truncate-lines)
 
 (setq word-wrap nil)
@@ -126,32 +145,10 @@
 
 (add-to-list 'default-frame-alist '(height . 50))
 (add-to-list 'default-frame-alist '(width . 100))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; fill-column-indicator mode
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; (define-globalized-minor-mode
-;;   global-fci-mode fci-mode (lambda () (fci-mode 1)))
-;; (global-fci-mode 1)
-
 (setq-default fill-column 79)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; visualize long lines > 80
-;; using whitespace-mode
-;; see https://emacs.stackexchange.com/questions/147/how-can-i-get-a-ruler-at-column-80
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; The following solution just highlight lines that exceeds 80
-;; (setq-default
-;;  whitespace-line-column 80
-;;  whitespace-style
-;;  '(face lines-tail))
-;; (add-hook 'prog-mode-hook #'whitespace-mode)
-
 (setq-default c-default-style "k&r"
               c-basic-offset 2)
-
-;; always follow symlinks
-(setq vc-follow-symlinks t)
+(setq vc-follow-symlinks t) ;; always follow symlinks when opening file
 
 (show-paren-mode 1)
 (require 'mouse)
@@ -160,149 +157,14 @@
 (setq mouse-sel-mode t)
 (delete-selection-mode 1)
 
-(require 'expand-region)
-(global-set-key (kbd "C-=") 'er/expand-region)
+(global-set-key [mouse-4] (lambda () (interactive) (scroll-down 1)))
+(global-set-key [mouse-5] (lambda () (interactive) (scroll-up 1)))
 
-(global-set-key [mouse-4] (lambda ()
-			    (interactive)
-			    (scroll-down 1)))
-(global-set-key [mouse-5] (lambda ()
-			    (interactive)
-			    (scroll-up 1)))
-;; (global-set-key (kbd "<f12>") 'save-buffer)
-;; (global-set-key (kbd "<f11>") 'dabbrev-expand)
-;; (global-set-key (kbd "<f9>") 'my-switch-to-other-buffer)
-(global-set-key (kbd "<f19>") 'my-switch-to-other-buffer)
-;; (global-set-key (kbd "<f9>") 'switch-to-buffer)
-(global-set-key (kbd "<f18>") 'switch-to-buffer)
-(global-set-key (kbd "<f10>") 'ess-display-help-on-object)
-;; (global-set-key (kbd "<f9>") 'yas-describe-tables)
-;; (global-set-key (kbd "<f13>") 'kill-ring-save)
-
+(global-set-key (kbd "<f1>") 'ess-display-help-on-object)
 ;; step by function or region
 (global-set-key (kbd "<f12>") 'ess-eval-region-or-function-or-paragraph-and-step)
 ;; step by line
 (global-set-key (kbd "<f11>") 'ess-eval-region-or-line-visibly-and-step)
-
-(global-set-key (kbd "<f14>") 'jao-copy-line)
-(global-set-key (kbd "<f16>") 'yank)
-(global-set-key (kbd "<help>") 'other-window)
-
-;; copy/paste
-(defun zhou-copy-line-or-region ()
-  "Copy current line, or region if active."
-  (interactive)
-  (if (use-region-p)
-      (kill-ring-save (region-beginning) (region-end))
-    (kill-ring-save (line-beginning-position)
-                    (line-end-position)))
-  (message "line/region copied"))
-
-(global-set-key (kbd "<f1>") 'zhou-copy-line-or-region) ; copy
-(global-set-key (kbd "<f2>") 'yank)           ; paste
-
-;;;;;;;;;;;;;;;;;;;;;;;
-;; Wanding functions
-;;;;;;;;;;;;;;;;;;;;;;;
-(defun my-switch-to-other-buffer ()
-  "Switch to other buffer"
-  (interactive)
-  (switch-to-buffer (other-buffer)))
-
-(defun my-switch-to-previous-buffer ()
-  (interactive)
-  (switch-to-buffer (other-buffer (current-buffer) 1)))
-
-(defun select-current-line ()
-  "Select the current line"
-  (interactive)
-  (end-of-line) ; move to end of line
-  (set-mark (line-beginning-position)))
-(global-set-key (kbd "C-'") 'select-current-line)
-
-
-(defun flush-blank-lines (start end)
-  (interactive "r")
-  (flush-lines "^\\s-*$" start end nil))
-
-(defun collapse-blank-lines (start end)
-  (interactive "r")
-  (replace-regexp "^\n\\{2,\\}" "\n" nil start end))
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; paragraph-sentence convertion
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; collapse sentences into a paragraph
-(defun make-paragraph (start end)
-  (interactive "r")
-  (replace-regexp "\n\\{2,\\}" " " nil start end))
-
-(global-set-key (kbd "<f6>") 'make-paragraph)
-
-;; split a paragraph into sentences
-(defun split-paragraph (start end)
-  (interactive "r")
-  (replace-regexp "\\. " ".\n\n" nil start end))
-
-(global-set-key (kbd "<f5>") 'split-paragraph)
-
-
-;; the following is not useful at all, just for learning purpose
-(defun remove-vowel ($string &optional $from $to)
-  "Remove the following letters: {a e i o u}.
-
-When called interactively, work on current paragraph or text selection.
-
-When called in lisp code, if ξstring is non-nil, returns a changed string.
-If ξstring nil, change the text in the region between positions ξfrom ξto."
-  (interactive
-   (if (use-region-p)
-       (list nil (region-beginning) (region-end))
-     (let ((bds (bounds-of-thing-at-point 'paragraph)) )
-       (list nil (car bds) (cdr bds)) ) ) )
-
-  (let (workOnStringP inputStr outputStr)
-    (setq workOnStringP (if $string t nil))
-    (setq inputStr (if workOnStringP $string (buffer-substring-no-properties $from $to)))
-    (setq outputStr
-          (let ((case-fold-search t))
-            (replace-regexp-in-string "a\\|e\\|i\\|o\\|u\\|" "" inputStr) )  )
-
-    (if workOnStringP
-        outputStr
-      (save-excursion
-        (delete-region $from $to)
-        (goto-char $from)
-        (insert outputStr) )) ) )
-
-
-;; kill whole word implementation
-(defcustom brutal-word-regex "[-_A-Za-z0-9]"
-  "Regular expression that defines a character
-   allowed in a word, i.e., not word boundary. Should
-   match only one character at a time."
-  :type 'regexp
-  :group 'user)
-
-(defun brutally-kill-word ()
-  "Kills the whole word (as defined by the
-   brutal-word-regex) regardless of where the point is in it."
-  (interactive)
-  ;; Work only if point is inside of a word
-  (if (looking-at brutal-word-regex)
-      (save-excursion ; Back up till the word boundary, one char at a time.
-	(while (looking-at brutal-word-regex) (backward-char)) 
-	;; (message "looking successful")
-	;; Search for the whole word ...
-	(search-forward-regexp (concat brutal-word-regex "+") nil t)
-	;; ... and replace it with empty string
-	(replace-match "")
-	;; Remove extra spaces if they are there
-	(if (eq (char-after) ? ) (just-one-space)))))
-
-(global-set-key (kbd "M-d") 'brutally-kill-word)
 
 (defun rename-file-and-buffer (new-name)
   ;; source: http://steve.yegge.googlepages.com/my-dot-emacs-file
@@ -572,7 +434,7 @@ Then move to that line and indent according to mode"
      (ess-indent-from-chain-start)
      (ess-indent-with-fancy-comments . t)))
  '(package-selected-packages
-   '(expand-region doom-themes spacemacs-theme ess laguna-theme zencoding-mode anti-zenburn-theme hc-zenburn-theme labburn-theme zenburn-theme leuven-theme org-drill projectile abs-mode markdown-mode yaml-mode yasnippet-snippets yasnippet toc-org tabbar helm fill-column-indicator)))
+   '(paredit expand-region doom-themes spacemacs-theme ess laguna-theme zencoding-mode anti-zenburn-theme hc-zenburn-theme labburn-theme zenburn-theme leuven-theme org-drill projectile abs-mode markdown-mode yaml-mode yasnippet-snippets yasnippet toc-org tabbar helm fill-column-indicator)))
 
 (setq-default ess-indent-offset 4)
 
@@ -594,8 +456,9 @@ Then move to that line and indent according to mode"
   (insert "%>%")
   ;; (reindent-then-newline-and-indent)
   (just-one-space 1))
-(define-key ess-mode-map (kbd "C-%") 'then_R_operator)
-(define-key inferior-ess-mode-map (kbd "C-%") 'then_R_operator)
+(global-set-key (kbd "C-%") 'then_R_operator)
+;; (define-key ess-mode-map (kbd "C-%") 'then_R_operator)
+;; (define-key inferior-ess-mode-map (kbd "C-%") 'then_R_operator)
 
 (setq column-number-mode t)
 
@@ -605,28 +468,123 @@ Then move to that line and indent according to mode"
      (eshell-command 
       (format "find %s -type f -name \"*.[ch]\" | etags -" dir-name)))
 
+(defun zwd-clean-path ()
+  "Clean path to ~ form"
+  (interactive)
+  (save-restriction
+    (narrow-to-region (line-beginning-position) (line-end-position))
+    (goto-char (point-min))
+    (while (search-forward "/Users/zhouw3" nil t)
+      (replace-match "~"))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; I don't find ivy mode that compelling compared to helm
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; (ivy-mode 1)
-;; (setq ivy-use-virtual-buffers t)
-;; (setq enable-recursive-minibuffers t)
-;; (global-set-key "\C-s" 'swiper)
-;; (global-set-key (kbd "C-c C-r") 'ivy-resume)
-;; (global-set-key (kbd "<f6>") 'ivy-resume)
-;; (global-set-key (kbd "M-x") 'counsel-M-x)
-;; (global-set-key (kbd "C-x C-f") 'counsel-find-file)
-;; (global-set-key (kbd "<f1> f") 'counsel-describe-function)
-;; (global-set-key (kbd "<f1> v") 'counsel-describe-variable)
-;; (global-set-key (kbd "<f1> l") 'counsel-find-library)
-;; (global-set-key (kbd "<f2> i") 'counsel-info-lookup-symbol)
-;; (global-set-key (kbd "<f2> u") 'counsel-unicode-char)
-;; (global-set-key (kbd "C-c g") 'counsel-git)
-;; (global-set-key (kbd "C-c j") 'counsel-git-grep)
-;; (global-set-key (kbd "C-c k") 'counsel-ag)
-;; (global-set-key (kbd "C-x l") 'counsel-locate)
-;; (define-key minibuffer-local-map (kbd "C-r") 'counsel-minibuffer-history)
+(global-set-key (kbd "M-`") 'zwd-clean-path)
+
+(defun xah-select-text-in-quote ()
+  "Select text between the nearest left and right delimiters.
+Delimiters here includes the following chars: '\"`<>(){}[]“”‘’‹›«»「」『』【】〖〗《》〈〉〔〕（）
+This command select between any bracket chars, not the inner text of a bracket. For example, if text is
+
+ (a(b)c▮)
+
+ the selected char is “c”, not “a(b)c”.
+
+URL `http://ergoemacs.org/emacs/modernization_mark-word.html'
+Version 2020-03-11"
+  (interactive)
+  (let (
+        ($skipChars "^'\"`<>(){}[]“”‘’‹›«»「」『』【】〖〗《》〈〉〔〕（）〘〙")
+        $p1
+        )
+    (skip-chars-backward $skipChars)
+    (setq $p1 (point))
+    (skip-chars-forward $skipChars)
+    (set-mark $p1)))
+
+(defun xah-select-line ()
+  "Select current line. If region is active, extend selection downward by line.
+URL `http://ergoemacs.org/emacs/modernization_mark-word.html'
+Version 2017-11-01"
+  (interactive)
+  (if (region-active-p)
+      (progn
+        (forward-line 1)
+        (end-of-line))
+    (progn
+      (end-of-line)
+      (set-mark (line-beginning-position)))))
+
+(defun xah-select-block ()
+  "Select the current/next block of text between blank lines.
+If region is active, extend selection downward by block.
+
+URL `http://ergoemacs.org/emacs/modernization_mark-word.html'
+Version 2019-12-26"
+  (interactive)
+  (if (region-active-p)
+      (re-search-forward "\n[ \t]*\n" nil "move")
+    (progn
+      (skip-chars-forward " \n\t")
+      (when (re-search-backward "\n[ \t]*\n" nil "move")
+        (re-search-forward "\n[ \t]*\n"))
+      (push-mark (point) t t)
+      (re-search-forward "\n[ \t]*\n" nil "move"))))
+
+(defun zwd-path-mark-one ()
+  (interactive)
+  (if (looking-at "[-_A-Za-z0-9~]")
+      (progn
+        (while (looking-at "[-_A-Za-z0-9~]") (backward-char))
+        (forward-char)
+        (set-mark (point))
+        (while (looking-at "[-_A-Za-z0-9~]") (forward-char))
+        )))
+
+(defun zwd-path-expand-right ()
+  (interactive)
+  (if (region-active-p)
+      (progn
+        (if (> (mark) (point)) (exchange-point-and-mark))
+        (goto-char (region-end))
+        (forward-char)
+        (while (looking-at "[-_A-Za-z0-9~]") (forward-char)))))
+
+(defun zwd-path-expand-left ()
+  (interactive)
+  (if (region-active-p)
+      (progn
+        (if (< (mark) (point)) (exchange-point-and-mark))
+        (goto-char (region-beginning))
+        (backward-char)
+        (while (looking-back "[-_A-Za-z0-9~]") (backward-char)))))
+
+(defun zwd-path-shrink-left ()
+  (interactive)
+  (if (region-active-p)
+      (progn
+        (if (< (mark) (point)) (exchange-point-and-mark))
+        (goto-char (region-beginning))
+        (while (looking-at "[-_A-Za-z0-9~]") (forward-char))
+        (forward-char))))
+
+(defun zwd-path-shrink-right ()
+  (interactive)
+  (if (region-active-p)
+      (progn
+        (if (> (mark) (point)) (exchange-point-and-mark))
+        (goto-char (region-end))
+        (while (looking-back "[-_A-Za-z0-9~]") (backward-char))
+        (backward-char))))
+
+(require 'expand-region)
+(global-set-key (kbd "M-1") 'zwd-path-expand-left)
+(global-set-key (kbd "M-2") 'zwd-path-shrink-left)
+(global-set-key (kbd "M-3") 'zwd-path-shrink-right)
+(global-set-key (kbd "M-4") 'zwd-path-expand-right)
+;; from the biggest (paragraph) to the smallest (one word)
+(global-set-key (kbd "M-6") 'er/mark-paragraph)
+(global-set-key (kbd "M-7") 'xah-select-line)
+(global-set-key (kbd "M-8") 'xah-select-text-in-quote)
+(global-set-key (kbd "M-9") 'zwd-path-mark-one)
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
@@ -634,3 +592,5 @@ Then move to that line and indent according to mode"
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  )
+
+

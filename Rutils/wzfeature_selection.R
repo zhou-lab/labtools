@@ -48,11 +48,18 @@ clusterWithSignatureW <- function(betas, grouping, sigs) {
 
 #' cluster betas by sample grouping
 #' Either grouping or group2samples needs to be specified
-clusterWithColumnGroupingW <- function(betas, grouping=NULL, group2samples=NULL) {
+clusterWithColumnGroupingW <- function(betas, grouping=NULL, group2samples=NULL, ordered_groups = NULL) {
     if (is.null(grouping) && is.null(group2samples)) stop('Please specify either grouping or group2samples')
     if (is.null(group2samples)) {
-        do.call(cbind, lapply(unique(grouping), function(g) {
-            column.cluster(betas[,grouping == g])$mat
+        if (is.null(ordered_groups)) {
+            ordered_groups = unique(grouping)
+        }
+        do.call(cbind, lapply(ordered_groups, function(g) {
+            if (sum(grouping == g) > 3) {
+                column.cluster(betas[,grouping == g])$mat
+            } else {
+                betas[,grouping == g,drop=FALSE]
+            }
         }))
     } else {
         do.call(cbind, lapply(group2samples, function(x) {
@@ -67,8 +74,31 @@ clusterWithColumnGroupingW <- function(betas, grouping=NULL, group2samples=NULL)
     }
 }
 
-clusterWithRowGroupingW <- function(betas, group2probes) {
-    do.call(rbind, lapply(group2probes, function(x) {
-        row.cluster(betas[x,])$mat
-    }))
+clusterWithRowGroupingW <- function(betas, grouping=NULL, group2probes = NULL) {
+    if (is.null(grouping) && is.null(group2probes)) stop('Please specify either grouping or group2samples')
+    if (is.null(group2probes)) {
+        do.call(rbind, lapply(unique(grouping), function(g) {
+            if (sum(grouping == g) > 2) {
+                row.cluster(betas[grouping == g,])$mat
+            } else {
+                betas[grouping == g,,drop=FALSE]
+            }
+        }))
+    } else {
+        do.call(rbind, lapply(group2probes, function(x) {
+            if (!is.null(x) && length(x) > 2) {
+                row.cluster(betas[x,])$mat
+            } else if (length(x) == 0) {
+                NULL;
+            } else {
+                betas[x,,drop=FALSE]
+            }
+        }))
+    }
+}
+
+addDummyRows = function(betas, group2probes) {
+    nc = ncol(betas)
+    mtx = do.call(rbind, lapply(group2probes, function(betas) rbind(betas[probes,], rep(NA, nc))))
+    mtx[1:(nrow(mtx)-1),]
 }

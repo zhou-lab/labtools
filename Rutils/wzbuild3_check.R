@@ -10,7 +10,7 @@ if (length(target) > 1) {
 if (dir.exists(target)) {
   library(devtools)
   cat("=================== check =============\n")
-  check()
+  check(vignettes=FALSE)
 } else {
   if (format == 'pdf') {
     library(rmarkdown)

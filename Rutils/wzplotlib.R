@@ -176,7 +176,12 @@ wzGetColors <- function(grouping, palette.name='Paired', group_name=TRUE) {
     }
 }
 
-wzRepelLabel <- function(grouping, group2color) {
+wzRepelLabel <- function(
+    grouping, group2color,
+    segment.square = FALSE,
+    segment.inflect = FALSE,
+    segment.curvature = 0.2,
+    nudge_x = 0.1) {
 
     df <- data.frame(pos=sapply(split(seq_along(grouping), grouping), mean)) %>%
         rownames_to_column(var='grouping')
@@ -185,10 +190,12 @@ wzRepelLabel <- function(grouping, group2color) {
     ggplot(df) +
         geom_text_repel(aes(y=pos, x=1, label=grouping),
             color=group2color[df$grouping],
-            segment.square = TRUE,
-            segment.inflect = TRUE,
-            force = 0.5, nudge_x = 0.1,
-            direction = "y", hjust = 0, segment.size = 0.6, segment.curvature = -0.5) +
+            segment.square = segment.square,
+            segment.inflect = segment.inflect,
+            segment.size = 0.6,
+            segment.curvature = segment.curvature,
+            force = 0.2, nudge_x = nudge_x,
+            direction = "y", hjust = 0) +
         theme_minimal() +
         theme(axis.line.x  = element_blank(),
             axis.ticks.x = element_blank(),

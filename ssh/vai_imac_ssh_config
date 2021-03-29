@@ -26,6 +26,10 @@ Host hpc4
      HostName 10.30.28.114
      User zhouw3
 
+Host hpc5
+     HostName zhouw3-hpc.research.chop.edu
+     User zhouw3
+
 Host zhouserver
      HostName zhouserver.research.chop.edu
      User zhouw3

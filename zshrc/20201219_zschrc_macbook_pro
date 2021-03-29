@@ -1,5 +1,14 @@
 #!/bin/zsh
 
+
+function wzbuildall() {
+  wzdocument.R .
+  wzbuild1_vignette.R .
+  wzbuild2_test.R .
+  wzbuild3_check.R .
+  wzbuild4_bioccheck.R .
+}
+
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
 # confirmations, etc.) must go above this block; everything else may go below.
@@ -15,11 +24,13 @@ export PATH=~/bin:~/repo/wzlib/bin/:$PATH
 export PATH="$HOME/.Renv/bin:$PATH"
 eval "$(Renv init -)"
 
-function sd() {
-  var=$1
-  var1="${var/#\~/$HOME}"
-  mkdir -p $(dirname $var1)
-  scp hpc4:$var $var1
+LOCAL_HOME="/Users/zhouw3"
+REMOTE_HOME="/home/zhouw3"
+HPC_NAME="hpc5"
+source <(curl -s https://raw.githubusercontent.com/zhou-lab/labwiki/master/Snippets/20210326_sync_HPC_data.sh)
+
+function dnarev {
+    echo $1 | tr ATGC TACG | rev;
 }
 
 ## Emacs
@@ -141,9 +152,13 @@ alias scp='rsync -Pravdtze ssh'
 alias awk='gawk -F"\t" -v OFS="\t"'
 alias zcat="gzcat"
 alias les="less -SR"
+alias zles="zless -SR"
 alias colorify="grc -es --colour=auto" # need to install grc
 alias diff="colordiff"
 alias sb="source ~/.zshrc"
+function labcol {
+  awk '{for(i=1;i<=NF;++i){$i=$i"_"i;}print $0;}' $1;
+}
 # alias diff='colorify diff'
 # alias make='colorify make'
 # alias head='colorify head'
@@ -159,7 +174,7 @@ export PYTHONPATH=$HOME:~/repo/wzlib/pyutils
 export AWKPATH=$HOME/repo/wzlib/awkutils
 
 ## search functions
-function wzgrep { [[ -z "$1" ]] || ag "$1" ~/repo/wzprojects --pager="less -R"; }
+function wzgrep { [[ -z "$1" ]] || ag "$1" ~/repo/labjournal --pager="less -R"; }
 
 function wzgrep2 { [[ -z "$1" ]] || ag "$1" . --pager="less -R"; }
 
@@ -202,17 +217,19 @@ function s {
   shift;
 
   if [[ $location =~ ^wzp ]]; then
-    location=$HOME/repo/wzprojects/
+    location=$HOME/repo/labjournal/zhouw3/
+  elif [[ $location =~ lbj ]]; then
+    location=$HOME/repo/labjournal/
   elif [[ $location =~ ^wzl ]]; then
     location=$HOME/repo/wzlib/
   elif [[ $location =~ ^sa ]]; then
     location=$HOME/samplesheets/
   elif [[ $location =~ ^ga ]]; then
     location=$HOME/gallery/
-  elif [[ $location =~ ^go ]]; then
-    location=$HOME/Google/
-  elif [[ $location =~ ^on ]]; then
-    location=$HOME/OneDrive/
+  elif [[ $location =~ ^zlb ]]; then
+    location=$HOME/zhoulab
+  elif [[ $location =~ ^z_b ]]; then
+    location=$HOME/zhou_lab/
   elif [[ $location =~ ^gr ]]; then
     location=$HOME/Google/Grant
   elif [[ $location =~ ^dr ]]; then
@@ -281,6 +298,14 @@ alias gst="git status"
 alias gpl="git pull"
 alias gpu="git push"
 
+function update_journal {
+  cd ~/repo/labjournal
+  git commit -am "Wanding's update"
+  git pull
+  git push
+  cd -
+}
+
 function allgpl {
   for f in ~/repo/*; do
     cd $f;
@@ -334,7 +359,7 @@ z() {
 
 #### python ####
 ## activate anaconda
-source /Users/zhouw3/anaconda3/bin/activate
+# source /Users/zhouw3/anaconda3/bin/activate
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
