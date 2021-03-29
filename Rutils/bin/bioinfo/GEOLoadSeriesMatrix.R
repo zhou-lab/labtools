@@ -1,11 +1,12 @@
 #!/usr/bin/env Rscript
 library(stringr)
+library(data.table)
 args <- commandArgs(trailingOnly=TRUE)
-system(sprintf("zcat %s | awk '!/^!/ && length($0)>0' >tmp_%s", args[1], sname))
 sname = args[1]
+system(sprintf("zcat %s | awk '!/^!/ && length($0)>0' >tmp_%s", sname, sname))
 system(sprintf("zcat %s | awk '/^!Sample/' | wzmanip transpose - >%s_samplesheets.tsv", sname, sname))
 
-samples <- read.table(sprintf("%s_samplesheets.tsv", sname), stringsAsFactors=F, header=T)
+samples <- read.table(sprintf("%s_samplesheets.tsv", sname), stringsAsFactors=F, header=T, sep='\t')
 
 select.cols <- c(1,2)
 select.cols <- sort(unique(c(select.cols, grep('characteristics', colnames(samples)))))
@@ -124,7 +125,7 @@ if (!is.numeric(betas)) {
 }
 
 write.table(samples, file=sprintf('%s_samples.tsv', sname), quote=F, sep='\t', row.names=FALSE)
-saveRDS(samples, file=sprintf('%s_samples_GEOLoadSeriesMatrix.rds', sname))
+# saveRDS(samples, file=sprintf('%s_samples_GEOLoadSeriesMatrix.rds', sname))
 saveRDS(betas, file=sprintf('%s_betas_GEOLoadSeriesMatrix.rds', sname))
 system(sprintf('rm -f tmp_%s', sname))
 cat('Read:', ncol(betas), 'samples.\n')
