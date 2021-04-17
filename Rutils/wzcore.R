@@ -422,3 +422,101 @@ imputeRowMean = function(mtx) {
     mtx[k] <- rowMeans(mtx, na.rm=TRUE)[k[,1]]
     mtx
 }
+
+annotateW = function(accession, probeIDs, platform="MM285") {
+    anno = tbk_data(sprintf("~/references/InfiniumArray/MM285/annotations/%s.tbk", accession), probes=probeIDs)
+    anno[probeIDs,]
+}
+
+
+bothClusterSE = function(se, nrow_max = 3000, ncol_max = 3000) {
+    if (nrow(se) > nrow_max || ncol(se) > ncol_max) {
+        stop(sprintf("Too many rows (%d, max: %d) or columns (%d, max: %d). Abort.",
+            nrow(se), nrow_max, ncol(se), ncol_max))
+    }
+    ord = both.cluster(assay(se))
+    se[ord$row.clust$order, ord$column.clust$order]
+}
+
+buildSE = function(betas, branch2probes, meta, tissue_color) {
+    bt = clusterWithRowGroupingW(betas, group2probes = branch2probes)
+    bt = clusterWithColumnGroupingW(bt, grouping = meta$tissue, ordered_groups = names(tissue_color))
+    rd = tibble(probeID = rownames(bt), branchID = rep(names(branch2probes), sapply(branch2probes, length)))
+    cd = meta[match(colnames(bt), meta$sample),]
+    se = SummarizedExperiment(assays=list(betas=bt), rowData=rd, colData=cd)
+    metadata(se)$tissue_color = tissue_color
+    metadata(se)$branchID_color = wzGetColors(names(branch2probes))
+    se
+}
+
+visualizeTissueSE = function(se, color=c("blueYellow","fullJet")) {
+    color = match.arg(color)
+    if (color == "blueYellow") stop.points = c("blue","yellow")
+    else stop.points = NULL
+    cd = as_tibble(colData(se))
+    rd = as_tibble(rowData(se))
+    md = metadata(se)
+    g = WHeatmap(assay(se), cmp=CMPar(stop.points=stop.points,
+        dmin=0, dmax=1), name="b1", xticklabels=T, xticklabels.n=ncol(se))
+    ## branch color bar (vertical)
+    g = g + WColorBarV(rd$branchID, RightOf("b1", width=0.03),
+        cmp=CMPar(label2color=md$branchID_color), name="bh")
+    ## tissue color bar (horizontal)
+    g = g + WColorBarH(cd$tissue, TopOf("b1",height=0.03),
+        cmp=CMPar(label2color=md$tissue_color), name="ti",
+        xticklabels=T, xticklabel.side='t',
+        ## xticklabel.space=0.036,
+        xticklabel.space=0.0001,
+        label.use.data=TRUE, label.pad=0.05)
+    ## legends
+    g = g + WLegendV("ti", TopRightOf("bh", just=c('left','top'), h.pad=0.02),
+        height=0.02)
+    g = g + WLegendV('bh', Beneath(pad=0.06))
+    g + WCustomize(mar.bottom=0.15, mar.right=0.06, mar.top=0.1)
+}
+
+branchInferProbes1 = function(betas, branch_grouping, delta_max = -0.6, auc_min = 0.99, scan_delta = FALSE, scan_auc = FALSE) {
+    m0 = apply(betas[,branch_grouping==0],1,
+               function(xx) mean(tail(sort(xx),n=5), na.rm=TRUE))
+    m1 = apply(betas[,branch_grouping==1],1,
+               function(xx) mean(head(sort(xx),n=5), na.rm=TRUE))
+    delta_betas = m0 - m1
+    auc = apply(betas, 1, function(b1) {
+        br = branch_grouping[branch_grouping %in% c(0,1)];
+        b1 = b1[branch_grouping %in% c(0,1)];
+        auc_wmw2(br, b1);})
+    if (scan_delta) {
+        for (i in seq(-0.9,-0.1,by=0.05)) {
+            probes = names(which(delta_betas <= i & auc >= auc_min))
+            message(sprintf("delta: %f Found %d probes", i, length(probes)))
+        }
+    }
+    if (scan_auc) {
+        for (i in seq(0.8,0.99,by=0.11)) {
+            probes = names(which(delta_betas <= delta_max & auc >= i))
+            message(sprintf("auc: %f Found %d probes", i, length(probes)))
+        }
+    }
+    
+    list(delta_betas = delta_betas, auc = auc)
+}
+
+branchInferProbes2 = function(res, delta_max = -0.6, auc_min = 0.99) {
+    probes = names(which(res$delta_betas <= delta_max & res$auc >= auc_min))
+    message(sprintf("Found %d probes", length(probes)))
+    probes
+}
+
+branchInferProbes2Top = function(res, auc_min = 0.99, n=50) {
+    probes = names(head(sort(res$delta_betas[res$auc >= auc_min]), n=n))
+    message(sprintf("Found %d probes (max delta: %f)", length(probes), max(res$delta_betas[probes])))
+    probes
+}
+
+saveBranchProbes = function(branch, probes, date="NA", id_dir="~/Dropbox/Documents/paper/Ongoing_epigenetic_reconstruction/20210421_Branches_Human_EPIC/") {
+    write.table(tibble(probeID=probes, branchID=branch, date=date), file=sprintf("%s/%s.tsv", id_dir, branch), row.names=FALSE, quote=FALSE, sep="\t")
+}
+
+readBranchProbes = function(id_dir = "~/Dropbox/Documents/paper/Ongoing_epigenetic_reconstruction/20210421_Branches_Human_EPIC/") {
+    with(do.call(rbind, lapply(list.files(id_dir, ".tsv"), function(x) read_tsv(sprintf("%s/%s", id_dir, x), col_names=TRUE, , col_types = cols()))), split(probeID, branchID))
+}

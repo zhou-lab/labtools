@@ -297,6 +297,7 @@ function cdd {
 alias gst="git status"
 alias gpl="git pull"
 alias gpu="git push"
+alias gca="git commit -am"
 
 function update_journal {
   cd ~/repo/labjournal

@@ -103,13 +103,13 @@
 (defun update-r-session ()
   "update the R session without moving focus"
   (interactive)
-  (save-excursion
-    (progn
-      (switch-to-existing-buffer-other-window "*R")
-      (end-of-buffer)
-      (select-window (previous-window)))))
+  (progn
+      (setq window (get-buffer-window))
+      (ess-switch-to-inferior-or-script-buffer nil)
+      (select-window window)
+      ))
 
-(global-set-key (kbd "<f10>") `update-r-session)
+;; (global-set-key (kbd "<f10>") `update-r-session)
 
 (setq tab-width 2)
 (setq-default tab-width 2)
@@ -122,6 +122,29 @@
 (setq org-src-fontify-natively t)
 (setq org-edit-src-content-indentation 0)
 (setq org-src-tab-acts-natively t)
+
+;; fix when <> is considered parenthesis in org source code
+(defun org-mode-<>-syntax-fix (start end)
+  "Change syntax of characters ?< and ?> to symbol within source code blocks."
+  (let ((case-fold-search t))
+    (when (eq major-mode 'org-mode)
+      (save-excursion
+        (goto-char start)
+        (while (re-search-forward "<\\|>" end t)
+          (when (save-excursion
+                  (and
+                   (re-search-backward "[[:space:]]*#\\+\\(begin\\|end\\)_src\\_>" nil t)
+                   (string-equal (downcase (match-string 1)) "begin")))
+            ;; This is a < or > in an org-src block
+            (put-text-property (point) (1- (point))
+                               'syntax-table (string-to-syntax "_"))))))))
+(defun org-setup-<>-syntax-fix ()
+  "Setup for characters ?< and ?> in source code blocks.
+Add this function to `org-mode-hook'."
+  (setq syntax-propertize-function 'org-mode-<>-syntax-fix)
+  (syntax-propertize (point-max)))
+(add-hook 'org-mode-hook #'org-setup-<>-syntax-fix)
+
 
 (setq org-todo-keywords
       '((sequence "TODO"
@@ -162,9 +185,12 @@
 
 (global-set-key (kbd "<f1>") 'ess-display-help-on-object)
 ;; step by function or region
-(global-set-key (kbd "<f12>") 'ess-eval-region-or-function-or-paragraph-and-step)
+(global-set-key (kbd "<f12>") (lambda () (interactive) (ess-eval-region-or-function-or-paragraph-and-step) (update-r-session)))
 ;; step by line
-(global-set-key (kbd "<f11>") 'ess-eval-region-or-line-visibly-and-step)
+;; (global-set-key (kbd "<f11>") 'ess-eval-region-or-line-visibly-and-step)
+(global-set-key (kbd "<f11>") (lambda () (interactive) (ess-eval-region-or-line-visibly-and-step) (update-r-session)))
+(global-set-key (kbd "<f10>") (lambda () (interactive) (ess-eval-line) (update-r-session)))
+(global-set-key (kbd "<f8>") (lambda () (interactive) (ess-switch-to-inferior-or-script-buffer nil)))
 
 (defun rename-file-and-buffer (new-name)
   ;; source: http://steve.yegge.googlepages.com/my-dot-emacs-file
@@ -372,7 +398,7 @@ Then move to that line and indent according to mode"
 ;;       backup-by-copying-when-linked t) ; Copy linked files, don't rename.
 
 (global-set-key (kbd "M-i") 'kill-whole-line)
-(global-set-key (kbd "<f8>") 'switch-to-buffer)
+;;(global-set-key (kbd "<f8>") 'switch-to-buffer)
 (global-set-key (kbd "<f9>") 'other-window)
 (global-set-key (kbd "<f18>") 'delete-other-windows)
 (global-set-key (kbd "<clear>") 'goto-line)
