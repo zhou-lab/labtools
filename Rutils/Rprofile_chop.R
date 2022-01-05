@@ -14,6 +14,7 @@ load_default <- function() {
     suppressMessages(source('~/repo/wzlib/Rutils/wzplotlib.R'))
     suppressMessages(source('~/repo/wzlib/Rutils/wzseq.R'))
     suppressMessages(source('~/repo/wzlib/Rutils/wzfeature_selection.R'))
+    suppressMessages(library(parallel))
     suppressMessages(library(grDevices))
     suppressMessages(library(tidyverse))
     suppressMessages(library(wheatmap))
@@ -25,7 +26,7 @@ load_default <- function() {
     suppressMessages(library(reshape2))
     suppressMessages(library(devtools))
     suppressMessages(library(readxl))
-    suppressMessages(library(viridis))
+    ## suppressMessages(library(viridis))
     suppressMessages(library(ggsci))
     suppressMessages(library(circlize))
     suppressMessages(library(ggrepel))
@@ -47,3 +48,40 @@ ld <- load_default
 ##     })
 ##   }
 ## }
+
+
+## rowMax <- function(x) {apply(x,1,max)}
+
+## suppressWarnings(library(ggplot2))
+## suppressWarnings(library(reshape2))
+## suppressWarnings(suppressPackageStartupMessages(library(readxl)))
+## suppressWarnings(suppressPackageStartupMessages(library(devtools)))
+## suppressWarnings(suppressPackageStartupMessages(library(wheatmap)))
+## suppressWarnings(suppressPackageStartupMessages(library(sesame)))
+## suppressWarnings(suppressPackageStartupMessages(library(dplyr, quiet=TRUE)))
+## suppressWarnings(suppressPackageStartupMessages(library(tidyr)))
+## suppressWarnings(suppressPackageStartupMessages(library(GenomicRanges, quiet=TRUE)))
+## suppressWarnings(suppressPackageStartupMessages(library(limma)))
+## theme_wz <- theme_set(theme_classic(15))
+## theme_wz <- theme_update(
+##   axis.line.x = element_line(colour = "black"),
+##   axis.line.y = element_line(colour = "black"),
+##   axis.text = element_text(colour='black'))
+
+## theme_wz_light <- theme_set(theme_linedraw(15))
+## theme_wz_light <- theme_update(
+##   ## text = element_text(face='bold'),
+##   ## axis.line.x = element_line(colour = "black", size=1.2),
+##   ## axis.line.y = element_line(colour = "black", size=1.2),
+##   axis.text = element_text(colour='black', size=15),
+##   panel.border = element_rect(linetype = "solid", colour = "black", size=1.2),
+##   panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+## theme_wz <- theme_set(theme_linedraw(16))
+## theme_wz <- theme_update(
+##   text = element_text(face='bold'),
+##   ## axis.line.x = element_line(colour = "black", size=1.2),
+##   ## axis.line.y = element_line(colour = "black", size=1.2),
+##   axis.text = element_text(colour='black', size=16),
+##   panel.border = element_rect(linetype = "solid", colour = "black", size=1.2),
+##   panel.grid.major = element_blank(), panel.grid.minor = element_blank())

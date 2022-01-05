@@ -66,42 +66,6 @@ Rscript -e \"load('%s.rda'); myfun(args);\"
   }
 }
 
-rowMax <- function(x) {apply(x,1,max)}
-
-suppressWarnings(library(ggplot2))
-suppressWarnings(library(reshape2))
-suppressWarnings(suppressPackageStartupMessages(library(readxl)))
-suppressWarnings(suppressPackageStartupMessages(library(devtools)))
-## suppressWarnings(suppressPackageStartupMessages(library(wheatmap)))
-## suppressWarnings(suppressPackageStartupMessages(library(sesame)))
-suppressWarnings(suppressPackageStartupMessages(library(dplyr, quiet=TRUE)))
-suppressWarnings(suppressPackageStartupMessages(library(tidyr)))
-suppressWarnings(suppressPackageStartupMessages(library(GenomicRanges, quiet=TRUE)))
-## suppressWarnings(suppressPackageStartupMessages(library(limma)))
-## theme_wz <- theme_set(theme_classic(15))
-## theme_wz <- theme_update(
-##   axis.line.x = element_line(colour = "black"),
-##   axis.line.y = element_line(colour = "black"),
-##   axis.text = element_text(colour='black'))
-
-theme_wz_light <- theme_set(theme_linedraw(15))
-theme_wz_light <- theme_update(
-  ## text = element_text(face='bold'),
-  ## axis.line.x = element_line(colour = "black", size=1.2),
-  ## axis.line.y = element_line(colour = "black", size=1.2),
-  axis.text = element_text(colour='black', size=15),
-  panel.border = element_rect(linetype = "solid", colour = "black", size=1.2),
-  panel.grid.major = element_blank(), panel.grid.minor = element_blank())
-
-theme_wz <- theme_set(theme_linedraw(16))
-theme_wz <- theme_update(
-  text = element_text(face='bold'),
-  ## axis.line.x = element_line(colour = "black", size=1.2),
-  ## axis.line.y = element_line(colour = "black", size=1.2),
-  axis.text = element_text(colour='black', size=16),
-  panel.border = element_rect(linetype = "solid", colour = "black", size=1.2),
-  panel.grid.major = element_blank(), panel.grid.minor = element_blank())
-
 wzbind.list <- function(x, cat.names=NULL) {
   if (!is.null(cat.names))
     names(x) <- cat.names
@@ -358,6 +322,8 @@ bSubNoMaskW <- function(betas, platform='EPIC', refversion='hg38') {
 }
 
 cleanMatrixForClusterW <- function(mtx, f_row = 0.5, f_col = 0.5) {
+    cat(sprintf("Filter rows with >%1.2f missingness and columns with >%1.2f missingness.\n",
+        f_row, f_col))
     cat("Before: ", nrow(mtx), "rows and ", ncol(mtx),"columns.\n")
     namtx = is.na(mtx)
     good_row = rowSums(namtx) <= ncol(mtx) * (1-f_row)
@@ -376,6 +342,7 @@ sampleNMax <- function(df, column, k) {
     }))
 }
 
+## sample members in groups
 sampleGroup <- function(df, column, groups, k) {
     idx = df[[column]] %in% groups
     df_t = sample_n(df[idx,], k)
@@ -438,18 +405,36 @@ bothClusterSE = function(se, nrow_max = 3000, ncol_max = 3000) {
     se[ord$row.clust$order, ord$column.clust$order]
 }
 
-buildSE = function(betas, branch2probes, meta, tissue_color) {
-    bt = clusterWithRowGroupingW(betas, group2probes = branch2probes)
+buildSE = function(betas, probedf, meta, tissue_color, branch_color) {
+
+    ## bt = clusterWithRowGroupingW(betas, group2probes = branch2probes)
+    branch2probes = split(probedf$Probe_ID, probedf$branch)
+    ## row order is defined by branch_color
+    branch_color = na.omit(branch_color)
+    bt = clusterWithRowGroupingW(betas, group2probes = branch2probes[names(branch_color)])
+    ## column order is defined by tissue_color
     bt = clusterWithColumnGroupingW(bt, grouping = meta$tissue, ordered_groups = names(tissue_color))
-    rd = tibble(probeID = rownames(bt), branchID = rep(names(branch2probes), sapply(branch2probes, length)))
-    cd = meta[match(colnames(bt), meta$sample),]
+    rd = probedf[match(rownames(bt), probedf$Probe_ID),]
+    rownames(rd) = NULL
+    cd = meta[match(colnames(bt), meta$Sample_ID),]
     se = SummarizedExperiment(assays=list(betas=bt), rowData=rd, colData=cd)
     metadata(se)$tissue_color = tissue_color
-    metadata(se)$branchID_color = wzGetColors(names(branch2probes))
+    metadata(se)$branch_color = branch_color
     se
 }
 
-visualizeTissueSE = function(se, color=c("blueYellow","fullJet")) {
+meta2SE = function(meta, tbk_paths=NULL) {
+    if (length(tbk_paths) == 0) {
+        tbk_paths = NULL # TODO work this out
+        ## tbk_paths ought to follow the same order as meta
+    }
+
+    betas = tbk_data(tbk_paths, max_pval=0.2)
+    SummarizedExperiment(assays=list(betas=betas), colData=meta)
+}
+
+visualizeTissueSE = function(se, color=c("blueYellow","jet")) {
+    ## this is the better version of sesame:::reference_plot_se(NULL, se)
     color = match.arg(color)
     if (color == "blueYellow") stop.points = c("blue","yellow")
     else stop.points = NULL
@@ -459,46 +444,114 @@ visualizeTissueSE = function(se, color=c("blueYellow","fullJet")) {
     g = WHeatmap(assay(se), cmp=CMPar(stop.points=stop.points,
         dmin=0, dmax=1), name="b1", xticklabels=T, xticklabels.n=ncol(se))
     ## branch color bar (vertical)
-    g = g + WColorBarV(rd$branchID, RightOf("b1", width=0.03),
-        cmp=CMPar(label2color=md$branchID_color), name="bh")
+    g = g + WColorBarV(rd$branch, RightOf("b1", width=0.03),
+        cmp=CMPar(label2color=md$branch_color), name="bh",
+        yticklabels=T, yticklabel.side='l',
+        label.space=0.01,
+        label.use.data=TRUE, label.pad=1.5)
     ## tissue color bar (horizontal)
-    g = g + WColorBarH(cd$tissue, TopOf("b1",height=0.03),
-        cmp=CMPar(label2color=md$tissue_color), name="ti",
+    g = g + WColorBarH(cd$branch, TopOf("b1",height=0.03),
+        cmp=CMPar(label2color=md$branch_color), name="ti",
         xticklabels=T, xticklabel.side='t',
         ## xticklabel.space=0.036,
-        xticklabel.space=0.0001,
-        label.use.data=TRUE, label.pad=0.05)
-    ## legends
-    g = g + WLegendV("ti", TopRightOf("bh", just=c('left','top'), h.pad=0.02),
-        height=0.02)
-    g = g + WLegendV('bh', Beneath(pad=0.06))
+        label.space=0.01,
+        label.use.data=TRUE, label.pad=1.5)
+    ## ## legends
+    ## g = g + WLegendV("ti", TopRightOf("bh", just=c('left','top'), h.pad=0.5),
+    ##     height=0.05)
+    ## g = g + WLegendV('bh', Beneath(pad=0.06))
     g + WCustomize(mar.bottom=0.15, mar.right=0.06, mar.top=0.1)
 }
 
-branchInferProbes1 = function(betas, branch_grouping, delta_max = -0.6, auc_min = 0.99, scan_delta = FALSE, scan_auc = FALSE) {
+branchInferProbes = function(betas, meta, branch,
+    hyper=FALSE, scan_delta = FALSE, scan_auc = FALSE) {
+
+    branch_grouping = meta[[branch]]
+
+    in_na = rowSums(is.na(betas[,branch_grouping==0])) / sum(branch_grouping==0)
+    out_na = rowSums(is.na(betas[,branch_grouping==1])) / sum(branch_grouping==1)
+    
+    ## hyper
+    ## in-group min
     m0 = apply(betas[,branch_grouping==0],1,
-               function(xx) mean(tail(sort(xx),n=5), na.rm=TRUE))
+        function(xx) mean(head(sort(xx),n=5), na.rm=TRUE))
+    ## out-group max
     m1 = apply(betas[,branch_grouping==1],1,
-               function(xx) mean(head(sort(xx),n=5), na.rm=TRUE))
-    delta_betas = m0 - m1
+        function(xx) mean(tail(sort(xx),n=5), na.rm=TRUE))
+    delta_beta = m0 - m1
     auc = apply(betas, 1, function(b1) {
         br = branch_grouping[branch_grouping %in% c(0,1)];
         b1 = b1[branch_grouping %in% c(0,1)];
         auc_wmw2(br, b1);})
-    if (scan_delta) {
-        for (i in seq(-0.9,-0.1,by=0.05)) {
-            probes = names(which(delta_betas <= i & auc >= auc_min))
-            message(sprintf("delta: %f Found %d probes", i, length(probes)))
-        }
-    }
-    if (scan_auc) {
-        for (i in seq(0.8,0.99,by=0.11)) {
-            probes = names(which(delta_betas <= delta_max & auc >= i))
-            message(sprintf("auc: %f Found %d probes", i, length(probes)))
-        }
-    }
+    dfHype = data.frame(delta_beta = delta_beta, auc = auc[names(delta_beta)],
+        in_na = in_na[names(delta_beta)], out_na = out_na[names(delta_beta)],
+        Probe_ID = names(delta_beta), branch=branch, type="Hyper")
+
+    ## hypo
+    ## in-group max
+    m0 = apply(betas[,branch_grouping==0],1,
+        function(xx) mean(tail(sort(xx),n=5), na.rm=TRUE))
+    ## out-group min
+    m1 = apply(betas[,branch_grouping==1],1,
+        function(xx) mean(head(sort(xx),n=5), na.rm=TRUE))
+    delta_beta = m0 - m1
+    auc = apply(betas, 1, function(b1) {
+        br = branch_grouping[branch_grouping %in% c(0,1)];
+        b1 = b1[branch_grouping %in% c(0,1)];
+        auc_wmw2(br, b1);})
+    dfHypo = data.frame(delta_beta = delta_beta, auc = auc[names(delta_beta)],
+        in_na = in_na[names(delta_beta)], out_na = out_na[names(delta_beta)],
+        Probe_ID = names(delta_beta), branch=branch, type="Hypo")
     
-    list(delta_betas = delta_betas, auc = auc)
+    message(sprintf("Processed branch %s", branch))
+    branchScanDeltaHypo(dfHypo)
+    branchScanDeltaHype(dfHype)
+    rbind(dfHypo, dfHype)
+}
+
+branchScanDeltaHypo = function(df, auc_min = 0.99) {
+    message(sprintf("Found %d NA in Hypo", sum(is.na(df$delta_beta))))
+    for (i in seq(-0.9,-0.1,by=0.05)) {
+        probes = df$Probe_ID[(!is.na(df$delta_beta)) & df$delta_beta <= i & df$auc >= auc_min]
+        message(sprintf("delta: %f Found %d probes", i, length(probes)))
+    }
+}
+
+branchInferProbesMulti = function(betas, meta,
+    hyper=FALSE, scan_delta = FALSE, scan_auc = FALSE) {
+
+    meta$branch
+    branch2samples = split(seq_along(meta$branch), meta$branch)
+    ubs = do.call(cbind, lapply(branch2samples, function(samples) rowMaxs(betas[,samples])))
+    lbs = do.call(cbind, lapply(branch2samples, function(samples) rowMins(betas[,samples])))
+
+    group = do.call(rbind, lapply(seq_len(nrow(betas)), function(i) {
+        ubs1 = ubs[i,]
+        lbs1 = lbs[i,]
+        if (all(is.na(ubs1)) || all(is.na(lbs1))) {
+            hlb = NA; lub = NA;
+        } else {
+            hlb = max(lbs1, na.rm = T) # high group's lb
+            lub = min(ubs1, na.rm = T) # low group's ub
+        }
+        is_l = ubs1 < hlb - 0.3
+        is_h = lbs1 > lub + 0.3
+        c(delta_beta = hlb - lub,
+            ifelse(is.na(is_l) | is.na(is_h) | (is_l & is_h), 2,
+                ifelse(is_l, 0, ifelse(is_h, 1, 2))))
+    }))
+    rownames(group) = rownames(betas)
+    SummarizedExperiment(
+        assays=list(membership=group[,2:ncol(group)]),
+        rowData=data.frame(Probe_ID=rownames(group), delta_beta = group[,1]))
+}
+
+branchScanDeltaHype = function(df, auc_max = 0.01) {
+    message(sprintf("Found %d NA in Hyper", sum(is.na(df$delta_beta))))
+    for (i in seq(0.1,0.9,by=0.05)) {
+        probes = df$Probe_ID[(!is.na(df$delta_beta)) & df$delta_beta >= i & df$auc <= auc_max]
+        message(sprintf("delta: %f Found %d probes", i, length(probes)))
+    }
 }
 
 branchInferProbes2 = function(res, delta_max = -0.6, auc_min = 0.99) {
@@ -513,10 +566,99 @@ branchInferProbes2Top = function(res, auc_min = 0.99, n=50) {
     probes
 }
 
-saveBranchProbes = function(branch, probes, date="NA", id_dir="~/Dropbox/Documents/paper/Ongoing_epigenetic_reconstruction/20210421_Branches_Human_EPIC/") {
-    write.table(tibble(probeID=probes, branchID=branch, date=date), file=sprintf("%s/%s.tsv", id_dir, branch), row.names=FALSE, quote=FALSE, sep="\t")
-}
+## saveBranchProbes = function(branch, probes, date="NA", id_dir="~/Dropbox/Documents/paper/Ongoing_epigenetic_reconstruction/20210421_Branches_Human_EPIC/") {
+##     write.table(tibble(probeID=probes, branchID=branch, date=date), file=sprintf("%s/%s.tsv", id_dir, branch), row.names=FALSE, quote=FALSE, sep="\t")
+## }
 
 readBranchProbes = function(id_dir = "~/Dropbox/Documents/paper/Ongoing_epigenetic_reconstruction/20210421_Branches_Human_EPIC/") {
-    with(do.call(rbind, lapply(list.files(id_dir, ".tsv"), function(x) read_tsv(sprintf("%s/%s", id_dir, x), col_names=TRUE, , col_types = cols()))), split(probeID, branchID))
+    if (length(list.files(id_dir, ".rds"))==0) return(list())
+    branches = sub(".rds","",sub("fit_","",list.files(id_dir,".rds")))
+    do.call(rbind, lapply(branches, function(branch) {
+        a = readRDS(sprintf("%s/fit_%s.rds", id_dir, branch))
+        data.frame(delta_beta = a$delta_beta, auc = a[["auc"]][names(a$delta_beta)], branch = branch) %>% dplyr::filter(delta_beta <= -0.3, auc > 0.99) %>% rownames_to_column("Probe_ID") %>% dplyr::filter(grepl("^cg", Probe_ID))
+    }))
+}
+
+## readBranchProbes0 = function(id_dir = "~/Dropbox/Documents/paper/Ongoing_epigenetic_reconstruction/20210421_Branches_Human_EPIC/", auc_min = 0.99, delta_max=-0.6, top_n=50) {
+##     if (length(list.files(id_dir, ".rds"))==0) return(list())
+##     fit_fns = list.files(id_dir, ".rds")
+##     branchIDs = sub(".rds","",basename(fit_fns))
+##     branchIDs = sub("fit_","",branchIDs)
+##     setNames(lapply(fit_fns,
+##         function(x) {
+##             res = readRDS(sprintf("%s/%s", id_dir, x))
+##             if (is.null(top_n)) {
+##                 names(which(res$delta_betas <= delta_max & res$auc >= auc_min))
+##             } else {
+##                 names(head(sort(res$delta_betas[res$auc >= auc_min]), n=n))
+##             }
+##         }
+##     ), branchIDs)
+## }
+
+## before regression check whether you have all the levels
+checkLevels = function(data, meta) {
+    apply(data, 1, function(dt) {
+        all(sapply(split(dt, meta), function(x) sum(!is.na(x))>0))
+    })
+}
+
+kcLoad = function(accession, home = "~/server/kyCG") {
+    readRDS(sprintf("%s/%s.rds", home, accession))
+}
+
+#' @param priority database priority
+#' @param home knowYourCG home
+#' @return meta data tibble
+#' @export
+kcMeta = function(priority = 1, home = "~/server/kyCG", release = 1) {
+    meta = read_csv(sprintf("%s/RELEASE_%d.csv", home, release))
+    meta[meta$Priority <= priority,]
+}
+
+#' annotate CpGs using databases
+#'
+#' @param probes CGs to be annotated
+#' @param accession database accession
+#' @return character vector
+#' @examples
+#' anno = kcAnnotate(probes)
+#' @export
+kcAnnotate = function(probes,
+    accession = "20210210_MM285_chromHMMconsensus",
+    home = "~/server/kyCG",
+    sep = ";") {
+    
+    db = kcLoad(accession, home)
+    stopifnot(is(db, "list"))
+    stopifnot(all(vapply(db, function(x) is(x, "character"), logical(1))))
+    apply(do.call(cbind, lapply(names(db), function(nm) {
+        ifelse(probes %in% db[[nm]], nm, NA); })), 1,
+        function(x) paste(na.omit(x), collapse=sep))
+}
+
+#' calculate the mean beta value
+#'
+#' 
+#' @param betas the beta value vector or matrix
+#' @param accessions database accession, can be multiple
+#' @return a tibble with mean betas
+#' @export
+kcMean = function(betas,
+    accessions = "20210210_MM285_chromHMMconsensus",
+    home = "~/server/kyCG") {
+    
+    do.call(rbind, lapply(accessions, function(acc) { # multiple accessions
+        db = kcLoad(acc, home)
+        do.call(rbind, lapply(names(db), function(nm) {
+            probes = db[[nm]]
+            if (is(betas, "matrix")) {
+                tibble(
+                    betaMean = colMeans(betas[probes, ,drop=FALSE], na.rm=TRUE),
+                    sample = colnames(betas), db = nm)
+            } else {
+                tibble(betaMean = mean(betas[probes], na.rm=TRUE), db = nm)
+            }
+        }))
+    }))
 }
