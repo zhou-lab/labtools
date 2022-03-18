@@ -1,4 +1,4 @@
-#!/usr/bin/env Rscript
+#!/usr/bin/env Rscript-4.2.devel
 
 target <- commandArgs(trailingOnly=TRUE)
 format <- "html"

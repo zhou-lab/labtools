@@ -18,15 +18,17 @@ load_default <- function() {
     suppressMessages(library(wheatmap))
     suppressMessages(library(sesame))
     suppressMessages(library(GenomicRanges))
+    suppressMessages(library(SummarizedExperiment))
     suppressMessages(library(ggplot2))
     suppressMessages(library(reshape2))
     suppressMessages(library(devtools))
     suppressMessages(library(readxl))
     suppressMessages(library(viridis))
     suppressMessages(library(ggsci))
-    suppressMessages(library(circlize))
-    suppressMessages(library(ggrepel))
-    suppressMessages(library(egg))
+    suppressMessages(library(parallel))
+    # suppressMessages(library(circlize))
+    # suppressMessages(library(ggrepel))
+    # suppressMessages(library(egg))
 }
 
 ld <- load_default

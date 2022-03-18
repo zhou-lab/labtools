@@ -2,7 +2,9 @@
 
 export BASHRC=/mnt/isilon/zhoulab/labtools/bashrc/chop/bashrc_hpc_zhoulab
 
-alias activate_conda="source ~/software/anaconda/anaconda3_2020/bin/activate"
+# please do not activate anaconda by default, it interferes with R installation.
+# add that to your own ~/.bashrc if neede
+# alias activate_conda="source ~/software/anaconda/anaconda3_2020/bin/activate"
 
 alias ls='ls --color'
 alias rm='rm -i'
@@ -24,7 +26,7 @@ function dnarev {
 }
 
 function labcol {
-  awk '{for(i=1;i<=NF;++i){$i=$i"_"i;}print $0;}' $1;
+  awk -F "\t" -v OFS="\t" '{for(i=1;i<=NF;++i){$i=$i"_"i;}print $0;}' $1;
 }
 
 export SCREENRC=/mnt/isilon/zhoulab/labtools/screenrc/screenrc_hp
@@ -34,6 +36,7 @@ export PATH=/mnt/isilon/zhoulab/labbin:$PATH
 export PATH=/mnt/isilon/zhoulab/labpipelines/pipelines:$PATH
 export PATH=/mnt/isilon/zhoulab/labsoftware/valgrind/valgrind-3.15/bin:$PATH
 export PATH=/mnt/isilon/zhoulab/labsoftware/shared_Renv/shims:$PATH
+export PATH=$PATH:/mnt/isilon/zhoulab/labsoftware/NanoMod/NanoMod/bin
 
 export PERL5LIB=/mnt/isilon/zhoulab/labsoftware/perl5lib
 
@@ -74,19 +77,24 @@ function mkdircd {
 ########################
 ## SLURM job submission
 ########################
-alias qstat="squeue --me"
-alias qwatch="watch squeue --me"
-alias qsubi="srun --mem=20G -c 4 -t 12:00:00 --pty bash"
-alias qsub="sbatch"
-alias qacct="sacct -j"
-alias qhost="sinfo"
-alias qdel="scancel"
+#alias qstat="squeue --me"
+#alias qwatch="watch -n 30 squeue --me"
+#alias qsubi="srun --mem=20G -c 4 -t 12:00:00 --pty bash"
+#alias qsub="sbatch"
+#alias qacct="sacct -j"
+#alias qhost="sinfo"
+#alias qdel="scancel"
 
 alias pbsgen='/mnt/isilon/zhoulab/labpipelines/pbsgen/pbsgen_slurm.py'
-alias Squeue='squeue -u $USER -o "%.8i %.4P %.30j %.8u %.2t %.5M %10L %.2D %.2C %.2m %30E %20R"'
+alias Squeue='squeue -u $USER -o "%.8i %.4P %.30j %.8u %.2t %.5M %10L %.2D %.2C %.3m %30E %20R"'
+alias Swatch='watch -n 30 squeue --me'
 alias Scancel='scancel -u $USER'
-alias Srun='srun --mem 30G --pty bash'
-alias GPU='srun -p gpu --gres=gpu:1 --mem 40G --pty bash'
+function Scancel2 { for i in $(seq $1 $2); do scancel -u $USER $i; done; }
+alias Srun2='srun --mem 40G -c 2 -t 01-00:00:00 --pty bash'
+alias Srun4='srun --mem 80G -c 4 -t 01-00:00:00 --pty bash'
+alias Srun8='srun --mem 96G -c 8 -t 01-00:00:00 --pty bash'
+alias Srun24='srun --mem 100G -c 24 -t 01-00:00:00 --pty bash'
+alias Srun72='srun --mem 110G -c 72 -t 01-00:00:00 --pty bash'
 alias Sinfo='sinfo -e -N -o "%10N  %15C  %10m  %15F %10e %10T %10L %20E"'
 
 ############################################

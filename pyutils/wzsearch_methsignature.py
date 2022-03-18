@@ -11,7 +11,7 @@ def main(args):
     samples = []
     group = []
     for line in args.g:
-        fields = line.strip().split('\t')
+        fields = line.strip().split(' ')
         samples.append(fields[0])
         group.append(fields[1])
 

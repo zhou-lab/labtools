@@ -2,6 +2,10 @@
 
 . /mnt/isilon/zhoulab/labtools/bashrc/chop/bashrc_hpc_zhoulab
 
+
+alias Shold='parallel -j 10 "sha1sum /dev/zero" ::: {1..2}'
+
+
 # change this in your own .bashrc
 export HPCUSERNAME="zhouw3"
 function qdelall {
@@ -13,6 +17,10 @@ function checkref0 {
 }
 function checkref16 {
   samtools faidx $1 $2:$(($3-3))-$(($4+50));
+}
+
+function sv {
+  samtools view $1 | less -S
 }
 
 alias ta="tmux a" # tmux is still not as robust as screen
