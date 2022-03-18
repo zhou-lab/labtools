@@ -27,7 +27,7 @@ Host hpc4
      User zhouw3
 
 Host hpc5
-     HostName zhouw3-hpc.research.chop.edu
+     HostName reslnvvhpc017.research.chop.edu
      User zhouw3
 
 Host zhouserver

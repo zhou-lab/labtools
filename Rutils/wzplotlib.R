@@ -149,6 +149,19 @@ wzPlotDens1d.fromMatrix <- function(x, bw="nrd0", normalize=FALSE, ...) {
     }
 }
 
+## this is the better way
+wzPlotDens1d.SE <- function(se, color_var = NULL) {
+    ad = assays(se)[[1]]
+    cd = as_tibble(colData(se))
+    add = melt(ad, value.name="betas", varnames=c("Probe_ID", "Sample_ID"))
+    if (is.null(color_var)) {
+        ggplot(add) + geom_density(aes(betas, group = "Sample_ID"))
+    } else {
+        add[[color_var]] = cd[[color_var]][match(add$Sample_ID, cd[["Sample_ID"]])]
+        ggplot(add) + geom_density(aes_string("betas", group = "Sample_ID", color=color_var))
+    }
+}
+
 ## old name: wzSmoothDensity
 wzPlotDens2d.smooth <- function(x, y, xlim=c(-2,2), nrpoints=100, nbins=256, ...) {
     palette <- colorRampPalette(
@@ -159,6 +172,56 @@ wzPlotDens2d.smooth <- function(x, y, xlim=c(-2,2), nrpoints=100, nbins=256, ...
         nrpoints=nrpoints,
         nbin=c(nbins,nbins),
         colramp=palette, col='blue', ...)
+}
+
+## try to limit ncol(mtx) to < 8
+wzPlotDens2d.smoothPairs <- function(mtx) {
+    palette <- colorRampPalette(
+        c("white","lightblue","blue","green","yellow","orange","red","darkred"),
+        space = "Lab")
+    
+    ## Correlation panel
+    upper <- function(x, y){
+        usr <- par("usr"); on.exit(par(usr))
+        par(usr = c(0, 1, 0, 1))
+        r <- round(cor(x, y, method='spearman', use = "na.or.complete"), digits=2)
+        txt <- paste0("R = ", r)
+        cex.cor <- 0.8/strwidth(txt)
+        text(0.5, 0.5, txt, cex = cex.cor * r)
+    }
+    ## Customize upper panel
+    lower <- function(x, y){
+        smoothScatter(x, y, add=TRUE, nrpoints = 0, colramp = palette, col='blue')
+        abline(0,1,lty='dotted')
+    }
+    ## histogram (source: psych::pairs.panel)
+    panel.hist = function(x, ...) {
+        usr <- par("usr"); on.exit(par(usr))
+        par(usr = c(usr[1:2], 0, 1.5) )
+        h <- hist(x, plot = FALSE)
+        breaks <- h$breaks; nB <- length(breaks)
+        y <- h$counts; y <- y/max(y)
+        rect(breaks[-nB], 0, breaks[-1], y,col="grey")
+    }
+    ## not used but could try
+    panel.hist.density = function(x,...) {
+        usr <- par("usr"); on.exit(par(usr))
+        par(usr = c(usr[1:2], 0, 1.5) )
+        h <- hist(x, plot = FALSE)
+        breaks <- h$breaks; nB <- length(breaks)
+        y <- h$counts; y <- y/max(y)
+        rect(breaks[-nB], 0, breaks[-1], y,col="grey")
+        tryd <- try( d <- density(x,na.rm=TRUE,bw="nrd",adjust=1.2),silent=TRUE)
+        if(class(tryd) != "try-error") {
+            d$y <- d$y/max(d$y)
+            lines(d)
+        }
+    }
+    ## Create the plots
+    pairs(mtx,
+        diag.panel = panel.hist.density,
+        lower.panel = lower,
+        upper.panel = upper)
 }
 
 
@@ -210,3 +273,9 @@ wzRepelLabel <- function(
             ) +
         xlim(1,2.3) + scale_y_reverse() + ylab('')
 }
+
+ggVerticalX <- function() {
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+}
+
+

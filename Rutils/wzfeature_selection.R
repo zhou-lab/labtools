@@ -75,7 +75,9 @@ clusterWithColumnGroupingW <- function(betas, grouping=NULL, group2samples=NULL,
 }
 
 clusterWithRowGroupingW <- function(betas, grouping=NULL, group2probes = NULL) {
-    if (is.null(grouping) && is.null(group2probes)) stop('Please specify either grouping or group2samples')
+    if (is.null(grouping) && is.null(group2probes)) {
+        stop('Please specify either grouping or group2samples')
+    }
     if (is.null(group2probes)) {
         do.call(rbind, lapply(unique(grouping), function(g) {
             if (sum(grouping == g) > 2) {

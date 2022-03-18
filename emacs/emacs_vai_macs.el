@@ -36,7 +36,7 @@
 ;; (add-to-list 'default-frame-alist '(font . "Anonymous Pro-13"))
 ;; (add-to-list 'default-frame-alist '(font . "Source Code Pro 10"))
 ;; (set-default-font "Source Code Pro 10")
-(add-to-list 'default-frame-alist '(font . "Source Code Pro-13"))
+;; (add-to-list 'default-frame-alist '(font . "Source Code Pro-13"))
 ;; (add-to-list 'default-frame-alist '(font . "Consolas-12"))
 ;; (add-to-list 'default-frame-alist '(font . "Latin Modern Mono-12"))
 ;; (add-to-list 'default-frame-alist '(font . "Monaco-12"))
@@ -57,18 +57,51 @@
 ;; (setq markdown-command "/Applications/RStudio.app/Contents/MacOS/pandoc")
 (setq markdown-command "/usr/local/bin/pandoc")
 
+;; the general workflow is:
+;; 1) start a python shell M-x run-python
+;; 2) python-shell-send-{buffer, region, line, defun
+(defun python-shell-send-line ()
+  (interactive)
+  (progn
+    (save-mark-and-excursion
+      (move-beginning-of-line nil)
+      (set-mark-command nil)
+      (move-end-of-line nil)
+      (python-shell-send-region
+       (region-beginning)
+       (region-end)))
+    (next-line)))
+
+;; (setq python-shell-interpreter "/Users/zhouw3/anaconda3/bin/ipython"
+;;       python-shell-interpreter-args "-i --simple-prompt")
+
+(setq python-shell-interpreter "/Users/zhouw3/anaconda3/bin/python"
+      python-shell-interpreter-args "-i")
+
+;; (global-set-key (kbd "<f7>") (lambda () (interactive) (python-shell-send-line)))
+(global-set-key (kbd "<f7>") `python-shell-send-line)
+(global-set-key (kbd "<f8>") `python-shell-send-region)
+
+;; ;; Create shortcut
+;; (with-eval-after-load "python" (define-key python-mode-map
+;;                                  (kbd "C-c C-j")
+;;                                  'python-shell-send-line))
+
+
 ;; open file in existing frame
 (setq ns-pop-up-frames nil)
 
 (setenv "PATH" (concat (getenv "PATH") ":/usr/local/texlive/2014/bin/x86_64-darwin/"))
 (setq exec-path (append exec-path '("/usr/local/texlive/2014/bin/x86_64-darwin/")))
+(setq exec-path (append exec-path '("/usr/local/bin/")))
+;; (load-theme 'material t)
 ;; (load-theme 'adwaita t)
 ;; (load-theme 'ample-zen t)
 ;; (load-theme 'airline-badwolf t)
 ;; (load-theme 'tsdh-light t)
-(load-theme 'leuven t)
+;; (load-theme 'leuven t)
 ;; (load-theme 'leuven-dark t)
-;; (load-theme 'zenburn t)
+(load-theme 'zenburn t)
 ;; (load-theme 'misterioso t)
 ;;  (load-theme 'spacemacs-dark t)
 ;; (load-theme 'deeper-blue t)
@@ -88,13 +121,13 @@
   (interactive
    (list (read-buffer-to-switch "Switch to buffer in other window: ")))
   (let ((candidates
-     (cl-remove
-      nil
-      (mapcar (lambda (buf)
-            (let ((pos (string-match part (buffer-name buf))))
-              (when pos
-            (cons pos buf))))
-          (buffer-list)))))
+	 (cl-remove
+	  nil
+	  (mapcar (lambda (buf)
+		    (let ((pos (string-match part (buffer-name buf))))
+		      (when pos
+			(cons pos buf))))
+		  (buffer-list)))))
     (unless candidates
       (user-error "There is no buffers with %S in its name." part))
     (setq candidates (cl-sort candidates #'< :key 'car))
@@ -103,13 +136,13 @@
 (defun update-r-session ()
   "update the R session without moving focus"
   (interactive)
-  (save-excursion
-    (progn
-      (switch-to-existing-buffer-other-window "*R")
-      (end-of-buffer)
-      (select-window (previous-window)))))
+  (progn
+    (setq window (get-buffer-window))
+    (ess-switch-to-inferior-or-script-buffer nil)
+    (select-window window)
+    ))
 
-(global-set-key (kbd "<f10>") `update-r-session)
+;; (global-set-key (kbd "<f10>") `update-r-session)
 
 (setq tab-width 2)
 (setq-default tab-width 2)
@@ -122,6 +155,30 @@
 (setq org-src-fontify-natively t)
 (setq org-edit-src-content-indentation 0)
 (setq org-src-tab-acts-natively t)
+
+;; the following is no longer needed. since 1. I am not using < in R code. 2. this is causing cc-mode to crash by overriding syntax-table
+;; ;; fix when <> is considered parenthesis in org source code
+;; (defun org-mode-<>-syntax-fix (start end)
+;;   "Change syntax of characters ?< and ?> to symbol within source code blocks."
+;;   (let ((case-fold-search t))
+;;     (when (eq major-mode 'org-mode)
+;;       (save-excursion
+;;         (goto-char start)
+;;         (while (re-search-forward "<\\|>" end t)
+;;           (when (save-excursion
+;;                   (and
+;;                    (re-search-backward "[[:space:]]*#\\+\\(begin\\|end\\)_src\\_>" nil t)
+;;                    (string-equal (downcase (match-string 1)) "begin")))
+;;             ;; This is a < or > in an org-src block
+;;             (put-text-property (point) (1- (point))
+;;                                'syntax-table (string-to-syntax "_"))))))))
+;; (defun org-setup-<>-syntax-fix ()
+;;   "Setup for characters ?< and ?> in source code blocks.
+;; Add this function to `org-mode-hook'."
+;;   (setq syntax-propertize-function 'org-mode-<>-syntax-fix)
+;;   (syntax-propertize (point-max)))
+;; (add-hook 'org-mode-hook #'org-setup-<>-syntax-fix)
+
 
 (setq org-todo-keywords
       '((sequence "TODO"
@@ -162,25 +219,29 @@
 
 (global-set-key (kbd "<f1>") 'ess-display-help-on-object)
 ;; step by function or region
-(global-set-key (kbd "<f12>") 'ess-eval-region-or-function-or-paragraph-and-step)
+(global-set-key (kbd "<f12>") (lambda () (interactive) (ess-eval-region-or-function-or-paragraph-and-step) (update-r-session)))
 ;; step by line
-(global-set-key (kbd "<f11>") 'ess-eval-region-or-line-visibly-and-step)
+;; (global-set-key (kbd "<f11>") 'ess-eval-region-or-line-visibly-and-step)
+(global-set-key (kbd "<f11>") (lambda () (interactive) (ess-eval-region-or-line-visibly-and-step) (update-r-session)))
+(global-set-key (kbd "<f10>") (lambda () (interactive) (ess-eval-line) (update-r-session)))
+;; (global-set-key (kbd "<f8>") (lambda () (interactive) (ess-switch-to-inferior-or-script-buffer nil)))
+
 
 (defun rename-file-and-buffer (new-name)
   ;; source: http://steve.yegge.googlepages.com/my-dot-emacs-file
   "Renames both current buffer and file it's visiting to NEW-NAME."
   (interactive "sNew name: ")
   (let ((name (buffer-name))
-    (filename (buffer-file-name)))
+	(filename (buffer-file-name)))
     (if (not filename)
-    (message "Buffer '%s' is not visiting a file!" name)
+	(message "Buffer '%s' is not visiting a file!" name)
       (if (get-buffer new-name)
-      (message "A buffer named '%s' already exists!" new-name)
-    (progn
-      (rename-file name new-name 1)
-      (rename-buffer new-name)
-      (set-visited-file-name new-name)
-      (set-buffer-modified-p nil))))))
+	  (message "A buffer named '%s' already exists!" new-name)
+	(progn
+	  (rename-file name new-name 1)
+	  (rename-buffer new-name)
+	  (set-visited-file-name new-name)
+	  (set-buffer-modified-p nil))))))
 
 (defun move-buffer-file (dir)
   "Moves both current buffer and file it's visiting to DIR." 
@@ -251,7 +312,7 @@
   (goto-char (line-beginning-position 2))
   (yank)
   (goto-char (line-beginning-position 0))
-)
+  )
 
 (defun insert-before-line ()
   "insert the content yanked (e.g., copied) before the current line"
@@ -324,14 +385,14 @@ Then move to that line and indent according to mode"
       (message filename))))
 
 (defun comment-or-uncomment-region-or-line ()
-    "Comments or uncomments the region or the current line if there's no active region."
-    (interactive)
-    (let (beg end)
-        (if (region-active-p)
-            (setq beg (region-beginning) end (region-end))
-            (setq beg (line-beginning-position) end (line-end-position)))
-        (comment-or-uncomment-region beg end);))
-        (next-line)))
+  "Comments or uncomments the region or the current line if there's no active region."
+  (interactive)
+  (let (beg end)
+    (if (region-active-p)
+        (setq beg (region-beginning) end (region-end))
+      (setq beg (line-beginning-position) end (line-end-position)))
+    (comment-or-uncomment-region beg end);))
+    (next-line)))
 (global-set-key (kbd "C-;") 'comment-or-uncomment-region-or-line)
 
 (defun insert-date ()
@@ -340,8 +401,7 @@ Then move to that line and indent according to mode"
   (when (region-active-p)
     (delete-region (region-beginning) (region-end) )
     )
-  (insert (format-time-string "%Y%m%d_"))
-  )
+  (insert (format-time-string "%Y%m%d")))
 
 (global-set-key "\C-x\C-d" 'insert-date)
 
@@ -355,9 +415,9 @@ Then move to that line and indent according to mode"
   (interactive)
   (push-mark)
   (let* 
-    ((ipt (progn (back-to-indentation) (point)))
-     (bol (progn (move-beginning-of-line 1) (point)))
-     (indent (buffer-substring bol ipt)))
+      ((ipt (progn (back-to-indentation) (point)))
+       (bol (progn (move-beginning-of-line 1) (point)))
+       (indent (buffer-substring bol ipt)))
     (newline)
     (previous-line)
     (insert indent)))
@@ -372,7 +432,7 @@ Then move to that line and indent according to mode"
 ;;       backup-by-copying-when-linked t) ; Copy linked files, don't rename.
 
 (global-set-key (kbd "M-i") 'kill-whole-line)
-(global-set-key (kbd "<f8>") 'switch-to-buffer)
+;;(global-set-key (kbd "<f8>") 'switch-to-buffer)
 (global-set-key (kbd "<f9>") 'other-window)
 (global-set-key (kbd "<f18>") 'delete-other-windows)
 (global-set-key (kbd "<clear>") 'goto-line)
@@ -399,7 +459,7 @@ Then move to that line and indent according to mode"
 
 ;; YOU NEED TO UPDATE R VERSION FOR EVERY UPDATE
 ;; (setq inferior-R-program-name "/Users/zhouw3/.Renv/versions/3.6.1/bin/R")
-(setq inferior-R-program-name "/Users/zhouw3/.Renv/versions/4.1.dev/bin/R")
+(setq inferior-R-program-name "/Users/zhouw3/.Renv/versions/4.2.dev/bin/R")
 
 
 ;; Note that there are a lot of out-dated information out
@@ -419,7 +479,7 @@ Then move to that line and indent according to mode"
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
-   '("bffa9739ce0752a37d9b1eee78fc00ba159748f50dc328af4be661484848e476" "da53c5d117ebada2664048682a345935caf8e54094a58febd5f021462ef20ba2" "614a8fc7db02cb99d9f1acf1297b26f8224cf80bf6c0ec31d30c431503e8b59f" "f2c35f8562f6a1e5b3f4c543d5ff8f24100fae1da29aeb1864bbc17758f52b70" "fa2af0c40576f3bde32290d7f4e7aa865eb6bf7ebe31eb9e37c32aa6f4ae8d10" default))
+   '("90a6f96a4665a6a56e36dec873a15cbedf761c51ec08dd993d6604e32dd45940" "bffa9739ce0752a37d9b1eee78fc00ba159748f50dc328af4be661484848e476" "da53c5d117ebada2664048682a345935caf8e54094a58febd5f021462ef20ba2" "614a8fc7db02cb99d9f1acf1297b26f8224cf80bf6c0ec31d30c431503e8b59f" "f2c35f8562f6a1e5b3f4c543d5ff8f24100fae1da29aeb1864bbc17758f52b70" "fa2af0c40576f3bde32290d7f4e7aa865eb6bf7ebe31eb9e37c32aa6f4ae8d10" default))
  '(ess-own-style-list
    '((ess-indent-offset . 4)
      (ess-offset-arguments . prev-line)
@@ -434,7 +494,7 @@ Then move to that line and indent according to mode"
      (ess-indent-from-chain-start)
      (ess-indent-with-fancy-comments . t)))
  '(package-selected-packages
-   '(paredit expand-region doom-themes spacemacs-theme ess laguna-theme zencoding-mode anti-zenburn-theme hc-zenburn-theme labburn-theme zenburn-theme leuven-theme org-drill projectile abs-mode markdown-mode yaml-mode yasnippet-snippets yasnippet toc-org tabbar helm fill-column-indicator)))
+   '(elpy material-theme exec-path-from-shell helm-ag paredit expand-region doom-themes spacemacs-theme ess laguna-theme zencoding-mode anti-zenburn-theme hc-zenburn-theme labburn-theme zenburn-theme leuven-theme org-drill projectile abs-mode markdown-mode yaml-mode yasnippet-snippets yasnippet toc-org tabbar helm fill-column-indicator)))
 
 (setq-default ess-indent-offset 4)
 
@@ -463,10 +523,10 @@ Then move to that line and indent according to mode"
 (setq column-number-mode t)
 
 (defun create-tags (dir-name)
-     "Create tags file."
-     (interactive "DDirectory: ")
-     (eshell-command 
-      (format "find %s -type f -name \"*.[ch]\" | etags -" dir-name)))
+  "Create tags file."
+  (interactive "DDirectory: ")
+  (eshell-command 
+   (format "find %s -type f -name \"*.[ch]\" | etags -" dir-name)))
 
 (defun zwd-clean-path ()
   "Clean path to ~ form"

@@ -15,35 +15,40 @@ setMethod("$<-", "GRanges", function(x, name, value) {
 })
 
 GR2bed <- function(gr, fnm, rangeOnly=FALSE, col.names=F, gz=FALSE, noStrand=FALSE) {
-  start(gr) <- start(gr)-1
-  if (rangeOnly) {
-    mcols(gr) <- NULL
-  }
-  gr$probeID <- names(gr)
-  df <- as.data.frame(gr)
-  if (noStrand)
-    df <- df[,-c(4,5)]
-  if (gz) {
-    gzf <- gzfile(fnm,'w')
-    write.table(df, file=gzf, quote=F, sep="\t", row.names=F, col.names=col.names)
-    close(gzf)
-  } else {
-    write.table(df, file=fnm, quote=F, sep="\t", row.names=F, col.names=col.names)
-  }
+    start(gr) <- start(gr)-1
+    if (rangeOnly) {
+        mcols(gr) <- NULL
+    }
+    gr$probeID <- names(gr)
+    df <- as.data.frame(gr)
+    if (noStrand)
+        df <- df[,-c(4,5)]
+    if (gz) {
+        gzf <- gzfile(fnm,'w')
+        write.table(df, file=gzf, quote=F, sep="\t", row.names=F, col.names=col.names)
+        close(gzf)
+    } else {
+        write.table(df, file=fnm, quote=F, sep="\t", row.names=F, col.names=col.names)
+    }
+}
+
+table2GR <- function(tbl, rangeOnly = FALSE) {
+    colnames(tbl)[1] <- 'chrm'
+    colnames(tbl)[2] <- 'beg'
+    colnames(tbl)[3] <- 'end'
+    chrms <- sort(unique(tbl$chrm))
+    gr <- GRanges(
+        seqnames=tbl$chrm, ranges=IRanges(tbl$beg, tbl$end),
+        seqinfo=Seqinfo(chrms))
+    if (!rangeOnly) {
+        mcols(gr) <- tbl[,4:ncol(tbl)]
+    }
+    sort(gr)
 }
 
 bed2GR <- function(bedfn, rangeOnly=FALSE) {
-  bed <- read.table(bedfn, header=F, stringsAsFactors=F)
-  colnames(bed)[1] <- 'chrm'
-  colnames(bed)[2] <- 'beg'
-  colnames(bed)[3] <- 'end'
-  chrms <- sort(unique(bed$chrm))
-  gr <- GRanges(seqnames=bed$chrm, ranges=IRanges(bed$beg, bed$end), seqinfo=Seqinfo(chrms))
-  if (!rangeOnly) {
-    mcols(gr) <- bed[,4:ncol(bed)]
-  }
-  gr <- sort(gr)
-  gr
+    bed <- read.table(bedfn, header=F, stringsAsFactors=F)
+    table2GR(bed)
 }
 
 bed2GR.human <- function(bedfn, rangeOnly=FALSE) {

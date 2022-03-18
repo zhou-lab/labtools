@@ -1,5 +1,20 @@
 #!/bin/zsh
 
+## textutil -stdout -cat txt "/Users/zhouw3/Dropbox//ZhouLab/Shared Lab Files/20211023 Literature annotation/unclassified.docx"
+
+function litgrep {
+  res=$(for f in "/Users/zhouw3/Dropbox/ZhouLab/Shared Lab Files/20211023 Literature annotation/"*.docx; do textutil -stdout -cat txt "$f" | awk -v paper="$(basename $f)" '{print paper,$0;}'; done | fzf)
+  echo $res
+  SHOWLOC="/Users/zhouw3/Dropbox/ZhouLab/Shared Lab Files/20211023 Literature annotation/"$(echo $res | cut -f1)
+}
+
+function PPT2DOC() {
+  awk '!/^[ ]*$/' $1 | gsed 's/^[ ]*//g' | awk '{printf("%s ",$0)}' | gsed 's/__/\n__/g' | grep '__'$2 | sed "s/^__$2//" | awk '/^_/{printf("\n\n");}{printf("%s",$0);}' | gsed 's/^_[ ]*//' | gsed 's/  / /g'
+}
+
+function PPT2LEGEND() {
+  awk 'length($0)>10 && /_LEGEND/' $1 | sed 's/_LEGEND//' | sed 's/^[ ]*_/@@@/' | awk '{printf($0)}' | gsed 's/@@@[ ]*/\n\n/g'
+}
 
 function wzbuildall() {
   wzdocument.R .
@@ -28,6 +43,8 @@ LOCAL_HOME="/Users/zhouw3"
 REMOTE_HOME="/home/zhouw3"
 HPC_NAME="hpc5"
 source <(curl -s https://raw.githubusercontent.com/zhou-lab/labwiki/master/Snippets/20210326_sync_HPC_data.sh)
+
+export KYCG_CACHE=$LOCAL_HOME/server/kyCG/
 
 function dnarev {
     echo $1 | tr ATGC TACG | rev;
@@ -214,7 +231,9 @@ function s {
   fi
 
   location=$1
-  shift;
+  if [[ $# -gt 0 ]]; then
+    shift;
+  fi
 
   if [[ $location =~ ^wzp ]]; then
     location=$HOME/repo/labjournal/zhouw3/
@@ -225,7 +244,9 @@ function s {
   elif [[ $location =~ ^sa ]]; then
     location=$HOME/samplesheets/
   elif [[ $location =~ ^ga ]]; then
-    location=$HOME/gallery/
+    location=$HOME"/Dropbox/ZhouLab/Lab Gallery/"
+  elif [[ $location =~ ^g0 ]]; then
+    location=$HOME/gallery0/
   elif [[ $location =~ ^zlb ]]; then
     location=$HOME/zhoulab
   elif [[ $location =~ ^z_b ]]; then
@@ -251,14 +272,14 @@ function s {
   ## TODO test if link is pointed to a directory
   ## if link is not given (simple "s"), then use current directory
   if [[ ! -d $location ]]; then
-    location="." # $HOME/Dropbox/Documents/
+    location=$HOME/Dropbox/
   fi
 
   pattern="$@"
   if [[ $is_directory -eq 1 ]]; then
-    wzfpath=$(find "$location" -type d | fzf -q "$pattern")
+    wzfpath=$(find "$location" -type d | grep -v '.DS_Store' | fzf -q "$pattern")
   else
-    wzfpath=$(find "$location" -type f | fzf -q "$pattern")
+    wzfpath=$(find "$location" -type f | grep -v '.DS_Store' | fzf -q "$pattern")
   fi
   
   if [[ ! -z "$wzfpath" ]]; then
@@ -278,11 +299,11 @@ function s {
   fi
 }
 
-function openf {
+function opf {                  # aka openf
   [[ -z "$SHOWLOC" ]] || open "$SHOWLOC"
 }
 
-function opend {
+function opd {                  # aka opend
   [[ -z "$SHOWLOC" ]] || open -R "$SHOWLOC"
 }
 
@@ -297,6 +318,7 @@ function cdd {
 alias gst="git status"
 alias gpl="git pull"
 alias gpu="git push"
+alias gca="git commit -am"
 
 function update_journal {
   cd ~/repo/labjournal
@@ -364,3 +386,6 @@ z() {
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"
+
+
+RPROMPT="[%D{%f/%m/%y} | %D{%L:%M:%S}]"
