@@ -17,6 +17,7 @@ alias du="du -sh"
 alias bs=". ~/.bashrc"
 alias sr="screen -r"
 # alias wget="wget --limit-rate 4M"
+alias KYCG=". /mnt/isilon/zhoulab/labtools/bash/20220320_methFeature.sh"
 
 # new folder and file will be writable by the group
 umask 002
