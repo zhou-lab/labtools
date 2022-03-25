@@ -49,12 +49,16 @@ function sf() {                 # sync from HPC
   #   to=${to/#\~/$LOCAL_HOME}
   #   to=${to/$REMOTE_HOME/$LOCAL_HOME}
 
-  if [[ $from =~ ^$REMOTE_HOME2 ]]; then # from remote to local
+  if [[ $from =~ ^$LOCAL_HOME ]]; then # handle ~ substitution
+    to=$from
+    from=${from/$LOCAL_HOME/$REMOTE_HOME}
+  elif [[ $from =~ ^$REMOTE_HOME2 ]]; then # from remote to local
     to=${from/$REMOTE_HOME2/$LOCAL_HOME}
   elif [[ $from =~ ^$REMOTE_SCR ]]; then 
     to=${from/"$REMOTE_SCR"/"$LOCAL_HOME/scr1_zhouw3/"}
   elif [[ $from =~ ^$REMOTE_HOME ]]; then # from remote to local
     to=${from/$REMOTE_HOME/$LOCAL_HOME}
+    echo $to
   else
     return 1;
   fi

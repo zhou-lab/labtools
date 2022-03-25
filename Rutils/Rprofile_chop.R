@@ -34,7 +34,7 @@ load_default <- function() {
     ## suppressMessages(library(viridis))
     suppressMessages(library(ggsci))
     suppressMessages(library(ggrepel))
-    suppressMessages(library(egg))
+    ## suppressMessages(library(egg))
     suppressMessages(library(circlize))
 }
 

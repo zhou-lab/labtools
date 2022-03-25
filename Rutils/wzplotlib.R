@@ -325,3 +325,99 @@ plotSesameSpeciesAUC <- function(sdf, title = NULL) {
             panel.grid.major.y = element_blank(),
             panel.grid.minor.y = element_blank())
 }
+
+## se = SummarizedExperiment(assays=list(betas=bt), colData=meta[match(colnames(bt), meta$Sample_ID),])
+## metadata(se) = readExcelColors("~/samplesheets/2022/20220109_TCGA.MTAP.annoation.xlsx")
+## visualizeSE(se, rows="rowbar1_name")
+visualizeSE = function(se, rows=NULL, cols=NULL,
+    column_split=NA, column_split_nms=NULL, column_split_pad=0.05, column_cluster=FALSE,
+    name_base="a", legend_hpad=0.3, stop.points=NULL, show_row_names = FALSE) {
+
+    if (is.na(column_split)) {
+        ses = list(main=se)
+    } else {
+        if (is.null(column_split_nms)) {
+            column_split_nms = sort(unique(colData(se)[[column_split]]))
+        }
+        ses = lapply(column_split_nms, function(nm) {
+            se[,colData(se)[[column_split]] == nm]
+        })
+        names(ses) = column_split_nms
+    }
+
+    if (column_cluster) {
+        ses = lapply(ses, columnClusterSE)
+    }
+
+    for (i in seq_along(ses)) {
+        column_nm = names(ses)[i]
+        se = ses[[i]]
+        if (i==1) {
+            plt = WHeatmap(assay(se), cmp=CMPar(stop.points=stop.points, dmin=0, dmax=1), name=paste0(name_base, column_nm, 'matrix'), yticklabels = show_row_names, yticklabels.n = nrow(se))
+        } else {
+            plt = plt + WHeatmap(assay(se), cmp=CMPar(stop.points=stop.points, dmin=0, dmax=1),
+                dm = RightOf(last_column, pad=column_split_pad), name=paste0(name_base, column_nm, 'matrix'))
+        }
+        last_column = paste0(name_base, column_nm, 'matrix')
+
+        ## row bars
+        last_name = paste0(name_base, column_nm, 'matrix')
+        for (bar in rows) {
+            if (paste0(bar,".colors") %in% names(metadata(se))) {
+                bar.colors = metadata(se)[[paste0(bar,".colors")]]
+            } else {
+                bar.colors = NULL
+            }
+            ## only label the last column
+            if (i == length(ses)) {
+                label = bar
+            } else {
+                label = ""
+            }
+            plt = plt + WColorBarH(colData(se)[,bar], TopOf(last_name),
+                cmp = CMPar(label2color = bar.colors),
+                name=paste0(name_base, column_nm, bar), label=label)
+            last_name = paste0(name_base, column_nm, bar)
+        }
+
+        plt = plt + WLabel(column_nm, TopOf(last_name))
+    }
+
+    last_name = last_column
+    for (bar in rows) {
+        plt = plt + WLegendV(paste0(name_base, names(ses)[1], bar), TopRightOf(last_name, just=c("left","top"), h.pad=legend_hpad),
+            name=paste0(name_base, last_column, "legend", bar))
+        last_name = paste0(name_base, last_column, "legend", bar)
+    }
+    plt
+}
+
+visualizeTissueSE = function(se, color=c("blueYellow","jet")) {
+    ## this is the better version of sesame:::reference_plot_se(NULL, se)
+    color = match.arg(color)
+    if (color == "blueYellow") stop.points = c("blue","yellow")
+    else stop.points = NULL
+    cd = as_tibble(colData(se))
+    rd = as_tibble(rowData(se))
+    md = metadata(se)
+    g = WHeatmap(assay(se), cmp=CMPar(stop.points=stop.points,
+        dmin=0, dmax=1), name="b1", xticklabels=T, xticklabels.n=ncol(se))
+    ## branch color bar (vertical)
+    g = g + WColorBarV(rd$branch, RightOf("b1", width=0.03),
+        cmp=CMPar(label2color=md$branch_color), name="bh",
+        yticklabels=T, yticklabel.side='l',
+        label.space=0.01,
+        label.use.data=TRUE, label.pad=1.5)
+    ## tissue color bar (horizontal)
+    g = g + WColorBarH(cd$branch, TopOf("b1",height=0.03),
+        cmp=CMPar(label2color=md$branch_color), name="ti",
+        xticklabels=T, xticklabel.side='t',
+        ## xticklabel.space=0.036,
+        label.space=0.01,
+        label.use.data=TRUE, label.pad=1.5)
+    ## ## legends
+    ## g = g + WLegendV("ti", TopRightOf("bh", just=c('left','top'), h.pad=0.5),
+    ##     height=0.05)
+    ## g = g + WLegendV('bh', Beneath(pad=0.06))
+    g + WCustomize(mar.bottom=0.15, mar.right=0.06, mar.top=0.1)
+}
