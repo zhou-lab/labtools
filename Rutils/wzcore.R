@@ -213,7 +213,12 @@ getAutosomeProbesW <- function(
 }
 
 bSubMostVariableW <- function(betas, n=2000) {
-    std <- apply(betas, 1, sd, na.rm=TRUE)
+    if (is(betas, "SummarizedExperiment")) {
+        mtx = assay(betas)
+    } else {
+        mtx = betas
+    }
+    std <- apply(mtx, 1, sd, na.rm=TRUE)
     betas[names(sort(std, decreasing=TRUE)[seq_len(n)]),]
 }
 
@@ -405,6 +410,15 @@ bothClusterSE = function(se, nrow_max = 3000, ncol_max = 3000) {
     se[ord$row.clust$order, ord$column.clust$order]
 }
 
+columnClusterSE = function(se, ncol_max = 3000) {
+    if (ncol(se) > ncol_max) {
+        stop(sprintf("Too many columns (%d, max: %d). Abort.",
+            ncol(se), ncol_max))
+    }
+    ord = column.cluster(assay(se))
+    se[, ord$column.clust$order]
+}
+
 buildSE = function(betas, probedf, meta, tissue_color, branch_color) {
 
     ## bt = clusterWithRowGroupingW(betas, group2probes = branch2probes)
@@ -431,6 +445,80 @@ meta2SE = function(meta, tbk_paths=NULL) {
 
     betas = tbk_data(tbk_paths, max_pval=0.2)
     SummarizedExperiment(assays=list(betas=betas), colData=meta)
+}
+
+readExcelColors = function(path) {
+    sheets = excel_sheets(path)
+    sheets = sheets[endsWith(sheets, "colors")]
+    colors = lapply(sheets, function(sheet) read_excel(path, sheet) %>% with(setNames(HEX, LABEL)))
+    names(colors) = sheets
+    colors
+}
+
+## se = SummarizedExperiment(assays=list(betas=bt), colData=meta[match(colnames(bt), meta$Sample_ID),])
+## metadata(se) = readExcelColors("~/samplesheets/2022/20220109_TCGA.MTAP.annoation.xlsx")
+## visualizeSE(se, rows="rowbar1_name")
+visualizeSE = function(se, rows=NULL, cols=NULL,
+    column_split=NA, column_split_nms=NULL, column_split_pad=0.05, column_cluster=FALSE,
+    name_base="a", legend_hpad=0.3, stop.points=NULL, show_row_names = FALSE) {
+
+    if (is.na(column_split)) {
+        ses = list(main=se)
+    } else {
+        if (is.null(column_split_nms)) {
+            column_split_nms = sort(unique(colData(se)[[column_split]]))
+        }
+        ses = lapply(column_split_nms, function(nm) {
+            se[,colData(se)[[column_split]] == nm]
+        })
+        names(ses) = column_split_nms
+    }
+
+    if (column_cluster) {
+        ses = lapply(ses, columnClusterSE)
+    }
+
+    for (i in seq_along(ses)) {
+        column_nm = names(ses)[i]
+        se = ses[[i]]
+        if (i==1) {
+            plt = WHeatmap(assay(se), cmp=CMPar(stop.points=stop.points, dmin=0, dmax=1), name=paste0(name_base, column_nm, 'matrix'), yticklabels = show_row_names, yticklabels.n = nrow(se))
+        } else {
+            plt = plt + WHeatmap(assay(se), cmp=CMPar(stop.points=stop.points, dmin=0, dmax=1),
+                dm = RightOf(last_column, pad=column_split_pad), name=paste0(name_base, column_nm, 'matrix'))
+        }
+        last_column = paste0(name_base, column_nm, 'matrix')
+
+        ## row bars
+        last_name = paste0(name_base, column_nm, 'matrix')
+        for (bar in rows) {
+            if (paste0(bar,".colors") %in% names(metadata(se))) {
+                bar.colors = metadata(se)[[paste0(bar,".colors")]]
+            } else {
+                bar.colors = NULL
+            }
+            ## only label the last column
+            if (i == length(ses)) {
+                label = bar
+            } else {
+                label = ""
+            }
+            plt = plt + WColorBarH(colData(se)[,bar], TopOf(last_name),
+                cmp = CMPar(label2color = bar.colors),
+                name=paste0(name_base, column_nm, bar), label=label)
+            last_name = paste0(name_base, column_nm, bar)
+        }
+
+        plt = plt + WLabel(column_nm, TopOf(last_name))
+    }
+
+    last_name = last_column
+    for (bar in rows) {
+        plt = plt + WLegendV(paste0(name_base, names(ses)[1], bar), TopRightOf(last_name, just=c("left","top"), h.pad=legend_hpad),
+            name=paste0(name_base, last_column, "legend", bar))
+        last_name = paste0(name_base, last_column, "legend", bar)
+    }
+    plt
 }
 
 visualizeTissueSE = function(se, color=c("blueYellow","jet")) {
@@ -661,4 +749,145 @@ kcMean = function(betas,
             }
         }))
     }))
+}
+
+
+load_tissueSigToSE <- function(betas, meta, meta_branch, id_dir) {
+
+    # id_dir = "~/Dropbox/Documents/paper/20201215_CellTypeSignature/20210421_Branches_Human_HM450"
+    # id_dir="~/Dropbox/Documents/paper/Ongoing_CellTypeSignature/20210422_Branches_Mouse_MM285/"
+    fns = list.files(id_dir,".rds")
+    branch_color = setNames(meta_branch$HEX, meta_branch$LABEL)
+    
+    probedf = do.call(rbind, lapply(fns, function(fn) {
+        a = readRDS(sprintf("%s/%s", id_dir, fn)) %>% dplyr::filter(type=="Hypo", delta_beta <= -0.3, auc > 0.99) %>% dplyr::filter(grepl("^cg", Probe_ID), in_na <= 0.3, out_na <= 0.3) %>% arrange(delta_beta)
+        if (nrow(a) > 200) { a = a[1:200,] }
+        rownames(a) = NULL
+        a
+    }))
+    ## remove duplicates
+    probedf = probedf %>% group_by(Probe_ID) %>% top_n(1, -delta_beta)
+    ## row order is defined by branch_color
+    branch2probes = split(probedf$Probe_ID, probedf$branch)
+    bt = clusterWithRowGroupingW(betas, group2probes = branch2probes[names(branch_color)])
+    ## column order is defined by branch_color
+    bt = clusterWithColumnGroupingW(bt, grouping = meta$branch, ordered_groups = names(branch_color))
+    rd = probedf[match(rownames(bt), probedf$Probe_ID),]
+    rownames(rd) = NULL
+    cd = meta[match(colnames(bt), meta$Sample_ID),] %>% select(Sample_ID, branch)
+
+    probedf = do.call(rbind, lapply(fns, function(fn) {
+        a = readRDS(sprintf("%s/%s", id_dir, fn)) %>% dplyr::filter(type=="Hyper", delta_beta >= 0.3, auc < 0.01) %>% dplyr::filter(grepl("^cg", Probe_ID), in_na <= 0.3, out_na <= 0.3) %>% arrange(delta_beta)
+        if (nrow(a) > 200) { a = a[1:200,] }
+        rownames(a) = NULL
+        a
+    }))
+    ## remove duplicates
+    probedf = probedf %>% group_by(Probe_ID) %>% top_n(1, delta_beta)
+    ## row order is defined by branch_color
+    branch2probes = split(probedf$Probe_ID, probedf$branch)
+    bt2 = clusterWithRowGroupingW(betas, group2probes = branch2probes[names(branch_color)])
+    ## column order is defined by branch_color
+    bt2 = bt2[,colnames(bt)]
+    rd2 = probedf[match(rownames(bt2), probedf$Probe_ID),]
+    rownames(rd2) = NULL
+
+    se = SummarizedExperiment(assays=list(betas=rbind(bt, bt2)), rowData=rbind(rd, rd2), colData=cd)
+    metadata(se)$branch_color = branch_color
+
+    se
+}
+
+
+
+#' Get most variable probes
+#'
+#' @param betas beta value matrix (row: cpg; column: sample)
+#' @param n number of most variable probes
+#' @return beta value matrix for the most variable probes
+#' @examples
+#' ## get most variable autosome probes
+#' betas <- sesameDataGet('HM450.10.TCGA.PAAD.normal')
+#' betas.most.variable <- bSubMostVariable(
+#'     betas[names(sesameData_getAutosomeProbes('HM450')),],2000)
+#' @export
+bSubMostVariable <- function(betas, n=2000) {
+    std <- apply(betas, 1, sd, na.rm=TRUE)
+    betas[names(sort(std, decreasing=TRUE)[seq_len(n)]),]
+}
+
+#' subset beta value matrix by probes
+#' 
+#' @param betas beta value matrix
+#' @param probes probe set
+#' @return subsetted beta value matrix
+#' @examples
+#' probes <- names(sesameData_getAutosomeProbes('HM450'))
+#' betas <- sesameDataGet('HM450.1.TCGA.PAAD')$betas
+#' betas <- bSubProbes(betas, probes)
+#' @export
+bSubProbes <- function(betas, probes) {
+    if (is.null(dim(betas))) { # should also work for vector
+        betas[intersect(names(betas), probes)]
+    } else {
+        betas[intersect(rownames(betas), probes),]
+    }
+}
+
+#' subset beta value matrix by complete probes
+#' 
+#' @param betas beta value matrix
+#' @return subsetted beta value matrix
+#' @examples
+#' betas <- sesameDataGet('HM450.1.TCGA.PAAD')$betas
+#' betas <- bSubComplete(betas)
+#' @export
+bSubComplete <- function(betas) {
+    if (is.null(dim(betas))) { # should also work for vector
+        betas[!is.na(betas)]
+    } else {
+        betas[complete.cases(betas),]
+    }
+}
+
+#' Annotate a data.frame using manifest
+#'
+#' @param df input data frame with Probe_ID as a column
+#' @param probe_id the Probe_ID column name, default to "Probe_ID" or
+#' rownames
+#' @param platform which array platform, guess from probe ID if not given
+#' @param genome the genome build, use default if not given
+#' @return a new data.frame with manifest attached
+#' @examples
+#' df <- data.frame(Probe_ID = c("cg00101675_BC21", "cg00116289_BC21"))
+#' attachManifest(df)
+#' @export
+attachManifest <- function(
+    df, probe_id="Probe_ID", platform=NULL, genome=NULL) {
+    stopifnot(is(df, "data.frame"))
+    stopifnot(probe_id %in% colnames(df))
+
+    if (is.null(platform)) {
+        platform <- inferPlatformFromProbeIDs(df[[probe_id]]) }
+
+    genome <- sesameData_check_genome(genome, platform)
+
+    mft <- sesameDataGet(sprintf("%s.%s.manifest", platform, genome))
+    cbind(df, as.data.frame(mft)[match(df[[probe_id]], names(mft)),])
+}
+
+## mouse array design string
+extractDesign <- function(design_str) {
+    vapply(
+        stringr::str_split(design_str, ','),
+        function(x) stringr::str_split(x[[1]],';')[[1]][1], character(1))
+}
+
+#' Whether the probe ID is the uniq probe ID like in
+#' the mouse array, e.g., cg36609548
+#' 
+#' @param Probe_ID Probe ID
+#' @return a logical(1), whether the probe ID is based on the new ID system
+isUniqProbeID <- function(Probe_ID) {
+    all(grepl('_',Probe_ID))
 }

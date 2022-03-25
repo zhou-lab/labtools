@@ -14,27 +14,36 @@ load_default <- function() {
     suppressMessages(source('~/repo/wzlib/Rutils/wzplotlib.R'))
     suppressMessages(source('~/repo/wzlib/Rutils/wzseq.R'))
     suppressMessages(source('~/repo/wzlib/Rutils/wzfeature_selection.R'))
+    suppressMessages(library(devtools))
+    suppressMessages(library(MASS))
+    suppressMessages(library(viridis))
     suppressMessages(library(parallel))
     suppressMessages(library(grDevices))
     suppressMessages(library(tidyverse))
     suppressMessages(library(wheatmap))
+    suppressMessages(load_all("~/repo/wheatmap"))
     suppressMessages(library(scales))
     suppressMessages(library(sesame))
     suppressMessages(library(GenomicRanges))
     suppressMessages(library(SummarizedExperiment))
     suppressMessages(library(ggplot2))
+    suppressMessages(library(ggpubr))
+    suppressMessages(library(cowplot))
     suppressMessages(library(reshape2))
-    suppressMessages(library(devtools))
     suppressMessages(library(readxl))
     ## suppressMessages(library(viridis))
     suppressMessages(library(ggsci))
-    suppressMessages(library(parallel))
-    # suppressMessages(library(circlize))
-    # suppressMessages(library(ggrepel))
-    # suppressMessages(library(egg))
+    suppressMessages(library(ggrepel))
+    suppressMessages(library(egg))
+    suppressMessages(library(circlize))
 }
 
 ld <- load_default
+
+load_sesame <- function() {
+    load_all("~/repo/sesame")
+}
+los <- load_sesame
 
 ## .Last <- function(){
 ##   if(!any(commandArgs()=='--no-readline') && interactive()) {

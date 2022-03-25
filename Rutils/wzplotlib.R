@@ -57,9 +57,6 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
   }
 }
 
-## vertical x
-wzGGverticalX <- theme(axis.text.x = element_text(angle=-90, vjust=0.5, hjust=0))
-
 ########
 ## IO
 ########
@@ -102,6 +99,19 @@ wzBaseAxisLabel <- function(lab, ax='x', line=3, ...) {
   mtext(side=ax, text=lab, line=line, cex=cex, font=font, ...)
 }
 
+
+# Get density of points in 2 dimensions.
+# @param x A numeric vector.
+# @param y A numeric vector.
+# @param n Create a square n by n grid to compute density.
+# @return The density within each square.
+get_density <- function(x, y, ...) {
+  dens <- MASS::kde2d(x, y, ...)
+  ix <- findInterval(x, dens$x)
+  iy <- findInterval(y, dens$y)
+  ii <- cbind(ix, iy)
+  return(dens$z[ii])
+}
 
 #######################################
 ## 2D Scatter plot with coloring density
@@ -277,5 +287,41 @@ wzRepelLabel <- function(
 ggVerticalX <- function() {
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 }
+ggPercentage <- function() {
+    scale_y_continuous(labels=scales::percent)
+}
+## vertical x NOTE: use ggVerticalX above
+wzGGverticalX <- theme(axis.text.x = element_text(angle=-90, vjust=0.5, hjust=0))
+
+# example from https://stackoverflow.com/questions/35324892/ggplot2-setting-geom-bar-baseline-to-1-instead-of-zero
+## ggplot(dat, aes(x, ratio, fill = ifelse(ratio > 1,"GT1","LT1"))) +
+##   geom_bar(stat="identity") +
+##   scale_fill_manual(values=c("blue","red"), name="LT or GT 1") +
+##   scale_y_continuous(trans = shift_trans(1))
+shift_trans = function(d = 0) {
+  scales::trans_new("shift", transform = function(x) x - d, inverse = function(x) x + d)
+}
 
 
+plotSesameSpeciesAUC <- function(sdf, title = NULL) {
+    addr <- sesameDataGet(sprintf("%s.addressSpecies", sdfPlatform(sdf)))
+    auc <- inferSpecies(sdf, return.auc = TRUE)
+    species <- inferSpecies(sdf, return.species = TRUE)$scientificName
+    detection <- as.integer(probeSuccessRate(sdf) * 100)
+    df <- data.frame(auc=auc, species=names(auc))
+    ggplot() +
+        geom_segment(data=df[df$species!=addr$reference,],
+            aes(x=auc,y=0,xend=auc,yend=1)) +
+        geom_segment(data=df[df$species==addr$reference,],
+            aes(x=auc,y=0,xend=auc,yend=1), size=2, color="red") +
+        geom_segment(data=df[df$species==species,],
+            aes(x=auc,y=0,xend=auc,yend=1), size=2, color="darkgreen") +
+        xlim(c(0,1)) + ylab("") +
+        xlab(sprintf("AUC (max: %1.2f; species: %s; detection: %1.0f%%)",
+            max(auc), species, detection)) +
+        theme_bw() +
+        ggtitle(title) +
+        theme(axis.text.y = element_blank(), axis.ticks.y = element_blank(),
+            panel.grid.major.y = element_blank(),
+            panel.grid.minor.y = element_blank())
+}
