@@ -25,11 +25,13 @@
 ### ----------------
 # LOCAL_HOME="/Users/zhouw3"
 # REMOTE_HOME="/home/zhouw3"
+# REMOTE_HOME2="/mnt/isilon"
+# REMOTE_SCR="/scr1/users/zhouw3/"
 # HPC_NAME="hpc5"
-# source <(curl -s https://raw.githubusercontent.com/zhou-lab/labwiki/master/Snippets/20210326_sync_HPC_data.sh)
+# source ~/repo/labtools/bash/20210326_sync_HPC_data.sh
 ### ----------------
 
-function sf() {
+function sf() {                 # sync from HPC
 
   ## setting default if not given
   [[ -z "$LOCAL_HOME" ]] && LOCAL_HOME="/Users/zhouw3"
@@ -39,40 +41,61 @@ function sf() {
   [[ -z "$HPC_NAME" ]] && HPC_NAME="hpc"
 
   from=$1
-  if [[ $from =~ ^$LOCAL_HOME ]]; then # from local to remote
-    to=${from/$LOCAL_HOME/$HPC_NAME":"$REMOTE_HOME}
-  elif [[ $from =~ ^$REMOTE_HOME2 ]]; then # from remote to local
+  # if [[ $from =~ ^r: ]]; then # from remote to local
+  #   from=${from/r:/$HPC_NAME":"}
+  #   from=${from/\~/$REMOTE_HOME}
+  #   from=${from/$LOCAL_HOME/$REMOTE_HOME}
+  #   to=${from/$HPC_NAME":"/}
+  #   to=${to/#\~/$LOCAL_HOME}
+  #   to=${to/$REMOTE_HOME/$LOCAL_HOME}
+
+  if [[ $from =~ ^$REMOTE_HOME2 ]]; then # from remote to local
     to=${from/$REMOTE_HOME2/$LOCAL_HOME}
-    from=$HPC_NAME":"$from
   elif [[ $from =~ ^$REMOTE_SCR ]]; then 
     to=${from/"$REMOTE_SCR"/"$LOCAL_HOME/scr1_zhouw3/"}
-    from=$HPC_NAME":"$from
   elif [[ $from =~ ^$REMOTE_HOME ]]; then # from remote to local
     to=${from/$REMOTE_HOME/$LOCAL_HOME}
-    from=$HPC_NAME":"$from
-  elif [[ $from =~ ^r: ]]; then # from remote to local
-    from=${from/r:/$HPC_NAME":"}
-    from=${from/\~/$REMOTE_HOME}
-    from=${from/$LOCAL_HOME/$REMOTE_HOME}
-    to=${from/$HPC_NAME":"/}
-    to=${to/#\~/$LOCAL_HOME}
-    to=${to/$REMOTE_HOME/$LOCAL_HOME}
-  elif [[ $from =~ ^~ ]]; then # from local to remote
-    from=${from/\~/$LOCAL_HOME}
-    to=${to/#\~/$REMOTE_HOME}
-    to=$HPC_NAME":"$from
   else
     return 1;
   fi
+
+  from=$HPC_NAME":"$from
+
+  echo "From: "$from
+  echo "To:   "$to
+
+  if [[ $from =~ ^$HPC_NAME ]]; then
+    mkdir -p $(dirname $to)
+    rsync -av --update $from $to
+  fi
+}
+
+function st() {                 # sync to HPC
+
+  [[ -z "$LOCAL_HOME" ]] && LOCAL_HOME="/Users/zhouw3"
+  [[ -z "$REMOTE_HOME" ]] && REMOTE_HOME="/home/zhouw3"
+  [[ -z "$REMOTE_HOME2" ]] && REMOTE_HOME2="/mnt/isilon"
+  [[ -z "$REMOTE_SCR" ]] && REMOTE_SCR="/scr1/users/zhouw3/"
+  [[ -z "$HPC_NAME" ]] && HPC_NAME="hpc"
+  
+  if [[ $from =~ ^$LOCAL_HOME ]]; then # from local to remote
+    to=${from/$LOCAL_HOME/$HPC_NAME":"$REMOTE_HOME}
+  fi
+
+  if [[ $from =~ ^~ ]]; then # from local to remote
+    from=${from/\~/$LOCAL_HOME}
+    to=${to/#\~/$REMOTE_HOME}
+    to=$HPC_NAME":"$from
+  fi
+
+  SPECIALLOC="Dropbox//Family Room/Lab Data/SampleSheets"
+  to=${to/$SPECIALLOC/samplesheets}
 
   echo "From: "$from
   echo "To:   "$to
 
   if [[ $from =~ ^$LOCAL_HOME ]]; then
     ssh $HPC_NAME mkdir -p $(dirname ${to/$hpc_name":"/})
-    rsync -av --update $from $to
-  elif [[ $from =~ ^$HPC_NAME ]]; then
-    mkdir -p $(dirname $to)
     rsync -av --update $from $to
   fi
 }
