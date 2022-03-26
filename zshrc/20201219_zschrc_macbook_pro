@@ -3,7 +3,7 @@
 ## textutil -stdout -cat txt "/Users/zhouw3/Dropbox//ZhouLab/Shared Lab Files/20211023 Literature annotation/unclassified.docx"
 
 function litgrep {
-  res=$(for f in "/Users/zhouw3/Dropbox/ZhouLab/Shared Lab Files/20211023 Literature annotation/"*.docx; do textutil -stdout -cat txt "$f" | awk -v paper="$(basename $f)" '{print paper,$0;}'; done | fzf)
+  res=$(for f in "/Users/zhouw3/Dropbox/Family Room/Shared Lab Files/20211023 Literature annotation/"*.docx; do textutil -stdout -cat txt "$f" | awk -v paper="$(basename $f)" '{print paper,$0;}'; done | fzf)
   echo $res
   SHOWLOC="/Users/zhouw3/Dropbox/ZhouLab/Shared Lab Files/20211023 Literature annotation/"$(echo $res | cut -f1)
 }
@@ -42,7 +42,7 @@ eval "$(Renv init -)"
 LOCAL_HOME="/Users/zhouw3"
 REMOTE_HOME="/home/zhouw3"
 HPC_NAME="hpc5"
-source <(curl -s https://raw.githubusercontent.com/zhou-lab/labwiki/master/Snippets/20210326_sync_HPC_data.sh)
+source ~/repo/labtools/bash/20210326_sync_HPC_data.sh
 
 export KYCG_CACHE=$LOCAL_HOME/server/kyCG/
 
@@ -191,9 +191,15 @@ export PYTHONPATH=$HOME:~/repo/wzlib/pyutils
 export AWKPATH=$HOME/repo/wzlib/awkutils
 
 ## search functions
-function wzgrep { [[ -z "$1" ]] || ag "$1" ~/repo/labjournal --pager="less -R"; }
+function wzgrep {
 
-function wzgrep2 { [[ -z "$1" ]] || ag "$1" . --pager="less -R"; }
+  if [[ -z "$1" ]]; then
+    search_dir=~/repo/labjournal
+  else
+    search_dir="$1"
+  fi
+  rg "$search_dir" | fzf --print0 -e
+}
 
 ###################
 ## show location
@@ -235,38 +241,8 @@ function s {
     shift;
   fi
 
-  if [[ $location =~ ^wzp ]]; then
-    location=$HOME/repo/labjournal/zhouw3/
-  elif [[ $location =~ lbj ]]; then
-    location=$HOME/repo/labjournal/
-  elif [[ $location =~ ^wzl ]]; then
-    location=$HOME/repo/wzlib/
-  elif [[ $location =~ ^sa ]]; then
-    location=$HOME/samplesheets/
-  elif [[ $location =~ ^ga ]]; then
-    location=$HOME"/Dropbox/ZhouLab/Lab Gallery/"
-  elif [[ $location =~ ^g0 ]]; then
-    location=$HOME/gallery0/
-  elif [[ $location =~ ^zlb ]]; then
-    location=$HOME/zhoulab
-  elif [[ $location =~ ^z_b ]]; then
-    location=$HOME/zhou_lab/
-  elif [[ $location =~ ^gr ]]; then
-    location=$HOME/Google/Grant
-  elif [[ $location =~ ^dr ]]; then
-    location=$HOME/Dropbox/
-  elif [[ $location =~ ^pe ]]; then
-    location=$HOME/Dropbox/personal/
-  elif [[ $location =~ ^do ]]; then
-    location=$HOME/Dropbox/Documents/
-  elif [[ $location =~ ^re ]]; then
+  if [[ $location =~ ^re ]]; then
     location=$HOME/repo/
-  elif [[ $location =~ ^sp ]]; then
-    location=$HOME/Dropbox/Documents/SpreadSheets/
-  elif [[ $location =~ ^pa ]]; then
-    location=$HOME/Dropbox/Documents/Paper/
-  elif [[ $location =~ ^pr ]]; then
-    location=$HOME/Dropbox/Documents/Presentation/
   fi
 
   ## TODO test if link is pointed to a directory
