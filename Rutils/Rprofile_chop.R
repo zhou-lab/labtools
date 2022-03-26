@@ -16,7 +16,6 @@ load_default <- function() {
     suppressMessages(source('~/repo/wzlib/Rutils/wzfeature_selection.R'))
     suppressMessages(library(devtools))
     suppressMessages(library(MASS))
-    suppressMessages(library(viridis))
     suppressMessages(library(parallel))
     suppressMessages(library(grDevices))
     suppressMessages(library(tidyverse))
@@ -30,8 +29,9 @@ load_default <- function() {
     suppressMessages(library(ggpubr))
     suppressMessages(library(cowplot))
     suppressMessages(library(reshape2))
+    ## suppressMessages(library(viridis)) # covered by pals
+    suppressMessages(library(pals))
     suppressMessages(library(readxl))
-    ## suppressMessages(library(viridis))
     suppressMessages(library(ggsci))
     suppressMessages(library(ggrepel))
     ## suppressMessages(library(egg))
