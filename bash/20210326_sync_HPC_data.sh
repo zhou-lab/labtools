@@ -81,12 +81,12 @@ function st() {                 # sync to HPC
   [[ -z "$REMOTE_HOME2" ]] && REMOTE_HOME2="/mnt/isilon"
   [[ -z "$REMOTE_SCR" ]] && REMOTE_SCR="/scr1/users/zhouw3/"
   [[ -z "$HPC_NAME" ]] && HPC_NAME="hpc"
-  
+
+  from=$1
+  from=$(greadlink -f $from)
   if [[ $from =~ ^$LOCAL_HOME ]]; then # from local to remote
     to=${from/$LOCAL_HOME/$HPC_NAME":"$REMOTE_HOME}
-  fi
-
-  if [[ $from =~ ^~ ]]; then # from local to remote
+  elif [[ $from =~ ^~ ]]; then # from local to remote
     from=${from/\~/$LOCAL_HOME}
     to=${to/#\~/$REMOTE_HOME}
     to=$HPC_NAME":"$from

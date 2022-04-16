@@ -191,14 +191,14 @@ export PYTHONPATH=$HOME:~/repo/wzlib/pyutils
 export AWKPATH=$HOME/repo/wzlib/awkutils
 
 ## search functions
-function wzgrep {
+function zg {
 
   if [[ -z "$1" ]]; then
     search_dir=~/repo/labjournal
   else
     search_dir="$1"
   fi
-  rg "$search_dir" | fzf --print0 -e
+  rg . "$search_dir" | fzf --print0 -e
 }
 
 ###################

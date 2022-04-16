@@ -10,10 +10,10 @@ options(stringsAsFactors = FALSE)
 
 load_default <- function() {
     suppressMessages(source('https://raw.githubusercontent.com/zhou-lab/tbmate/master/scripts/tbmate.R'))
-    suppressMessages(source('~/repo/wzlib/Rutils/wzcore.R'))
-    suppressMessages(source('~/repo/wzlib/Rutils/wzplotlib.R'))
-    suppressMessages(source('~/repo/wzlib/Rutils/wzseq.R'))
-    suppressMessages(source('~/repo/wzlib/Rutils/wzfeature_selection.R'))
+    suppressMessages(source('~/repo/labtools/Rutils/wzcore.R'))
+    suppressMessages(source('~/repo/labtools/Rutils/wzplotlib.R'))
+    suppressMessages(source('~/repo/labtools/Rutils/wzseq.R'))
+    suppressMessages(source('~/repo/labtools/Rutils/wzfeature_selection.R'))
     suppressMessages(library(devtools))
     suppressMessages(library(MASS))
     suppressMessages(library(parallel))
@@ -29,7 +29,7 @@ load_default <- function() {
     suppressMessages(library(ggpubr))
     suppressMessages(library(cowplot))
     suppressMessages(library(reshape2))
-    ## suppressMessages(library(viridis)) # covered by pals
+    suppressMessages(library(viridis)) # color-blinded maps, including turbo, magma, cividis etc
     suppressMessages(library(pals))
     suppressMessages(library(readxl))
     suppressMessages(library(ggsci))

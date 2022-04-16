@@ -331,7 +331,7 @@ plotSesameSpeciesAUC <- function(sdf, title = NULL) {
 ## visualizeSE(se, rows="rowbar1_name")
 visualizeSE = function(se, rows=NULL, cols=NULL,
     column_split=NA, column_split_nms=NULL, column_split_pad=0.05, column_cluster=FALSE,
-    name_base="a", legend_hpad=0.3, stop.points=NULL, show_row_names = FALSE) {
+    name_base="a", legend_hpad=0.3, stop.points=parula(20), show_row_names = FALSE, show_column_names = FALSE) {
 
     if (is.na(column_split)) {
         ses = list(main=se)
@@ -353,7 +353,7 @@ visualizeSE = function(se, rows=NULL, cols=NULL,
         column_nm = names(ses)[i]
         se = ses[[i]]
         if (i==1) {
-            plt = WHeatmap(assay(se), cmp=CMPar(stop.points=stop.points, dmin=0, dmax=1), name=paste0(name_base, column_nm, 'matrix'), yticklabels = show_row_names, yticklabels.n = nrow(se))
+            plt = WHeatmap(assay(se), cmp=CMPar(stop.points=stop.points, dmin=0, dmax=1), name=paste0(name_base, column_nm, 'matrix'), xticklabels = show_column_names, xticklabels.n = ncol(se), yticklabels = show_row_names, yticklabels.n = nrow(se))
         } else {
             plt = plt + WHeatmap(assay(se), cmp=CMPar(stop.points=stop.points, dmin=0, dmax=1),
                 dm = RightOf(last_column, pad=column_split_pad), name=paste0(name_base, column_nm, 'matrix'))
@@ -391,6 +391,72 @@ visualizeSE = function(se, rows=NULL, cols=NULL,
     }
     plt
 }
+
+
+visualizeSEsimple = function(se, rows=NULL, cols=NULL,
+    column_cluster=FALSE, name_base="a", legend_hpad=0.1, stop.points=turbo(10),
+    show_row_names = FALSE, show_column_names = FALSE) {
+
+    plt = WHeatmap(assay(se), cmp=CMPar(stop.points=stop.points, dmin=0, dmax=1), name=paste0(name_base, 'matrix'), xticklabels = show_column_names, xticklabels.n = ncol(se), yticklabels = show_row_names, yticklabels.n = nrow(se))
+    last_matrix = paste0(name_base, 'matrix')
+
+    ## row bars
+    last_name = last_matrix
+    for (i in seq_along(rows)) {
+        bar = rows[i]
+        if (paste0(bar,".colors") %in% names(metadata(se))) {
+            bar.colors = metadata(se)[[paste0(bar,".colors")]]
+        } else { bar.colors = NULL }
+        plt = plt + WColorBarH(colData(se)[,bar],
+            TopOf(last_name, height=0.05),
+            cmp = CMPar(label2color = bar.colors),
+            name=paste0(name_base, "row", bar), label=bar,
+            label.use.data=(i==length(rows)), label.pad=0.3,
+            xticklabel.side='t')
+        last_name = paste0(name_base, "row", bar)
+    }
+
+    ## column bars
+    last_name = last_matrix
+    for (i in seq_along(cols)) {
+        bar = cols[i]
+        if (paste0(bar,".colors") %in% names(metadata(se))) {
+            bar.colors = metadata(se)[[paste0(bar,".colors")]]
+        } else { bar.colors = NULL }
+        plt = plt + WColorBarV(rowData(se)[,bar],
+            RightOf(last_name, width=0.05),
+            cmp = CMPar(label2color = bar.colors),
+            name=paste0(name_base, "col", bar), label=bar,
+            label.side='left', label.pad=0.3,
+            label.use.data=(i==length(cols)),
+            yticklabel.side='l')
+        last_name = paste0(name_base, "col", bar)
+    }
+
+    ## legend
+    for (bar in rows) {
+        plt = plt + WLegendV(paste0(name_base, "row", bar),
+            TopRightOf(last_name, just=c("left","top"), h.pad=legend_hpad),
+            name=paste0(name_base, "legendrow", bar))
+        last_name = paste0(name_base, "legendrow", bar)
+    }
+    for (bar in cols) {
+        plt = plt + WLegendV(paste0(name_base, "col", bar),
+            TopRightOf(last_name, just=c("left","top"), h.pad=legend_hpad),
+            name=paste0(name_base, "legendcol", bar))
+        last_name = paste0(name_base, "legendcol", bar)
+    }
+
+    plt
+}
+
+prepVisualizeSEMostVariable = function(se, n=1000) {
+    se1 = cleanMatrixForClusterSE(se)
+    se1 = bSubAutosomeSE(se1)
+    se1 = bSubMostVariableSE(se1, n)
+    bothClusterSE(se1)
+}
+
 
 visualizeTissueSE = function(se, color=c("blueYellow","jet")) {
     ## this is the better version of sesame:::reference_plot_se(NULL, se)
