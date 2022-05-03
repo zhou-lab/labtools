@@ -1,28 +1,6 @@
-## probeChromosome <- function(
-##     probes,
-##     platform=c('EPIC','HM450','MM285'),
-##     refversion=c('hg19','hg38','mm10')) {
 
-##     platform <- match.arg(platform)
-##     refversion <- match.arg(refversion)
-    
-##     mft <- sesameDataGet(sprintf(
-##         '%s.%s.manifest', platform, refversion))[probes]
-##     as.character(GenomicRanges::seqnames(mft))
-## }
-
-## probeIsAuto <- function(
-##     probes,
-##     platform=c('EPIC','HM450','MM285'),
-##     refversion=c('hg19','hg38','mm10')) {
-
-##     platform <- match.arg(platform)
-##     refversion <- match.arg(refversion)
-
-##     mft <- sesameDataGet(sprintf(
-##         '%s.%s.manifest', platform, refversion))[probes]
-##     !(as.character(GenomicRanges::seqnames(mft)) %in% c('chrX','chrY'))
-## }
+## SummarizedExperiment functionalities
+#########################################
 
 printf <- function(...) cat(sprintf(...));
 
@@ -840,3 +818,30 @@ tsneSE <- function(se, perplexity=30, seed=1) {
     df$sample = colnames(mx)
     cbind(df, as_tibble(colData(se)))
 }
+
+
+## probeChromosome <- function(
+##     probes,
+##     platform=c('EPIC','HM450','MM285'),
+##     refversion=c('hg19','hg38','mm10')) {
+
+##     platform <- match.arg(platform)
+##     refversion <- match.arg(refversion)
+    
+##     mft <- sesameDataGet(sprintf(
+##         '%s.%s.manifest', platform, refversion))[probes]
+##     as.character(GenomicRanges::seqnames(mft))
+## }
+
+## probeIsAuto <- function(
+##     probes,
+##     platform=c('EPIC','HM450','MM285'),
+##     refversion=c('hg19','hg38','mm10')) {
+
+##     platform <- match.arg(platform)
+##     refversion <- match.arg(refversion)
+
+##     mft <- sesameDataGet(sprintf(
+##         '%s.%s.manifest', platform, refversion))[probes]
+##     !(as.character(GenomicRanges::seqnames(mft)) %in% c('chrX','chrY'))
+## }

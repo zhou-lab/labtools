@@ -84,12 +84,18 @@ function st() {                 # sync to HPC
 
   from=$1
   from=$(greadlink -f $from)
+  
   if [[ $from =~ ^$LOCAL_HOME ]]; then # from local to remote
     to=${from/$LOCAL_HOME/$HPC_NAME":"$REMOTE_HOME}
   elif [[ $from =~ ^~ ]]; then # from local to remote
     from=${from/\~/$LOCAL_HOME}
     to=${to/#\~/$REMOTE_HOME}
     to=$HPC_NAME":"$from
+  fi
+
+  if [[ -d $from ]]; then
+    from=$from"/"
+    to=$to"/"
   fi
 
   SPECIALLOC="Dropbox//Family Room/Lab Data/SampleSheets"

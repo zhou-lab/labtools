@@ -8,12 +8,37 @@ options(stringsAsFactors = FALSE)
 # .First <- function(){
 # }
 
-load_default <- function() {
+ld22 <- function() {
+    suppressMessages(source('~/repo/labtools/Rutils/2022/wzcore.R'))
+    suppressMessages(library(tidyverse))
+    suppressMessages(library(devtools))
+    suppressMessages(library(parallel))
+    suppressMessages(library(wheatmap))
+    suppressMessages(library(SummarizedExperiment))
+    suppressMessages(library(sesame))
+    suppressMessages(library(GenomicRanges))
+    suppressMessages(library(ggplot2))
+    suppressMessages(library(ggpubr))
+    suppressMessages(library(cowplot))
+    suppressMessages(library(ggrepel))
+    suppressMessages(library(readxl))
+    ## not so common
+    suppressMessages(library(MASS))
+    suppressMessages(library(grDevices))
+    suppressMessages(library(scales))
+    suppressMessages(library(reshape2))
+    suppressMessages(library(viridis)) # color-blinded maps, including turbo, magma, cividis etc
+    suppressMessages(library(pals))
+    suppressMessages(library(ggsci))
+    suppressMessages(library(circlize))
+}
+
+ld <- function() {
     suppressMessages(source('https://raw.githubusercontent.com/zhou-lab/tbmate/master/scripts/tbmate.R'))
-    suppressMessages(source('~/repo/labtools/Rutils/wzcore.R'))
-    suppressMessages(source('~/repo/labtools/Rutils/wzplotlib.R'))
-    suppressMessages(source('~/repo/labtools/Rutils/wzseq.R'))
-    suppressMessages(source('~/repo/labtools/Rutils/wzfeature_selection.R'))
+    suppressMessages(source('~/repo/labtools/Rutils/2021/wzcore.R'))
+    suppressMessages(source('~/repo/labtools/Rutils/2021/wzplotlib.R'))
+    suppressMessages(source('~/repo/labtools/Rutils/2021/wzseq.R'))
+    suppressMessages(source('~/repo/labtools/Rutils/2021/wzfeature_selection.R'))
     suppressMessages(library(devtools))
     suppressMessages(library(MASS))
     suppressMessages(library(parallel))
@@ -37,8 +62,6 @@ load_default <- function() {
     ## suppressMessages(library(egg))
     suppressMessages(library(circlize))
 }
-
-ld <- load_default
 
 load_sesame <- function() {
     load_all("~/repo/sesame")
