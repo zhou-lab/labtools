@@ -9,7 +9,8 @@ options(stringsAsFactors = FALSE)
 # }
 
 ld22 <- function() {
-    suppressMessages(source('~/repo/labtools/Rutils/2022/wzcore.R'))
+    file.sources = list.files("~/repo/labtools/Rutils/2022/", pattern="*.R")
+    suppressMessages(sapply(file.sources,source,.GlobalEnv))
     suppressMessages(library(tidyverse))
     suppressMessages(library(devtools))
     suppressMessages(library(parallel))
