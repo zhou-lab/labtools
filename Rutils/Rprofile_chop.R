@@ -9,7 +9,7 @@ options(stringsAsFactors = FALSE)
 # }
 
 ld22 <- function() {
-    file.sources = list.files("~/repo/labtools/Rutils/2022/", pattern="*.R")
+    file.sources = list.files("~/repo/labtools/Rutils/2022/", pattern="*.R", full.names=T)
     suppressMessages(sapply(file.sources,source,.GlobalEnv))
     suppressMessages(library(tidyverse))
     suppressMessages(library(devtools))

@@ -9,3 +9,8 @@ tsneSE <- function(se, perplexity=30, seed=1) {
     df$sample = colnames(mx)
     cbind(df, as_tibble(colData(se)))
 }
+
+pcaSE <- function(se) {
+    pca = prcomp(t(assay(se)))
+    cbind(as_tibble(colData(se)), pca$x[colData(se)$IDAT,])
+}
