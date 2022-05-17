@@ -17,7 +17,7 @@ alias du="du -sh"
 alias bs=". ~/.bashrc"
 alias sr="screen -r"
 # alias wget="wget --limit-rate 4M"
-alias KYCG=". /mnt/isilon/zhoulab/labtools/bash/20220320_methFeature.sh"
+alias KYCG=". /mnt/isilon/zhoulab/labtools/bash/20220320_KYCG.sh"
 
 # new folder and file will be writable by the group
 umask 002
@@ -95,7 +95,7 @@ alias Srun2='srun --mem 40G -c 2 -t 01-00:00:00 --pty bash'
 alias Srun4='srun --mem 80G -c 4 -t 01-00:00:00 --pty bash'
 alias Srun8='srun --mem 96G -c 8 -t 01-00:00:00 --pty bash'
 alias Srun24='srun --mem 100G -c 24 -t 01-00:00:00 --pty bash'
-alias Srun72='srun --mem 110G -c 72 -t 01-00:00:00 --pty bash'
+alias Srun72='srun --mem 512G -c 72 -t 01-00:00:00 --pty bash'
 alias Sinfo='sinfo -e -N -o "%10N  %15C  %10m  %15F %10e %10T %10L %20E"'
 
 ############################################
