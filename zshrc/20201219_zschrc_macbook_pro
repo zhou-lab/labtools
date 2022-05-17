@@ -160,7 +160,7 @@ alias lc="wc -l"
 alias ll="ls -l"
 alias rf="greadlink -f"
 alias parallel="parallel --gnu --progress"
-alias sort="LC_ALL=C sort"
+alias sort="LC_ALL=C sort -t$'\t' "
 alias history="history | sed 's/^ *[0-9]* *//' | tail -r | less -S"
 alias wget='wget --no-check-certificate'
 alias du="du -sh"
