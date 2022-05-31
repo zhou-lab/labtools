@@ -41,6 +41,7 @@ ld <- function() {
     suppressMessages(source('~/repo/labtools/Rutils/2021/wzseq.R'))
     suppressMessages(source('~/repo/labtools/Rutils/2021/wzfeature_selection.R'))
     suppressMessages(library(devtools))
+    suppressMessages(library(readxl))
     suppressMessages(library(MASS))
     suppressMessages(library(parallel))
     suppressMessages(library(grDevices))
@@ -52,15 +53,14 @@ ld <- function() {
     suppressMessages(library(GenomicRanges))
     suppressMessages(library(SummarizedExperiment))
     suppressMessages(library(ggplot2))
-    suppressMessages(library(ggpubr))
     suppressMessages(library(cowplot))
     suppressMessages(library(reshape2))
     suppressMessages(library(viridis)) # color-blinded maps, including turbo, magma, cividis etc
     suppressMessages(library(pals))
-    suppressMessages(library(readxl))
     suppressMessages(library(ggsci))
     suppressMessages(library(ggrepel))
     ## suppressMessages(library(egg))
+    suppressMessages(library(ggpubr))
     suppressMessages(library(circlize))
 }
 
