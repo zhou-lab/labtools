@@ -98,7 +98,7 @@ function st() {                 # sync to HPC
     to=$to"/"
   fi
 
-  SPECIALLOC="Dropbox//Family Room/Lab Data/SampleSheets"
+  SPECIALLOC="Dropbox/Family Room/Lab Data/SampleSheets"
   to=${to/$SPECIALLOC/samplesheets}
 
   echo "From: "$from
