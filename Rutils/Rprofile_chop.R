@@ -19,11 +19,10 @@ ld22 <- function() {
     suppressMessages(library(sesame))
     suppressMessages(library(GenomicRanges))
     suppressMessages(library(ggplot2))
-    suppressMessages(library(ggpubr))
-    suppressMessages(library(cowplot))
     suppressMessages(library(ggrepel))
     suppressMessages(library(readxl))
     ## not so common
+    suppressMessages(library(cowplot))
     suppressMessages(library(MASS))
     suppressMessages(library(grDevices))
     suppressMessages(library(scales))
@@ -32,6 +31,7 @@ ld22 <- function() {
     suppressMessages(library(pals))
     suppressMessages(library(ggsci))
     suppressMessages(library(circlize))
+    suppressMessages(library(ggpubr))
 }
 
 ld <- function() {
@@ -46,7 +46,7 @@ ld <- function() {
     suppressMessages(library(grDevices))
     suppressMessages(library(tidyverse))
     suppressMessages(library(wheatmap))
-    suppressMessages(load_all("~/repo/wheatmap"))
+    #suppressMessages(load_all("~/repo/wheatmap"))
     suppressMessages(library(scales))
     suppressMessages(library(sesame))
     suppressMessages(library(GenomicRanges))
