@@ -5,6 +5,11 @@ from Bio import Entrez
 Entrez.email = 'zhouwanding@gmail.com'
 
 ## https://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi?dbfrom=pubmed&linkname=pubmed_pubmed_refs&id=24752654
+## see documentation of BeautifulSoup4: https://www.crummy.com/software/BeautifulSoup/bs4/doc/
+## Bio.Entrez: https://biopython.org/docs/1.76/api/Bio.Entrez.html
+## eFetch example: https://www.biostars.org/p/493725/
+## https://stackoverflow.com/questions/24146466/pubmed-id-to-author-list-citation-python
+## https://www.ncbi.nlm.nih.gov/pmc/tools/cites-citedby/
 
 def fetch_abstract(pmid):
     xml_data = elink(dbfrom="pubmed", id=pmid, linkname="pubmed_pubmed").read()
