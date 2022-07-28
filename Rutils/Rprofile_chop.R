@@ -23,7 +23,8 @@ ld22 <- function() {
     suppressMessages(library(ggplot2))
     suppressMessages(library(ggrepel))
     suppressMessages(library(readxl))
-    suppressMessages(library(XLConnect))
+    suppressMessages(library(writexl))
+    suppressMessages(library(gridExtra))
     ## not so common
     suppressMessages(library(cowplot))
     suppressMessages(library(MASS))

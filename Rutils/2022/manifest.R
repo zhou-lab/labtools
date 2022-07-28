@@ -12,6 +12,7 @@
 #' @export
 attachManifest <- function(
     df, probe_id="Probe_ID", platform=NULL, genome=NULL) {
+    df <- as.data.frame(df)
     stopifnot(is(df, "data.frame"))
     stopifnot(probe_id %in% colnames(df))
 
@@ -20,6 +21,7 @@ attachManifest <- function(
 
     genome <- sesameData_check_genome(genome, platform)
 
-    mft <- sesameDataGet(sprintf("%s.%s.manifest", platform, genome))
-    cbind(df, as.data.frame(mft)[match(df[[probe_id]], names(mft)),])
+    ## mft <- sesameDataGet(sprintf("%s.%s.manifest", platform, genome))
+    mft <- sesameAnno_get(sprintf("Anno/%s/%s.%s.manifest.tsv.gz", platform, platform, genome))
+    cbind(df, as.data.frame(mft)[match(df[[probe_id]], mft$Probe_ID),])
 }

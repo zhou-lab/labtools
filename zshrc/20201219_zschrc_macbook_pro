@@ -1,5 +1,10 @@
 #!/bin/zsh
 
+## in case you cannot connect to the HPC again.
+alias clearDNScache="sudo dscacheutil -flushcache;sudo killall -HUP mDNSResponder"
+
+export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
+
 ## textutil -stdout -cat txt "/Users/zhouw3/Dropbox//ZhouLab/Shared Lab Files/20211023 Literature annotation/unclassified.docx"
 
 function litgrep {
@@ -212,68 +217,27 @@ function zg {
 ## s echo # just echo things in terminal
 function s {
 
-  to_open=0
-  to_cd=0;
-  to_finder=0;
-  is_directory=0;
-  if [[ $1 == "open" ]]; then
-    to_open=1;
-    shift;
-  fi
-  
-  if [[ $1 == "show" ]]; then
-    to_finder=1;
-    shift;
-  fi
-
-  if [[ $1 == "cd" ]]; then
-    to_cd=1;
-    shift;
-  fi
-
-  if [[ $1 == "echo" ]]; then
-    ## do nothing really, since echo will always be done
-    shift;
-  fi
-
   location=$1
   if [[ $# -gt 0 ]]; then
     shift;
   fi
-
-  if [[ $location =~ ^re ]]; then
-    location=$HOME/repo/
-  fi
-
-  ## TODO test if link is pointed to a directory
-  ## if link is not given (simple "s"), then use current directory
+  echo $location
+  
   if [[ ! -d $location ]]; then
     location=$HOME/Dropbox/
   fi
 
   pattern="$@"
-  if [[ $is_directory -eq 1 ]]; then
-    wzfpath=$(find "$location" -type d | grep -v '.DS_Store' | fzf -q "$pattern")
-  else
-    wzfpath=$(find "$location" -type f | grep -v '.DS_Store' | fzf -q "$pattern")
-  fi
+  wzfpath=$(find -L "$location" -type f | grep -v '.DS_Store' | fzf -q "$pattern")
   
   if [[ ! -z "$wzfpath" ]]; then
     echo $wzfpath
     export SHOWLOC="$wzfpath"
-    if [[ $to_open -eq 1 ]]; then
-      open "$wzfpath"
-    elif [[ $to_cd -eq 1 ]]; then
-      if [[ -d "$wzfpath" ]]; then
-        cd "$wzfpath"
-      else
-        cd $(dirname "$wzfpath")
-      fi
-    elif [[ $to_finder -eq 1 ]]; then
-      open -R "$wzfpath"
-    fi
   fi
 }
+
+alias s_repo="s $HOME/repo"
+alias s_gallery='s $HOME/gallery_all'
 
 function opf {                  # aka openf
   [[ -z "$SHOWLOC" ]] || open "$SHOWLOC"
@@ -361,7 +325,13 @@ z() {
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
-eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"
+# eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"
 
 
 RPROMPT="[%D{%f/%m/%y} | %D{%L:%M:%S}]"
+
+## the following is added by homebrew installation.
+eval "$(/opt/homebrew/bin/brew shellenv)"
+
+## custom installs
+export PATH=$PATH:/opt/R/arm64/gfortran/bin
