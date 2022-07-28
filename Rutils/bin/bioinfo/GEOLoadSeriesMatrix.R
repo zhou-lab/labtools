@@ -13,7 +13,8 @@ select.cols <- sort(unique(c(select.cols, grep('characteristics', colnames(sampl
 ## chr1.cols <- sort(unique(c(select.cols, grep('ch1', colnames(samples)))))
 select.cols <- sort(unique(c(select.cols, grep('source_name', colnames(samples)))))
 
-samples <- samples[,select.cols]
+samples0 <- samples
+samples <- samples0[,select.cols]
 cat('Expect:', nrow(samples), 'samples\n')
 
 ## if there is a column with all sex, then remove sex and that column title
@@ -98,6 +99,8 @@ colnames(samples) <- gsub('\\s+','.', colnames(samples))
 colnames(samples)[colnames(samples) == 'X.Sample_geo_accession'] <- 'geo'
 colnames(samples)[colnames(samples) == 'X.Sample_title'] <- 'title'
 colnames(samples)[colnames(samples) == 'X.Sample_source_name_ch1'] <- 'sourceName'
+samples <- cbind(samples, samples0[,grepl("Sample_description", colnames(samples0))])
+colnames(samples) <- sub("X.Sample_description","description",colnames(samples))
 
 
 if (length(args) > 1) {

@@ -2,7 +2,7 @@
 
 . /mnt/isilon/zhoulab/labtools/bashrc/chop/bashrc_hpc_zhoulab
 
-
+alias search_pmid="~/software/anaconda/anaconda3_2021/bin/python ~/repo/labtools/pyutils/search_pmid.py"
 alias Shold='parallel -j 10 "sha1sum /dev/zero" ::: {1..2}'
 
 
