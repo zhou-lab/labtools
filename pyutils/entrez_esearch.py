@@ -5,7 +5,7 @@ from Bio.Entrez import esearch
 from Bio import Entrez
 Entrez.email = 'zhouwanding@gmail.com'
 
-## this searches papers that matches the term
+## this searches papers that matches the term, Note that the term can also be a PMID
 
 ## https://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi?dbfrom=pubmed&linkname=pubmed_pubmed_refs&id=24752654
 ## see documentation of BeautifulSoup4: https://www.crummy.com/software/BeautifulSoup/bs4/doc/
@@ -15,6 +15,7 @@ Entrez.email = 'zhouwanding@gmail.com'
 ## https://www.ncbi.nlm.nih.gov/pmc/tools/cites-citedby/
 
 def main(search_term):
+
     xml_data = esearch(db="pubmed", retmax=10, term=search_term, idtype="acc", sort="relevance").read()
     soup = BeautifulSoup(xml_data, features="lxml")
     
