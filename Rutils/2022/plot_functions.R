@@ -21,6 +21,18 @@ wzGetColors <- function(grouping, palette_func = brewer.paired, group_name=TRUE)
     }
 }
 
+wzPlotDens1d.SE <- function(se, color_var = NULL) {
+    ad = assays(se)[[1]]
+    cd = as_tibble(colData(se))
+    add = melt(ad, value.name="betas", varnames=c("Probe_ID", "Sample_ID"))
+    if (is.null(color_var)) {
+        ggplot(add) + geom_density(aes(betas, color = Sample_ID))
+    } else {
+        add[[color_var]] = cd[[color_var]][match(add$Sample_ID, cd[["Sample_ID"]])]
+        ggplot(add) + geom_density(aes_string("betas", group = "Sample_ID", color=color_var))
+    }
+}
+
 wzPlotDens2d <- function(x1,x2,pch=16,colorstops=c("#000099", "#00FEFF", "#45FE4F","#FCFF00", "#FF9400", "#FF3100"),...) {
     df <- data.frame(x1,x2)
     x <- densCols(x1,x2, colramp=colorRampPalette(c("black", "white")))
@@ -32,11 +44,12 @@ wzPlotDens2d <- function(x1,x2,pch=16,colorstops=c("#000099", "#00FEFF", "#45FE4
 
 wzPlotDens2d.smooth <- function(x, y, xlim=c(-2,2), stop.points=c("white","lightblue","blue","green","yellow","orange","red","darkred"), nrpoints=100, nbins=256, ...) {
     palette <- colorRampPalette(stop.points, space = "Lab")
-
+    test = cor.test(x, y, method="spearman", use="na.or.complete")
     smoothScatter(x, y, xlim = xlim,
         nrpoints=nrpoints,
         nbin=c(nbins,nbins),
-        colramp=palette, col='blue', ...)
+        colramp=palette, col='blue',
+        main=sprintf("rho=%1.3f, p=%1.2f", test$estimate, test$p.value), ...)
 }
 
 wzPlotDens2d.smoothPairs <- function(mtx) {

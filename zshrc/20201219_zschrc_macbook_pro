@@ -1,5 +1,11 @@
 #!/bin/zsh
 
+alias entrez_review="python -Wignore ~/repo/labtools/pyutils/entrez_efetch_review.py"
+alias entrez_alsoviewed="python -Wignore ~/repo/labtools/pyutils/entrez_efetch_alsoviewed.py"
+alias entrez_pmcrefs="python -Wignore ~/repo/labtools/pyutils/entrez_efetch_pmcrefs.py"
+alias entrez_similar="python -Wignore ~/repo/labtools/pyutils/entrez_efetch_similar.py"
+alias ee="python -Wignore ~/repo/labtools/pyutils/entrez_esearch.py"
+
 ## in case you cannot connect to the HPC again.
 alias clearDNScache="sudo dscacheutil -flushcache;sudo killall -HUP mDNSResponder"
 
@@ -335,3 +341,20 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 
 ## custom installs
 export PATH=$PATH:/opt/R/arm64/gfortran/bin
+export PATH="/Users/zhouw3/opt/anaconda3/bin:$PATH"
+
+# # >>> conda initialize >>>
+# # !! Contents within this block are managed by 'conda init' !!
+# __conda_setup="$('/Users/zhouw3/opt/anaconda3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
+# if [ $? -eq 0 ]; then
+#     eval "$__conda_setup"
+# else
+#     if [ -f "/Users/zhouw3/opt/anaconda3/etc/profile.d/conda.sh" ]; then
+#         . "/Users/zhouw3/opt/anaconda3/etc/profile.d/conda.sh"
+#     else
+#         export PATH="/Users/zhouw3/opt/anaconda3/bin:$PATH"
+#     fi
+# fi
+# unset __conda_setup
+# # <<< conda initialize <<<
+

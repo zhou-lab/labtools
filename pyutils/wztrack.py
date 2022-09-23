@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-import parser
 import argparse
 import sys
 # TCGA_HM450/hg38/output.bb
-# wztrack.py --type bigBed9 --name xxx --url https://zwdzwd.s3.amazonaws.com/trackHubs/Mouse_MM285/mm10/204875570008_R06C01.bb --parent TCGA_ACC
 def main(args):
 
     if args.shortLabel is None:
@@ -93,14 +91,26 @@ def main(args):
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description='create track')
+    parser = argparse.ArgumentParser(description="""create formatted track
+Ex:
+> wztrack.py --type bigBed9 --name xxx --url https://zwdzwd.s3.amazonaws.com/trackHubs/Mouse_MM285/mm10/204875570008_R06C01.bb --parent TCGA_ACC
+produces
+==
+track xxx
+type bigBed 9
+shortLabel xxx
+longLabel xxx
+bigDataUrl https://zwdzwd.s3.amazonaws.com/trackHubs/Mouse_MM285/mm10/204875570008_R06C01.bb
+itemRgb on
+parent TCGA_ACC on
+==""", formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--name', type=str)
     parser.add_argument('--url')
     parser.add_argument('--parent')
     parser.add_argument('--shortLabel', default=None, type=str)
     parser.add_argument('--longLabel', default=None, type=str)
     parser.add_argument('--indent', action='store_true')
-    parser.add_argument('--type', default='bigBed9')
+    parser.add_argument('--type', help="can be: bigBed9, bigWigMeth, bigWigMethParent, bigBed9Parent, bigBed9ParentComp", default='bigBed9')
     parser.set_defaults(func=main)
 
     args = parser.parse_args()
