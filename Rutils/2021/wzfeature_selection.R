@@ -111,7 +111,9 @@ addDummyRows = function(betas, group2probes) {
 SEInferTissueSpecificProbes = function(se, branch,
     hyper=FALSE, scan_delta = FALSE, scan_auc = FALSE) {
 
+    ## hyper=FALSE; scan_delta = FALSE; scan_auc = FALSE
     betas = assay(se)
+    if(is.null(rownames(betas))) rownames(betas) <- seq_len(nrow(betas))
     branch_grouping = as.data.frame(colData(se))[[branch]]
 
     in_na = rowSums(is.na(betas[,branch_grouping==0])) / sum(branch_grouping==0)
