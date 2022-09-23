@@ -33,5 +33,5 @@ table2GR <- function(tbl, rangeOnly = FALSE) {
 
 bed2GR <- function(bedfn, rangeOnly=FALSE) {
     bed <- read.table(bedfn, header=F, stringsAsFactors=F)
-    table2GR(bed)
+    table2GR(bed, rangeOnly=rangeOnly)
 }
