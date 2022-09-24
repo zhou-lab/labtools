@@ -116,15 +116,17 @@ SEInferTissueSpecificProbes = function(se, branch,
     if(is.null(rownames(betas))) rownames(betas) <- seq_len(nrow(betas))
     branch_grouping = as.data.frame(colData(se))[[branch]]
 
-    in_na = rowSums(is.na(betas[,branch_grouping==0])) / sum(branch_grouping==0)
-    out_na = rowSums(is.na(betas[,branch_grouping==1])) / sum(branch_grouping==1)
+    in_na = rowSums(is.na(betas[,branch_grouping==0, drop=FALSE])) /
+        sum(branch_grouping==0)
+    out_na = rowSums(is.na(betas[,branch_grouping==1, drop=FALSE])) /
+        sum(branch_grouping==1)
     
     ## hyper
     ## in-group min
-    m0 = apply(betas[,branch_grouping==0],1,
+    m0 = apply(betas[,branch_grouping==0, drop=FALSE],1,
         function(xx) mean(head(sort(xx),n=5), na.rm=TRUE))
     ## out-group max
-    m1 = apply(betas[,branch_grouping==1],1,
+    m1 = apply(betas[,branch_grouping==1, drop=FALSE],1,
         function(xx) mean(tail(sort(xx),n=5), na.rm=TRUE))
     delta_beta = m0 - m1
     auc = apply(betas, 1, function(b1) {
@@ -137,10 +139,10 @@ SEInferTissueSpecificProbes = function(se, branch,
 
     ## hypo
     ## in-group max
-    m0 = apply(betas[,branch_grouping==0],1,
+    m0 = apply(betas[,branch_grouping==0, drop=FALSE],1,
         function(xx) mean(tail(sort(xx),n=5), na.rm=TRUE))
     ## out-group min
-    m1 = apply(betas[,branch_grouping==1],1,
+    m1 = apply(betas[,branch_grouping==1, drop=FALSE],1,
         function(xx) mean(head(sort(xx),n=5), na.rm=TRUE))
     delta_beta = m0 - m1
     auc = apply(betas, 1, function(b1) {
