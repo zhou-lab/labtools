@@ -151,17 +151,17 @@ SEInferTissueSpecificProbes = function(se, branch,
         in_na = in_na[names(delta_beta)], out_na = out_na[names(delta_beta)],
         Probe_ID = names(delta_beta), branch=branch, type="Hypo")
 
-    branchScanDelta = function(df, auc_max = 0.01) {
-        message(sprintf("Found %d NA in Hyper", sum(is.na(df$delta_beta))))
-        for (i in seq(0.1,0.9,by=0.05)) {
-            probes = df$Probe_ID[
-            (!is.na(df$delta_beta)) & df$delta_beta >= i & df$auc <= auc_max]
-            message(sprintf("delta: %f Found %d probes", i, length(probes)))
-        }
-    }
+    ## branchScanDelta = function(df, auc_max = 0.01) {
+    ##     message(sprintf("Found %d NA in Hyper", sum(is.na(df$delta_beta))))
+    ##     for (i in seq(0.1,0.9,by=0.05)) {
+    ##         probes = df$Probe_ID[
+    ##         (!is.na(df$delta_beta)) & df$delta_beta >= i & df$auc <= auc_max]
+    ##         message(sprintf("delta: %f Found %d probes", i, length(probes)))
+    ##     }
+    ## }
     message(sprintf("Processed branch %s", branch))
-    branchScanDelta(dfHypo)
-    branchScanDelta(dfHype)
+    ## branchScanDelta(dfHypo)
+    ## branchScanDelta(dfHype)
     rbind(dfHypo, dfHype)
 }
 
