@@ -161,7 +161,7 @@ SEInferTissueSpecificProbes = function(se, branch,
     ##         message(sprintf("delta: %f Found %d probes", i, length(probes)))
     ##     }
     ## }
-    message(sprintf("Processed branch %s (N_CpGs=%d)", branch, nrow(betas)))
+    ## message(sprintf("Processed branch %s (N_CpGs=%d)", branch, nrow(betas)))
     ## branchScanDelta(dfHypo)
     ## branchScanDelta(dfHype)
     rbind(dfHypo, dfHype)
