@@ -170,7 +170,7 @@ SEInferTissueSpecificProbes = function(se, branch,
 filterSignature <- function(se, n_max = 50) {
     sigs = metadata(se)$tissue_signatures
     ## remove duplicate
-    sigs = sigs %>% group_by(Probe_ID) %>% top_n(1, delta_beta)
+    sigs = sigs %>% group_by(Probe_ID) %>% top_n(1, delta_beta) %>% sample_n(1)
     sigs = sigs %>% group_by(branch, type) %>%
         arrange(desc(delta_beta)) %>% dplyr::filter(row_number() <= n_max)
     stopifnot(length(sigs$Probe_ID) == length(unique(sigs$Probe_ID)))
@@ -184,16 +184,40 @@ filterSignatureGR <- function(se, n_max = 50) {
     gr <- rowRanges(se)
     sigs = GR2bed(gr)
     sigs$Probe_ID = paste0(sigs$seqnames, "_", sigs$start)
-    sigs = sigs %>% group_by(Probe_ID) %>% top_n(1, delta_beta)
+    sigs$row_ID = seq_len(nrow(sigs))
+    ## top_n returns all if tie, sample_n randomly selects 1
+    sigs = sigs %>% group_by(Probe_ID) %>% top_n(1, delta_beta) %>% sample_n(1)
     sigs = sigs %>% group_by(branch, type) %>% 
         arrange(desc(delta_beta)) %>% dplyr::filter(row_number() <= n_max)
     stopifnot(length(sigs$Probe_ID) == length(unique(sigs$Probe_ID)))
-    gr1 = table2GR(sigs)
-    se = intersectByOverlap(gr, se)
-    se = se[sigs$Probe_ID,]
+    sort(se[sigs$row_ID,])
 }
 
 orderBranch <- function(se) {
+    sigs = as.data.frame(rowData(se))
+    stopifnot(length(sigs$Probe_ID) == length(unique(sigs$Probe_ID)))
+    CellTypes = unique(colData(se)$CellType)
+    sigs1 = sigs %>% dplyr::filter(type=="Hypo")
+    a = do.call(cbind, lapply(split(colData(se)$Sample_ID, colData(se)$CellType), function(x) {
+        rowMeans(assay(se)[,x]) }))
+    a = do.call(cbind, lapply(split(sigs1$Probe_ID, sigs1$branch), function(x) {
+        colMeans(a[x,,drop=FALSE], na.rm=T) }))
+    a = a[CellTypes,]
+    taken = c()
+    for(i in seq_len(nrow(a))) {
+        js = which(a[i,] < 0.5 & !(seq_len(ncol(a)) %in% taken))
+        taken = c(taken, js[order(-colSums(a[,js,drop=FALSE] < 0.5))])
+    }
+    orderedBranch = colnames(a[,taken])
+    sigs$branch = factor(sigs$branch, level=orderedBranch)
+    sigs = sigs %>% arrange(type, branch)
+    se = se[sigs$Probe_ID,]
+    rownames(sigs) = sigs$Probe_ID
+    rowData(se) = sigs
+    se
+}
+
+orderBranchGR <- function(se) {
     sigs = as.data.frame(rowData(se))
     stopifnot(length(sigs$Probe_ID) == length(unique(sigs$Probe_ID)))
     CellTypes = unique(colData(se)$CellType)

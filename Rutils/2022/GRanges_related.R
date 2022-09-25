@@ -34,7 +34,9 @@ table2GR <- function(tbl, rangeOnly = FALSE) {
 
 bed2GR <- function(bedfn, rangeOnly=FALSE) {
     bed <- read.table(bedfn, header=F, stringsAsFactors=F)
-    table2GR(bed, rangeOnly=rangeOnly)
+    gr <- table2GR(bed, rangeOnly=rangeOnly)
+    start(gr) <- start(gr) + 1 # bed format is 0-based at start
+    gr
 }
 
 GR2bed <- function(gr) {
