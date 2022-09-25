@@ -180,6 +180,19 @@ filterSignature <- function(se, n_max = 50) {
     se
 }
 
+filterSignatureGR <- function(se, n_max = 50) {
+    gr <- rowRanges(se)
+    sigs = GR2bed(gr)
+    sigs$Probe_ID = paste0(sigs$seqnames, "_", sigs$start)
+    sigs = sigs %>% group_by(Probe_ID) %>% top_n(1, delta_beta)
+    sigs = sigs %>% group_by(branch, type) %>% 
+        arrange(desc(delta_beta)) %>% dplyr::filter(row_number() <= n_max)
+    stopifnot(length(sigs$Probe_ID) == length(unique(sigs$Probe_ID)))
+    gr1 = table2GR(sigs)
+    se = intersectByOverlap(gr, se)
+    se = se[sigs$Probe_ID,]
+}
+
 orderBranch <- function(se) {
     sigs = as.data.frame(rowData(se))
     stopifnot(length(sigs$Probe_ID) == length(unique(sigs$Probe_ID)))

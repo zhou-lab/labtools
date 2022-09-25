@@ -22,6 +22,7 @@ table2GR <- function(tbl, rangeOnly = FALSE) {
     colnames(tbl)[2] <- 'beg'
     colnames(tbl)[3] <- 'end'
     chrms <- sort(unique(tbl$chrm))
+    if(is.factor(chrms)) { chrms <- as.character(chrms) }
     gr <- GRanges(
         seqnames=tbl$chrm, ranges=IRanges(tbl$beg, tbl$end),
         seqinfo=Seqinfo(chrms))
@@ -34,4 +35,10 @@ table2GR <- function(tbl, rangeOnly = FALSE) {
 bed2GR <- function(bedfn, rangeOnly=FALSE) {
     bed <- read.table(bedfn, header=F, stringsAsFactors=F)
     table2GR(bed, rangeOnly=rangeOnly)
+}
+
+GR2bed <- function(gr) {
+    start(gr) <- start(gr)-1
+    gr$probeID <- names(gr)
+    df <- as.data.frame(gr)
 }
