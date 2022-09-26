@@ -1,3 +1,12 @@
+auc_wmw2 = function(labels, scores) {
+    labels <- as.logical(labels)
+    n1 <- sum(labels)
+    n2 <- sum(!labels)
+    R1 <- sum(rank(scores)[labels])
+    U1 <- R1 - n1 * (n1 + 1)/2
+    U1/(n1 * n2)
+}
+
 #' This is adapted from branchInferProbes, but better.
 #' It looks for one-vs-rest methylation signatures
 SEInferTissueSpecificProbes = function(se, branch,
