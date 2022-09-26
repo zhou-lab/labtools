@@ -42,5 +42,5 @@ bed2GR <- function(bedfn, rangeOnly=FALSE) {
 GR2bed <- function(gr) {
     start(gr) <- start(gr)-1
     gr$probeID <- names(gr)
-    df <- as.data.frame(gr)
+    as.data.frame(gr)
 }
