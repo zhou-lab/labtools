@@ -8,6 +8,7 @@ function set_environment {
     uni=$3                      # assume sorted, three columns
     qry=$4
     out=$5
+    TMPFDR=${out}.tmp
 }
 
 function testEnrichment() (     # this spawn a subshell
@@ -22,7 +23,6 @@ function testEnrichment() (     # this spawn a subshell
     echo "================="
 
     base=$(basename ${qry} .bed)
-    TMPFDR=${out}.tmp
     mkdir -p $TMPFDR
     rm -rf $TMPFDR/*
 
