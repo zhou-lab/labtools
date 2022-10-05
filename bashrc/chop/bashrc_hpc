@@ -1,8 +1,16 @@
 #!/bin/bash
 
+## otherwise aliases are not expanded
+shopt -s expand_aliases
 . /mnt/isilon/zhoulab/labtools/bashrc/chop/bashrc_hpc_zhoulab
+alias awk='awk -F"\t" -v OFS="\t"'
 
-alias search_pmid="~/software/anaconda/anaconda3_2021/bin/python ~/repo/labtools/pyutils/search_pmid.py"
+alias entrez_review="~/software/anaconda/anaconda3_2021/bin/python ~/repo/labtools/pyutils/entrez_efetch_review.py"
+alias entrez_alsoviewed="~/software/anaconda/anaconda3_2021/bin/python ~/repo/labtools/pyutils/entrez_efetch_alsoviewed.py"
+alias entrez_pmcrefs="~/software/anaconda/anaconda3_2021/bin/python ~/repo/labtools/pyutils/entrez_efetch_pmcrefs.py"
+alias entrez_similar="~/software/anaconda/anaconda3_2021/bin/python ~/repo/labtools/pyutils/entrez_efetch_similar.py"
+alias ee="~/software/anaconda/anaconda3_2021/bin/python ~/repo/labtools/pyutils/entrez_esearch.py"
+
 alias Shold='parallel -j 10 "sha1sum /dev/zero" ::: {1..2}'
 
 
@@ -24,7 +32,6 @@ function sv {
 }
 
 alias ta="tmux a" # tmux is still not as robust as screen
-alias awk='awk -F"\t" -v OFS="\t"'
 
 function dnarev {
   echo $1 | tr ATGC TACG | tr atgc TACG | rev;
