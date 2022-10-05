@@ -38,12 +38,15 @@ function testEnrichment() (     # this spawn a subshell
     (zcat -f ${fea} | sort -k1,1 -k2,2n -C) || (>&2 echo "Feature unsorted! Abort."; exit 1)
 
     bedtools intersect -a ${ref} -b ${uni} -sorted -wo | cut -f1-3 | uniq >$TMPFDR/in_u
+    echo "Compute overlaps..."
     bedtools intersect -a $TMPFDR/in_u -b ${fea} -loj -sorted | bedtools intersect -a - -b ${qry} -loj -sorted |
 	    awk '{if($9==".") {$9=0;} else {$9=1;}print $1,$2,$3,$7,$9;}' | sort -k4,4 -k1,1 -k2,2n |
 	    bedtools groupby -g 1-4 -c 5 -o sum | awk '{if($5>0) $5=1; print;}' >$TMPFDR/overlaps
+    echo "Tallying counts..."
     n_q=$(bedtools intersect -a $TMPFDR/in_u -b $qry -sorted | wc -l)
     n_u=$(cat $TMPFDR/in_u | wc -l)
     awk -v n_q=$n_q -v n_u=$n_u '$4!="."{k=$1":"$2"_"$3; if(k!=k0 || g!=$4) {if($5==0) {cnt0[$4]+=1;} if($5==1) {cnt1[$4]+=1;} features[$4]=1;} k0=k; g=$4;}END{print "Feature\tnfmq\tnfq\tnq\tnu"; for(i in features){print i,cnt0[i],cnt1[i],n_q,n_u;}}' $TMPFDR/overlaps >$TMPFDR/stat_cnts
+    echo "Generating statistics..."
     Rscript ~/repo/labtools/Rutils/testFisher.R $TMPFDR/stat_cnts ${out}
 
     echo "Created temporary folder $TMPFDR. Feel free to delete."
