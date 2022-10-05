@@ -26,17 +26,18 @@ function testEnrichment() (     # this spawn a subshell
     mkdir -p $TMPFDR
     rm -rf $TMPFDR/*
 
-    # check file sorting status
     if zcat -f ${qry} | sort -k1,1 -k2,2n -C; then
-      echo "Query is unsorted. Sort to $TMPFDR/in_q"
-      echo "You can save time by providing a sorted query."
+      echo "Query is unsorted. Sorting to $TMPFDR/in_q ..."
       zcat -f ${qry} | cut -f1-3 | sortbed >$TMPFDR/in_q
+      echo "Sorting done. You can save time by providing a sorted query."
       qry=$TMPFDR/in_q
     fi
+    echo "Confirming other inputs are sorted..."
     (zcat -f ${ref} | sort -k1,1 -k2,2n -C) || (>&2 echo "Reference unsorted! Abort."; exit 1)
     (zcat -f ${uni} | sort -k1,1 -k2,2n -C) || (>&2 echo "Universe unsorted! Abort."; exit 1)
     (zcat -f ${fea} | sort -k1,1 -k2,2n -C) || (>&2 echo "Feature unsorted! Abort."; exit 1)
 
+    echo "Creating the universe..."
     bedtools intersect -a ${ref} -b ${uni} -sorted -wo | cut -f1-3 | uniq >$TMPFDR/in_u
     echo "Computing overlaps..."
     bedtools intersect -a $TMPFDR/in_u -b ${fea} -loj -sorted | bedtools intersect -a - -b ${qry} -loj -sorted |
