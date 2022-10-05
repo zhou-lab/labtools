@@ -41,7 +41,7 @@ function testEnrichment() (     # this spawn a subshell
     bedtools intersect -a ${ref} -b ${uni} -sorted -wo | cut -f1-3 | uniq >$TMPFDR/in_u
     echo "Computing overlaps..."
     bedtools intersect -a $TMPFDR/in_u -b ${fea} -loj -sorted | bedtools intersect -a - -b ${qry} -loj -sorted |
-	    awk '{if($9==".") {$9=0;} else {$9=1;}print $1,$2,$3,$7,$9;}' | sort -k4,4 -k1,1 -k2,2n |
+	    awk '{if($9==".") {$9=0;} else {$9=1;}print $1,$2,$3,$7,$9;}' | sort -k4,4 -k1,1 -k2,2n -T $TMPFDR |
 	    bedtools groupby -g 1-4 -c 5 -o sum | awk '{if($5>0) $5=1; print;}' >$TMPFDR/overlaps
     echo "Tallying counts..."
     n_q=$(bedtools intersect -a $TMPFDR/in_u -b $qry -sorted | wc -l)
