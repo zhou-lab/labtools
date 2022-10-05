@@ -33,10 +33,9 @@ function testEnrichment() (     # this spawn a subshell
       zcat -f ${qry} | cut -f1-3 | sortbed >$TMPFDR/in_q
       qry=$TMPFDR/in_q
     fi
-    [[ zcat -f ${ref} | sort -k1,1 -k2,2n -C; ]] || (>&2 echo "Reference unsorted! Abort."; exit 1)
-    [[ zcat -f ${uni} | sort -k1,1 -k2,2n -C; ]] || (>&2 echo "Universe unsorted! Abort."; exit 1)
-    [[ zcat -f ${fea} | sort -k1,1 -k2,2n -C; ]] || (>&2 echo "Feature unsorted! Abort."; exit 1)
-    
+    (zcat -f ${ref} | sort -k1,1 -k2,2n -C) || (>&2 echo "Reference unsorted! Abort."; exit 1)
+    (zcat -f ${uni} | sort -k1,1 -k2,2n -C) || (>&2 echo "Universe unsorted! Abort."; exit 1)
+    (zcat -f ${fea} | sort -k1,1 -k2,2n -C) || (>&2 echo "Feature unsorted! Abort."; exit 1)
 
     bedtools intersect -a ${ref} -b ${uni} -sorted -wo | cut -f1-3 | uniq >$TMPFDR/in_u
     bedtools intersect -a $TMPFDR/in_u -b ${fea} -loj -sorted | bedtools intersect -a - -b ${qry} -loj -sorted |
