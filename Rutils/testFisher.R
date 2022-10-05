@@ -10,4 +10,3 @@ df = read.table(args[1], header=T) %>% dplyr::mutate(
     enrich = phyper(nfq-1, nf, nu-nf, nq, lower.tail=TRUE),
     odds_ratio=(nfq/nfmq)/(nqmf/numfq))
 write.table(format(df), file=args[2], quote=FALSE, row.names=FALSE, sep="\t")
-
