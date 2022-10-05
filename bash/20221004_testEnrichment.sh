@@ -26,7 +26,7 @@ function testEnrichment() (     # this spawn a subshell
     mkdir -p $TMPFDR
     rm -rf $TMPFDR/*
 
-    if zcat -f ${qry} | sort -k1,1 -k2,2n -C; then
+    if !(zcat -f ${qry} | sort -k1,1 -k2,2n -C); then
       echo "Query is unsorted. Sorting to $TMPFDR/in_q ..."
       zcat -f ${qry} | cut -f1-3 | sortbed >$TMPFDR/in_q
       echo "Sorting done. You can save time by providing a sorted query."
