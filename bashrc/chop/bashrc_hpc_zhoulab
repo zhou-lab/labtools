@@ -55,6 +55,12 @@ sortbed ()
 }
 export -f sortbed
 
+
+sortbedFast () {
+LC_ALL=C LC_ALL=C /mnt/isilon/zhoulab/labsoftware/parallel/parallel-20220822/src/parsort -k1,1 -k2,2n -T . $1
+}
+export -f sortbedFast
+
 function mkdircd {
   mkdir $1 && cd $_;
 }
