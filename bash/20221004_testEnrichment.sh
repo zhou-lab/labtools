@@ -13,7 +13,7 @@ function set_environment {
 }
 
 function testEnrichment() (     # this spawn a subshell
-    set_environment $1 $2 $3 $4 $5
+    set_environment $1 $2 $3 $4 $5 $6
     echo
     echo "================="
     echo "Query:     $qry"
@@ -29,8 +29,8 @@ function testEnrichment() (     # this spawn a subshell
     rm -rf $TMPFDR/*
     mkdir -p $(dirname $out)
 
-    if [[ $opt != "skip_check" ]]; then
-	if !(zcat -f ${qry} | sort -k1,1 -k2,2n -C); then
+    if [[ "$opt" != "skip_check" ]]; then
+	if ! (zcat -f ${qry} | LC_ALL=C sort -k1,1 -k2,2n -C); then
 	    echo "Query is unsorted. Sorting to $TMPFDR/in_q ..."
 	    zcat -f ${qry} | cut -f1-3 | sortbed >$TMPFDR/in_q
 	    echo "Sorting done. You can save time by providing a sorted query."
