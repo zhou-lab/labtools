@@ -55,6 +55,17 @@ SEInferTissueSpecificProbes = function(se, branch,
     rbind(dfHypo, dfHype)
 }
 
+filterSignatureSE <- function(se, n_max = 50) {
+    ## remove duplicate and select top cgs
+    sigs <- as.data.frame(rowData(se))
+    sigs = sigs %>% group_by(Probe_ID) %>% top_n(1, delta_beta) %>% sample_n(1)
+    sigs = sigs %>% group_by(branch, type) %>% 
+        arrange(desc(delta_beta)) %>% dplyr::filter(row_number() <= n_max)
+    stopifnot(length(sigs$Probe_ID) == length(unique(sigs$Probe_ID)))
+    se1 <- se[sigs$Probe_ID,]
+    se1
+}
+
 filterSignatureGR <- function(se, n_max = 50) {
     ## remove duplicate and select top cgs
     gr <- rowRanges(se)
@@ -112,4 +123,19 @@ colClusterTissueSE <- function(se) {
         }
     }))
     se[, colnames(betas2)]
+}
+
+rowClusterTissueSE <- function(se) {
+    ## row cluster
+    rd = as.data.frame(rowData(se))
+    grouping = paste0(rd$branch,"_", rd$type)
+    betas = assay(se)
+    betas2 = do.call(rbind, lapply(unique(grouping), function(g) {
+        if (sum(grouping == g) > 2) {
+            row.cluster(betas[grouping == g,])$mat
+        } else {
+            betas[grouping == g,,drop=FALSE]
+        }
+    }))
+    se[rownames(betas2),]
 }

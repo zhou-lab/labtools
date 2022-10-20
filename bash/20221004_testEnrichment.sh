@@ -26,13 +26,13 @@ function testEnrichment() (     # this spawn a subshell
     mkdir -p $TMPFDR
     rm -rf $TMPFDR/*
 
+    echo "Confirming inputs are sorted..."
     if !(zcat -f ${qry} | sort -k1,1 -k2,2n -C); then
       echo "Query is unsorted. Sorting to $TMPFDR/in_q ..."
       zcat -f ${qry} | cut -f1-3 | sortbed >$TMPFDR/in_q
       echo "Sorting done. You can save time by providing a sorted query."
       qry=$TMPFDR/in_q
     fi
-    echo "Confirming other inputs are sorted..."
     (zcat -f ${ref} | sort -k1,1 -k2,2n -C) || (>&2 echo "Reference unsorted! Abort."; exit 1)
     (zcat -f ${uni} | sort -k1,1 -k2,2n -C) || (>&2 echo "Universe unsorted! Abort."; exit 1)
     (zcat -f ${fea} | sort -k1,1 -k2,2n -C) || (>&2 echo "Feature unsorted! Abort."; exit 1)

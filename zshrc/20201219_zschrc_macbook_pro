@@ -325,10 +325,6 @@ z() {
 }
 
 
-#### python ####
-## activate anaconda
-# source /Users/zhouw3/anaconda3/bin/activate
-
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 # eval "$(perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)"
@@ -342,19 +338,4 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 ## custom installs
 export PATH=$PATH:/opt/R/arm64/gfortran/bin
 export PATH="/Users/zhouw3/opt/anaconda3/bin:$PATH"
-
-# # >>> conda initialize >>>
-# # !! Contents within this block are managed by 'conda init' !!
-# __conda_setup="$('/Users/zhouw3/opt/anaconda3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
-# if [ $? -eq 0 ]; then
-#     eval "$__conda_setup"
-# else
-#     if [ -f "/Users/zhouw3/opt/anaconda3/etc/profile.d/conda.sh" ]; then
-#         . "/Users/zhouw3/opt/anaconda3/etc/profile.d/conda.sh"
-#     else
-#         export PATH="/Users/zhouw3/opt/anaconda3/bin:$PATH"
-#     fi
-# fi
-# unset __conda_setup
-# # <<< conda initialize <<<
 
