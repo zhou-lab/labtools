@@ -146,10 +146,13 @@ ggNoLegend <- function() {
 
 visualizeSEsimple <- function(se, rows=NULL, cols=NULL,
     name_base="a", legend_hpad=0.1, stop.points=turbo(10), #or parula(10)
-    dmin=0, dmax=1, label.use.data = FALSE,
+    dmin=0, dmax=1, label.use.data = FALSE, show_legend=TRUE,
     show_row_names = FALSE, show_column_names = FALSE) {
 
-    plt = WHeatmap(assay(se), cmp=CMPar(stop.points=stop.points, dmin=dmin, dmax=dmax), name=paste0(name_base, 'matrix'), xticklabels = show_column_names, xticklabels.n = ncol(se), yticklabels = show_row_names, yticklabels.n = nrow(se))
+    plt = WHeatmap(assay(se), cmp=CMPar(stop.points=stop.points, dmin=dmin, dmax=dmax),
+        name=paste0(name_base, 'matrix'),
+        xticklabels = show_column_names, xticklabels.n = ncol(se),
+        yticklabels = show_row_names, yticklabels.n = nrow(se))
     last_matrix = paste0(name_base, 'matrix')
     
     ## row bars
@@ -190,21 +193,22 @@ visualizeSEsimple <- function(se, rows=NULL, cols=NULL,
             yticklabel.side='l')
         last_name = paste0(name_base, "col", bar)
     }
+    last_column_name = last_name
 
     ## legend
-    for (bar in rows) {
-        plt = plt + WLegendV(paste0(name_base, "row", bar),
-            ## TopRightOf(last_name, just=c("left","top"), h.pad=legend_hpad),
-            BottomLeftOf(last_name, just=c("left","top"), h.pad=legend_hpad),
-            name=paste0(name_base, "legendrow", bar))
-        last_name = paste0(name_base, "legendrow", bar)
-    }
-    for (bar in cols) {
-        plt = plt + WLegendV(paste0(name_base, "col", bar),
-            ## TopRightOf(last_name, just=c("left","top"), h.pad=legend_hpad),
-            BottomLeftOf(last_name, just=c("left","top"), h.pad=legend_hpad),
-            name=paste0(name_base, "legendcol", bar))
-        last_name = paste0(name_base, "legendcol", bar)
+    if (show_legend) {
+        for (bar in rows) {
+            plt = plt + WLegendV(paste0(name_base, "row", bar),
+                BottomLeftOf(last_column_name, just=c("left","top"), h.pad=legend_hpad),
+                name=paste0(name_base, "legendrow", bar))
+            last_name = paste0(name_base, "legendrow", bar)
+        }
+        for (bar in cols) {
+            plt = plt + WLegendV(paste0(name_base, "col", bar),
+                BottomLeftOf(last_column_name, just=c("left","top"), h.pad=legend_hpad),
+                name=paste0(name_base, "legendcol", bar))
+            last_name = paste0(name_base, "legendcol", bar)
+        }
     }
 
     plt
