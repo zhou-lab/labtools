@@ -8,3 +8,10 @@ MU2betas <- function(MU, mincov = 5) {
     dimnames(F) = dimnames(MU)
     F
 }
+
+MU2cov <- function(MU) {
+    Cov = bitwAnd(MU, 0xffff) + bitwShiftR(MU, 16)
+    dim(Cov) = dim(MU)
+    dimnames(Cov) = dimnames(MU)
+    Cov
+}
