@@ -55,6 +55,22 @@ sortbed ()
 }
 export -f sortbed
 
+sortbed2 ()
+{
+    LC_ALL=C sort -k1,1 -k2,2n -T $2 $1
+}
+export -f sortbed2
+
+function pasteLarge() {
+  ## this function replaces the paste for large number of input files
+  # ls * | pasteLarge outputfile
+  out=$1
+  cat - | split -l 300 -d - ${out}.tmp
+  for list in ${out}.tmp*; do paste $(cat $list) >${list}.merge; done
+  paste $(/bin/ls ${out}.tmp*.merge) >$out
+  rm -f ${out}.tmp*
+}
+
 
 sortbedFast () {
 LC_ALL=C LC_ALL=C /mnt/isilon/zhoulab/labsoftware/parallel/parallel-20220822/src/parsort -k1,1 -k2,2n -T . $1
