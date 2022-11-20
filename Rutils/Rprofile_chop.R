@@ -26,6 +26,7 @@ ld22 <- function() {
     suppressMessages(library(writexl))
     suppressMessages(library(gridExtra))
     ## not so common
+    suppressMessages(library(data.table))
     suppressMessages(library(cowplot))
     suppressMessages(library(MASS))
     suppressMessages(library(grDevices))

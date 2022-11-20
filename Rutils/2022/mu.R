@@ -1,6 +1,7 @@
 MU2betas <- function(MU, mincov = 5) {
-    U = bitwAnd(MU, 0xffff)
-    M = bitwShiftR(MU, 16)
+    library(bitops)
+    U = bitAnd(MU, 0xffff)
+    M = bitShiftR(MU, 16)
     F = M / (M+U)
     F[is.nan(F)] = NA
     F[U+M < mincov] = NA
@@ -10,7 +11,8 @@ MU2betas <- function(MU, mincov = 5) {
 }
 
 MU2cov <- function(MU) {
-    Cov = bitwAnd(MU, 0xffff) + bitwShiftR(MU, 16)
+    library(bitops)
+    Cov = bitAnd(MU, 0xffff) + bitShiftR(MU, 16)
     dim(Cov) = dim(MU)
     dimnames(Cov) = dimnames(MU)
     Cov

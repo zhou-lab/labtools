@@ -118,7 +118,7 @@ def main_printc(args):
                 tprint([c, i, i+2, 'CG', '+', 'CG'],out)
 
             # CHGs are assymetric
-            # for example, CCG is a CHG but its reverse complement CGG is not a CHG
+            # for example, CCG is a CHG but its reversecomplement CGG is not a CHG
             if gseq[i] == 'C' and gseq[i+1] != 'G' and gseq[i+2] == 'G':
                 if gseq[i+1] != 'N':
                     tprint([c, i, i+1, 'CHG', '+', gseq[i:i+3]],out)
@@ -248,6 +248,50 @@ def main_internal(args):
                     print('\t'.join(map(
                         str, [".",i,i+2, '|'.join(seq_record.description.split()),
                               seq[max(0,i-args.l):i]+'['+seq[i:i+2]+']'+seq[i+2:i+args.l+2]])))
+
+def main_makeprobes(args):
+
+    for line in args.i:
+        fields = line.strip().split("\t")
+        id = fields[0]
+        k122mer = fields[1].split("[CG]")
+        rawseq = k122mer[0]
+        if len(rawseq)>49:
+            seq = rawseq[len(rawseq)-48:]
+            seq = seq.replace("CG","XY")
+            seq = seq.replace("G","A")
+            seqM = seq.replace("XY","CG")+"CG"
+            seqU = seq.replace("XY","CA")+"CA"
+            print("%s_TC11\t%s\t%s" % (id, seqM, seqU))
+
+        rawseq = reverse_complement(k122mer[1])
+        if len(rawseq)>49:
+            seq = rawseq[len(rawseq)-48:]
+            seq = seq.replace("CG","XY")
+            seq = seq.replace("G","A")
+            seqM = seq.replace("XY","CG")+"CG"
+            seqU = seq.replace("XY","CA")+"CA"
+            print("%s_BC11\t%s\t%s" % (id, seqM, seqU))
+
+        rawseq = k122mer[0]
+        if len(rawseq)>49:
+            seq = rawseq[len(rawseq)-49:]
+            seq = seq.replace("CG","XY")
+            seq = seq.replace("C","T")
+            seqM = seq.replace("XY","CG")+"C"
+            seqU = seq.replace("XY","TG")+"T"
+            print("%s_TO11\t%s\t%s" % (id, seqM, seqU))
+
+        rawseq = reverse_complement(k122mer[1])
+        if len(rawseq)>49:
+            seq = rawseq[len(rawseq)-49:]
+            seq = seq.replace("CG","XY")
+            seq = seq.replace("C","T")
+            seqM = seq.replace("XY","CG")+"C"
+            seqU = seq.replace("XY","TG")+"T"
+            print("%s_BO11\t%s\t%s" % (id, seqM, seqU))
+
+    return
 
 def main_filter(args):
 
@@ -435,6 +479,11 @@ if __name__ == '__main__':
     psr_internal.add_argument('--nobrackets', action='store_true', help='no output of brackets around CpG')
     psr_internal.add_argument('--strict', action='store_true', help='require length on both flanking regions')
     psr_internal.set_defaults(func=main_internal)
+
+    psr_makeprobes = subparsers.add_parser('makeprobes', help=""" makeprobes CpG """)
+    psr_makeprobes.add_argument('-l', default=50, type=int, help='flanking length (50bp)')
+    psr_makeprobes.add_argument('-i', type=argparse.FileType('r'), default='-', help='sequence in fasta')
+    psr_makeprobes.set_defaults(func=main_makeprobes)
 
     psr_filter = subparsers.add_parser('filter', help=""" filter fasta sequence based on keyword in description""")
     psr_filter.add_argument('-i', type=argparse.FileType('r'), default='-', help='fasta sequence')

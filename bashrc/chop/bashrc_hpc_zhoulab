@@ -210,7 +210,8 @@ z() {
   fi
 }
 
-export _Z_DATA=/mnt/isilon/zhoulab/labsoftware/z/shared_z
+## define _Z_DATA in your own ~/.bashrc
+## export _Z_DATA=/mnt/isilon/zhoulab/labsoftware/z/shared_z
 
 export WZSEQ_ENTRY=/mnt/isilon/zhoulab/labpipelines/entry/wzseq.sh
 export SLURM_ENTRY=/mnt/isilon/zhoulab/labpipelines/entry/slurm.sh
