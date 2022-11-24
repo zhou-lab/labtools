@@ -18,3 +18,13 @@ MU2cov <- function(MU, maxCov = 10000) {
     dimnames(Cov) = dimnames(MU)
     Cov
 }
+
+MU2betas_adaptive <- function(MU, mincov=1, maxcov=20, probs=0.1) {
+    ## select coverage threshold so that 1-probs CpGs have value
+    betas <- apply(MU, 2, function(x) {
+        MU2betas(x, mincov=max(mincov, min(maxcov,
+            quantile(MU2cov(MU), probs=probs))))
+    })
+    rownames(betas) <- rownames(MU)
+    betas
+}
