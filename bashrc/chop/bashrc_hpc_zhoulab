@@ -29,6 +29,13 @@ function dnarev {
     echo $1 | tr ATGC TACG | rev;
 }
 
+function testEnrichment2 {
+  source ~/repo/KnowYourCG/sh/testEnrichment.sh
+  qry=$1
+  genome=$2
+  testEnrichment $qry ~/references/$genome/annotation/cpg/cpg_nocontig.bed.gz na ~/references/$genome/featuresHQ/
+}
+
 function labcol {
   awk -F "\t" -v OFS="\t" '{for(i=1;i<=NF;++i){$i=$i"_"i;}print $0;}' $1 | less -S
 }
@@ -121,6 +128,7 @@ alias Srun2='srun --mem 40G -c 2 -t 01-00:00:00 --pty bash'
 alias Srun4='srun --mem 80G -c 4 -t 01-00:00:00 --pty bash'
 alias Srun8='srun --mem 96G -c 8 -t 01-00:00:00 --pty bash'
 alias Srun24='srun --mem 110G -c 24 -t 01-00:00:00 --pty bash'
+alias Srun48='srun --mem 400G -c 48 -t 01-00:00:00 --pty bash'
 alias Srun72='srun --mem 512G -c 72 -t 01-00:00:00 --pty bash'
 alias SrunGPU='srun --mem 400G -c 24 -t 07-00:00:00 -p gpuq --gres=gpu:a100:4 --pty bash'
 alias SrunGPU48='srun --mem 400G -c 48 -t 07-00:00:00 -p gpuq --gres=gpu:a100:4 --pty bash'
