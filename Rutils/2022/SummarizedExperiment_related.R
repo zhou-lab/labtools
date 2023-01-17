@@ -16,6 +16,12 @@ bSubMostVariableSE <- function(se, n=2000) {
     se[names(sort(std, decreasing=TRUE)[seq_len(n)]),]
 }
 
+bSubVariableSE <- function(se, min_beta_range=0.2) {
+    mtx = assay(se)
+    beta_ranges = rowMaxs(mtx, na.rm=T) - rowMins(mtx, na.rm=T)
+    se[beta_ranges > min_beta_range,]
+}
+
 bSubAutosomeSE <- function(se) {
     autoprobes <- names(sesameData_getAutosomeProbes(
         inferPlatformFromProbeIDs(rownames(se))))
@@ -53,6 +59,21 @@ columnClusterWithinGroupSE <- function(se, vars=NULL) {
     se1        
 }
 
+rowClusterWithinGroupSE <- function(se, vars=NULL) {
+    if (is.null(vars)) { vars = c("branch","type") }
+    df = rowData(se) %>% as_tibble
+    rowgroups = split(seq_len(nrow(df)), df[,vars])
+    rowgroups = rowgroups[sapply(rowgroups, length)>0]
+    se1 = do.call(rbind, lapply(rowgroups, function(ind) {
+        if (length(ind)<2) {
+            se[ind,]
+        } else {
+            rowClusterSE(se[ind,], nrow_max=5000)
+        }
+    }))
+    se1        
+}
+
 rowClusterSE <- function(se, nrow_max = 3000) {
     if (nrow(se) > nrow_max) {
         stop(sprintf("Too many columns (%d, max: %d). Abort.",
@@ -78,4 +99,13 @@ buildSE <- function(betas, probedf, meta, tissue_color, branch_color) {
     metadata(se)$tissue_color = tissue_color
     metadata(se)$branch_color = branch_color
     se
+}
+
+getSEfromChunks <- function(rds_fdr, Probe_IDs) {
+    se = do.call(rbind, mclapply(list.files(rds_fdr), function(x) {
+        se1 = readRDS(sprintf("%s/%s", rds_fdr, x))
+        rownames(se1) = paste0(seqnames(se1),"_",start(se1))
+        se1 = se1[rownames(se1) %in% Probe_IDs,]
+    }, mc.cores=24))
+    se[Probe_IDs,]
 }

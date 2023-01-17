@@ -31,3 +31,7 @@ attachManifest <- function(
     cbind(df, as.data.frame(mft)[match(df[[probe_id]], mft[[mft_probeid]]),])
 }
 
+getInfiniumProbesByCoord <- function(Probe_ID2, platform="HM450") {
+    mft = sesameData_getManifestGRanges(platform)
+    data.frame(Probe_ID2=Probe_ID2,Probe_ID=names(mft)[match(Probe_ID2,paste0(seqnames(mft),"_",start(mft)))])
+}
