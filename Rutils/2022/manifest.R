@@ -25,3 +25,9 @@ attachManifest <- function(
     mft <- sesameAnno_get(sprintf("Anno/%s/%s.%s.manifest.tsv.gz", platform, platform, genome))
     cbind(df, as.data.frame(mft)[match(df[[probe_id]], mft$Probe_ID),])
 }
+
+
+getInfiniumProbesByCoord <- function(Probe_ID2, platform="HM450") {
+    mft = sesameData_getManifestGRanges(platform)
+    data.frame(Probe_ID2=Probe_ID2,Probe_ID=names(mft)[match(Probe_ID2,paste0(seqnames(mft),"_",start(mft)))])
+}
