@@ -23,5 +23,11 @@ attachManifest <- function(
 
     ## mft <- sesameDataGet(sprintf("%s.%s.manifest", platform, genome))
     mft <- sesameAnno_get(sprintf("Anno/%s/%s.%s.manifest.tsv.gz", platform, platform, genome))
-    cbind(df, as.data.frame(mft)[match(df[[probe_id]], mft$Probe_ID),])
+    if (platform %in% c("HM27","HM450")) {
+        mft_probeid = "probeID"
+    } else {
+        mft_probeid = "Probe_ID"
+    }
+    cbind(df, as.data.frame(mft)[match(df[[probe_id]], mft[[mft_probeid]]),])
 }
+
