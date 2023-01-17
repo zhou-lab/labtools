@@ -8,7 +8,7 @@ options(stringsAsFactors = FALSE)
 # .First <- function(){
 # }
 
-ld22 <- function() {
+ld22c <- function() {
     file.sources = list.files("~/zhoulab/labtools/Rutils/2022/", pattern="*.R$", full.names=T)
     suppressMessages(sapply(file.sources,source,.GlobalEnv))
     suppressMessages(library(tidyverse))
@@ -25,6 +25,11 @@ ld22 <- function() {
     suppressMessages(library(readxl))
     suppressMessages(library(writexl))
     suppressMessages(library(gridExtra))
+
+}
+
+ld22 <- function() {
+    ld22c()
     ## not so common
     suppressMessages(library(data.table))
     suppressMessages(library(cowplot))
@@ -36,7 +41,7 @@ ld22 <- function() {
     suppressMessages(library(pals))
     suppressMessages(library(ggsci))
     suppressMessages(library(circlize))
-    suppressMessages(library(ggpubr))
+    suppressMessages(library(ggpubr))	
 }
 
 ld <- function() {
