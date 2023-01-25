@@ -9,6 +9,7 @@ system(sprintf("zcat %s | awk '/^!Sample/' | wzmanip transpose - >%s_samplesheet
 samples <- read.table(sprintf("%s_samplesheets.tsv", sname), stringsAsFactors=F, header=T, sep='\t')
 
 select.cols <- c(1,2)
+select.cols <- sort(unique(c(select.cols, grep('platform.id', colnames(samples)))))
 select.cols <- sort(unique(c(select.cols, grep('characteristics', colnames(samples)))))
 ## chr1.cols <- sort(unique(c(select.cols, grep('ch1', colnames(samples)))))
 select.cols <- sort(unique(c(select.cols, grep('source_name', colnames(samples)))))
@@ -97,11 +98,18 @@ for (i in 1:ncol(samples)) {
 }
 colnames(samples) <- gsub('\\s+','.', colnames(samples))
 colnames(samples)[colnames(samples) == 'X.Sample_geo_accession'] <- 'geo'
+colnames(samples)[colnames(samples) == "X.Sample_platform_id"] <- "platform"
 colnames(samples)[colnames(samples) == 'X.Sample_title'] <- 'title'
 colnames(samples)[colnames(samples) == 'X.Sample_source_name_ch1'] <- 'sourceName'
-samples <- cbind(samples, samples0[,grepl("Sample_description", colnames(samples0))])
+samples = cbind(samples[,c("geo","platform")], samples)
+extra <- cbind(
+	samples[,!(colnames(samples) %in% c("geo","platform","title","sourceName"))],
+	description=samples0[,grepl("Sample_description", colnames(samples0))])
+extra <- do.call(paste, c(extra, sep="|||"))
+samples <- cbind(samples[,c("geo","platform")],
+	title=samples0[,grepl("Sample_title", colnames(samples0))], 
+	sourceName=samples[,"sourceName"], extra=extra)
 colnames(samples) <- sub("X.Sample_description","description",colnames(samples))
-
 
 if (length(args) > 1) {
   if (args[2] == 'usetitle') {
@@ -116,24 +124,23 @@ if (length(args) > 1) {
 }
 
 suppressWarnings(suppressPackageStartupMessages(library(data.table)))
-a <- fread(sprintf('tmp_%s', sname), sep='\t', header=TRUE)
-betas <- as.matrix(a[,2:ncol(a)])
-rownames(betas) <- a$ID_REF
+## a <- fread(sprintf('tmp_%s', sname), sep='\t', header=TRUE)
+## betas <- as.matrix(a[,2:ncol(a)])
+## rownames(betas) <- a$ID_REF
 
-if (!is.numeric(betas)) {
-  aa <- as.numeric(betas)
-  dim(aa) <- dim(betas)
-  dimnames(aa) <- dimnames(betas)
-  betas <- aa
-}
-
+## if (!is.numeric(betas)) {
+##   aa <- as.numeric(betas)
+##   dim(aa) <- dim(betas)
+##   dimnames(aa) <- dimnames(betas)
+##   betas <- aa
+## }
 write.table(samples, file=sprintf('%s_samples.tsv', sname), quote=F, sep='\t', row.names=FALSE)
-# saveRDS(samples, file=sprintf('%s_samples_GEOLoadSeriesMatrix.rds', sname))
-saveRDS(betas, file=sprintf('%s_betas_GEOLoadSeriesMatrix.rds', sname))
+## saveRDS(betas, file=sprintf('%s_betas_GEOLoadSeriesMatrix.rds', sname))
+
 system(sprintf('rm -f tmp_%s', sname))
-cat('Read:', ncol(betas), 'samples.\n')
+## cat('Read:', ncol(betas), 'samples.\n')
 cat('Meta:', colnames(samples), '\n')
 cat('Sname:', rownames(samples)[1:10], '\n')
-cat('#Probes:', nrow(betas), '\n')
+## cat('#Probes:', nrow(betas), '\n')
 
 ## system('rm -f 1')
