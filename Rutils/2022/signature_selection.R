@@ -1,3 +1,35 @@
+defineHierarchicalContrasts <- function(meta) {
+    grouplevels = grep("CellType",colnames(meta), value=T)
+    cmpList = do.call(c, lapply(seq_along(grouplevels), function(l1) {
+        do.call(c, lapply(seq_along(grouplevels), function(l0) {
+            gs0 = meta[grouplevels[l0]]
+            gs1 = meta[grouplevels[l1]]
+            gs0uniq = unique(gs0)
+            gs0uniq = gs0uniq[gs0uniq != "NA"]
+            gs1uniq = unique(gs1)
+            gs1uniq = gs1uniq[gs1uniq != "NA"]
+            do.call(c, lapply(gs0uniq, function(g0) {
+                lapply(gs1uniq, function(g1) {
+                    st = ifelse(gs0 == g0 & gs1 == g1, 0,
+                         ifelse(gs0 == g0 & gs1 != g1 & gs1 != "NA", 1, 2))
+                    list(nm_in = g1, nm_all = g0, st = st)
+                })
+            }))
+        }))
+    }))
+
+    cmpList = cmpList[sapply(cmpList, function(x) {
+        sum(x$st == 0) > 0 &&
+            sum(x$st == 1) > 0 &&
+            sum(x$st == 0) / (sum(x$st == 0)+sum(x$st == 1)) > 0.01
+    })]
+
+    branches = do.call(cbind, lapply(cmpList, function(x) x$st))
+    colnames(branches) = sapply(cmpList, function(x) paste0(x$nm_in,".in.",x$nm_all))
+    meta1 = cbind(meta[,c("Sample_ID", grep("CellType",colnames(meta), value=T))], branches)
+    meta1
+}
+
 auc_wmw2 = function(labels, scores) {
     labels <- as.logical(labels)
     n1 <- sum(labels)
