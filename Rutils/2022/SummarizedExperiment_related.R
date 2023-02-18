@@ -71,7 +71,7 @@ rowClusterWithinGroupSE <- function(se, vars=NULL) {
             rowClusterSE(se[ind,], nrow_max=5000)
         }
     }))
-    se1        
+    se1
 }
 
 rowClusterSE <- function(se, nrow_max = 3000) {

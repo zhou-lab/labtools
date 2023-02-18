@@ -91,8 +91,7 @@ filterSignatureSE <- function(se, n_max = 50) {
     ## remove duplicate and select top cgs
     sigs <- as.data.frame(rowData(se))
     sigs = sigs %>% group_by(Probe_ID) %>% top_n(1, delta_beta) %>% sample_n(1)
-    sigs = sigs %>% group_by(branch, type) %>% 
-        arrange(desc(delta_beta)) %>% dplyr::filter(row_number() <= n_max)
+    sigs = sigs %>% group_by(branch, type) %>% arrange(desc(delta_beta)) %>% dplyr::filter(row_number() <= n_max)
     stopifnot(length(sigs$Probe_ID) == length(unique(sigs$Probe_ID)))
     se1 <- se[sigs$Probe_ID,]
     se1
@@ -143,7 +142,7 @@ orderBranchGR <- function(se) {
 
 colClusterTissueSE <- function(se) {
     ## column cluster samples within cell type
-    ## se = se3
+    ## se = se1
     cd = as.data.frame(colData(se))
     grouping = cd$CellType
     betas = assay(se)
