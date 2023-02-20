@@ -1,3 +1,18 @@
+reorderRowsByBranch <- function(se) {
+    cd = colnames(colData(se1))
+    celltype_names = grep("^CellType", cd, value=T)
+    branches = unique(rowData(se1)$branch)
+    branches = branches[order(sapply(strsplit(branches,"\\.in\\."), function(x) {
+        min(sapply(celltype_names, function(celltype_name) {
+            match(x[1], colData(se1)[[celltype_name]]) }), na.rm=T)
+    }))]
+    se1 = rbind(do.call(rbind, lapply(branches, function(branch) {
+        se1[rowData(se1)$branch==branch & rowData(se1)$type=="Hyper",]
+    })), do.call(rbind, lapply(branches, function(branch) {
+        se1[rowData(se1)$branch==branch & rowData(se1)$type=="Hypo",]
+    })))
+}
+
 defineHierarchicalContrasts <- function(meta) {
     grouplevels = grep("CellType",colnames(meta), value=T)
     cmpList = do.call(c, lapply(seq_along(grouplevels), function(l1) {
