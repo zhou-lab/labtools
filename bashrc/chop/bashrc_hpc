@@ -41,4 +41,4 @@ function dnarev {
 alias sb="source ~/.bashrc"
 
 # 
-export _Z_DATA=/mnt/isilon/zhoulab/labsoftware/z/shared_z
+export _Z_DATA=/mnt/isilon/zhoulab/labsoftware/z/shared_z_wanding_20230220

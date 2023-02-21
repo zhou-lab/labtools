@@ -39,6 +39,10 @@ defineHierarchicalContrasts <- function(meta) {
             sum(x$st == 0) / (sum(x$st == 0)+sum(x$st == 1)) > 0.01
     })]
 
+    ## deduplicate
+    branch_names = sapply(cmpList, function(x) paste0(x$nm_in,".in.",x$nm_all))
+    cmpList = lapply(split(cmpList, branch_names), function(x) x[[1]])
+
     branches = do.call(cbind, lapply(cmpList, function(x) x$st))
     colnames(branches) = sapply(cmpList, function(x) paste0(x$nm_in,".in.",x$nm_all))
     meta1 = cbind(meta[,c("Sample_ID", grep("CellType",colnames(meta), value=T))], branches)
@@ -102,10 +106,12 @@ SEInferTissueSpecificProbes = function(se, branch,
     rbind(dfHypo, dfHype)
 }
 
-filterSignatureSE <- function(se, n_max = 50) {
+filterSignatureSE <- function(se, dedup=TRUE, n_max = 50) {
     ## remove duplicate and select top cgs
     sigs <- as.data.frame(rowData(se))
-    sigs = sigs %>% group_by(Probe_ID) %>% top_n(1, delta_beta) %>% sample_n(1)
+    if(dedup) {
+        sigs = sigs %>% group_by(Probe_ID) %>% top_n(1, delta_beta) %>% sample_n(1)
+    }
     sigs = sigs %>% group_by(branch, type) %>% arrange(desc(delta_beta)) %>% dplyr::filter(row_number() <= n_max)
     stopifnot(length(sigs$Probe_ID) == length(unique(sigs$Probe_ID)))
     se1 <- se[sigs$Probe_ID,]
