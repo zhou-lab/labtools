@@ -113,7 +113,7 @@ filterSignatureSE <- function(se, dedup=TRUE, n_max = 50) {
         sigs = sigs %>% group_by(Probe_ID) %>% top_n(1, delta_beta) %>% sample_n(1)
     }
     sigs = sigs %>% group_by(branch, type) %>% arrange(desc(delta_beta)) %>% dplyr::filter(row_number() <= n_max)
-    stopifnot(length(sigs$Probe_ID) == length(unique(sigs$Probe_ID)))
+    stopifnot((!dedup) && length(sigs$Probe_ID) == length(unique(sigs$Probe_ID)))
     se1 <- se[sigs$Probe_ID,]
     se1
 }
