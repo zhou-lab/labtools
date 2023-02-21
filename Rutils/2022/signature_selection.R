@@ -27,7 +27,14 @@ defineHierarchicalContrasts <- function(meta) {
                 lapply(gs1uniq, function(g1) {
                     st = ifelse(gs0 == g0 & gs1 == g1, 0,
                          ifelse(gs0 == g0 & gs1 != g1 & gs1 != "NA", 1, 2))
-                    list(nm_in = g1, nm_all = g0, st = st)
+                    ## flip the states so 0011 and 1100 can be deduplicated
+                    if(sum(st!=2)>0 && st[st!=2][1] == 1) {
+                        st1 = ifelse(st == 2, 2, 1-st)
+                        st1 = paste0(st1, collapse="")
+                    } else {
+                        st1 = paste0(st, collapse="")
+                    }
+                    list(nm_in = g1, nm_all = g0, st = st, st1 = st1)
                 })
             }))
         }))
@@ -40,8 +47,8 @@ defineHierarchicalContrasts <- function(meta) {
     })]
 
     ## deduplicate
-    branch_names = sapply(cmpList, function(x) paste0(x$nm_in,".in.",x$nm_all))
-    cmpList = lapply(split(cmpList, branch_names), function(x) x[[1]])
+    states = sapply(cmpList, function(x) x$st1)
+    cmpList = lapply(split(cmpList, states), function(x) x[[1]])
 
     branches = do.call(cbind, lapply(cmpList, function(x) x$st))
     colnames(branches) = sapply(cmpList, function(x) paste0(x$nm_in,".in.",x$nm_all))
@@ -108,11 +115,11 @@ SEInferTissueSpecificProbes = function(se, branch,
 
 filterSignatureSE <- function(se, n_max = 50) {
     ## remove duplicate and select top cgs
-    sigs <- as.data.frame(rowData(se))
+    sigs <- as.data.frame(rowData(se)) %>% mutate(Probe_Index=seq_len(nrow(se)))
     sigs = sigs %>% group_by(Probe_ID) %>% top_n(1, delta_beta) %>% sample_n(1)
     sigs = sigs %>% group_by(branch, type) %>% arrange(desc(delta_beta)) %>% dplyr::filter(row_number() <= n_max)
     stopifnot(length(sigs$Probe_ID) == length(unique(sigs$Probe_ID)))
-    se1 <- se[sigs$Probe_ID,]
+    se1 <- se[sigs$Probe_Index,]
     se1
 }
 
