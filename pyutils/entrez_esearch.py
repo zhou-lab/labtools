@@ -5,6 +5,9 @@ from Bio.Entrez import esearch
 from Bio import Entrez
 Entrez.email = 'zhouwanding@gmail.com'
 
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
+
 ## this searches papers that matches the term, Note that the term can also be a PMID
 
 ## https://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi?dbfrom=pubmed&linkname=pubmed_pubmed_refs&id=24752654

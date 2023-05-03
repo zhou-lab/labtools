@@ -336,6 +336,6 @@ RPROMPT="[%D{%f/%m/%y} | %D{%L:%M:%S}]"
 eval "$(/opt/homebrew/bin/brew shellenv)"
 
 ## custom installs
-export PATH=$PATH:/opt/R/arm64/gfortran/bin
+## export PATH=$PATH:/opt/R/arm64/gfortran/bin
 export PATH="/Users/zhouw3/opt/anaconda3/bin:$PATH"
 

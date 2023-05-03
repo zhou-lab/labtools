@@ -283,3 +283,28 @@ visualizeSE <- function(se, rows=NULL, cols=NULL,
     }
     plt
 }
+
+## usage: p <- ggplot(USA.states, aes(x=state.region,y=Income))+geom_violin(trim = F)
+## fancy_violin(p)
+fancy_violin <- function(p, size=0.3) {
+    mywidth <- .35 # bit of trial and error
+    ## This is all you need for the fill:
+    vl_fill <- data.frame(ggplot_build(p)$data) %>%
+        mutate(xnew = x- mywidth*violinwidth, xend = x+ mywidth*violinwidth) 
+
+    ## Bit convoluted for the outline, need to be rearranged: the order matters
+    vl_poly <- vl_fill %>% 
+        dplyr::select(xnew, xend, y, group) %>%
+        pivot_longer(-c(y, group), names_to = "oldx", values_to = "x") %>% 
+        arrange(y) %>%
+        split(., .$oldx) %>%
+        map(., function(x) {
+            if(all(x$oldx == "xnew")) x <- arrange(x, desc(y))
+            x
+        }) %>%
+        bind_rows()
+
+    ggplot() +
+        geom_polygon(data = vl_poly, aes(x, y, group = group), color= "black", size = size, fill = NA) +
+        geom_segment(data = vl_fill, aes(x = xnew, xend = xend, y = y, yend = y, color = y))
+}

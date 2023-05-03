@@ -19,6 +19,11 @@ MU2cov <- function(MU, maxCov = 10000) {
     Cov
 }
 
+encodeMU <- function(M, U) {
+    stopifnot(M<0xffff && U<0xffff)
+    bitOr(bitShiftL(M,16), U)
+}
+
 MU2betas_adaptive <- function(MU, mincov=1, maxcov=20, probs=0.1) {
     ## select coverage threshold so that 1-probs CpGs have value
     betas <- apply(MU, 2, function(x) {
