@@ -12,6 +12,7 @@ ld22c <- function() {
     file.sources = list.files("~/zhoulab/labtools/Rutils/2022/", pattern="*.R$", full.names=T)
     suppressMessages(sapply(file.sources,source,.GlobalEnv))
     suppressMessages(library(tidyverse))
+    suppressMessages(library(extrafont))
     suppressMessages(library(devtools))
     suppressMessages(library(parallel))
     suppressMessages(library(BiocParallel))

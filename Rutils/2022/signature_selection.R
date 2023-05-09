@@ -1,5 +1,5 @@
 reorderRowsByBranch <- function(se) {
-    cd = colnames(colData(se1))
+    cd = colnames(colData(se))
     celltype_names = grep("^CellType", cd, value=T)
     branches = unique(rowData(se1)$branch)
     branches = branches[order(sapply(strsplit(branches,"\\.in\\."), function(x) {
