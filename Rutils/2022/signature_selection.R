@@ -1,15 +1,16 @@
 reorderRowsByBranch <- function(se) {
     cd = colnames(colData(se))
     celltype_names = grep("^CellType", cd, value=T)
-    branches = unique(rowData(se1)$branch)
+    branches = unique(rowData(se)$branch)
     branches = branches[order(sapply(strsplit(branches,"\\.in\\."), function(x) {
         min(sapply(celltype_names, function(celltype_name) {
-            match(x[1], colData(se1)[[celltype_name]]) }), na.rm=T)
+            ## make.names allow for space in the column titles
+            match(x[1], make.names(colData(se)[[celltype_name]])) }), na.rm=T)
     }))]
-    se1 = rbind(do.call(rbind, lapply(branches, function(branch) {
-        se1[rowData(se1)$branch==branch & rowData(se1)$type=="Hyper",]
+    se = rbind(do.call(rbind, lapply(branches, function(branch) {
+        se[rowData(se)$branch==branch & rowData(se)$type=="Hyper",]
     })), do.call(rbind, lapply(branches, function(branch) {
-        se1[rowData(se1)$branch==branch & rowData(se1)$type=="Hypo",]
+        se[rowData(se)$branch==branch & rowData(se)$type=="Hypo",]
     })))
 }
 
@@ -49,6 +50,7 @@ defineHierarchicalContrasts <- function(meta) {
     ## deduplicate
     states = sapply(cmpList, function(x) x$st1)
     cmpList = lapply(split(cmpList, states), function(x) x[[1]])
+    cmpList = cmpList[sapply(cmpList, function(x) x$nm_all)!="Other"]
 
     branches = do.call(cbind, lapply(cmpList, function(x) x$st))
     colnames(branches) = sapply(cmpList, function(x) paste0(x$nm_in,".in.",x$nm_all))
