@@ -50,7 +50,8 @@ defineHierarchicalContrasts <- function(meta) {
     ## deduplicate
     states = sapply(cmpList, function(x) x$st1)
     cmpList = lapply(split(cmpList, states), function(x) x[[1]])
-    cmpList = cmpList[sapply(cmpList, function(x) x$nm_all)!="Other"]
+    cmpList = cmpList[sapply(cmpList, function(x) x$nm_all)!="Other" &
+                      sapply(cmpList, function(x) x$nm_in)!="Other"]
 
     branches = do.call(cbind, lapply(cmpList, function(x) x$st))
     colnames(branches) = sapply(cmpList, function(x) paste0(x$nm_in,".in.",x$nm_all))
