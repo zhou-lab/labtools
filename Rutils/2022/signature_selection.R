@@ -14,6 +14,23 @@ reorderRowsByBranch <- function(se) {
     })))
 }
 
+selectBackground <- function(se, ranked_bgs) {
+    contrasts = do.call(c, lapply(unique(colData(se)$CellType), function(ct) {
+        ct = make.names(ct)
+        contrast = NULL
+        n = 0
+        for (bg in paste0(".in.", ranked_bgs)) {
+            dn = sum(rowData(se)$branch == paste0(ct, bg))
+            if(dn > 0) {
+                n = n + dn
+                contrast = c(contrast, paste0(ct, bg))
+                if (n > 50) { break; }}}
+        contrast
+    }))
+    ## always include .in.All for groups
+    se[grepl(".in.All$", rowData(se)$branch) | rowData(se)$branch %in% contrasts,]
+}
+
 defineHierarchicalContrasts <- function(meta) {
     grouplevels = grep("CellType",colnames(meta), value=T)
     cmpList = do.call(c, lapply(seq_along(grouplevels), function(l1) {
