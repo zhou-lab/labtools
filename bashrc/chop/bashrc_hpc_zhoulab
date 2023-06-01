@@ -141,6 +141,8 @@ Sacct ()
 }
 ## sacct job_id for checking finished jobs
 ## sstat job_id for checking running jobs
+alias Scontrol='scontrol show jobid -dd '
+export SNAKEMAKE_PROFILE=/mnt/isilon/zhoulab/labpipelines/Snakefiles/profile_CHOPHPC/
 
 ############################################
 ### auto job script generation with pbsgen
