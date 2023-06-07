@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import argparse
 from fuzzysearch import find_near_matches
 
@@ -15,7 +16,7 @@ group.add_argument("-t", "--table", action="store_true", help="Prints a table wi
 group.add_argument("-a", "--annotate", action="store_true", help="Annotates the finding on the sequence.")
 parser.add_argument("-r", "--read", type=str, help="The enter read.")
 parser.add_argument("-s", "--sequences", type=str, nargs='+', help="The sequences that should be contained.")
-parser.add_argument("-m", "--max_distances", type=int, nargs='+', help="The maximum edit distance.")
+parser.add_argument("-m", "--max_distances", type=int, default=2, nargs='+', help="The maximum edit distance.")
 args = parser.parse_args()
 
 if len(args.sequences) != len(args.max_distances):
