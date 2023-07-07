@@ -16,7 +16,7 @@ parser.add_argument("read2_fastq", help="Path to the read 2 FASTQ file.")
 
 # Add optional flag argument
 parser.add_argument("-o", "--output_prefix", default="out", help="Output file prefix.")
-parser.add_argument("-a", "--adapter", default="CTATCTCTTATA", help="Read 1 adapter sequence to trim.")
+parser.add_argument("-a", "--adapters", nargs='+', default=["CTATCTCTTATA", "AGATGCGAGAAGCCAACGCTTG"], help="Read 1 adapter sequence to trim.")
 parser.add_argument("-l1", "--linker1", default="GTGGTTGATGTTTTGTATTGGTGTATGATT", help="First linker sequence.")
 parser.add_argument("-l2", "--linker2", default="ATTTATGTGTTTGAGAGGTTAGAGTATTTG", help="Second linker sequence.")
 parser.add_argument("-t", "--trim_end2", default="AGATGTGTATAAGAGATAG", help="Trim read 2 until this subsequence.")
@@ -27,7 +27,6 @@ args = parser.parse_args()
 # Access the arguments
 read1_fastq_path = args.read1_fastq
 read2_fastq_path = args.read2_fastq
-adapter_sequence = args.adapter
 
 # Function to open the FASTQ file, handling gzip compression if necessary
 def open_fastq_file(file_path):
@@ -82,9 +81,12 @@ with open_fastq_file(args.read1_fastq) as read1_handle, open_fastq_file(args.rea
             new_id = barcode+"_"+read1_record.id
             new_seq = read1_record.seq
             new_qual = read1_record.letter_annotations["phred_quality"]
-            adapter_matches = find_near_matches(args.adapter, str(read1_seq), max_l_dist=1)
+            adapter_matches = []
+            for adapter in args.adapters:
+                adapter_matches.extend(find_near_matches(adapter, str(read1_seq), max_l_dist=1))
+                
             if len(adapter_matches) > 0:
-                trim_index = adapter_matches[0].start
+                trim_index = min([x.start for x in adapter_matches])
                 n_reads_trimmed += 1
                 n_bases_trimmed += len(new_seq) - trim_index
                 new_seq = new_seq[:trim_index]

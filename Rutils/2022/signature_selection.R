@@ -133,6 +133,66 @@ SEInferTissueSpecificProbes = function(se, branch,
     rbind(dfHypo, dfHype)
 }
 
+
+#' This is adapted from branchInferProbes, but better.
+#' It looks for one-vs-rest methylation signatures
+SEMUInferTissueSpecificProbes = function(se, branch,
+    hyper=FALSE, scan_delta = FALSE, scan_auc = FALSE) {
+
+    ## hyper=FALSE; scan_delta = FALSE; scan_auc = FALSE
+    betas = apply(assay(se), 2, function(x) MU2betas(x, mincov=min(20,quantile(MU2cov(x), probs=0.5))))
+    rownames(betas) <- rownames(se)
+    cov = MU2cov(assay(se))
+    if(is.null(rownames(betas))) rownames(betas) <- seq_len(nrow(betas))
+    branch_grouping = colData(se)[[branch]]
+
+    in_na = rowSums(is.na(betas[,branch_grouping==0, drop=FALSE])) /
+        sum(branch_grouping==0)
+    out_na = rowSums(is.na(betas[,branch_grouping==1, drop=FALSE])) /
+        sum(branch_grouping==1)
+    in_minCov = rowMins(cov[,branch_grouping==0,drop=FALSE])
+    names(in_minCov) = rownames(cov)
+    out_meanCov = rowMeans(cov[,branch_grouping==1,drop=FALSE])
+    names(out_meanCov) = rownames(cov)
+    
+    ## hyper: in-group min
+    m0 = apply(betas[,branch_grouping==0, drop=FALSE],1,
+        function(xx) mean(head(sort(xx),n=5), na.rm=TRUE))
+    ## out-group max
+    m1 = apply(betas[,branch_grouping==1, drop=FALSE],1,
+        function(xx) mean(tail(sort(xx),n=5), na.rm=TRUE))
+    delta_beta = m0 - m1
+    auc = apply(betas, 1, function(b1) {
+        br = branch_grouping[branch_grouping %in% c(0,1)];
+        b1 = b1[branch_grouping %in% c(0,1)];
+        auc_wmw2(br, b1);})
+    dfHype = data.frame(delta_beta = delta_beta, auc = auc[names(delta_beta)],
+        in_na = in_na[names(delta_beta)], out_na = out_na[names(delta_beta)],
+        in_minCov = in_minCov[names(delta_beta)],
+        out_meanCov = out_meanCov[names(delta_beta)],
+        Probe_ID = names(delta_beta), branch=branch, type="Hyper")
+
+    ## hypo: in-group max
+    m0 = apply(betas[,branch_grouping==0, drop=FALSE],1,
+        function(xx) mean(tail(sort(xx),n=5), na.rm=TRUE))
+    ## out-group min
+    m1 = apply(betas[,branch_grouping==1, drop=FALSE],1,
+        function(xx) mean(head(sort(xx),n=5), na.rm=TRUE))
+    delta_beta = m0 - m1
+    auc = apply(betas, 1, function(b1) {
+        br = branch_grouping[branch_grouping %in% c(0,1)];
+        b1 = b1[branch_grouping %in% c(0,1)];
+        auc_wmw2(br, b1);})
+    dfHypo = data.frame(delta_beta = -delta_beta, auc = auc[names(delta_beta)],
+        in_na = in_na[names(delta_beta)], out_na = out_na[names(delta_beta)],
+        in_minCov = in_minCov[names(delta_beta)],
+        out_meanCov = out_meanCov[names(delta_beta)],
+        Probe_ID = names(delta_beta), branch=branch, type="Hypo")
+
+    rbind(dfHypo, dfHype)
+}
+
+
 filterSignatureSE <- function(se, n_max = 50) {
     ## remove duplicate and select top cgs
     sigs <- as.data.frame(rowData(se)) %>% mutate(Probe_Index=seq_len(nrow(se)))

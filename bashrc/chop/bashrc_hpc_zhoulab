@@ -169,7 +169,7 @@ function prompt {
   local CYANBOLD="\[\033[1;36m\]"
   local WHITE="\[\033[0;37m\]"
   local WHITEBOLD="\[\033[1;37m\]"
-  export PS1="$REDBOLD[\t]${SCREENTITLE}$GREY[$GREENBOLD\u@\h $YELLOWBOLD\w$GREY]\$ "
+  export PS1="$REDBOLD[\t]${SCREENTITLE}$GREY[$GREENBOLD\h $YELLOWBOLD\w$GREY]\$ "
   #export PS1="[$GREENBOLD\u@\h $YELLOWBOLD\w$GREY]\$ "
 }
 

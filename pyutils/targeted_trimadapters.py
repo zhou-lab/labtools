@@ -63,8 +63,8 @@ def trimming(fastq_folder, seqs, max_lens, output):
 
     write_fastq(fos_trimmed, output)
 
-parser = argparse.ArgumentParser(description="This is a command line tool trim off any adapter/barcode/sequence you don't want.")
-group = parser.add_mutually_exclusive_group()
+parser = argparse.ArgumentParser(description="This is a command line tool trim off any adapter/barcode/sequence you don't want. An example of running this tool: python3 targeted_trimadapters.py -f /path/to/directory -s TCGTCGGCAGCGTCAGATGTGTATAAGAGACAG CTGTCTCTTATACACATCTGACGCTGCCGACGA GTCTCGTGGGCTCGGAGATGTGTATAAGAGACAG CTGTCTCTTATACACATCTCCGAGCCCACGAGAC -m 3 3 3 3 -o /path/to/directory/name.fastq")
+# group = parser.add_mutually_exclusive_group()
 parser.add_argument("-f", "--folder", type=str, help="The folder that includes all fastq files.")
 parser.add_argument("-s", "--sequences", type=str, nargs='+', help="The sequences that should be contained.")
 parser.add_argument("-m", "--max_distances", type=int, nargs='+', help="The maximum edit distance.")
