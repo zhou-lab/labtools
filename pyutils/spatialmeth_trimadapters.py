@@ -108,10 +108,10 @@ for barcode, cnt in sorted_barcodes:
 output_bc_handle.close()
 
 output_stats_handle = open(args.output_prefix + "_stats.txt", "w")
-output_stats_handle.write("{} reads detected.\n".format(n_reads))
-output_stats_handle.write("{} reads passed.\n".format(n_reads_passed))
-output_stats_handle.write("{} reads trimmed.\n".format(n_reads_trimmed))
-output_stats_handle.write("{} bases trimmed.\n".format(n_bases_trimmed))
+output_stats_handle.write("Reads_detected\t{}\n".format(n_reads))
+output_stats_handle.write("Reads_passed\t{}\n".format(n_reads_passed))
+output_stats_handle.write("Reads_trimmed\t{}\n".format(n_reads_trimmed))
+output_stats_handle.write("Bases_trimmed\t{}\n".format(n_bases_trimmed))
 output_stats_handle.close()
 
 # Close the output file handles

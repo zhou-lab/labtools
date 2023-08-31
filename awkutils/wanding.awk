@@ -306,6 +306,11 @@ function basename(file) {
     return file
 }
 
+function basename2(file, a, n) {
+  n = split(file, a, "/")
+    return a[n]
+}
+
 function capFirst(s) {
 	return toupper(substr(s,1,1))tolower(substr(s,2))
 }

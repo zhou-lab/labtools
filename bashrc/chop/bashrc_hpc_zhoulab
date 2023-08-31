@@ -55,6 +55,7 @@ alias scp='rsync -Pravdtze ssh'
 alias awk='awk -F"\t" -v OFS="\t"'
 alias les="less -S"
 alias sort="LC_ALL=C sort"
+alias cpt="csvtk pretty -t | less -S"
 
 sortbed ()
 {
@@ -67,6 +68,11 @@ sortbed2 ()
     LC_ALL=C sort -k1,1 -k2,2n -T $2 $1
 }
 export -f sortbed2
+
+sortWithHeader () {
+  awk -v col=$1 'NR==1;NR>1{print | "sort -k"col","col"nr"; }'
+}
+export -f sortWithHeader
 
 function pasteLarge() {
   ## this function replaces the paste for large number of input files
@@ -314,4 +320,8 @@ function cdd {
 
 function updateFOLDERSIZES {
     find -maxdepth 1 -type d | awk 'NR>1' | while read d; do echo -e $(du -h $d)"\t"$(find $d -type f | wc -l); done | sort -k1,1hr | tee FOLDERSIZES
+}
+
+function BetaCov2MU {
+    awk -f wanding.awk -F"\t" -v OFS="\t" -e '$4=="."{print $1,$2,$3,0,0;next;}{M=round($4*$5); $5=round($5); print $1,$2,$3,M,$5-M;}' $1
 }

@@ -34,6 +34,11 @@ function checkref16 {
   samtools faidx $1 $2:$(($3-3))-$(($4+50));
 }
 
+
+function checkChromHMMmm10 {
+   paste ~/references/mm10/annotation/cpg/cpg.bed $1 | awk '$4!="NA"' | bedtools intersect -a ~/references/mm10/features/ChromHMM.20220414.bed.gz -b - -sorted -wo | cut -f4,9 | sort -k1,1 | bedtools groupby -g 1 -c 2,2 -o mean,count
+}
+
 function sv {
   samtools view $1 | less -S
 }
@@ -44,8 +49,59 @@ function dnarev {
   echo $1 | tr ATGC TACG | tr atgc TACG | rev;
 }
 
+
+function BetaCov2MU {
+  awk -f wanding.awk -F"\t" -v OFS="\t" -e '$4=="."{print $1,$2,$3,0,0;next;}{M=round($4*$5); $5=round($5); print $1,$2,$3,M,$5-M;}' $1
+}
+
+
+function mergeCG() {
+  fdr=$1;
+  find $fdr/ -name '*.cg' >tmp
+  :>$fdr.cm; awk '{match($1,/^[^~]*~(.*).cg/,a); print $1,a[1];}' tmp | while read f tfbs; do cat $f >>$fdr.cm; done
+  awk '{match($1,/^[^~]*~(.*).cg/,a); print a[1];}' tmp | yame index -s - $fdr.cm
+  rm -f tmp
+}
+
+function setState_hg38() {
+  fdr=$1;
+  zcat ../features/$1.bed.gz | bedtools intersect -a ~/references/hg38/annotation/cpg/cpg_nocontig.bed.gz -b - -sorted -loj | cut -f1-3,7 | bedtools groupby -g 1-3 -c 4 -o first | cut -f4 | awk '{if($0==".") $0="NA"; print $0;}' | yame pack -s - $fdr.cm
+}
+
+function setState_mm10() {
+  fdr=$1;
+  zcat ../features/$1.bed.gz | bedtools intersect -a ~/references/mm10/annotation/cpg/cpg_nocontig.bed.gz -b - -sorted -loj | cut -f1-3,7 | bedtools groupby -g 1-3 -c 4 -o first | cut -f4 | awk '{if($0==".") $0="NA"; print $0;}' | yame pack -s - $fdr.cm
+}
+
 # ## source .bashrc
 alias sb="source ~/.bashrc"
 
+
+
+## fzf and z
+. ~/repo/z/z.sh
+
+## re-define z with coupling with fzf, you need to install fzf (but needn't
+## to invoke its key-binding or auto-completion)
+## https://github.com/junegunn/fzf/wiki/examples#z
+unalias z
+z() {
+    if [[ -z "$*" ]]; then        # when there is no argument
+        cd "$(_z -l 2>&1 | fzf +s --tac | sed 's/^[0-9,.]* *//')"
+    else                          # when there is argument
+        if [[ $1 == -* ]]; then
+            _z "$@"
+        else
+            cd "$(_z -l 2>&1 | fzf -q "$@" | sed 's/^[0-9,.]* *//')"
+        fi
+    fi
+}
+
+## define _Z_DATA in your own ~/.bashrc
+## export _Z_DATA=/mnt/isilon/zhoulab/labsoftware/z/shared_z
+
 # 
-export _Z_DATA=/mnt/isilon/zhoulab/labsoftware/z/shared_z_wanding_20230220
+# export _Z_DATA=/mnt/isilon/zhoulab/labsoftware/z/shared_z_wanding_20230220
+
+
+

@@ -168,6 +168,7 @@ SEMUInferTissueSpecificProbes = function(se, branch,
         auc_wmw2(br, b1);})
     dfHype = data.frame(delta_beta = delta_beta, auc = auc[names(delta_beta)],
         in_na = in_na[names(delta_beta)], out_na = out_na[names(delta_beta)],
+        in_n = sum(branch_grouping==0),
         in_minCov = in_minCov[names(delta_beta)],
         out_meanCov = out_meanCov[names(delta_beta)],
         Probe_ID = names(delta_beta), branch=branch, type="Hyper")
@@ -185,6 +186,7 @@ SEMUInferTissueSpecificProbes = function(se, branch,
         auc_wmw2(br, b1);})
     dfHypo = data.frame(delta_beta = -delta_beta, auc = auc[names(delta_beta)],
         in_na = in_na[names(delta_beta)], out_na = out_na[names(delta_beta)],
+        in_n = sum(branch_grouping==0),
         in_minCov = in_minCov[names(delta_beta)],
         out_meanCov = out_meanCov[names(delta_beta)],
         Probe_ID = names(delta_beta), branch=branch, type="Hypo")
