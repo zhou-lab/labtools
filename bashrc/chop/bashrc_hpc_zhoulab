@@ -141,6 +141,8 @@ Sacct ()
 }
 ## sacct job_id for checking finished jobs
 ## sstat job_id for checking running jobs
+alias Scontrol='scontrol show jobid -dd '
+export SNAKEMAKE_PROFILE=/mnt/isilon/zhoulab/labpipelines/Snakefiles/profile_CHOPHPC/
 
 ############################################
 ### auto job script generation with pbsgen
@@ -167,7 +169,7 @@ function prompt {
   local CYANBOLD="\[\033[1;36m\]"
   local WHITE="\[\033[0;37m\]"
   local WHITEBOLD="\[\033[1;37m\]"
-  export PS1="$REDBOLD[\t]${SCREENTITLE}$GREY[$GREENBOLD\u@\h $YELLOWBOLD\w$GREY]\$ "
+  export PS1="$REDBOLD[\t]${SCREENTITLE}$GREY[$GREENBOLD\h $YELLOWBOLD\w$GREY]\$ "
   #export PS1="[$GREENBOLD\u@\h $YELLOWBOLD\w$GREY]\$ "
 }
 

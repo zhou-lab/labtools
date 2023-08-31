@@ -1,9 +1,16 @@
 #!/bin/bash
 
+if [ -f /etc/bashrc ]; then
+  . /etc/bashrc
+fi
+
 ## otherwise aliases are not expanded
 shopt -s expand_aliases
 . /mnt/isilon/zhoulab/labtools/bashrc/chop/bashrc_hpc_zhoulab
 alias awk='awk -F"\t" -v OFS="\t"'
+
+## this is to make screen tab title simpler, may not be what everyone want
+export PROMPT_COMMAND=""
 
 alias entrez_review="~/software/anaconda/anaconda3_2021/bin/python ~/repo/labtools/pyutils/entrez_efetch_review.py"
 alias entrez_alsoviewed="~/software/anaconda/anaconda3_2021/bin/python ~/repo/labtools/pyutils/entrez_efetch_alsoviewed.py"
