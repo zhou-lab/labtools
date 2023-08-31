@@ -134,6 +134,10 @@ ggVerticalX <- function() {
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 }
 
+gg45X <- function() {
+    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+}
+
 ggPercentage <- function() {
     scale_y_continuous(labels=scales::percent)
 }

@@ -304,6 +304,8 @@ function findc {
   find . -regex '.*.c' -o -regex '.*.h' -exec grep -H "$1" {} \;
 }
 
+export _Z_DATA=/Users/zhouw3/repo/wzlib/z/z_wanding
+
 ########################
 ## z - jump around
 ########################
@@ -323,8 +325,6 @@ z() {
     fi
   fi
 }
-
-export _Z_DATA=/Users/zhouw3/repo/wzlib/z/z_wanding
 
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
