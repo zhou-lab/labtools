@@ -52,7 +52,7 @@ defineHierarchicalContrasts <- function(meta) {
                     } else {
                         st1 = paste0(st, collapse="")
                     }
-                    list(nm_in = g1, nm_all = g0, st = st, st1 = st1)
+                    list(nm_in = g1, nm_all = g0, st = st, st1 = st1, n_in = sum(gs1 == g1))
                 })
             }))
         }))
@@ -66,7 +66,7 @@ defineHierarchicalContrasts <- function(meta) {
 
     ## deduplicate
     states = sapply(cmpList, function(x) x$st1)
-    cmpList = lapply(split(cmpList, states), function(x) x[[1]])
+    cmpList = lapply(split(cmpList, states), function(x) x[order(sapply(x, function(xx) xx$n_in))][[1]])
     cmpList = cmpList[sapply(cmpList, function(x) x$nm_all)!="Other" &
                       sapply(cmpList, function(x) x$nm_in)!="Other"]
 
