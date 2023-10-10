@@ -3,9 +3,10 @@ reorderRowsByBranch <- function(se) {
     celltype_names = grep("^CellType", cd, value=T)
     branches = unique(rowData(se)$branch)
     branches = branches[order(sapply(strsplit(branches,"\\.in\\."), function(x) {
-        min(sapply(celltype_names, function(celltype_name) {
+        min(Inf, sapply(celltype_names, function(celltype_name) {
             ## make.names allow for space in the column titles
-            match(x[1], make.names(colData(se)[[celltype_name]])) }), na.rm=T)
+            match(make.names(x[1]),
+                make.names(colData(se)[[celltype_name]])) }), na.rm=T)
     }))]
     se = rbind(do.call(rbind, lapply(branches, function(branch) {
         se[rowData(se)$branch==branch & rowData(se)$type=="Hyper",]
