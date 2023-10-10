@@ -282,3 +282,22 @@ rowClusterTissueSE <- function(se) {
     }))
     se[rownames(betas2),]
 }
+
+pack_cm_file <- function(se_sig, ref="mm10", tmpdir="~/tmp/") {
+    temp_file <- tempfile(tmpdir="~/tmp/")
+    probes <- rowData(se_sig)$Probe_ID
+    chrm <- sapply(strsplit(probes, "_"), function(x) x[1])
+    beg1 <- sapply(strsplit(probes, "_"), function(x) as.integer(x[2]))
+    write.table(data.frame(chrm=chrm, beg1=beg1-1, end=beg1+1, contrast=paste0(rowData(se_sig)$branch, ".as.", rowData(se_sig)$type)),
+        file = temp_file, row.names = FALSE, col.names = FALSE, sep = "\t", quote=FALSE)
+    system(sprintf("bedtools intersect -a ~/references/%s/annotation/cpg/cpg_nocontig.bed.gz -b %s -sorted -loj | cut -f7 | yame pack -s - %s.cm", ref, temp_file, temp_file))
+    paste0(temp_file, ".cm")
+}
+
+sig_summary <- function(cg_file, cm_file, sample=NULL, tmpdir="~/tmp/") {
+    if (is.null(sample)) {
+        read.table(text=system(sprintf("yame summary -m %s %s | cut -f2,4,8,10", cm_file, cg_file), intern=TRUE), header=TRUE, sep="\t") %>% dplyr::filter(N_overlap>0, Mask!=".")
+    } else {
+        read.table(text=system(sprintf("yame subset %s %s | yame summary -m %s - | cut -f2,4,8,10", cg_file, sample, cm_file), intern=TRUE), header=TRUE, sep="\t") %>% dplyr::filter(N_overlap>0, Mask!=".")
+    }
+}
