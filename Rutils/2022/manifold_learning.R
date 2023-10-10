@@ -15,7 +15,7 @@ pcaSE <- function(se) {
     se = cleanMatrixForClusterSE(se, f_row=0.7, f_col=0.7)
     mx = imputeRowMean(assay(se))
     samples = colnames(mx)
-    pca = prcomp(t(assay(mx)))
+    pca = prcomp(t(mx))
     cbind(pca$x, as_tibble(colData(se)[samples,]))
     ## cbind(as_tibble(colData(se)), pca$x[samples,])
     ## cbind(as_tibble(colData(se)), pca$x[colData(se)$IDAT,]) # or this
