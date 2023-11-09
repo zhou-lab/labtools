@@ -244,6 +244,7 @@ function s {
 
 alias s_repo="s $HOME/repo"
 alias s_gallery='s $HOME/gallery_all'
+alias s_pro='s $HOME/projects'
 
 function opf {                  # aka openf
   [[ -z "$SHOWLOC" ]] || open "$SHOWLOC"

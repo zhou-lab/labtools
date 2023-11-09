@@ -288,9 +288,10 @@ pack_cm_file <- function(se_sig, ref="mm10", tmpdir="~/tmp/") {
     probes <- rowData(se_sig)$Probe_ID
     chrm <- sapply(strsplit(probes, "_"), function(x) x[1])
     beg1 <- sapply(strsplit(probes, "_"), function(x) as.integer(x[2]))
-    write.table(data.frame(chrm=chrm, beg1=beg1-1, end=beg1+1, contrast=paste0(rowData(se_sig)$branch, ".as.", rowData(se_sig)$type)),
+    write.table(data.frame(chrm=chrm, beg1=beg1-1, end=beg1+1,
+        contrast=paste0(rowData(se_sig)$branch, ".as.", rowData(se_sig)$type)),
         file = temp_file, row.names = FALSE, col.names = FALSE, sep = "\t", quote=FALSE)
-    system(sprintf("bedtools intersect -a ~/references/%s/annotation/cpg/cpg_nocontig.bed.gz -b %s -sorted -loj | cut -f7 | yame pack -s - %s.cm", ref, temp_file, temp_file))
+    system(sprintf("sortbed %s | bedtools intersect -a ~/references/%s/annotation/cpg/cpg_nocontig.bed.gz -b - -sorted -loj | cut -f7 | yame pack -s - %s.cm", temp_file, ref, temp_file))
     paste0(temp_file, ".cm")
 }
 

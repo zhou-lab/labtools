@@ -44,3 +44,8 @@ xtab_set <- function(A,B,AnotB = FALSE, BnotA = FALSE, AandB = FALSE){
         table(inA,inB)
     }
 }
+
+splitString <- function (x, s, i) {
+    l <- strsplit(x, s)
+    vapply(l, function(x) x[[i]], character(1))
+}
