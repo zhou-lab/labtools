@@ -190,6 +190,7 @@ prompt
 ### git ###
 ###########
 alias gst="git status" # this interfere with ghostscript program gs
+alias gdf="git diff --color"
 
 # lazy git
 function gll {
