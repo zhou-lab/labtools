@@ -146,8 +146,16 @@ def main_kmer(args):
         gseq = genome.fetch_chrmseq(c)
         for i in range(len(gseq)-2):
             # for CG (symmetric), print the position of CG (2-bases)
-            if gseq[i] == 'C' and gseq[i+1] == 'G':
-                tprint([c, i, i+2, 'CG', '+', 'CG', gseq[(i-4):(i+6)]],out)
+            kmer = gseq[(i-4):(i+6)]
+            if gseq[i] == 'C' and gseq[i+1] == 'G' and kmer.count('N')==0:
+                if args.s:
+                    tprint([c, i, i+1, 'CG', '+', 'CG', kmer], out)
+                    tprint([c, i+1, i+2, 'CG', '-', 'CG', reverse_complement(kmer)], out)
+                else:
+                    if kmer >= reverse_complement(kmer):
+                        kmer = reverse_complement(kmer)
+                    tprint([c, i, i+2, 'CG', '+', 'CG', kmer], out)
+
 
 def main_comp(args):
 
@@ -471,6 +479,7 @@ if __name__ == '__main__':
     psr_kmer.add_argument('-i', required=True, help="sequence format in fasta")
     psr_kmer.add_argument('-o', default=None, help='output file (default stdout)')
     psr_kmer.add_argument('-v', action='store_true', help='print status')
+    psr_kmer.add_argument('-s', action='store_true', help='stranded output')
     psr_kmer.set_defaults(func=main_kmer)
 
     parser_getfasta = subparsers.add_parser('getfasta', help=' get sequence from indexed fasta ')

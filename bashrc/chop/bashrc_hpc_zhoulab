@@ -12,7 +12,7 @@ export BASHRC=/mnt/isilon/zhoulab/labtools/bashrc/chop/bashrc_hpc_zhoulab
 alias ls='ls --color'
 alias rm='rm -i'
 alias lc="wc -l"
-alias ll="ls -lst"
+alias ll="ls -lsth"
 alias lv="ls -v"
 alias rf="readlink -f"
 alias parallel="parallel --gnu --progress"
@@ -137,8 +137,8 @@ alias Srun24='srun --mem 110G -c 24 -t 01-00:00:00 --pty bash'
 alias Srun24L='srun --mem 110G -c 24 -t 07-00:00:00 --pty bash'
 alias Srun48='srun --mem 400G -c 48 -t 01-00:00:00 --pty bash'
 alias Srun72='srun --mem 512G -c 72 -t 01-00:00:00 --pty bash'
-alias SrunGPU='srun --mem 400G -c 24 -t 07-00:00:00 -p gpuq --gres=gpu:a100:4 --pty bash'
-alias SrunGPU48='srun --mem 400G -c 48 -t 07-00:00:00 -p gpuq --gres=gpu:a100:4 --pty bash'
+alias SrunGPU='srun --mem 400G -c 24 -t 05-00:00:00 -p gpuq --gres=gpu:a100:4 --pty bash'
+alias SrunGPU48='srun --mem 400G -c 48 -t 05-00:00:00 -p gpuq --gres=gpu:a100:4 --pty bash'
 alias Sinfo='sinfo -e -N -o "%10N  %15C  %10m  %15F %10e %10T %10L %20E %10R"'
 Sacct ()
 {
