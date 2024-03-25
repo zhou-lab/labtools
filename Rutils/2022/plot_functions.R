@@ -42,14 +42,14 @@ wzPlotDens2d <- function(x1,x2,pch=16,colorstops=c("#000099", "#00FEFF", "#45FE4
     plot(x2~x1, data=df[order(df$dens),], pch=pch, col=col, ...)
 }
 
-wzPlotDens2d.smooth <- function(x, y, xlim=c(-2,2), stop.points=c("white","lightblue","blue","green","yellow","orange","red","darkred"), nrpoints=100, nbins=256, ...) {
+wzPlotDens2d.smooth <- function(x, y, xlim=c(-2,2), stop.points=c("white","lightblue","blue","green","yellow","orange","red","darkred"), nrpoints=100, nbins=256, mainadd="", ...) {
     palette <- colorRampPalette(stop.points, space = "Lab")
     test = cor.test(x, y, method="spearman", use="na.or.complete")
     smoothScatter(x, y, xlim = xlim,
         nrpoints=nrpoints,
         nbin=c(nbins,nbins),
         colramp=palette, col='blue',
-        main=sprintf("rho=%1.3f, p=%1.2f", test$estimate, test$p.value), ...)
+        main=sprintf("%srho=%1.3f, p=%1.2f", mainadd, test$estimate, test$p.value), ...)
 }
 
 wzPlotDens2d.smoothPairs <- function(mtx) {
