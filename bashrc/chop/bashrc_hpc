@@ -63,6 +63,13 @@ function mergeCG() {
   rm -f tmp
 }
 
+function mergeCG2() {
+  fdr=$1
+  fn=$2
+  :>$fn
+  find $fdr -name '*.cac' -o -name '*.cg' | while read f; do cat $f >>$fn; yame index -1 $(basename $(basename $f .cg) .ca) $fn; done
+}
+
 function setState_hg38() {
   fdr=$1;
   zcat ../features/$1.bed.gz | bedtools intersect -a ~/references/hg38/annotation/cpg/cpg_nocontig.bed.gz -b - -sorted -loj | cut -f1-3,7 | bedtools groupby -g 1-3 -c 4 -o first | cut -f4 | awk '{if($0==".") $0="NA"; print $0;}' | yame pack -s - $fdr.cm

@@ -20,6 +20,7 @@ ld22c <- function() {
     suppressMessages(library(SummarizedExperiment))
     suppressMessages(library(MultiAssayExperiment))
     suppressMessages(library(sesame))
+    suppressMessages(library(CytoMethIC))
     suppressMessages(library(GenomicRanges))
     suppressMessages(library(CytoMethIC))
     suppressMessages(library(ggplot2))
@@ -71,6 +72,7 @@ ld <- function() {
     suppressMessages(library(pals))
     suppressMessages(library(ggsci))
     suppressMessages(library(ggrepel))
+    suppressMessages(library(caret))
     ## suppressMessages(library(egg))
     suppressMessages(library(ggpubr))
     suppressMessages(library(circlize))
@@ -80,6 +82,7 @@ load_sesame <- function() {
     load_all("~/repo/sesame")
 }
 los <- load_sesame
+loc <- function() { load_all("~/repo/CytoMethIC") }
 
 ## .Last <- function(){
 ##   if(!any(commandArgs()=='--no-readline') && interactive()) {
