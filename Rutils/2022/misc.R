@@ -49,3 +49,14 @@ splitString <- function (x, s, i) {
     l <- strsplit(x, s)
     vapply(l, function(x) x[[i]], character(1))
 }
+
+chunkvec_bychunknumber <- function(x, chunk_number) {
+      unname(split(x, cut(seq_along(x), chunk_number, labels=F)))
+}
+
+chunkvec_bychunksize <- function(x, chunk_size) {
+      num_chunks <- ceiling(length(x) / chunk_size)
+      groups <- rep(1:num_chunks, each = chunk_size, length.out = length(x))
+      unname(split(x, groups))
+}
+

@@ -43,6 +43,8 @@ ld22 <- function() {
     suppressMessages(library(pals))
     suppressMessages(library(ggsci))
     suppressMessages(library(circlize))
+    suppressMessages(library(caret))
+    suppressMessages(library(randomForest))
     suppressMessages(library(ggpubr))	
 }
 
