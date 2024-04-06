@@ -96,7 +96,7 @@ chunkvec_bychunksize <- function(x, chunk_size) {
 }
 
 oversample <- function(df, col, nmax) {
-    do.call(bind_rows, lapply(unique(meta[[col]]), function(level) {
+    do.call(bind_rows, lapply(unique(df[[col]]), function(level) {
         subset_df = df %>% dplyr::filter(.data[[col]] == level)
         rows_to_add = nmax - nrow(subset_df)
         if (rows_to_add > 0) {
