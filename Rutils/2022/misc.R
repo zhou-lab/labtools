@@ -84,3 +84,26 @@ normalizeNumVec <- function(x) {
     x <- x / sd(x)
     x
 }
+
+chunkvec_bychunknumber <- function(x, chunk_number) {
+      unname(split(x, cut(seq_along(x), chunk_number, labels=F)))
+}
+
+chunkvec_bychunksize <- function(x, chunk_size) {
+      num_chunks <- ceiling(length(x) / chunk_size)
+      groups <- rep(1:num_chunks, each = chunk_size, length.out = length(x))
+      unname(split(x, groups))
+}
+
+oversample <- function(df, col, nmax) {
+    do.call(bind_rows, lapply(unique(meta[[col]]), function(level) {
+        subset_df = df %>% dplyr::filter(.data[[col]] == level)
+        rows_to_add = nmax - nrow(subset_df)
+        if (rows_to_add > 0) {
+            subset_df = bind_rows(subset_df,
+                subset_df %>% slice_sample(n = rows_to_add, replace = TRUE))
+        }
+        subset_df
+    }))
+}
+
