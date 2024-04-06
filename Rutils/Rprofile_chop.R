@@ -19,15 +19,13 @@ ld22c <- function() {
     suppressMessages(library(wheatmap))
     suppressMessages(library(SummarizedExperiment))
     suppressMessages(library(MultiAssayExperiment))
-    suppressMessages(library(sesame))
-    suppressMessages(library(CytoMethIC))
     suppressMessages(library(GenomicRanges))
+    suppressMessages(library(sesame))
     suppressMessages(library(ggplot2))
     suppressMessages(library(ggrepel))
     suppressMessages(library(readxl))
     suppressMessages(library(writexl))
     suppressMessages(library(gridExtra))
-
 }
 
 ld22 <- function() {
@@ -42,6 +40,8 @@ ld22 <- function() {
     suppressMessages(library(viridis)) # color-blinded maps, including turbo, magma, cividis etc
     suppressMessages(library(pals))
     suppressMessages(library(ggsci))
+    suppressMessages(library(sesame))
+    suppressMessages(library(CytoMethIC))
     suppressMessages(library(circlize))
     suppressMessages(library(caret))
     suppressMessages(library(randomForest))
