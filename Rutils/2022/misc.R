@@ -49,3 +49,38 @@ splitString <- function (x, s, i) {
     l <- strsplit(x, s)
     vapply(l, function(x) x[[i]], character(1))
 }
+
+calculate_density <- function(data, eps) {
+  densities = numeric(nrow(data))
+  for (i in 1:nrow(data)) {
+    point = data[i, ]
+    distances = sqrt((data$x - point$x)^2 + (data$y - point$y)^2)
+    densities[i] = sum(distances < eps) - 1  # Subtract 1 to exclude the point itself
+  }
+  return(densities)
+}
+
+include_neighbors <- function(df, cluster, target_cluster, radius) {
+    target_points = df[(!is.na(cluster)) & cluster == target_cluster, c("x", "y")]
+    within_radius = sapply(seq_len(nrow(df)), function(i) {
+        distances = sqrt((target_points$x - df[i,"x"])^2 + (target_points$y - df[i,"y"])^2)
+        any(distances <= radius)
+    })
+    cluster[within_radius & is.na(cluster)] = target_cluster
+    cluster
+}
+
+subcluster <- function(df0, target_cluster, eps=6, minPts=5) {
+    df1 = df0[target_cluster,]
+    subc = dbscan(df1[,c("x","y")], eps=eps, minPts=minPts)$cluster
+    ## increase eps for bigger clusters
+    res = ifelse(target_cluster, "1", "0")
+    res[target_cluster] = paste0("sub.", subc)
+    res
+}
+
+normalizeNumVec <- function(x) {
+    x <- x - median(x, na.rm=T)
+    x <- x / sd(x)
+    x
+}
