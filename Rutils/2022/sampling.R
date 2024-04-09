@@ -12,7 +12,7 @@ upsample_smote <- function(label, mx, lvls, n=100, k=3) {
             query_k = cbind(sample.int(ncol(mx1),n1,replace=T), sample.int(k1, n1, replace=T))
             synthetic = apply(query_k, 1, function(qk) {
                 query = mx1[,qk[1]]
-                neighbors = get.knnx(data = t(mx1), query = t(query), k1 = k1 + 1)
+                neighbors = get.knnx(data = t(mx1), query = t(query), k = k1 + 1)
                 ## +1 skip first neighbor
                 neighbor_index <- neighbors$nn.index[1, qk[2]+1]
                 neighbor <- mx1[,neighbor_index]
