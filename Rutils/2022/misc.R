@@ -95,15 +95,3 @@ chunkvec_bychunksize <- function(x, chunk_size) {
       unname(split(x, groups))
 }
 
-oversample <- function(df, col, nmax) {
-    do.call(bind_rows, lapply(unique(df[[col]]), function(level) {
-        subset_df = df %>% dplyr::filter(.data[[col]] == level)
-        rows_to_add = nmax - nrow(subset_df)
-        if (rows_to_add > 0) {
-            subset_df = bind_rows(subset_df,
-                subset_df %>% slice_sample(n = rows_to_add, replace = TRUE))
-        }
-        subset_df
-    }))
-}
-
