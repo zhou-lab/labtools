@@ -4,7 +4,7 @@ upsample_smote <- function(label, mx, lvls, n=100, k=3) {
         mx1 = mx[,label == lvl]
         n1 = n-ncol(mx1)
         if (ncol(mx1) <= k+2) {
-            k = ncol(mx1) - 2
+            k1 = ncol(mx1) - 2
         } else {
             k1 = k
         }
