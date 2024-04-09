@@ -3,11 +3,16 @@ upsample_smote <- function(label, mx, lvls, n=100, k=3) {
     syn = lapply(lvls, function(lvl) {
         mx1 = mx[,label == lvl]
         n1 = n-ncol(mx1)
+        if (ncol(mx1) <= k+2) {
+            k = ncol(mx1) - 2
+        } else {
+            k1 = k
+        }
         if (n1 > 0) {
-            query_k = cbind(sample.int(ncol(mx1),n1,replace=T), sample.int(3,n1,replace=T))
+            query_k = cbind(sample.int(ncol(mx1),n1,replace=T), sample.int(k1, n1, replace=T))
             synthetic = apply(query_k, 1, function(qk) {
                 query = mx1[,qk[1]]
-                neighbors = get.knnx(data = t(mx1), query = t(query), k = k + 1)
+                neighbors = get.knnx(data = t(mx1), query = t(query), k1 = k1 + 1)
                 ## +1 skip first neighbor
                 neighbor_index <- neighbors$nn.index[1, qk[2]+1]
                 neighbor <- mx1[,neighbor_index]
