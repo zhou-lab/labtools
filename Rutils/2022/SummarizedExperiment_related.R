@@ -10,6 +10,18 @@ cleanMatrixForClusterSE <- function(se, f_row = 0.5, f_col = 0.5) {
     se[good_row, good_col]
 }
 
+cleanSE <- function(se, fmaxNA_row = 0.5, fmaxNA_col = 0.5) {
+    mtx = assay(se)
+    cat(sprintf("Filter rows with >%1.2f missingness and columns with >%1.2f missingness.\n",
+        fmaxNA_row, fmaxNA_col))
+    cat("Before: ", nrow(mtx), "rows and ", ncol(mtx),"columns.\n")
+    namtx = is.na(mtx)
+    good_row = rowSums(namtx) <= ncol(mtx) * fmaxNA_row
+    good_col = colSums(namtx) <= nrow(mtx) * fmaxNA_col
+    cat("After: ", sum(good_row), "rows and ", sum(good_col),"columns.\n")
+    se[good_row, good_col]
+}
+
 bSubMostVariableSE <- function(se, n=2000) {
     mtx = assay(se)
     std <- apply(mtx, 1, sd, na.rm=TRUE)
@@ -22,9 +34,17 @@ bSubVariableSE <- function(se, min_beta_range=0.2) {
     se[beta_ranges > min_beta_range,]
 }
 
-bSubAutosomeSE <- function(se) {
-    autoprobes <- names(sesameData_getAutosomeProbes(
-        inferPlatformFromProbeIDs(rownames(se))))
+## autoprobes <- names(sesameData_getAutosomeProbes(
+## inferPlatformFromProbeIDs(rownames(se))))
+## se[rownames(se) %in% autoprobes,]
+bSubAutosomeSE <- function(se, platform=NULL) {
+    if (is.null(platform)) {
+        platform = inferPlatformFromProbeIDs(rownames(se))
+    }
+    autoprobes = names(sesameData_getProbesByRegion(
+        chrm_to_exclude = c("chrX", "chrY", "chrM"),
+        platform = platform))
+
     se[rownames(se) %in% autoprobes,]
 }
 

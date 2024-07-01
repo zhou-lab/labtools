@@ -227,6 +227,7 @@ orderBranchGR <- function(se) {
     ## order probe blocks according to the cell type/column order
     ## se0 = se; se = se1
     sigs = as.data.frame(rowData(se))
+    rownames(se) = rowData(se)$Probe_ID
     stopifnot(length(sigs$Probe_ID) == length(unique(sigs$Probe_ID)))
     if (is.null(colData(se)$CellType)) {
         colData(se)$CellType = colData(se)$CellType_celltype

@@ -312,3 +312,34 @@ fancy_violin <- function(p, size=0.3) {
         geom_polygon(data = vl_poly, aes(x, y, group = group), color= "black", size = size, fill = NA) +
         geom_segment(data = vl_fill, aes(x = xnew, xend = xend, y = y, yend = y, color = y))
 }
+
+calculate_label_position <- function(angle, radius) {
+  angle_rad <- angle * pi / 180
+  x <- radius * cos(angle_rad)
+  y <- radius * sin(angle_rad)
+  return(c(x, y))
+}
+
+# Function to determine the octant
+get_octant <- function(x, y) {
+  angle <- atan2(y, x) * 180 / pi
+  angle <- ifelse(angle < 0, angle + 360, angle)
+  octant <- cut(angle, breaks = seq(0, 360, by = 45), include.lowest = TRUE, labels = FALSE)
+  return(octant)
+}
+
+wzHexBin <- function(x, y) {
+    angles <- seq(25.5, 360, by=45)
+    label_positions <- t(sapply(angles, calculate_label_position, radius = 0.6))
+    df = tibble(x = x, y = y) |> mutate(octant = get_octant(x,y))
+    df = df[complete.cases(df),]
+    labelcnt = as.numeric(table(factor(df$octant, levels=1:8)))
+    labels <- data.frame(
+        octant = 1:8,
+        label = sprintf("%1.1f%%", labelcnt/sum(labelcnt)*100),
+        x = label_positions[, 1],
+        y = label_positions[, 2]
+    )
+
+    ggplot(df, aes(x=x, y=y)) + stat_bin_hex(bins = 70, show.legend = TRUE) + theme_minimal() + geom_text(data = labels, aes(x = x, y = y, label = label), color = "orange", fontface="bold", size = 5) + geom_abline(slope=c(1,-1), intercept=0, linetype="dashed", color="grey80") + theme(axis.text=element_text(), axis.title=element_text()) + geom_hline(yintercept = 0, linetype = "dashed", color = "grey80") + geom_vline(xintercept = 0, linetype = "dashed", color = "grey80") + scale_fill_gradientn(colours = c("grey20",turbo(100)[20:100],rep(turbo(100)[100],20))) + stat_cor(method = "spearman", r.accuracy = 0.01, p.accuracy = 0.001, position = "identity")
+}
