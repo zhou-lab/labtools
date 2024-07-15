@@ -105,7 +105,8 @@ samples = cbind(samples[,c("geo","platform")], samples)
 extra <- cbind(
 	samples[,!(colnames(samples) %in% c("geo","platform","title","sourceName"))],
 	description=samples0[,grepl("Sample_description", colnames(samples0))])
-extra <- do.call(paste, c(extra, sep="|||"))
+
+extra <- do.call(paste, c(as.data.frame(extra), sep="|||"))
 samples <- cbind(samples[,c("geo","platform")],
 	title=samples0[,grepl("Sample_title", colnames(samples0))], 
 	sourceName=samples[,"sourceName"], extra=extra)
