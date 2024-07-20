@@ -300,7 +300,6 @@ orderBranchGR <- function(se) {
     se
 }
 
-<<<<<<< HEAD
 orderBranchGR2 <- function(se) {
     ## order probe blocks according to the cell type/column order
     ## se0 = se; se = se1
@@ -329,9 +328,7 @@ orderBranchGR2 <- function(se) {
     se
 }
 
-=======
 ## order columns
->>>>>>> a4fa9fad2a60f243b64279efcdea7293f948d13c
 colClusterTissueSE <- function(se) {
     ## column cluster samples within cell type
     ## se = se1
