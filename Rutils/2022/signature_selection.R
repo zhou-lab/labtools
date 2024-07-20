@@ -300,7 +300,38 @@ orderBranchGR <- function(se) {
     se
 }
 
+<<<<<<< HEAD
+orderBranchGR2 <- function(se) {
+    ## order probe blocks according to the cell type/column order
+    ## se0 = se; se = se1
+    sigs = as.data.frame(rowData(se))
+    rownames(se) = rowData(se)$Probe_ID
+    stopifnot(length(sigs$Probe_ID) == length(unique(sigs$Probe_ID)))
+    colData(se)$CellType = colData(se)$CellType0
+    CellTypes = unique(colData(se)$CellType)
+    sigs1 = sigs %>% dplyr::filter(type=="Hypo")
+    a = do.call(cbind, lapply(split(seq_len(ncol(se)), colData(se)$CellType), function(x) {
+        rowMeans(assay(se)[,x,drop=FALSE]) }))
+    a = do.call(cbind, lapply(split(sigs1$Probe_ID, sigs1$branch), function(x) {
+        colMeans(a[x,,drop=FALSE], na.rm=T) }))
+    a = a[CellTypes,]
+    taken = c()
+    for(i in seq_len(nrow(a))) {
+        js = which(a[i,] < 0.5 & !(seq_len(ncol(a)) %in% taken))
+        taken = c(taken, js[order(-colSums(a[,js,drop=FALSE] < 0.5))])
+    }
+    orderedBranch = colnames(a[,taken])
+    sigs$branch = factor(sigs$branch, level=orderedBranch)
+    sigs = sigs %>% arrange(type, branch)
+    se = se[sigs$Probe_ID,]
+    rownames(sigs) = sigs$Probe_ID
+    rowData(se) = sigs
+    se
+}
+
+=======
 ## order columns
+>>>>>>> a4fa9fad2a60f243b64279efcdea7293f948d13c
 colClusterTissueSE <- function(se) {
     ## column cluster samples within cell type
     ## se = se1
