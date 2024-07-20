@@ -77,6 +77,52 @@ defineHierarchicalContrasts <- function(meta) {
     meta1
 }
 
+defineContrast2 <- function(meta) {
+    grouplevels = grep("Group", colnames(meta), value=T)
+    grouplevels = sub("Group","",grouplevels)
+    cmpList = do.call(c, lapply(grouplevels, function(grouplevel) {
+        gs0 = meta[paste0("Group", grouplevel)]
+        gs1 = meta[paste0("CellType", grouplevel)]
+        gs0uniq = unique(gs0)
+        gs0uniq = gs0uniq[gs0uniq != "NA"]
+        gs1uniq = unique(gs1)
+        gs1uniq = gs1uniq[gs1uniq != "NA"]
+        do.call(c, lapply(gs0uniq, function(g0) {
+            lapply(gs1uniq, function(g1) {
+                st = ifelse(gs0 == g0 & gs1 == g1, 0,
+                     ifelse(gs0 == g0 & gs1 != g1 & gs1 != "NA", 1, 2))
+                ## flip the states so 0011 and 1100 can be deduplicated
+                if(sum(st!=2)>0 && st[st!=2][1] == 1) {
+                    st1 = ifelse(st == 2, 2, 1-st)
+                    st1 = paste0(st1, collapse="")
+                } else {
+                    st1 = paste0(st, collapse="")
+                }
+                list(nm_in = g1, nm_all = g0, st = st, st1 = st1, n_in = sum(gs1 == g1))
+            })
+        }))
+    }))
+
+    cmpList = cmpList[sapply(cmpList, function(x) {
+        sum(x$st == 0) > 0 &&
+            sum(x$st == 1) > 0 &&
+            sum(x$st == 0) / (sum(x$st == 0)+sum(x$st == 1)) > 0.01
+    })]
+
+    ## deduplicate
+    states = sapply(cmpList, function(x) x$st1)
+    cmpList = lapply(split(cmpList, states), function(x) x[order(sapply(x, function(xx) xx$n_in))][[1]])
+    cmpList = cmpList[sapply(cmpList, function(x) x$nm_all)!="OTHER" &
+                      sapply(cmpList, function(x) x$nm_in)!="OTHER"]
+
+    branches = do.call(cbind, lapply(cmpList, function(x) x$st))
+    colnames(branches) = sapply(cmpList, function(x) paste0(x$nm_in,".in.",x$nm_all))
+    meta1 = cbind(meta[,
+        c("Sample_ID", grep("Group",colnames(meta), value=T),
+        grep("CellType",colnames(meta), value=T))], branches)
+    meta1
+}
+
 auc_wmw2 = function(labels, scores) {
     labels <- as.logical(labels)
     n1 <- sum(labels)

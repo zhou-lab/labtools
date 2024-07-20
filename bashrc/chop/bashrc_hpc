@@ -55,13 +55,13 @@ function BetaCov2MU {
 }
 
 
-function mergeCG() {
-  fdr=$1;
-  find $fdr/ -name '*.cg' >tmp
-  :>$fdr.cm; awk '{match($1,/^[^~]*~(.*).cg/,a); print $1,a[1];}' tmp | while read f tfbs; do cat $f >>$fdr.cm; done
-  awk '{match($1,/^[^~]*~(.*).cg/,a); print a[1];}' tmp | yame index -s - $fdr.cm
-  rm -f tmp
-}
+#function mergeCG() {
+#  fdr=$1;
+#  find $fdr/ -name '*.cg' >tmp
+#  :>$fdr.cm; awk '{match($1,/^[^~]*~(.*).cg/,a); print $1,a[1];}' tmp | while read f tfbs; do cat $f >>$fdr.cm; done
+#  awk '{match($1,/^[^~]*~(.*).cg/,a); print a[1];}' tmp | yame index -s - $fdr.cm
+#  rm -f tmp
+#}
 
 function mergeCG2() {
   fdr=$1
