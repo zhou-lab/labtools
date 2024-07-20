@@ -12,3 +12,15 @@ convertToArray <- function(se, platform="HM450") {
     se1
 }
 
+cgNumberToCoord <- function(cgNumbers, platform=NULL) {
+    ## cgNumberToCoord(c("cg14640477", "cg01384075", "cg15835644"))
+    ## [1] "chr10_26457265"  "chr10_102002633" "chr7_26360171"
+    ## chr10_26457265, chr10_102002633, chr7_26360171
+    if (is.null(platform)) {
+        platform = inferPlatformFromProbeIDs(cgNumbers)
+    }
+    mft = sesameData_getManifestGRanges(platform)
+    cgNo0 = names(mft)
+    coords = paste0(seqnames(mft),"_",start(mft))
+    coords[match(cgNumbers, cgNo0)]
+}

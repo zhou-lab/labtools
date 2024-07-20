@@ -68,8 +68,8 @@ defineHierarchicalContrasts <- function(meta) {
     ## deduplicate
     states = sapply(cmpList, function(x) x$st1)
     cmpList = lapply(split(cmpList, states), function(x) x[order(sapply(x, function(xx) xx$n_in))][[1]])
-    cmpList = cmpList[sapply(cmpList, function(x) x$nm_all)!="Other" &
-                      sapply(cmpList, function(x) x$nm_in)!="Other"]
+    cmpList = cmpList[sapply(cmpList, function(x) x$nm_all)!="OTHER" &
+                      sapply(cmpList, function(x) x$nm_in)!="OTHER"]
 
     branches = do.call(cbind, lapply(cmpList, function(x) x$st))
     colnames(branches) = sapply(cmpList, function(x) paste0(x$nm_in,".in.",x$nm_all))
@@ -223,6 +223,7 @@ filterSignatureGR <- function(se, n_max = 50) {
     se1
 }
 
+## order rows
 orderBranchGR <- function(se) {
     ## order probe blocks according to the cell type/column order
     ## se0 = se; se = se1
@@ -253,6 +254,7 @@ orderBranchGR <- function(se) {
     se
 }
 
+<<<<<<< HEAD
 orderBranchGR2 <- function(se) {
     ## order probe blocks according to the cell type/column order
     ## se0 = se; se = se1
@@ -281,6 +283,9 @@ orderBranchGR2 <- function(se) {
     se
 }
 
+=======
+## order columns
+>>>>>>> a4fa9fad2a60f243b64279efcdea7293f948d13c
 colClusterTissueSE <- function(se) {
     ## column cluster samples within cell type
     ## se = se1
@@ -320,15 +325,22 @@ pack_cx_file <- function(se_sig, ref="mm10", tmpdir="~/tmp/") {
     beg1 <- sapply(strsplit(probes, "_"), function(x) as.integer(x[2]))
     write.table(data.frame(chrm=chrm, beg1=beg1-1, end=beg1+1,
         contrast=paste0(rowData(se_sig)$branch, ".as.", rowData(se_sig)$type)),
-        file = temp_file, row.names = FALSE, col.names = FALSE, sep = "\t", quote=FALSE)
+        file = temp_file,
+        row.names = FALSE,
+        col.names = FALSE, sep = "\t", quote=FALSE)
+    
     system(sprintf("sortbed %s | bedtools intersect -a ~/references/%s/annotation/cpg/cpg_nocontig.bed.gz -b - -sorted -loj | bedtools groupby -g 1-3 -c 7 -o first | cut -f4 | yame pack -f s - %s.cx", temp_file, ref, temp_file))
     paste0(temp_file, ".cx")
 }
 
 sig_summary <- function(cg_file, cm_file, sample=NULL, tmpdir="~/tmp/") {
     if (is.null(sample)) {
-        read.table(text=system(sprintf("yame summary -m %s %s | cut -f2,4,8,10", cm_file, cg_file), intern=TRUE), header=TRUE, sep="\t") %>% dplyr::filter(N_overlap>0, Mask!=".")
+        read.table(text=system(sprintf(
+            "yame summary -m %s %s | cut -f2,4,8,10", cm_file, cg_file), intern=TRUE),
+            header=TRUE, sep="\t") %>% dplyr::filter(N_overlap>0, Mask!=".")
     } else {
-        read.table(text=system(sprintf("yame subset %s %s | yame summary -m %s - | cut -f2,4,8,10", cg_file, sample, cm_file), intern=TRUE), header=TRUE, sep="\t") %>% dplyr::filter(N_overlap>0, Mask!=".")
+        read.table(text=system(sprintf(
+            "yame subset %s %s | yame summary -m %s - | cut -f2,4,8,10", cg_file, sample, cm_file), intern=TRUE),
+            header=TRUE, sep="\t") %>% dplyr::filter(N_overlap>0, Mask!=".")
     }
 }

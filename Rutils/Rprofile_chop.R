@@ -20,7 +20,7 @@ ld22c <- function() {
     suppressMessages(library(SummarizedExperiment))
     suppressMessages(library(MultiAssayExperiment))
     suppressMessages(library(GenomicRanges))
-    suppressMessages(library(CytoMethIC))
+#suppressMessages(library(CytoMethIC))
     suppressMessages(library(sesame))
     suppressMessages(library(ggplot2))
     suppressMessages(library(ggrepel))
