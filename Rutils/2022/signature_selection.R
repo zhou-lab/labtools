@@ -105,8 +105,8 @@ defineContrast2 <- function(meta) {
 
     cmpList = cmpList[sapply(cmpList, function(x) {
         sum(x$st == 0) > 0 &&
-            sum(x$st == 1) > 0 &&
-            sum(x$st == 0) / (sum(x$st == 0)+sum(x$st == 1)) > 0.01
+            sum(x$st == 1) > 0
+        ## && sum(x$st == 0) / (sum(x$st == 0)+sum(x$st == 1)) > 0.01
     })]
 
     ## deduplicate
@@ -307,19 +307,14 @@ orderBranchGR2 <- function(se) {
     rownames(se) = rowData(se)$Probe_ID
     stopifnot(length(sigs$Probe_ID) == length(unique(sigs$Probe_ID)))
     colData(se)$CellType = colData(se)$CellType0
-    CellTypes = unique(colData(se)$CellType)
+    branches = unique(rowData(se)$branch)
     sigs1 = sigs %>% dplyr::filter(type=="Hypo")
     a = do.call(cbind, lapply(split(seq_len(ncol(se)), colData(se)$CellType), function(x) {
         rowMeans(assay(se)[,x,drop=FALSE]) }))
     a = do.call(cbind, lapply(split(sigs1$Probe_ID, sigs1$branch), function(x) {
         colMeans(a[x,,drop=FALSE], na.rm=T) }))
-    a = a[CellTypes,]
-    taken = c()
-    for(i in seq_len(nrow(a))) {
-        js = which(a[i,] < 0.5 & !(seq_len(ncol(a)) %in% taken))
-        taken = c(taken, js[order(-colSums(a[,js,drop=FALSE] < 0.5))])
-    }
-    orderedBranch = colnames(a[,taken])
+    a = a[unique(colData(se)$CellType),]
+    orderedBranch = names(sort(colSums(apply(a<0.5, 2, function(x) x*(0.1**seq_len(nrow(a))))), decreasing=TRUE))
     sigs$branch = factor(sigs$branch, level=orderedBranch)
     sigs = sigs %>% arrange(type, branch)
     se = se[sigs$Probe_ID,]
@@ -327,6 +322,13 @@ orderBranchGR2 <- function(se) {
     rowData(se) = sigs
     se
 }
+
+## taken = c()
+## for(i in seq_len(nrow(a))) {
+##     js = which(a[i,] < 0.5 & !(seq_len(ncol(a)) %in% taken))
+##     taken = c(taken, js[order(-colSums(a[,js,drop=FALSE] < 0.5))])
+## }
+## orderedBranch = colnames(a[,taken])
 
 ## order columns
 colClusterTissueSE <- function(se) {
