@@ -279,6 +279,9 @@ orderBranchGR <- function(se) {
     if (is.null(colData(se)$CellType)) {
         colData(se)$CellType = colData(se)$CellType_celltype
     }
+    if (is.null(colData(se)$CellType)) {
+        colData(se)$CellType = colData(se)$CellType0
+    }
     CellTypes = unique(colData(se)$CellType)
     sigs1 = sigs %>% dplyr::filter(type=="Hypo")
     a = do.call(cbind, lapply(split(seq_len(ncol(se)), colData(se)$CellType), function(x) {

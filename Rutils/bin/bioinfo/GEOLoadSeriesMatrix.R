@@ -125,23 +125,23 @@ if (length(args) > 1) {
 }
 
 suppressWarnings(suppressPackageStartupMessages(library(data.table)))
-## a <- fread(sprintf('tmp_%s', sname), sep='\t', header=TRUE)
-## betas <- as.matrix(a[,2:ncol(a)])
-## rownames(betas) <- a$ID_REF
+a <- fread(sprintf('tmp_%s', sname), sep='\t', header=TRUE)
+betas <- as.matrix(a[,2:ncol(a)])
+rownames(betas) <- a$ID_REF
 
-## if (!is.numeric(betas)) {
-##   aa <- as.numeric(betas)
-##   dim(aa) <- dim(betas)
-##   dimnames(aa) <- dimnames(betas)
-##   betas <- aa
-## }
+if (!is.numeric(betas)) {
+  aa <- as.numeric(betas)
+  dim(aa) <- dim(betas)
+  dimnames(aa) <- dimnames(betas)
+  betas <- aa
+}
 write.table(samples, file=sprintf('%s_samples.tsv', sname), quote=F, sep='\t', row.names=FALSE)
-## saveRDS(betas, file=sprintf('%s_betas_GEOLoadSeriesMatrix.rds', sname))
+saveRDS(betas, file=sprintf('%s_betas_GEOLoadSeriesMatrix.rds', sname))
 
 system(sprintf('rm -f tmp_%s', sname))
-## cat('Read:', ncol(betas), 'samples.\n')
+cat('Read:', ncol(betas), 'samples.\n')
 cat('Meta:', colnames(samples), '\n')
 cat('Sname:', rownames(samples)[1:10], '\n')
-## cat('#Probes:', nrow(betas), '\n')
+cat('#Probes:', nrow(betas), '\n')
 
 ## system('rm -f 1')
