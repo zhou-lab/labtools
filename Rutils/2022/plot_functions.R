@@ -101,6 +101,50 @@ wzPlotDens2d.smoothPairs <- function(mtx) {
         upper.panel = upper)
 }
 
+wzPlotDens2d.dotPairs <- function(mtx) {
+    ## Color palette (optional for future use)
+    palette <- colorRampPalette(
+        c("white","lightblue","blue","green","yellow","orange","red","darkred"),
+        space = "Lab")
+
+    ## Upper panel: correlation
+    upper <- function(x, y){
+        usr <- par("usr"); on.exit(par(usr))
+        par(usr = c(0, 1, 0, 1))
+        r <- round(cor(x, y, method='spearman', use = "na.or.complete"), digits=2)
+        txt <- paste0("R = ", r)
+        cex.cor <- 0.8/strwidth(txt)
+        text(0.5, 0.5, txt, cex = cex.cor * r)
+    }
+
+    ## Lower panel: dot plot
+    lower <- function(x, y){
+        points(x, y, pch = 16, col = rgb(0.1, 0.1, 0.1, 0.5), cex = 0.5)
+        abline(0,1,lty='dotted', col = "gray")
+    }
+
+    ## Diagonal panel: histogram + density
+    panel.hist.density = function(x,...) {
+        usr <- par("usr"); on.exit(par(usr))
+        par(usr = c(usr[1:2], 0, 1.5) )
+        h <- hist(x, plot = FALSE)
+        breaks <- h$breaks; nB <- length(breaks)
+        y <- h$counts; y <- y/max(y)
+        rect(breaks[-nB], 0, breaks[-1], y,col="grey")
+        tryd <- try( d <- density(x,na.rm=TRUE,bw="nrd",adjust=1.2),silent=TRUE)
+        if(class(tryd) != "try-error") {
+            d$y <- d$y/max(d$y)
+            lines(d)
+        }
+    }
+
+    ## Create the dot-plot based pairs plot
+    pairs(mtx,
+        diag.panel = panel.hist.density,
+        lower.panel = lower,
+        upper.panel = upper)
+}
+
 #' @param label counts or percent
 wzvenn <- function(data, proportional = TRUE, label = "counts") {
     ## data is a list of elements
@@ -223,7 +267,7 @@ visualizeSEsimple <- function(se, rows=NULL, cols=NULL,
 ## metadata(se) = readExcelColors("~/samplesheets/2022/20220109_TCGA.MTAP.annoation.xlsx")
 ## visualizeSE(se, rows="rowbar1_name")
 visualizeSE <- function(se, rows=NULL, cols=NULL,
-    column_split=NA, column_split_nms=NULL, column_split_pad=0.05, column_cluster=FALSE,
+    column_split=NA, column_split_nms=NULL,column_split_nm_rot=0, column_split_pad=0.05, column_cluster=FALSE,
     name_base="a", legend_hpad=0.3, stop.points=parula(20), show_row_names = FALSE, show_column_names = FALSE) {
 
     if (is.na(column_split)) {
@@ -273,7 +317,7 @@ visualizeSE <- function(se, rows=NULL, cols=NULL,
             last_name = paste0(name_base, column_nm, bar)
         }
 
-        plt = plt + WLabel(column_nm, TopOf(last_name))
+        plt = plt + WLabel(column_nm, TopOf(last_name), rot=column_split_nm_rot)
     }
 
     last_name = last_column

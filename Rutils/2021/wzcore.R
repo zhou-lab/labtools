@@ -219,9 +219,13 @@ bSubMostVariableSE <- function(se, n=2000) {
 }
 
 bSubAutosomeSE <- function(se) {
-    autoprobes <- names(sesameData_getAutosomeProbes(
-        inferPlatformFromProbeIDs(rownames(se))))
-    se[rownames(se) %in% autoprobes,]
+    nonAutoProbes <- names(sesameData_getProbesByRegion(
+        platform=inferPlatformFromProbeIDs(rownames(se)),
+        chrm=c("chrX","chrY","chrM")))
+    se[!(rownames(se) %in% nonAutoProbes),]
+    ## autoprobes <- names(sesameData_getAutosomeProbes(
+    ## inferPlatformFromProbeIDs(rownames(se))))
+    ## se[rownames(se) %in% autoprobes,]
 }
 
 bSubProbesW <- function(betas, probes, exclude=FALSE) {

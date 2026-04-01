@@ -22,6 +22,7 @@ ld22c <- function() {
     suppressMessages(library(GenomicRanges))
 #suppressMessages(library(CytoMethIC))
     suppressMessages(library(sesame))
+    suppressMessages(library(knowYourCG))
     suppressMessages(library(ggplot2))
     suppressMessages(library(ggrepel))
     suppressMessages(library(readxl))
