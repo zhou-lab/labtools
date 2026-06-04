@@ -43,11 +43,11 @@ def main(args):
         if args.indent: sys.stdout.write('    ')
         print('parent %s on' % args.parent)
         if args.indent: sys.stdout.write('    ')
-        print('color 0,102,255')
+        print('color %s' % args.color)
         if args.indent: sys.stdout.write('    ')
         print('maxHeightPixels 128:25:10')
         if args.indent: sys.stdout.write('    ')
-        print('viewLimits 0.0:1.0')
+        print('viewLimits %s' % args.viewLimits)
         print('')
 
     elif args.type == 'bigWigMethParent':
@@ -56,8 +56,8 @@ def main(args):
         print('type bigWig')
         print('shortLabel %s' % args.shortLabel)
         print('longLabel %s' % args.longLabel)
-        print('compositeTrack off')
-        print('viewLimits 0.0:1.0')
+        print('compositeTrack on')
+        print('viewLimits %s' % args.viewLimits)
         print('maxHeightPixels 100:15:5')
         print('visibility hide')
         print('allButtonPair on')
@@ -110,6 +110,8 @@ parent TCGA_ACC on
     parser.add_argument('--shortLabel', default=None, type=str)
     parser.add_argument('--longLabel', default=None, type=str)
     parser.add_argument('--indent', action='store_true')
+    parser.add_argument('--color', default='0,102,255', type=str)
+    parser.add_argument('--viewLimits', default='0.0:1.0', type=str)
     parser.add_argument('--type', help="can be: bigBed9, bigWigMeth, bigWigMethParent, bigBed9Parent, bigBed9ParentComp", default='bigBed9')
     parser.set_defaults(func=main)
 
