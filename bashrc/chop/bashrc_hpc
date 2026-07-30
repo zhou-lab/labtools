@@ -11,6 +11,9 @@ alias awk='awk -F"\t" -v OFS="\t"'
 
 ## this is to make screen tab title simpler, may not be what everyone want
 export PROMPT_COMMAND=""
+## sync lab figure
+alias sfg="rclone copy -P ~/zhoulab/labfigures/ dropbox:Documents/DRAWING/labfigures/"
+alias sft="rclone copy -P dropbox:tmp/ ~/tmp/dropbox/"
 
 alias entrez_review="~/software/anaconda/anaconda3_2021/bin/python ~/repo/labtools/pyutils/entrez_efetch_review.py"
 alias entrez_alsoviewed="~/software/anaconda/anaconda3_2021/bin/python ~/repo/labtools/pyutils/entrez_efetch_alsoviewed.py"
@@ -19,7 +22,26 @@ alias entrez_similar="~/software/anaconda/anaconda3_2021/bin/python ~/repo/labto
 alias ee="~/software/anaconda/anaconda3_2021/bin/python ~/repo/labtools/pyutils/entrez_esearch.py"
 
 alias Shold='parallel -j 10 "sha1sum /dev/zero" ::: {1..2}'
-
+## Emacs: terminal (no-window) client into a single shared daemon.
+## -t opens a TTY frame in this terminal; -a "" auto-starts the one daemon on
+## first use, so every `emacs' — interactive, git commit, crontab — reuses the
+## same server and therefore the same buffers, kill ring and open files.
+## Finish an editor-invoked session with C-x # (not C-x C-c) to hand the file
+## back to the waiting caller without tearing the frame down twice.
+## Batch/daemon flags are passed straight to the real binary: this bashrc sets
+## `shopt -s expand_aliases', so the alias below also fires under `bash -lc',
+## where `emacs --batch ...' in a script must not become an emacsclient frame.
+function start_emacs() {
+  case "$1" in
+    -Q|-q|--batch|--script|--daemon|--fg-daemon|--bg-daemon|--version|--help)
+      command emacs "$@" ;;
+    *)
+      emacsclient -t --alternate-editor="" "$@" ;;
+  esac
+}
+alias emacs=start_emacs
+export EDITOR='emacsclient -t -a ""'
+export VISUAL='emacsclient -t -a ""'
 
 # change this in your own .bashrc
 export HPCUSERNAME="zhouw3"
@@ -67,8 +89,19 @@ function mergeCG2() {
   fdr=$1
   fn=$2
   :>$fn
-  find $fdr -name '*.cac' -o -name '*.cg' | while read f; do cat $f >>$fn; yame index -1 $(basename $(basename $f .cg) .ca) $fn; done
+  find $fdr -name '*.cac' -o -name '*.cg' -o -name '*.cm' | sort | while read f; do cat $f >>$fn; yame index -1 $(basename $(basename $(basename $f .cg) .ca) .cm) $fn; done
 }
+
+function parallelTest() {
+  kset=$1
+  qset=$2
+  outf=$3
+  mkdir ${outf}_tmp
+  cut -f1 ${kset}.idx | while read f; do echo -e $kset"\t"$f"\t"$qset"\t"${outf}_tmp; done | parallel --col-sep "\t" -j 20 'yame subset {1} {2} | yame summary -m - {3} >{4}/{2}'
+  awk 'NR==1||$1!="QFile"{n = split(FILENAME, a, "/"); if (NR==1) {aa="Query0";} else {aa=a[n];} print aa,$0;}' ${outf}_tmp/* >$outf;
+}
+
+
 
 function setState_hg38() {
   fdr=$1;
@@ -112,3 +145,39 @@ z() {
 
 
 
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+## >>> conda initialize >>>
+__conda_setup="$('/mnt/isilon/zhoulab/labsoftware/anaconda/conda_2026/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    eval "$__conda_setup"
+else
+    if [ -f "/mnt/isilon/zhoulab/labsoftware/anaconda/conda_2026/etc/profile.d/conda.sh" ]; then
+        . "/mnt/isilon/zhoulab/labsoftware/anaconda/conda_2026/etc/profile.d/conda.sh"
+    else
+        export PATH="/mnt/isilon/zhoulab/labsoftware/anaconda/conda_2026/bin:$PATH"
+    fi
+fi
+unset __conda_setup
+## <<< conda initialize <<<
+
+# opencode
+export PATH=/home/zhouw3/.opencode/bin:$PATH
+
+# user-local tools (perf extracted from RHEL9.1 perf RPM; see ~/software/perf-el9)
+export PATH=$HOME/software/bin:$PATH
+
+## ff <file-or-url> : open a page in Firefox and return the prompt immediately.
+## setsid fully detaches it (new session, survives closing this pane/tmux),
+## and stdio is redirected so Firefox never writes to or holds the terminal.
+## A bare local path is turned into a file:// URL so `ff page.html` just works.
+ff() {
+    local target="$1"
+    if [ -e "$target" ]; then                 # local file -> absolute file:// URL
+        target="file://$(cd "$(dirname "$target")" && pwd)/$(basename "$target")"
+    fi
+    setsid firefox "$target" >/dev/null 2>&1 < /dev/null &
+}

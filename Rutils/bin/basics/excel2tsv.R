@@ -1,4 +1,4 @@
-#!/usr/bin/env Rscript-4.3.1
+#!/usr/bin/env Rscript
 # suppressMessages(library(tidyverse))
 suppressMessages(library(readr))
 suppressMessages(library(readxl))

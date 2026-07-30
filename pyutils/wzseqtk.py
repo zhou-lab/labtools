@@ -140,7 +140,7 @@ def main_kmer(args):
     import faidx
     genome = faidx.RefGenome(args.i)
     out = open(args.o, 'w') if args.o is not None else sys.stdout
-    for c in genome.faidx:
+    for c in sorted(genome.faidx.keys()):
         if args.v:
             err_print(c)
         gseq = genome.fetch_chrmseq(c)

@@ -18,8 +18,14 @@ samples0 <- samples
 samples <- samples0[,select.cols]
 cat('Expect:', nrow(samples), 'samples\n')
 
+
 ## if there is a column with all sex, then remove sex and that column title
 for (i in 1:ncol(samples)) {
+
+  if (colnames(samples)[i] == 'X.Sample_source_name_ch1') {
+    next;
+  }
+
   if (all(grepl('^Sex: ', samples[,i], ignore.case = TRUE))) {
     samples[,i] <- sub('Sex: ','', samples[,i])
     colnames(samples)[i] <- 'Sex'
@@ -88,19 +94,24 @@ for (i in 1:ncol(samples)) {
   }
 
   samples[,i] <- gsub('\\s+','.',samples[,i])
+  cat(colnames(samples)[i],"\n")
   ## samples[,i] <- gsub('[-]+','.',samples[,i])
-  cat(colnames(samples)[i],'\t')
   if (all(!is.na(as.numeric(samples[,i])))) {
     cat('numeric')
     samples[,i] <- as.numeric(samples[,i])
   }
   cat('\n')
 }
+
 colnames(samples) <- gsub('\\s+','.', colnames(samples))
 colnames(samples)[colnames(samples) == 'X.Sample_geo_accession'] <- 'geo'
 colnames(samples)[colnames(samples) == "X.Sample_platform_id"] <- "platform"
 colnames(samples)[colnames(samples) == 'X.Sample_title'] <- 'title'
 colnames(samples)[colnames(samples) == 'X.Sample_source_name_ch1'] <- 'sourceName'
+
+
+
+
 samples = cbind(samples[,c("geo","platform")], samples)
 extra <- cbind(
 	samples[,!(colnames(samples) %in% c("geo","platform","title","sourceName"))],

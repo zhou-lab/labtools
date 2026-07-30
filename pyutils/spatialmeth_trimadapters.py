@@ -19,7 +19,7 @@ parser.add_argument("-o", "--output_prefix", default="out", help="Output file pr
 parser.add_argument("-a", "--adapters", nargs='+', default=["CTATCTCTTATA", "AGATGCGAGAAGCCAACGCTTG"], help="Read 1 adapter sequence to trim.")
 parser.add_argument("-l1", "--linker1", default="GTGGTTGATGTTTTGTATTGGTGTATGATT", help="First linker sequence.")
 parser.add_argument("-l2", "--linker2", default="ATTTATGTGTTTGAGAGGTTAGAGTATTTG", help="Second linker sequence.")
-parser.add_argument("-t", "--trim_end2", default="AGATGTGTATAAGAGATAG", help="Trim read 2 until this subsequence.")
+parser.add_argument("-t", "--trim_end2", default="AGATGTGTATAAGAGACAG", help="Trim read 2 until this subsequence.")
 
 # Parse the command-line arguments
 args = parser.parse_args()
