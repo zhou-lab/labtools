@@ -1,0 +1,14 @@
+# Editor / OS cruft
+*~
+.DS_Store
+*.swp
+
+# Python bytecode
+*.pyc
+*.pyo
+__pycache__/
+
+# R session state
+.Rhistory
+.RData
+.Rproj.user/
